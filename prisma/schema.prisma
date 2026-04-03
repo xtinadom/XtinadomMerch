@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Audience {
+  sub
+  domme
+  both
+}
+
+enum FulfillmentType {
+  printify
+  manual
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  description String?
+  sortOrder   Int       @default(0)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Product {
+  id                  String          @id @default(cuid())
+  slug                String          @unique
+  name                String
+  description         String?
+  priceCents          Int
+  imageUrl            String?
+  imageGallery        Json?
+  payCard             Boolean         @default(true)
+  payCashApp          Boolean         @default(true)
+  audience            Audience
+  fulfillmentType     FulfillmentType
+  categoryId          String
+  category            Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  printifyProductId   String?
+  printifyVariantId   String?
+  /** Enabled Printify variants for this listing: [{ id, title, priceCents, imageUrl? }, ...] */
+  printifyVariants    Json?
+  stockQuantity       Int             @default(0)
+  trackInventory      Boolean         @default(true)
+  active              Boolean         @default(true)
+  orderLines          OrderLine[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+}
+
+enum OrderStatus {
+  pending_payment
+  paid
+  cancelled
+}
+
+model Order {
+  id                    String            @id @default(cuid())
+  stripeSessionId       String?           @unique
+  stripePaymentIntentId String?           @unique
+  email                 String?
+  status                OrderStatus       @default(pending_payment)
+  subtotalCents         Int
+  tipCents              Int               @default(0)
+  shippingCents         Int               @default(0)
+  totalCents            Int
+  currency              String            @default("usd")
+  shippingName          String?
+  shippingLine1         String?
+  shippingLine2         String?
+  shippingCity          String?
+  shippingState         String?
+  shippingPostal        String?
+  shippingCountry       String?
+  shippingPhone         String?
+  lines                 OrderLine[]
+  fulfillmentJobs       FulfillmentJob[]
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+}
+
+model OrderLine {
+  id                String          @id @default(cuid())
+  orderId           String
+  order             Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product         @relation(fields: [productId], references: [id])
+  quantity          Int
+  unitPriceCents    Int
+  productName       String
+  fulfillmentType FulfillmentType
+  printifyProductId String?
+  printifyVariantId String?
+  createdAt         DateTime        @default(now())
+}
+
+enum FulfillmentJobStatus {
+  pending
+  processing
+  succeeded
+  failed
+}
+
+model FulfillmentJob {
+  id         String                 @id @default(cuid())
+  orderId    String
+  order      Order                  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider   String
+  externalId String?
+  status     FulfillmentJobStatus     @default(pending)
+  payload    Json?
+  lastError  String?
+  attempts   Int                    @default(0)
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+}
+
+model ProcessedStripeEvent {
+  id            String   @id @default(cuid())
+  stripeEventId String   @unique
+  processedAt   DateTime @default(now())
+}

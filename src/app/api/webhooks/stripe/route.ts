@@ -1,0 +1,244 @@
+import { NextResponse } from "next/server";
+import type Stripe from "stripe";
+import { prisma } from "@/lib/prisma";
+import { getStripe } from "@/lib/stripe";
+import { createPrintifyOrder } from "@/lib/printify";
+import { Prisma } from "@/generated/prisma/client";
+import {
+  FulfillmentType,
+  FulfillmentJobStatus,
+  OrderStatus,
+} from "@/generated/prisma/enums";
+
+export const runtime = "nodejs";
+
+function splitName(full: string | null | undefined): { first: string; last: string } {
+  if (!full?.trim()) return { first: "Customer", last: "." };
+  const parts = full.trim().split(/\s+/);
+  if (parts.length === 1) return { first: parts[0], last: "." };
+  return { first: parts[0], last: parts.slice(1).join(" ") };
+}
+
+async function fulfillOrder(session: Stripe.Checkout.Session) {
+  const orderId = session.metadata?.orderId;
+  if (!orderId) return;
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { lines: { include: { product: true } } },
+  });
+  if (!order) return;
+
+  const stripe = getStripe();
+  const full = await stripe.checkout.sessions.retrieve(session.id, {
+    expand: ["customer_details"],
+  });
+
+  const email =
+    full.customer_details?.email ?? full.customer_email ?? session.customer_email ?? null;
+  const phone = full.customer_details?.phone ?? "";
+  const shipping = full.collected_information?.shipping_details;
+  const shipName = shipping?.name ?? "";
+  const addr = shipping?.address;
+  const { first: firstName, last: lastName } = splitName(shipName);
+
+  const paymentIntentId =
+    typeof full.payment_intent === "string"
+      ? full.payment_intent
+      : full.payment_intent?.id ?? null;
+
+  await prisma.$transaction(async (tx) => {
+    const updated = await tx.order.updateMany({
+      where: { id: orderId, status: OrderStatus.pending_payment },
+      data: {
+        status: OrderStatus.paid,
+        email,
+        stripePaymentIntentId: paymentIntentId,
+        shippingName: shipName || null,
+        shippingLine1: addr?.line1 ?? null,
+        shippingLine2: addr?.line2 ?? null,
+        shippingCity: addr?.city ?? null,
+        shippingState: addr?.state ?? null,
+        shippingPostal: addr?.postal_code ?? null,
+        shippingCountry: addr?.country ?? null,
+        shippingPhone: phone || null,
+      },
+    });
+
+    if (updated.count === 0) return;
+
+    for (const line of order.lines) {
+      if (
+        line.fulfillmentType === FulfillmentType.manual &&
+        line.product.trackInventory
+      ) {
+        const r = await tx.product.updateMany({
+          where: {
+            id: line.productId,
+            stockQuantity: { gte: line.quantity },
+          },
+          data: { stockQuantity: { decrement: line.quantity } },
+        });
+        if (r.count === 0) {
+          console.error(
+            `[webhook] Stock race for product ${line.productId} order ${orderId}`,
+          );
+        }
+      }
+    }
+  });
+
+  const paid = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { lines: true, fulfillmentJobs: true },
+  });
+  if (!paid || paid.status !== OrderStatus.paid) return;
+
+  const hasPrintifyJob = paid.fulfillmentJobs.some((j) => j.provider === "printify");
+  if (hasPrintifyJob) return;
+
+  const orderWantsPrintify = paid.lines.some(
+    (l) => l.fulfillmentType === FulfillmentType.printify,
+  );
+  if (!orderWantsPrintify) return;
+
+  const printifyLines = paid.lines.filter(
+    (l) =>
+      l.fulfillmentType === FulfillmentType.printify &&
+      l.printifyProductId &&
+      l.printifyVariantId,
+  );
+
+  if (printifyLines.length === 0) {
+    await prisma.fulfillmentJob.create({
+      data: {
+        orderId: paid.id,
+        provider: "printify",
+        status: FulfillmentJobStatus.failed,
+        lastError:
+          "Printify line items missing product/variant IDs — set printifyProductId and printifyVariantId on products.",
+        attempts: 1,
+      },
+    });
+    return;
+  }
+
+  const variantItems = printifyLines
+    .map((l) => {
+      const vid = parseInt(l.printifyVariantId!, 10);
+      if (Number.isNaN(vid)) return null;
+      return {
+        product_id: l.printifyProductId!,
+        variant_id: vid,
+        quantity: l.quantity,
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+
+  if (variantItems.length === 0) {
+    await prisma.fulfillmentJob.create({
+      data: {
+        orderId: paid.id,
+        provider: "printify",
+        status: FulfillmentJobStatus.failed,
+        lastError: "Invalid Printify variant ids on order lines.",
+        attempts: 1,
+      },
+    });
+    return;
+  }
+
+  const job = await prisma.fulfillmentJob.create({
+    data: {
+      orderId: paid.id,
+      provider: "printify",
+      status: FulfillmentJobStatus.processing,
+      attempts: 1,
+    },
+  });
+
+  try {
+    const { id: externalId, raw } = await createPrintifyOrder({
+      externalId: paid.id,
+      label: `Xtinadom ${paid.id.slice(0, 8)}`,
+      lineItems: variantItems,
+      addressTo: {
+        first_name: firstName,
+        last_name: lastName,
+        email: email ?? "customer@example.com",
+        phone: phone || "0000000000",
+        country: addr?.country ?? "US",
+        region: addr?.state ?? "",
+        address1: addr?.line1 ?? "",
+        address2: addr?.line2 ?? undefined,
+        city: addr?.city ?? "",
+        zip: addr?.postal_code ?? "",
+      },
+    });
+
+    await prisma.fulfillmentJob.update({
+      where: { id: job.id },
+      data: {
+        status: FulfillmentJobStatus.succeeded,
+        externalId,
+        payload: raw as object,
+        lastError: null,
+      },
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[webhook] Printify error:", msg);
+    await prisma.fulfillmentJob.update({
+      where: { id: job.id },
+      data: {
+        status: FulfillmentJobStatus.failed,
+        lastError: msg,
+      },
+    });
+  }
+}
+
+export async function POST(req: Request) {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) {
+    return NextResponse.json(
+      { error: "STRIPE_WEBHOOK_SECRET not configured" },
+      { status: 500 },
+    );
+  }
+
+  const body = await req.text();
+  const sig = req.headers.get("stripe-signature");
+  if (!sig) {
+    return NextResponse.json({ error: "Missing signature" }, { status: 400 });
+  }
+
+  let event: Stripe.Event;
+  try {
+    event = getStripe().webhooks.constructEvent(body, sig, secret);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Invalid payload";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
+  try {
+    await prisma.processedStripeEvent.create({
+      data: { stripeEventId: event.id },
+    });
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      return NextResponse.json({ received: true });
+    }
+    throw e;
+  }
+
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    await fulfillOrder(session);
+  }
+
+  return NextResponse.json({ received: true });
+}

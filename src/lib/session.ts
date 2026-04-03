@@ -1,0 +1,83 @@
+import { SessionOptions, getIronSession } from "iron-session";
+import { cookies } from "next/headers";
+
+/** One cart row per product; printifyVariantId set when the listing has multiple Printify variants. */
+export type CartLine = { quantity: number; printifyVariantId?: string };
+
+export type CartSession = {
+  items: Record<string, CartLine>;
+};
+
+function normalizeCartValue(v: unknown): CartLine | undefined {
+  if (typeof v === "number" && v > 0) {
+    return { quantity: Math.min(99, Math.max(1, Math.floor(v))) };
+  }
+  if (v && typeof v === "object" && "quantity" in v) {
+    const q = (v as CartLine).quantity;
+    if (typeof q !== "number" || !Number.isFinite(q) || q <= 0) return undefined;
+    const vid = (v as CartLine).printifyVariantId;
+    const trimmed = typeof vid === "string" ? vid.trim() : "";
+    return {
+      quantity: Math.min(99, Math.max(1, Math.floor(q))),
+      ...(trimmed ? { printifyVariantId: trimmed } : {}),
+    };
+  }
+  return undefined;
+}
+
+export type AdminSession = {
+  isAdmin?: boolean;
+};
+
+function requireSessionSecret(): string {
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret || sessionSecret.length < 32) {
+    throw new Error("SESSION_SECRET must be set and at least 32 characters");
+  }
+  return sessionSecret;
+}
+
+const cartBase: Omit<SessionOptions, "password"> = {
+  cookieName: "xtina_cart",
+  cookieOptions: {
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  },
+};
+
+const adminBase: Omit<SessionOptions, "password"> = {
+  cookieName: "xtina_admin",
+  cookieOptions: {
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 8,
+  },
+};
+
+export async function getCartSession() {
+  const session = await getIronSession<CartSession>(await cookies(), {
+    ...cartBase,
+    password: requireSessionSecret(),
+  });
+  if (!session.items) session.items = {};
+  const normalized: Record<string, CartLine> = {};
+  const raw = session.items as unknown as Record<string, unknown>;
+  for (const [k, v] of Object.entries(raw)) {
+    const line = normalizeCartValue(v);
+    if (line) normalized[k] = line;
+  }
+  session.items = normalized;
+  return session;
+}
+
+export async function getAdminSession() {
+  return getIronSession<AdminSession>(await cookies(), {
+    ...adminBase,
+    password: requireSessionSecret(),
+  });
+}
