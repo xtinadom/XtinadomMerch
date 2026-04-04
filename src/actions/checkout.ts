@@ -37,10 +37,15 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
     return { ok: false, error: "Your cart is empty." };
   }
 
-  const products = await prisma.product.findMany({
-    where: { id: { in: ids }, active: true },
-    include: { category: true },
-  });
+  const [products, categoryTree] = await Promise.all([
+    prisma.product.findMany({
+      where: { id: { in: ids }, active: true },
+      include: { category: true, extraCategories: true },
+    }),
+    prisma.category.findMany({
+      select: { id: true, slug: true, name: true, parentId: true, sortOrder: true },
+    }),
+  ]);
 
   if (products.length !== ids.length) {
     return { ok: false, error: "Some products are no longer available. Refresh your cart." };
@@ -55,7 +60,7 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
     }
   }
 
-  const tipAllowed = cartHasTipEligibleProduct(products);
+  const tipAllowed = cartHasTipEligibleProduct(products, categoryTree);
   if (!tipAllowed && tipCents > 0) {
     return { ok: false, error: "Tips apply only when your cart includes sub catalog items." };
   }

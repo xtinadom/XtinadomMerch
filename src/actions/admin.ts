@@ -13,6 +13,10 @@ import {
   parseImageUrlList,
   toGalleryJson,
 } from "@/lib/product-media";
+import { parseProductCategoryIdsFromForm } from "@/lib/product-category-form";
+import { CatalogGroup } from "@/generated/prisma/enums";
+import { catalogRootIdsForGroup } from "@/lib/catalog-group";
+import { collectDescendantCategoryIdsFromRoots } from "@/lib/category-tree";
 
 export async function loginAdmin(
   formData: FormData,
@@ -38,6 +42,18 @@ export async function logoutAdmin() {
 const MAX_NAME_LEN = 200;
 const MAX_DESC_LEN = 8000;
 
+async function categorySlugsForProductId(productId: string): Promise<Set<string>> {
+  const p = await prisma.product.findUnique({
+    where: { id: productId },
+    include: { category: true, extraCategories: { include: { category: true } } },
+  });
+  if (!p) return new Set();
+  const s = new Set<string>();
+  s.add(p.category.slug);
+  for (const e of p.extraCategories) s.add(e.category.slug);
+  return s;
+}
+
 export async function updateProductDetails(
   productId: string,
   formData: FormData,
@@ -47,7 +63,7 @@ export async function updateProductDetails(
 
   const product = await prisma.product.findUnique({
     where: { id: productId },
-    include: { category: true },
+    include: { category: true, extraCategories: true },
   });
   if (!product) return;
 
@@ -86,17 +102,39 @@ export async function updateProductDetails(
     data.payCashApp = payCashApp;
   }
 
+  const categoryIds = parseProductCategoryIdsFromForm(formData);
+  if (categoryIds.length > 0) {
+    const deduped = [...new Set(categoryIds)];
+    for (const id of deduped) {
+      const cat = await prisma.category.findUnique({ where: { id } });
+      if (!cat) return;
+    }
+    const primary = deduped[0];
+    const extras = deduped.slice(1).filter((id) => id !== primary);
+    data.category = { connect: { id: primary } };
+    data.extraCategories = {
+      deleteMany: {},
+      create: extras.map((categoryId) => ({ categoryId })),
+    };
+  }
+
+  const prevSlugs = await categorySlugsForProductId(productId);
+
   await prisma.product.update({
     where: { id: productId },
     data,
   });
+
+  const nextSlugs = await categorySlugsForProductId(productId);
+  for (const slug of new Set([...prevSlugs, ...nextSlugs])) {
+    revalidatePath("/category/" + slug);
+  }
 
   revalidatePath("/admin");
   revalidatePath("/shop");
   revalidatePath("/cart");
   revalidatePath("/checkout");
   revalidatePath("/product/" + product.slug);
-  revalidatePath("/category/" + product.category.slug);
   revalidatePath("/collection/sub");
   revalidatePath("/collection/domme");
 }
@@ -125,11 +163,6 @@ export async function createManualUsedProduct(formData: FormData): Promise<void>
   const admin = await getAdminSession();
   if (!admin.isAdmin) return;
 
-  const usedCat = await prisma.category.findUnique({ where: { slug: "used" } });
-  if (!usedCat) {
-    redirect("/admin?create=err&reason=no_used_category&tab=manual");
-  }
-
   const name = String(formData.get("name") ?? "").trim().slice(0, MAX_NAME_LEN);
   if (!name) redirect("/admin?create=err&reason=name&tab=manual");
 
@@ -156,6 +189,29 @@ export async function createManualUsedProduct(formData: FormData): Promise<void>
   let payCard = formData.get("payCard") === "on";
   if (!payCard && !payCashApp) payCard = true;
 
+  const categoryGraph = await prisma.category.findMany({
+    select: { id: true, slug: true, parentId: true, catalogGroup: true },
+  });
+  const subCatalogIds = new Set(
+    collectDescendantCategoryIdsFromRoots(
+      catalogRootIdsForGroup(CatalogGroup.sub, categoryGraph),
+      categoryGraph,
+    ),
+  );
+
+  const categoryIds = parseProductCategoryIdsFromForm(formData);
+  if (categoryIds.length === 0) {
+    redirect("/admin?create=err&reason=category&tab=manual");
+  }
+  const deduped = [...new Set(categoryIds)];
+  for (const id of deduped) {
+    if (!subCatalogIds.has(id)) {
+      redirect("/admin?create=err&reason=category&tab=manual");
+    }
+  }
+  const primary = deduped[0];
+  const extras = deduped.slice(1).filter((id) => id !== primary);
+
   const slug = await uniqueProductSlug(slugify(name));
 
   await prisma.product.create({
@@ -170,18 +226,29 @@ export async function createManualUsedProduct(formData: FormData): Promise<void>
       payCashApp,
       audience: Audience.sub,
       fulfillmentType: FulfillmentType.manual,
-      categoryId: usedCat.id,
+      categoryId: primary,
+      extraCategories:
+        extras.length > 0
+          ? { create: extras.map((categoryId) => ({ categoryId })) }
+          : undefined,
       stockQuantity,
       trackInventory: true,
       active: true,
     },
   });
 
+  const slugs = await prisma.category.findMany({
+    where: { id: { in: deduped } },
+    select: { slug: true },
+  });
+
   revalidatePath("/admin");
   revalidatePath("/shop");
   revalidatePath("/cart");
   revalidatePath("/checkout");
-  revalidatePath("/category/used");
+  for (const { slug: s } of slugs) {
+    revalidatePath("/category/" + s);
+  }
   revalidatePath("/collection/sub");
   redirect("/admin?create=ok&tab=manual");
 }

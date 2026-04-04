@@ -3,22 +3,35 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { FeaturedSpotlightCard } from "@/components/FeaturedSpotlightCard";
 import { DommeMerchWebsitePromo } from "@/components/DommeMerchWebsitePromo";
-import { Audience } from "@/generated/prisma/enums";
+import { Audience, CatalogGroup } from "@/generated/prisma/enums";
 import {
   COLLECTION_GROUP_DOMME,
   COLLECTION_GROUP_SUB,
   DOMME_COLLECTION_NAV_LABEL,
-  DOMME_COLLECTION_SLUGS,
-  SUB_CATALOG_CATEGORY_SLUGS,
   SUB_COLLECTION_NAV_LABEL,
   dommeCollectionSortIndex,
 } from "@/lib/constants";
+import { catalogRootIdsForGroup } from "@/lib/catalog-group";
+import { collectDescendantCategoryIdsFromRoots } from "@/lib/category-tree";
+import { productListedInCategory } from "@/lib/product-categories";
 
 export const dynamic = "force-dynamic";
 
 /** Pool per category for spotlight; showcase uses first 3 across the collection. */
 const FEATURED_PER_CATEGORY = 3;
 const FEATURED_SPOTLIGHT_COUNT = 3;
+
+function dedupeSpotlightByProduct<T extends { id: string }>(items: T[], max: number): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const x of items) {
+    if (seen.has(x.id)) continue;
+    seen.add(x.id);
+    out.push(x);
+    if (out.length >= max) break;
+  }
+  return out;
+}
 
 type Props = { params: Promise<{ group: string }> };
 
@@ -74,28 +87,60 @@ function CollectionCategoryRow({
 }
 
 async function SubCollectionSplash() {
+  const allCats = await prisma.category.findMany({
+    select: { id: true, slug: true, parentId: true, sortOrder: true, catalogGroup: true },
+  });
+  const expandedIds = collectDescendantCategoryIdsFromRoots(
+    catalogRootIdsForGroup(CatalogGroup.sub, allCats),
+    allCats,
+  );
+
   const categories = await prisma.category.findMany({
-    where: { slug: { in: [...SUB_CATALOG_CATEGORY_SLUGS] } },
+    where: { id: { in: expandedIds } },
     orderBy: { sortOrder: "asc" },
-    include: {
-      products: {
-        where: { active: true },
-        orderBy: { name: "asc" },
-        take: FEATURED_PER_CATEGORY,
-        include: { category: true },
-      },
-      _count: {
-        select: {
-          products: { where: { active: true } },
-        },
-      },
-    },
   });
 
-  const spotlight = categories
-    .flatMap((c) => c.products)
-    .slice(0, FEATURED_SPOTLIGHT_COUNT);
-  const totalActive = categories.reduce((n, c) => n + c._count.products, 0);
+  const products = await prisma.product.findMany({
+    where: {
+      active: true,
+      OR: [
+        { categoryId: { in: expandedIds } },
+        { extraCategories: { some: { categoryId: { in: expandedIds } } } },
+      ],
+    },
+    orderBy: { name: "asc" },
+    include: { category: true, extraCategories: true },
+  });
+
+  const byCat = new Map<string, typeof products>();
+  for (const id of expandedIds) byCat.set(id, []);
+  for (const p of products) {
+    for (const cid of expandedIds) {
+      if (productListedInCategory(p, cid)) byCat.get(cid)!.push(p);
+    }
+  }
+  for (const [cid, list] of byCat) {
+    const seen = new Set<string>();
+    byCat.set(
+      cid,
+      list.filter((x) => (seen.has(x.id) ? false : (seen.add(x.id), true))),
+    );
+  }
+
+  const categoriesWith = categories.map((cat) => {
+    const full = byCat.get(cat.id) ?? [];
+    return {
+      ...cat,
+      products: full.slice(0, FEATURED_PER_CATEGORY),
+      fullCount: full.length,
+    };
+  });
+
+  const spotlight = dedupeSpotlightByProduct(
+    categoriesWith.flatMap((c) => c.products),
+    FEATURED_SPOTLIGHT_COUNT,
+  );
+  const totalActive = new Set(products.map((p) => p.id)).size;
 
   return (
     <div>
@@ -116,14 +161,14 @@ async function SubCollectionSplash() {
       <section className={spotlight.length > 0 ? "mt-14" : "mt-10"}>
         <h2 className="text-xs font-medium uppercase tracking-wide text-zinc-500">Categories</h2>
         <ul className="mt-4 space-y-3">
-          {categories.map((cat) => (
+          {categoriesWith.map((cat) => (
             <CollectionCategoryRow
               key={cat.id}
               slug={cat.slug}
               name={cat.name}
               description={cat.description}
               featuredCount={cat.products.length}
-              fullCount={cat._count.products}
+              fullCount={cat.fullCount}
             />
           ))}
         </ul>
@@ -144,34 +189,68 @@ async function SubCollectionSplash() {
 async function DommeCollectionSplash() {
   const dommeAudience = { not: Audience.sub } as const;
 
+  const allDommeCats = await prisma.category.findMany({
+    select: { id: true, slug: true, parentId: true, sortOrder: true, catalogGroup: true },
+  });
+  const dommeExpandedIds = collectDescendantCategoryIdsFromRoots(
+    catalogRootIdsForGroup(CatalogGroup.domme, allDommeCats),
+    allDommeCats,
+  );
+
   const categories = await prisma.category.findMany({
-    where: { slug: { in: [...DOMME_COLLECTION_SLUGS] } },
-    include: {
-      products: {
-        where: { active: true, audience: dommeAudience },
-        orderBy: { name: "asc" },
-        take: FEATURED_PER_CATEGORY,
-        include: { category: true },
-      },
-      _count: {
-        select: {
-          products: { where: { active: true, audience: dommeAudience } },
-        },
-      },
-    },
+    where: { id: { in: dommeExpandedIds } },
+    orderBy: { sortOrder: "asc" },
   });
 
-  const sorted = [...categories].sort(
+  const products = await prisma.product.findMany({
+    where: {
+      active: true,
+      audience: dommeAudience,
+      OR: [
+        { categoryId: { in: dommeExpandedIds } },
+        { extraCategories: { some: { categoryId: { in: dommeExpandedIds } } } },
+      ],
+    },
+    orderBy: { name: "asc" },
+    include: { category: true, extraCategories: true },
+  });
+
+  const byCat = new Map<string, typeof products>();
+  for (const id of dommeExpandedIds) byCat.set(id, []);
+  for (const p of products) {
+    for (const cid of dommeExpandedIds) {
+      if (productListedInCategory(p, cid)) byCat.get(cid)!.push(p);
+    }
+  }
+  for (const [cid, list] of byCat) {
+    const seen = new Set<string>();
+    byCat.set(
+      cid,
+      list.filter((x) => (seen.has(x.id) ? false : (seen.add(x.id), true))),
+    );
+  }
+
+  const categoriesWith = categories.map((cat) => {
+    const full = byCat.get(cat.id) ?? [];
+    return {
+      ...cat,
+      products: full.slice(0, FEATURED_PER_CATEGORY),
+      fullCount: full.length,
+    };
+  });
+
+  const sorted = [...categoriesWith].sort(
     (a, b) => dommeCollectionSortIndex(a.slug) - dommeCollectionSortIndex(b.slug),
   );
 
   /** Listed on /category; promo on this page covers website services. */
   const categoryRows = sorted.filter((c) => c.slug !== "domme-website-services");
 
-  const spotlight = sorted
-    .flatMap((c) => c.products)
-    .slice(0, FEATURED_SPOTLIGHT_COUNT);
-  const totalActive = sorted.reduce((n, c) => n + c._count.products, 0);
+  const spotlight = dedupeSpotlightByProduct(
+    sorted.flatMap((c) => c.products),
+    FEATURED_SPOTLIGHT_COUNT,
+  );
+  const totalActive = new Set(products.map((p) => p.id)).size;
 
   return (
     <div>
@@ -199,7 +278,7 @@ async function DommeCollectionSplash() {
               name={cat.name}
               description={cat.description}
               featuredCount={cat.products.length}
-              fullCount={cat._count.products}
+              fullCount={cat.fullCount}
             />
           ))}
         </ul>

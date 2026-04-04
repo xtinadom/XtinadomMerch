@@ -13,6 +13,8 @@ import type { Prisma } from "@/generated/prisma/client";
 import { FulfillmentType, OrderStatus } from "@/generated/prisma/enums";
 import { productImageUrls } from "@/lib/product-media";
 import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
+import { ProductCategoryFields } from "@/components/admin/ProductCategoryFields";
+import { productCategoryIds } from "@/lib/product-categories";
 import { PrintifyInventoryTab } from "./printify-inventory-tab";
 
 export const dynamic = "force-dynamic";
@@ -57,10 +59,10 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const syncRemoved = typeof sp.removed === "string" ? sp.removed : undefined;
   const syncReason = typeof sp.reason === "string" ? sp.reason : undefined;
 
-  const [products, orders] = await Promise.all([
+  const [products, orders, adminCategories] = await Promise.all([
     prisma.product.findMany({
       orderBy: [{ category: { sortOrder: "asc" } }, { name: "asc" }],
-      include: { category: true },
+      include: { category: true, extraCategories: true },
     }),
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },
@@ -70,12 +72,29 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         fulfillmentJobs: true,
       },
     }),
+    prisma.category.findMany({
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        parentId: true,
+        sortOrder: true,
+        catalogGroup: true,
+      },
+    }),
   ]);
 
   const manualProducts = products.filter((p) => p.fulfillmentType === FulfillmentType.manual);
   const printifyProducts = products.filter(
     (p) => p.fulfillmentType === FulfillmentType.printify,
   );
+
+  const defaultSubCatalogCategoryId =
+    adminCategories.find((c) => c.slug === "used")?.id ??
+    adminCategories.find((c) => c.slug === "photo-printed")?.id ??
+    "";
 
   return (
     <div className="space-y-12">
@@ -103,11 +122,13 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           Could not create item
           {createReason === "no_used_category"
             ? " — add a category with slug “used” in the database."
-            : createReason === "name"
-              ? " — title is required."
-              : createReason === "price"
-                ? " — invalid price."
-                : "."}
+            : createReason === "category"
+              ? " — pick a valid Sub collection category (parent or subcategory)."
+              : createReason === "name"
+                ? " — title is required."
+                : createReason === "price"
+                  ? " — invalid price."
+                  : "."}
         </p>
       )}
       {deleteOk && (
@@ -233,6 +254,14 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 Cash App
               </label>
             </div>
+            {defaultSubCatalogCategoryId ? (
+              <ProductCategoryFields
+                key="create-manual-used"
+                categories={adminCategories}
+                defaultCategoryIds={[defaultSubCatalogCategoryId]}
+                variant="subOnly"
+              />
+            ) : null}
             <button
               type="submit"
               className="rounded bg-emerald-900/80 px-3 py-2 text-xs font-medium text-emerald-100 hover:bg-emerald-800/80"
@@ -259,7 +288,13 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                     />
                   ) : null}
                   <div className="text-xs text-zinc-500">
-                    <span className="text-zinc-400">{p.category.name}</span>
+                    <span className="text-zinc-400">
+                      {productCategoryIds(p)
+                        .map(
+                          (id) => adminCategories.find((c) => c.id === id)?.name ?? id,
+                        )
+                        .join(" · ")}
+                    </span>
                     {" · "}
                     <Link
                       href={`/product/${p.slug}`}
@@ -302,6 +337,12 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                     className="mt-1 block w-full max-w-2xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200"
                   />
                 </label>
+                <ProductCategoryFields
+                  key={`edit-${p.id}-${productCategoryIds(p).join("-")}`}
+                  categories={adminCategories}
+                  defaultCategoryIds={productCategoryIds(p)}
+                  variant="subOnly"
+                />
                 <label className="block text-xs text-zinc-500">
                   Photo URLs (one per line, https)
                   <textarea
@@ -398,6 +439,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           ) : (
             <PrintifyInventoryTab
               products={printifyProducts}
+              allCategories={adminCategories}
               sync={sync}
               syncUpdated={syncUpdated}
               syncCreated={syncCreated}

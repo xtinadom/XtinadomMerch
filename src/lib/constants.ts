@@ -7,6 +7,17 @@ export const SUB_CATALOG_CATEGORY_SLUGS = new Set(["photo-printed", "used"]);
 /** Nav label for grouped sub-catalog links in the header menu. */
 export const SUB_COLLECTION_NAV_LABEL = "Sub collection";
 
+/** Root slugs under Sub collection (parent categories; optional DB children). */
+export const SUB_CATALOG_PARENT_SLUG_ORDER: readonly string[] = [
+  "photo-printed",
+  "used",
+];
+
+export function subCatalogParentSortIndex(slug: string): number {
+  const i = SUB_CATALOG_PARENT_SLUG_ORDER.indexOf(slug);
+  return i === -1 ? 999 : i;
+}
+
 /** Combined listing for all sub-catalog categories (photo-printed, used). */
 export const SUB_COLLECTION_ROUTE = "/collection/sub";
 

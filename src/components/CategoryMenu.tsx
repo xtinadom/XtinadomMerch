@@ -2,30 +2,37 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect, useMemo } from "react";
+import { CatalogGroup } from "@/generated/prisma/enums";
 import {
-  SUB_CATALOG_CATEGORY_SLUGS,
   SUB_COLLECTION_NAV_LABEL,
   SUB_COLLECTION_ROUTE,
-  DOMME_COLLECTION_SLUGS,
   DOMME_COLLECTION_NAV_LABEL,
   DOMME_COLLECTION_ROUTE,
-  dommeCollectionSortIndex,
 } from "@/lib/constants";
+import {
+  resolveRootCatalogGroup,
+  sortSubRootCategories,
+  sortDommeRootCategories,
+  type CategoryNavRow,
+} from "@/lib/catalog-group";
 
-type Cat = { id: string; slug: string; name: string; sortOrder: number };
+type Cat = CategoryNavRow;
 
-function NavGroup({
+function NavNestedGroup({
   label,
   parentHref,
-  items,
+  roots,
+  all,
   onNavigate,
 }: {
   label: string;
   parentHref: string;
-  items: Cat[];
+  roots: Cat[];
+  all: Cat[];
   onNavigate: () => void;
 }) {
-  if (items.length === 0) return null;
+  if (roots.length === 0) return null;
+
   return (
     <li role="none" className="border-b border-zinc-800 pb-1 last:border-b-0 last:pb-0">
       <Link
@@ -37,18 +44,42 @@ function NavGroup({
         {label}
       </Link>
       <ul className="mt-0.5 space-y-0.5" role="group" aria-label={label}>
-        {items.map((c) => (
-          <li key={c.id} role="none">
-            <Link
-              role="menuitem"
-              href={`/category/${c.slug}`}
-              className="block py-1.5 pl-6 pr-4 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white"
-              onClick={onNavigate}
-            >
-              {c.name}
-            </Link>
-          </li>
-        ))}
+        {roots.map((root) => {
+          const children = all
+            .filter((c) => c.parentId === root.id)
+            .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+          return (
+            <li key={root.id} role="none">
+              <Link
+                role="menuitem"
+                href={`/category/${root.slug}`}
+                className="block py-1.5 pl-6 pr-4 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                onClick={onNavigate}
+              >
+                {root.name}
+              </Link>
+              {children.length > 0 ? (
+                <ul
+                  className="mt-0.5 border-l border-zinc-800/80 pl-2"
+                  aria-label={`${root.name} subcategories`}
+                >
+                  {children.map((ch) => (
+                    <li key={ch.id} role="none">
+                      <Link
+                        role="menuitem"
+                        href={`/category/${ch.slug}`}
+                        className="block py-1 pl-4 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                        onClick={onNavigate}
+                      >
+                        {ch.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
     </li>
   );
@@ -58,25 +89,18 @@ export function CategoryMenu({ categories }: { categories: Cat[] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const { subCollectionItems, dommeCollectionItems, topLevelItems } = useMemo(() => {
-    const sorted = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
-    const sub: Cat[] = [];
-    const domme: Cat[] = [];
-    const top: Cat[] = [];
-    for (const c of sorted) {
-      if (SUB_CATALOG_CATEGORY_SLUGS.has(c.slug)) sub.push(c);
-      else if (DOMME_COLLECTION_SLUGS.has(c.slug)) domme.push(c);
-      else top.push(c);
-    }
-    domme.sort(
-      (a, b) =>
-        dommeCollectionSortIndex(a.slug) - dommeCollectionSortIndex(b.slug),
+  const { subRoots, dommeRoots, topLevelItems } = useMemo(() => {
+    const roots = categories.filter((c) => c.parentId === null);
+    const sub = sortSubRootCategories(
+      roots.filter((c) => resolveRootCatalogGroup(c) === CatalogGroup.sub),
     );
-    return {
-      subCollectionItems: sub,
-      dommeCollectionItems: domme,
-      topLevelItems: top,
-    };
+    const domme = sortDommeRootCategories(
+      roots.filter((c) => resolveRootCatalogGroup(c) === CatalogGroup.domme),
+    );
+    const top = roots
+      .filter((c) => resolveRootCatalogGroup(c) === null)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+    return { subRoots: sub, dommeRoots: domme, topLevelItems: top };
   }, [categories]);
 
   useEffect(() => {
@@ -106,16 +130,18 @@ export function CategoryMenu({ categories }: { categories: Cat[] }) {
           className="absolute right-0 z-[1002] mt-2 min-w-[15rem] rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl"
           role="menu"
         >
-          <NavGroup
+          <NavNestedGroup
             label={SUB_COLLECTION_NAV_LABEL}
             parentHref={SUB_COLLECTION_ROUTE}
-            items={subCollectionItems}
+            roots={subRoots}
+            all={categories}
             onNavigate={close}
           />
-          <NavGroup
+          <NavNestedGroup
             label={DOMME_COLLECTION_NAV_LABEL}
             parentHref={DOMME_COLLECTION_ROUTE}
-            items={dommeCollectionItems}
+            roots={dommeRoots}
+            all={categories}
             onNavigate={close}
           />
           {topLevelItems.map((c) => (

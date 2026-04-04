@@ -33,7 +33,7 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await prisma.product.findUnique({
     where: { slug, active: true },
-    include: { category: true },
+    include: { category: { include: { parent: true } } },
   });
 
   if (!product) notFound();
@@ -113,6 +113,17 @@ export default async function ProductPage({ params }: Props) {
       )}
       <div>
         <p className="text-xs uppercase tracking-wide text-zinc-500">
+          {product.category.parent ? (
+            <>
+              <Link
+                href={`/category/${product.category.parent.slug}`}
+                className="hover:text-rose-400/90"
+              >
+                {product.category.parent.name}
+              </Link>
+              <span className="mx-1.5 text-zinc-600">/</span>
+            </>
+          ) : null}
           <Link
             href={`/category/${product.category.slug}`}
             className="hover:text-rose-400/90"

@@ -12,12 +12,19 @@ import {
   isPrintifyConfigured,
 } from "@/lib/printify";
 import { productImageUrls } from "@/lib/product-media";
+import type { AdminCategoryRow } from "@/components/admin/ProductCategoryFields";
+import { ProductCategoryFields } from "@/components/admin/ProductCategoryFields";
+import { productCategoryIds } from "@/lib/product-categories";
 
 /** Shown in Printify API but not used with this storefront — hide from admin picker noise. */
 const PRINTIFY_ADMIN_HIDDEN_SHOP_IDS = new Set([24222433, 26248363]);
 
 export type PrintifyInventoryTabProps = {
-  products: (Product & { category: Category })[];
+  products: (Product & {
+    category: Category;
+    extraCategories: { categoryId: string }[];
+  })[];
+  allCategories: AdminCategoryRow[];
   sync?: string;
   syncUpdated?: string;
   syncCreated?: string;
@@ -46,6 +53,7 @@ function galleryTextareaDefault(product: {
 
 export async function PrintifyInventoryTab({
   products,
+  allCategories,
   sync,
   syncUpdated,
   syncCreated,
@@ -344,6 +352,12 @@ export async function PrintifyInventoryTab({
                     className="mt-1 block w-full max-w-2xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200"
                   />
                 </label>
+                <ProductCategoryFields
+                  key={`printify-${p.id}-${productCategoryIds(p).join("-")}`}
+                  categories={allCategories}
+                  defaultCategoryIds={productCategoryIds(p)}
+                  variant="all"
+                />
                 <label className="block text-xs text-zinc-500">
                   Photo URLs (mockups; one per line)
                   <textarea

@@ -2,6 +2,7 @@ import "dotenv/config";
 import path from "node:path";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { CatalogGroup } from "../src/generated/prisma/enums";
 
 function sqliteUrl(): string {
   const fromEnv = process.env.DATABASE_URL;
@@ -33,6 +34,27 @@ async function main() {
       description:
         "Photo printed goods — mugs, mousepads, keychains, canvas prints. Print on demand.",
       sortOrder: 1,
+      catalogGroup: CatalogGroup.sub,
+    },
+  });
+
+  const photoPrintedMugs = await prisma.category.create({
+    data: {
+      slug: "photo-printed-mugs",
+      name: "Mugs",
+      description: "Photo-printed drinkware.",
+      sortOrder: 10,
+      parentId: photoPrinted.id,
+    },
+  });
+
+  const photoPrintedCanvas = await prisma.category.create({
+    data: {
+      slug: "photo-printed-canvas",
+      name: "Canvas & prints",
+      description: "Wall art and wrapped canvas.",
+      sortOrder: 11,
+      parentId: photoPrinted.id,
     },
   });
 
@@ -42,6 +64,7 @@ async function main() {
       name: "Used items",
       description: "Shipped directly by Xtinadom. Limited availability.",
       sortOrder: 2,
+      catalogGroup: CatalogGroup.sub,
     },
   });
 
@@ -51,6 +74,7 @@ async function main() {
       name: "Mugs",
       description: "Domme collection — mugs, print on demand.",
       sortOrder: 3,
+      catalogGroup: CatalogGroup.domme,
     },
   });
 
@@ -60,6 +84,7 @@ async function main() {
       name: "Tees",
       description: "Domme collection — tees, print on demand.",
       sortOrder: 4,
+      catalogGroup: CatalogGroup.domme,
     },
   });
 
@@ -70,6 +95,7 @@ async function main() {
       description:
         "Custom merch storefronts — Printify, Stripe, and your branding. Request a quote below.",
       sortOrder: 5,
+      catalogGroup: CatalogGroup.domme,
     },
   });
 
@@ -83,7 +109,7 @@ async function main() {
         imageUrl: null,
         audience: "sub",
         fulfillmentType: "printify",
-        categoryId: photoPrinted.id,
+        categoryId: photoPrintedMugs.id,
         printifyProductId: null,
         printifyVariantId: null,
         stockQuantity: 0,
@@ -98,7 +124,7 @@ async function main() {
         imageUrl: null,
         audience: "sub",
         fulfillmentType: "printify",
-        categoryId: photoPrinted.id,
+        categoryId: photoPrintedCanvas.id,
         printifyProductId: null,
         printifyVariantId: null,
         stockQuantity: 0,

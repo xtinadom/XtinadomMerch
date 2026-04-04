@@ -1,14 +1,18 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import {
-  PERSONA_COOKIE,
-  DOMME_COLLECTION_SLUGS,
-  dommeCollectionSortIndex,
-  isPersona,
-} from "@/lib/constants";
+import { PERSONA_COOKIE, dommeCollectionSortIndex, isPersona } from "@/lib/constants";
+import { categoryInDommeBranch } from "@/lib/category-tree";
+import { productListedInCategory } from "@/lib/product-categories";
 import { ProductCard } from "@/components/ProductCard";
+import type { Category, Product } from "@/generated/prisma/client";
+
 export const dynamic = "force-dynamic";
+
+type ListedProduct = Product & {
+  category: Category;
+  extraCategories: { categoryId: string }[];
+};
 
 export default async function ShopPage() {
   const jar = await cookies();
@@ -17,34 +21,79 @@ export default async function ShopPage() {
 
   const categories = await prisma.category.findMany({
     orderBy: { sortOrder: "asc" },
-    include: {
-      products: {
-        where: { active: true },
-        orderBy: { name: "asc" },
-        include: { category: true },
-      },
-    },
   });
+
+  const categoryIds = categories.map((c) => c.id);
+
+  const allProducts = await prisma.product.findMany({
+    where: {
+      active: true,
+      OR: [
+        { categoryId: { in: categoryIds } },
+        { extraCategories: { some: { categoryId: { in: categoryIds } } } },
+      ],
+    },
+    orderBy: { name: "asc" },
+    include: { category: true, extraCategories: true },
+  });
+
+  const productsByCategoryId = new Map<string, ListedProduct[]>();
+  for (const id of categoryIds) productsByCategoryId.set(id, []);
+
+  for (const p of allProducts) {
+    for (const cid of categoryIds) {
+      if (productListedInCategory(p, cid)) {
+        productsByCategoryId.get(cid)!.push(p);
+      }
+    }
+  }
+
+  for (const [cid, list] of productsByCategoryId) {
+    const seen = new Set<string>();
+    productsByCategoryId.set(
+      cid,
+      list.filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true))),
+    );
+  }
+
+  const categoriesWithProducts = categories.map((c) => ({
+    ...c,
+    products: productsByCategoryId.get(c.id) ?? [],
+  }));
+
+  const categoryById = new Map(
+    categoriesWithProducts.map((c) => [
+      c.id,
+      {
+        id: c.id,
+        slug: c.slug,
+        name: c.name,
+        parentId: c.parentId,
+        sortOrder: c.sortOrder,
+        catalogGroup: c.catalogGroup,
+      },
+    ]),
+  );
 
   const subFirstSlugs = ["photo-printed", "used"];
 
   const ordered =
     persona === "domme"
-      ? [...categories].sort((a, b) => {
+      ? [...categoriesWithProducts].sort((a, b) => {
           const ad = dommeCollectionSortIndex(a.slug);
           const bd = dommeCollectionSortIndex(b.slug);
           if (ad !== bd) return ad - bd;
           return a.sortOrder - b.sortOrder;
         })
       : persona === "sub"
-        ? [...categories].sort((a, b) => {
+        ? [...categoriesWithProducts].sort((a, b) => {
             const ai = subFirstSlugs.indexOf(a.slug);
             const bi = subFirstSlugs.indexOf(b.slug);
             const as = ai === -1 ? 99 : ai;
             const bs = bi === -1 ? 99 : bi;
             return as - bs || a.sortOrder - b.sortOrder;
           })
-        : categories;
+        : categoriesWithProducts;
 
   const headline =
     persona === "domme"
@@ -55,7 +104,7 @@ export default async function ShopPage() {
 
   const categoriesForShop =
     persona === "domme"
-      ? ordered.filter((c) => DOMME_COLLECTION_SLUGS.has(c.slug))
+      ? ordered.filter((c) => categoryInDommeBranch(c.id, categoryById))
       : ordered;
 
   return (
