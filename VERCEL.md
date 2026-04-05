@@ -2,105 +2,124 @@
 
 This app uses **PostgreSQL** (SQLite is not supported on Vercel serverless).
 
-## How Vercel environment variables work (no “build time” switch)
+## Why `npm run build` no longer touches the database
 
-Vercel’s dashboard does **not** have a separate **“Available at Build Time”** option for normal project variables. When you add a variable and tick **Production** and/or **Preview**, that value is injected for **both** the [build step](https://vercel.com/docs/deployments/configure-a-build) (`npm run build`) **and** serverless/edge runtime for new deployments in that environment.
+Running `prisma migrate deploy` or `prisma db push` **during** the Vercel build breaks constantly (connection poolers, SSL, cold starts, Prisma engine vs serverless).  
 
-What to do:
+**Default build:** `prisma generate` → `next build --webpack` only. **No DB connection during build.**
 
-1. **Project → Settings → Environment Variables** — create each key and select **Production** (and **Preview** if you use branch previews).
-2. **Redeploy** after any change; old deployments keep the old env snapshot.
-3. **Sensitive** only limits how the value is shown in the UI/logs; it does not turn off build access.
+You apply the schema **once** (or after schema changes) from your computer using the **same** connection string as production. That is the reliable pattern.
 
-If a variable seems “missing” during build, it is usually the wrong environment selected (e.g. only **Development**) or a redeploy was skipped.
+Optional: set **`RUN_PRISMA_SCHEMA_ON_BUILD=1`** in Vercel if you insist on syncing schema during build (you must fix DB URL / pooler issues yourself).
 
-## 1. Database
+## How Vercel environment variables work
 
-Create a Postgres database and get a connection string (SSL usually required):
+There is **no** separate “Available at Build Time” toggle. For each variable, select **Production** and/or **Preview**; it is available in **both** the build step and runtime for new deployments in that environment. **Redeploy** after edits.
 
-- [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres) (integrates in the Vercel dashboard), or  
-- [Neon](https://neon.tech), [Supabase](https://supabase.com), etc.
+## 1. First-time flow (do this order)
 
-In the Vercel project, add environment variables for Postgres:
+1. **Connect the Git repo** and add env vars (see below).  
+2. **Deploy** — the build should go green (no DB in build).  
+3. **Apply database schema** (next section) from your laptop.  
+4. **Seed** (optional): `npx prisma db seed` with production `DATABASE_URL` / `POSTGRES_PRISMA_URL`.  
+5. Open the site.
 
-| Name | Value |
-|------|--------|
-| `DATABASE_URL` | App runtime (optional if you use Vercel’s Postgres envs below) |
-| `POSTGRES_PRISMA_URL` | **Vercel Postgres**: pooled URL for the app (checked first at runtime in `src/lib/prisma.ts`) |
-| `POSTGRES_URL_NON_POOLING` | **Vercel Postgres**: direct URL — used for `prisma migrate deploy` during build |
-| `PRISMA_MIGRATE_DATABASE_URL` | Optional: **only** for migrations (highest priority in `prisma.config.ts`) if you want a separate direct URL |
-| `DIRECT_URL` or `DATABASE_URL_UNPOOLED` | Neon / others: direct URL for migrations |
+## 2. Database schema (required — not part of `npm run build`)
 
-Neon and poolers **fail migrations** if only a pooled URL is set. Add a direct URL (`DIRECT_URL` or `POSTGRES_URL_NON_POOLING`).
+From your project folder, with **production** Postgres URL in the environment:
 
-This repo resolves URLs in `prisma.config.ts` (migrate) and `src/lib/prisma.ts` (runtime); fallbacks include `POSTGRES_URL` and `PRISMA_DATABASE_URL`.
+**Option A — paste URL once (simplest)**
 
-Each deploy runs **`npm run build`** → `scripts/vercel-build.cjs`:
+In [Vercel](https://vercel.com) → your project → **Settings → Environment Variables**, copy the value of **`POSTGRES_PRISMA_URL`** or **`POSTGRES_URL_NON_POOLING`** (direct is better for migrate).
 
-1. `prisma generate`
-2. **Schema sync**
-   - **Vercel + no direct URL** (`POSTGRES_URL_NON_POOLING`, `DIRECT_URL`, `PRISMA_MIGRATE_DATABASE_URL`, etc.): runs **`prisma db push` only** — matches a typical setup with only `POSTGRES_PRISMA_URL` + `DATABASE_URL`.
-   - **Direct URL set:** runs **`prisma migrate deploy`**, with **`db push` fallback** if migrate fails (unless `STRICT_PRISMA_MIGRATE=1`).
-3. If `DATABASE_URL` is empty but `POSTGRES_PRISMA_URL` is set, the script copies it to `DATABASE_URL` for tools that expect that name.
-4. `next build --webpack`
+PowerShell:
 
-Optional env:
+```powershell
+cd path\to\XtinadomMerch
+$env:DATABASE_URL = "paste-copied-url-here"
+npx prisma migrate deploy
+```
 
-| Variable | Effect |
-|----------|--------|
-| `STRICT_PRISMA_MIGRATE=1` | On Vercel with a direct URL: no `db push` fallback if migrate fails. |
-| `SKIP_PRISMA_SCHEMA_SYNC=1` | Skip migrate and db push (only if you apply schema elsewhere). |
-
-The script logs which database env keys are present (names only). Run `npm run lint` locally or in CI.
-
-If the build still fails, read errors after **`[build]`** in the Vercel log.
-
-## 2. Seed data (once)
-
-After the first successful deploy, seed categories and sample products from your machine (or Vercel CLI shell) with the **same** `DATABASE_URL`:
+**Option B — Vercel CLI**
 
 ```bash
+npx vercel login
+npx vercel link
+npx vercel env pull .env.production.local --environment=production
+```
+
+Load that file into your shell (or copy `DATABASE_URL` / `POSTGRES_PRISMA_URL` from it), then `npx prisma migrate deploy`.
+
+If `migrate deploy` fails (e.g. pooled URL only), use:
+
+```powershell
+npx prisma db push
+```
+
+### Env vars for Postgres (Vercel)
+
+| Name | Purpose |
+|------|--------|
+| `POSTGRES_PRISMA_URL` | **Runtime** (and CLI fallback) — Vercel Postgres “Prisma” string |
+| `DATABASE_URL` | **Runtime** if you set it manually; same idea as above |
+| `POSTGRES_URL_NON_POOLING` | **Direct** URL — best for `prisma migrate deploy` from your machine |
+
+`src/lib/prisma.ts` prefers `POSTGRES_PRISMA_URL`, then `DATABASE_URL`.  
+`prisma.config.ts` controls CLI (`migrate`, `db push`, `studio`) when run locally.
+
+## 3. What `npm run build` runs
+
+`scripts/vercel-build.cjs`:
+
+1. `npx prisma generate`
+2. Schema sync **only if** `RUN_PRISMA_SCHEMA_ON_BUILD=1`
+3. `npx next build --webpack` on Vercel, else `next build`
+
+## 4. Seed data (once)
+
+```bash
+# After env pull or DATABASE_URL set to production:
 npx prisma db seed
 ```
 
-## 3. Required environment variables
+## 5. Required environment variables (Vercel)
 
-Copy from `.env.example` and set every variable in **Vercel → Project → Settings → Environment Variables** for *Production* (and *Preview* if you use previews):
+Set for **Production** (and **Preview** if needed), then redeploy:
 
-- `DATABASE_URL`
-- `NEXT_PUBLIC_APP_URL` — e.g. `https://www.xtinadom.com` (or your Vercel URL until the domain is attached)
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
-- `SESSION_SECRET` (32+ random characters)
+**Minimum for the app to run**
+
+- `POSTGRES_PRISMA_URL` **or** `DATABASE_URL` (Postgres)
+- `NEXT_PUBLIC_APP_URL` — e.g. `https://your-project.vercel.app` or your custom domain
+- `SESSION_SECRET` — **at least 32 characters**
 - `ADMIN_PASSWORD`
-- `PRINTIFY_*` if you use Printify
-- `SHIPPING_FLAT_CENTS`
-- Optional gate: `SITE_ACCESS_PASSWORD`, `SITE_ACCESS_SECRET` (omit both to disable)
-- Optional: `NEXT_PUBLIC_MERCH_QUOTE_EMAIL`
 
-## 4. Stripe webhook
+**Site password gate** (optional): set **both** `SITE_ACCESS_PASSWORD` and `SITE_ACCESS_SECRET` (long random). If you only set one, the gate stays off.
 
-In [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks), add an endpoint:
+**Checkout**
 
-`https://www.xtinadom.com/api/webhooks/stripe`
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+- `SHIPPING_FLAT_CENTS` (optional; default in code if unset)
 
-(use your real domain or `https://<project>.vercel.app/...` while testing)
+**Printify** (optional): `PRINTIFY_*` as in `.env.example`
 
-## 5. Connect the Git repo
+## 6. Stripe webhook
 
-[Vercel → Add New → Project](https://vercel.com/new) → import `xtinadom/XtinadomMerch` → deploy.
+[Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks) → endpoint:
 
-## 6. Custom domain
+`https://<your-domain>/api/webhooks/stripe`
 
-Project → **Settings → Domains** → add `www.xtinadom.com` and `xtinadom.com` (DNS instructions appear in the dashboard). Keep `NEXT_PUBLIC_APP_URL` aligned with the canonical URL (`https://www.xtinadom.com`).
+## 7. Custom domain
+
+**Settings → Domains**. Match `NEXT_PUBLIC_APP_URL` to the canonical URL (e.g. `https://www.example.com`).
 
 ## Local development
 
 ```bash
 docker compose up -d
-# Set DATABASE_URL in .env to postgresql://postgres:postgres@localhost:5432/xtinadom_merch
+# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/xtinadom_merch in .env
 npx prisma migrate deploy
 npm run db:seed
 npm run dev
 ```
 
-Locally, `npm run build` needs a reachable Postgres URL for `prisma db push` / `migrate deploy` in `scripts/vercel-build.cjs`. The app uses lazy Prisma initialization so `next build` alone is less likely to require DB at compile time.
+`npm run build` locally matches Vercel: **no DB** unless `RUN_PRISMA_SCHEMA_ON_BUILD=1`.
