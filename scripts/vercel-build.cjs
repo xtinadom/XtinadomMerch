@@ -79,7 +79,7 @@ function syncDatabaseSchema() {
 
   if (!hasAnyPostgresUrl()) {
     console.warn(
-      "[build] WARN: No Postgres URL in env — skipping db push / migrate. Add POSTGRES_PRISMA_URL or DATABASE_URL (enable for **Build** on Vercel).",
+      "[build] WARN: No Postgres URL in env — skipping db push / migrate. Add POSTGRES_PRISMA_URL or DATABASE_URL for **Production** (and Preview if needed), then redeploy.",
     );
     return;
   }

@@ -2,6 +2,18 @@
 
 This app uses **PostgreSQL** (SQLite is not supported on Vercel serverless).
 
+## How Vercel environment variables work (no “build time” switch)
+
+Vercel’s dashboard does **not** have a separate **“Available at Build Time”** option for normal project variables. When you add a variable and tick **Production** and/or **Preview**, that value is injected for **both** the [build step](https://vercel.com/docs/deployments/configure-a-build) (`npm run build`) **and** serverless/edge runtime for new deployments in that environment.
+
+What to do:
+
+1. **Project → Settings → Environment Variables** — create each key and select **Production** (and **Preview** if you use branch previews).
+2. **Redeploy** after any change; old deployments keep the old env snapshot.
+3. **Sensitive** only limits how the value is shown in the UI/logs; it does not turn off build access.
+
+If a variable seems “missing” during build, it is usually the wrong environment selected (e.g. only **Development**) or a redeploy was skipped.
+
 ## 1. Database
 
 Create a Postgres database and get a connection string (SSL usually required):
@@ -91,4 +103,4 @@ npm run db:seed
 npm run dev
 ```
 
-`npm run build` locally also needs `DATABASE_URL` because Next may load modules that connect to Prisma.
+Locally, `npm run build` needs a reachable Postgres URL for `prisma db push` / `migrate deploy` in `scripts/vercel-build.cjs`. The app uses lazy Prisma initialization so `next build` alone is less likely to require DB at compile time.
