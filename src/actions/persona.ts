@@ -11,6 +11,7 @@ export async function choosePersona(persona: Persona) {
     maxAge: 60 * 60 * 24 * 365,
     sameSite: "lax",
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
   });
   redirect("/shop");
 }
