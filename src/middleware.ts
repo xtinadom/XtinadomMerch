@@ -3,7 +3,38 @@ import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import { SITE_GATE_COOKIE } from "@/lib/site-gate";
 
+function redirectToCanonicalHost(request: NextRequest): NextResponse | null {
+  const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (!raw || process.env.NODE_ENV !== "production") {
+    return null;
+  }
+  try {
+    const canonical = new URL(raw);
+    const host = request.nextUrl.hostname.toLowerCase();
+    const canonicalHost = canonical.hostname.toLowerCase();
+    if (host === canonicalHost) {
+      return null;
+    }
+    const apex = (h: string) => h.replace(/^www\./, "");
+    if (apex(host) !== apex(canonicalHost)) {
+      return null;
+    }
+    const url = request.nextUrl.clone();
+    url.hostname = canonicalHost;
+    url.protocol = canonical.protocol === "http:" ? "https:" : canonical.protocol;
+    url.port = "";
+    return NextResponse.redirect(url, 308);
+  } catch {
+    return null;
+  }
+}
+
 export async function middleware(request: NextRequest) {
+  const canonicalRedirect = redirectToCanonicalHost(request);
+  if (canonicalRedirect) {
+    return canonicalRedirect;
+  }
+
   const password = process.env.SITE_ACCESS_PASSWORD;
   const secret = process.env.SITE_ACCESS_SECRET;
 
