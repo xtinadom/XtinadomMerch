@@ -22,7 +22,11 @@ Neon and poolers **fail migrations** if only a pooled URL is set. Add a direct U
 
 This repo resolves URLs in `prisma.config.ts` (migrate) and `src/lib/prisma.ts` (runtime); fallbacks include `POSTGRES_URL` and `PRISMA_DATABASE_URL`.
 
-Each deploy runs `prisma migrate deploy` as part of **`npm run build`** and applies `prisma/migrations`.
+Each deploy runs **`npm run build`**, which executes `scripts/vercel-build.cjs`: `prisma generate` → `prisma migrate deploy` → `next build`. The script logs which database env keys are present (names only) to help debug missing **Build**-time variables.
+
+**ESLint** is set to `ignoreDuringBuilds` in `next.config.ts` so lint rules cannot fail the production build; run `npm run lint` locally or in CI.
+
+If the build still fails, read the **first** error after `[build]` lines in the Vercel log (migrate vs `next build`).
 
 ## 2. Seed data (once)
 
