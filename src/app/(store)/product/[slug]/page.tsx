@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { FulfillmentType } from "@/generated/prisma/enums";
+import { FulfillmentType, Audience, CatalogGroup } from "@/generated/prisma/enums";
 import { addToCart } from "@/actions/cart";
 import { getShippingFlatCents } from "@/lib/shipping";
 import { productImageUrls } from "@/lib/product-media";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { PrintifyVariantAddToCart } from "@/components/PrintifyVariantAddToCart";
+import { SHOP_DOMME_ROUTE, SHOP_SUB_ROUTE } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -29,11 +30,20 @@ function stockLabel(
   return "In stock";
 }
 
+function shopHomeForAudience(audience: Audience): string {
+  if (audience === Audience.domme) return SHOP_DOMME_ROUTE;
+  if (audience === Audience.sub) return SHOP_SUB_ROUTE;
+  return SHOP_SUB_ROUTE;
+}
+
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await prisma.product.findUnique({
     where: { slug, active: true },
-    include: { category: { include: { parent: true } } },
+    include: {
+      primaryTag: true,
+      tags: { include: { tag: true } },
+    },
   });
 
   if (!product) notFound();
@@ -49,6 +59,15 @@ export default async function ProductPage({ params }: Props) {
   const multiPrintify =
     product.fulfillmentType === FulfillmentType.printify &&
     printifyVariants.length > 1;
+
+  const shopHref = shopHomeForAudience(product.audience);
+  const primary = product.primaryTag;
+  const tagHref =
+    primary && primary.collection === CatalogGroup.sub
+      ? `${SHOP_SUB_ROUTE}/tag/${primary.slug}`
+      : primary && primary.collection === CatalogGroup.domme
+        ? `${SHOP_DOMME_ROUTE}/tag/${primary.slug}`
+        : shopHref;
 
   return (
     <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
@@ -113,23 +132,21 @@ export default async function ProductPage({ params }: Props) {
       )}
       <div>
         <p className="text-xs uppercase tracking-wide text-zinc-500">
-          {product.category.parent ? (
+          <Link href={shopHref} className="hover:text-rose-400/90">
+            {product.audience === Audience.domme
+              ? "Domme shop"
+              : product.audience === Audience.sub
+                ? "Sub shop"
+                : "Shop"}
+          </Link>
+          {primary ? (
             <>
-              <Link
-                href={`/category/${product.category.parent.slug}`}
-                className="hover:text-rose-400/90"
-              >
-                {product.category.parent.name}
-              </Link>
               <span className="mx-1.5 text-zinc-600">/</span>
+              <Link href={tagHref} className="hover:text-rose-400/90">
+                {primary.name}
+              </Link>
             </>
           ) : null}
-          <Link
-            href={`/category/${product.category.slug}`}
-            className="hover:text-rose-400/90"
-          >
-            {product.category.name}
-          </Link>
         </p>
         <h1 className="mt-2 text-3xl font-semibold text-zinc-50">
           {product.name}

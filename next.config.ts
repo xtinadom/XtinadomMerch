@@ -27,11 +27,24 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      { source: "/collection/sub", destination: "/shop/sub", permanent: true },
+      { source: "/collection/domme", destination: "/shop/domme", permanent: true },
+      { source: "/category/domme", destination: "/shop/domme/tag/mug", permanent: true },
+      { source: "/category/domme-mugs", destination: "/shop/domme/tag/mug", permanent: true },
+      { source: "/category/domme-tees", destination: "/shop/domme/tag/t-shirt", permanent: true },
       {
-        source: "/category/domme",
-        destination: "/category/domme-mugs",
-        permanent: false,
+        source: "/category/domme-website-services",
+        destination: "/shop/domme",
+        permanent: true,
       },
+      { source: "/category/photo-printed", destination: "/shop/sub", permanent: true },
+      { source: "/category/photo-printed-mugs", destination: "/shop/sub/tag/mug", permanent: true },
+      {
+        source: "/category/photo-printed-canvas",
+        destination: "/shop/sub/tag/canvas-print",
+        permanent: true,
+      },
+      { source: "/category/used", destination: "/shop/sub", permanent: true },
     ];
   },
 };

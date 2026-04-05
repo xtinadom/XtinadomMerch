@@ -12,8 +12,8 @@ export default function WelcomePage() {
           Welcome
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-          Choose how you shop. You can browse every category from the menu anytime
-          — this just sets your starting view.
+          Choose how you shop. You can switch shops and browse by tag from the menu
+          anytime — this just sets your starting view.
         </p>
         <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <form action={choosePersonaForm}>

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { getAdminSession } from "@/lib/session";
-import { Audience, FulfillmentType } from "@/generated/prisma/enums";
+import { Audience, CatalogGroup, FulfillmentType } from "@/generated/prisma/enums";
 import { fetchPrintifyCatalogEnriched } from "@/lib/printify";
 import { pickImageForVariant } from "@/lib/printify-catalog";
 import { slugify } from "@/lib/slugify";
@@ -13,10 +13,16 @@ import {
   parseImageUrlList,
   toGalleryJson,
 } from "@/lib/product-media";
-import { parseProductCategoryIdsFromForm } from "@/lib/product-category-form";
-import { CatalogGroup } from "@/generated/prisma/enums";
-import { catalogRootIdsForGroup } from "@/lib/catalog-group";
-import { collectDescendantCategoryIdsFromRoots } from "@/lib/category-tree";
+import { parseProductTagIdsFromForm } from "@/lib/product-tag-form";
+import { assertTagsValidForAudience } from "@/actions/admin-tags";
+
+function revalidateShopSurface() {
+  revalidatePath("/shop");
+  revalidatePath("/shop/sub");
+  revalidatePath("/shop/domme");
+  revalidatePath("/cart");
+  revalidatePath("/checkout");
+}
 
 export async function loginAdmin(
   formData: FormData,
@@ -42,18 +48,6 @@ export async function logoutAdmin() {
 const MAX_NAME_LEN = 200;
 const MAX_DESC_LEN = 8000;
 
-async function categorySlugsForProductId(productId: string): Promise<Set<string>> {
-  const p = await prisma.product.findUnique({
-    where: { id: productId },
-    include: { category: true, extraCategories: { include: { category: true } } },
-  });
-  if (!p) return new Set();
-  const s = new Set<string>();
-  s.add(p.category.slug);
-  for (const e of p.extraCategories) s.add(e.category.slug);
-  return s;
-}
-
 export async function updateProductDetails(
   productId: string,
   formData: FormData,
@@ -63,7 +57,7 @@ export async function updateProductDetails(
 
   const product = await prisma.product.findUnique({
     where: { id: productId },
-    include: { category: true, extraCategories: true },
+    include: { tags: true },
   });
   if (!product) return;
 
@@ -92,6 +86,7 @@ export async function updateProductDetails(
     imageUrl,
     imageGallery,
     active: formData.get("active") === "on",
+    checkoutTipEligible: formData.get("checkoutTipEligible") === "on",
   };
 
   if (product.fulfillmentType === FulfillmentType.manual) {
@@ -102,41 +97,26 @@ export async function updateProductDetails(
     data.payCashApp = payCashApp;
   }
 
-  const categoryIds = parseProductCategoryIdsFromForm(formData);
-  if (categoryIds.length > 0) {
-    const deduped = [...new Set(categoryIds)];
-    for (const id of deduped) {
-      const cat = await prisma.category.findUnique({ where: { id } });
-      if (!cat) return;
-    }
-    const primary = deduped[0];
-    const extras = deduped.slice(1).filter((id) => id !== primary);
-    data.category = { connect: { id: primary } };
-    data.extraCategories = {
+  const tagIds = parseProductTagIdsFromForm(formData);
+  if (tagIds.length > 0) {
+    const valid = await assertTagsValidForAudience(product.audience, tagIds);
+    if (!valid.ok) return;
+    const primary = tagIds[0]!;
+    data.primaryTag = { connect: { id: primary } };
+    data.tags = {
       deleteMany: {},
-      create: extras.map((categoryId) => ({ categoryId })),
+      create: tagIds.map((tagId) => ({ tagId })),
     };
   }
-
-  const prevSlugs = await categorySlugsForProductId(productId);
 
   await prisma.product.update({
     where: { id: productId },
     data,
   });
 
-  const nextSlugs = await categorySlugsForProductId(productId);
-  for (const slug of new Set([...prevSlugs, ...nextSlugs])) {
-    revalidatePath("/category/" + slug);
-  }
-
   revalidatePath("/admin");
-  revalidatePath("/shop");
-  revalidatePath("/cart");
-  revalidatePath("/checkout");
+  revalidateShopSurface();
   revalidatePath("/product/" + product.slug);
-  revalidatePath("/collection/sub");
-  revalidatePath("/collection/domme");
 }
 
 export async function updateManualStock(productId: string, stockQuantity: number) {
@@ -154,7 +134,7 @@ export async function updateManualStock(productId: string, stockQuantity: number
     data: { stockQuantity: q },
   });
   revalidatePath("/admin");
-  revalidatePath("/shop");
+  revalidateShopSurface();
   revalidatePath("/product/" + product.slug);
   return { ok: true as const };
 }
@@ -189,28 +169,15 @@ export async function createManualUsedProduct(formData: FormData): Promise<void>
   let payCard = formData.get("payCard") === "on";
   if (!payCard && !payCashApp) payCard = true;
 
-  const categoryGraph = await prisma.category.findMany({
-    select: { id: true, slug: true, parentId: true, catalogGroup: true },
-  });
-  const subCatalogIds = new Set(
-    collectDescendantCategoryIdsFromRoots(
-      catalogRootIdsForGroup(CatalogGroup.sub, categoryGraph),
-      categoryGraph,
-    ),
-  );
-
-  const categoryIds = parseProductCategoryIdsFromForm(formData);
-  if (categoryIds.length === 0) {
+  const tagIds = parseProductTagIdsFromForm(formData);
+  if (tagIds.length === 0) {
     redirect("/admin?create=err&reason=category&tab=manual");
   }
-  const deduped = [...new Set(categoryIds)];
-  for (const id of deduped) {
-    if (!subCatalogIds.has(id)) {
-      redirect("/admin?create=err&reason=category&tab=manual");
-    }
+  const valid = await assertTagsValidForAudience(Audience.sub, tagIds);
+  if (!valid.ok) {
+    redirect("/admin?create=err&reason=category&tab=manual");
   }
-  const primary = deduped[0];
-  const extras = deduped.slice(1).filter((id) => id !== primary);
+  const primary = tagIds[0]!;
 
   const slug = await uniqueProductSlug(slugify(name));
 
@@ -226,30 +193,17 @@ export async function createManualUsedProduct(formData: FormData): Promise<void>
       payCashApp,
       audience: Audience.sub,
       fulfillmentType: FulfillmentType.manual,
-      categoryId: primary,
-      extraCategories:
-        extras.length > 0
-          ? { create: extras.map((categoryId) => ({ categoryId })) }
-          : undefined,
+      primaryTagId: primary,
+      checkoutTipEligible: formData.get("checkoutTipEligible") === "on",
+      tags: { create: tagIds.map((tagId) => ({ tagId })) },
       stockQuantity,
       trackInventory: true,
       active: true,
     },
   });
 
-  const slugs = await prisma.category.findMany({
-    where: { id: { in: deduped } },
-    select: { slug: true },
-  });
-
   revalidatePath("/admin");
-  revalidatePath("/shop");
-  revalidatePath("/cart");
-  revalidatePath("/checkout");
-  for (const { slug: s } of slugs) {
-    revalidatePath("/category/" + s);
-  }
-  revalidatePath("/collection/sub");
+  revalidateShopSurface();
   redirect("/admin?create=ok&tab=manual");
 }
 
@@ -258,7 +212,7 @@ export async function deleteManualUsedProduct(productId: string): Promise<void> 
   if (!admin.isAdmin) return;
 
   const product = await prisma.product.findUnique({ where: { id: productId } });
-  if (!product || product.fulfillmentType !== FulfillmentType.manual) return;
+  if (!product || product.fulfillmentType !== "manual") return;
 
   const lines = await prisma.orderLine.count({ where: { productId } });
   if (lines > 0) {
@@ -267,11 +221,7 @@ export async function deleteManualUsedProduct(productId: string): Promise<void> 
       data: { active: false },
     });
     revalidatePath("/admin");
-    revalidatePath("/shop");
-    revalidatePath("/cart");
-    revalidatePath("/checkout");
-    revalidatePath("/category/used");
-    revalidatePath("/collection/sub");
+    revalidateShopSurface();
     revalidatePath("/product/" + product.slug);
     redirect("/admin?delete=archived&tab=manual");
   }
@@ -279,11 +229,7 @@ export async function deleteManualUsedProduct(productId: string): Promise<void> 
   await prisma.product.delete({ where: { id: productId } });
 
   revalidatePath("/admin");
-  revalidatePath("/shop");
-  revalidatePath("/cart");
-  revalidatePath("/checkout");
-  revalidatePath("/category/used");
-  revalidatePath("/collection/sub");
+  revalidateShopSurface();
   revalidatePath("/product/" + product.slug);
   redirect("/admin?delete=ok&tab=manual");
 }
@@ -309,7 +255,7 @@ export async function updateProductPrintifyIds(
     },
   });
   revalidatePath("/admin");
-  revalidatePath("/shop");
+  revalidateShopSurface();
   revalidatePath("/product/" + product.slug);
 }
 
@@ -337,15 +283,16 @@ function importAudience(): Audience {
   return Audience.both;
 }
 
-async function resolveImportCategoryId(): Promise<string | null> {
-  const slug = process.env.PRINTIFY_IMPORT_CATEGORY_SLUG?.trim() || "photo-printed";
-  const bySlug = await prisma.category.findUnique({ where: { slug } });
-  if (bySlug) return bySlug.id;
-  const first = await prisma.category.findFirst({ orderBy: { sortOrder: "asc" } });
-  return first?.id ?? null;
+async function resolveImportTagId(): Promise<string | null> {
+  const slug = process.env.PRINTIFY_IMPORT_TAG_SLUG?.trim() || "mug";
+  const colRaw = process.env.PRINTIFY_IMPORT_COLLECTION?.trim().toLowerCase();
+  const collection = colRaw === "domme" ? CatalogGroup.domme : CatalogGroup.sub;
+  const tag = await prisma.tag.findUnique({
+    where: { collection_slug: { collection, slug } },
+  });
+  return tag?.id ?? null;
 }
 
-/** Remove a POD listing; keep the row (inactive, unmapped) if it appears on past orders. */
 async function deleteOrArchivePrintifyListingById(
   productId: string,
 ): Promise<"deleted" | "archived" | "noop"> {
@@ -375,7 +322,6 @@ async function deleteOrArchivePrintifyListingById(
   return "deleted";
 }
 
-/** De-dupe legacy rows that used one storefront product per Printify variant. */
 async function archiveOrDeleteOtherPrintifyRows(
   printifyProductId: string,
   keepId: string,
@@ -392,7 +338,6 @@ async function archiveOrDeleteOtherPrintifyRows(
   }
 }
 
-/** One storefront listing per Printify product; all enabled variants stored in printifyVariants JSON. */
 export async function syncPrintifyFromCatalog(formData: FormData): Promise<void> {
   const admin = await getAdminSession();
   if (!admin.isAdmin) {
@@ -405,9 +350,9 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
   }
 
   const createMissing = formData.get("createMissing") === "on";
-  const categoryId = await resolveImportCategoryId();
-  if (!categoryId) {
-    redirect("/admin?tab=printify&sync=err&reason=no_category");
+  const importTagId = await resolveImportTagId();
+  if (!importTagId) {
+    redirect("/admin?tab=printify&sync=err&reason=no_tag");
   }
 
   let updated = 0;
@@ -533,6 +478,7 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
     }
 
     if (createMissing) {
+      const aud = importAudience();
       const slug = await uniqueProductSlug(slugify(p.title));
       await prisma.product.create({
         data: {
@@ -544,9 +490,10 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
           imageGallery: toGalleryJson(
             galleryUrls.length > 0 ? galleryUrls : heroImage ? [heroImage] : [],
           ),
-          audience: importAudience(),
+          audience: aud,
           fulfillmentType: FulfillmentType.printify,
-          categoryId,
+          primaryTagId: importTagId,
+          tags: { create: [{ tagId: importTagId }] },
           printifyProductId: p.id,
           printifyVariantId: first.id,
           printifyVariants: variantsJson,
@@ -561,10 +508,6 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
     }
   }
 
-  /**
-   * Remove POD listings that are not backed by the current Printify catalog.
-   * Note: `NOT IN (...)` does not match NULL in SQL, so rows with no printifyProductId must be OR'd explicitly.
-   */
   const orphans = await prisma.product.findMany({
     where:
       catalogIds.size > 0
@@ -589,14 +532,11 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
   }
 
   revalidatePath("/admin");
-  revalidatePath("/shop");
-  revalidatePath("/cart");
-  revalidatePath("/checkout");
-  revalidatePath("/collection/sub");
-  revalidatePath("/collection/domme");
-  const categories = await prisma.category.findMany({ select: { slug: true } });
-  for (const c of categories) {
-    revalidatePath("/category/" + c.slug);
+  revalidateShopSurface();
+  const allTags = await prisma.tag.findMany({ select: { slug: true, collection: true } });
+  for (const t of allTags) {
+    const seg = t.collection === CatalogGroup.sub ? "sub" : "domme";
+    revalidatePath(`/shop/${seg}/tag/${t.slug}`);
   }
   const allSlugs = await prisma.product.findMany({ select: { slug: true } });
   for (const pr of allSlugs) {

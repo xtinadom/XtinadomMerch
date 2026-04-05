@@ -1,8 +1,12 @@
 import Link from "next/link";
-import type { Product, Category } from "@/generated/prisma/client";
+import type { Product, Tag } from "@/generated/prisma/client";
 import { productPrimaryImage } from "@/lib/product-media";
+import { cardLabelTag } from "@/lib/product-tags";
 
-type P = Product & { category: Category };
+type P = Product & {
+  primaryTag: Tag | null;
+  tags: { tagId: string; tag: Tag }[];
+};
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -13,6 +17,11 @@ function formatPrice(cents: number) {
 
 export function ProductCard({ product }: { product: P }) {
   const img = productPrimaryImage(product);
+  const label = cardLabelTag({
+    primaryTagId: product.primaryTagId,
+    primaryTag: product.primaryTag,
+    tags: product.tags,
+  });
   return (
     <Link
       href={`/product/${product.slug}`}
@@ -33,7 +42,7 @@ export function ProductCard({ product }: { product: P }) {
         )}
       </div>
       <p className="text-[8px] uppercase tracking-wide text-zinc-500">
-        {product.category.name}
+        {label?.name ?? "Product"}
       </p>
       <h2 className="mt-0.5 line-clamp-2 text-[11px] font-medium leading-tight text-zinc-100">
         {product.name}

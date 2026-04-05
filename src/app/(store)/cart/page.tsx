@@ -23,7 +23,7 @@ export default async function CartPage() {
   );
   const products = await prisma.product.findMany({
     where: { id: { in: ids }, active: true },
-    include: { category: true },
+    include: { primaryTag: true },
   });
 
   const rows = products.map((p) => {
@@ -57,7 +57,9 @@ export default async function CartPage() {
                   >
                     {p.name}
                   </Link>
-                  <p className="text-xs text-zinc-500">{p.category.name}</p>
+                  <p className="text-xs text-zinc-500">
+                    {p.primaryTag?.name ?? "Product"}
+                  </p>
                   {variantSub ? (
                     <p className="text-xs text-zinc-400">{variantSub}</p>
                   ) : null}

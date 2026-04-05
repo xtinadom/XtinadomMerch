@@ -9,12 +9,13 @@ import {
   updateManualStock,
   updateProductDetails,
 } from "@/actions/admin";
+import { adminCreateTagForm, adminDeleteTagForm } from "@/actions/admin-tags";
 import type { Prisma } from "@/generated/prisma/client";
-import { FulfillmentType, OrderStatus } from "@/generated/prisma/enums";
+import { CatalogGroup, FulfillmentType, OrderStatus } from "@/generated/prisma/enums";
 import { productImageUrls } from "@/lib/product-media";
 import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
-import { ProductCategoryFields } from "@/components/admin/ProductCategoryFields";
-import { productCategoryIds } from "@/lib/product-categories";
+import { ProductTagFields } from "@/components/admin/ProductTagFields";
+import { productTagIds } from "@/lib/product-tags";
 import { PrintifyInventoryTab } from "./printify-inventory-tab";
 
 export const dynamic = "force-dynamic";
@@ -58,11 +59,15 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const syncSkipped = typeof sp.skipped === "string" ? sp.skipped : undefined;
   const syncRemoved = typeof sp.removed === "string" ? sp.removed : undefined;
   const syncReason = typeof sp.reason === "string" ? sp.reason : undefined;
+  const tagErr = typeof sp.tag_err === "string" ? sp.tag_err : undefined;
 
-  const [products, orders, adminCategories] = await Promise.all([
+  const [products, orders, adminTags] = await Promise.all([
     prisma.product.findMany({
-      orderBy: [{ category: { sortOrder: "asc" } }, { name: "asc" }],
-      include: { category: true, extraCategories: true },
+      orderBy: [{ name: "asc" }],
+      include: {
+        primaryTag: true,
+        tags: { include: { tag: true } },
+      },
     }),
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },
@@ -72,17 +77,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         fulfillmentJobs: true,
       },
     }),
-    prisma.category.findMany({
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        description: true,
-        parentId: true,
-        sortOrder: true,
-        catalogGroup: true,
-      },
+    prisma.tag.findMany({
+      orderBy: [{ collection: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
     }),
   ]);
 
@@ -91,10 +87,10 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     (p) => p.fulfillmentType === FulfillmentType.printify,
   );
 
-  const defaultSubCatalogCategoryId =
-    adminCategories.find((c) => c.slug === "used")?.id ??
-    adminCategories.find((c) => c.slug === "photo-printed")?.id ??
-    "";
+  const subTagsSorted = adminTags
+    .filter((t) => t.collection === CatalogGroup.sub)
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+  const defaultCreateTagIds = subTagsSorted[0] ? [subTagsSorted[0].id] : [];
 
   return (
     <div className="space-y-12">
@@ -112,6 +108,98 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         </div>
       </div>
 
+      <section id="tags" className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 sm:p-6">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
+          Shop tags
+        </h2>
+        {tagErr ? (
+          <p className="mt-2 rounded border border-rose-900/50 bg-rose-950/30 px-3 py-2 text-xs text-rose-200/90">
+            {tagErr}
+          </p>
+        ) : null}
+        <p className="mt-1 text-xs text-zinc-600">
+          Tags are scoped to Sub shop or Domme shop. Products must use tags from the matching side (or a
+          single side for “both” audience).
+        </p>
+        <ul className="mt-4 divide-y divide-zinc-800 border-y border-zinc-800 text-sm">
+          {adminTags.map((t) => (
+            <li
+              key={t.id}
+              className="flex flex-wrap items-center justify-between gap-2 py-2 text-zinc-300"
+            >
+              <span>
+                <span className="text-zinc-100">{t.name}</span>{" "}
+                <code className="text-[11px] text-zinc-500">{t.slug}</code>{" "}
+                <span className="text-[11px] text-zinc-600">({t.collection})</span>
+              </span>
+              <ConfirmDeleteForm
+                action={adminDeleteTagForm}
+                message={`Delete tag “${t.name}”? Only if no products use it.`}
+              >
+                <input type="hidden" name="tagId" value={t.id} />
+                <button
+                  type="submit"
+                  className="text-[11px] text-rose-400/90 hover:underline"
+                >
+                  Delete
+                </button>
+              </ConfirmDeleteForm>
+            </li>
+          ))}
+        </ul>
+        {adminTags.length === 0 ? (
+          <p className="mt-2 text-sm text-zinc-600">No tags — run db seed.</p>
+        ) : null}
+        <form
+          action={adminCreateTagForm}
+          className="mt-6 flex flex-col gap-3 border-t border-zinc-800 pt-4 sm:flex-row sm:flex-wrap sm:items-end"
+        >
+          <label className="block text-xs text-zinc-500">
+            Collection
+            <select
+              name="collection"
+              required
+              className="mt-1 block rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200"
+            >
+              <option value="sub">Sub</option>
+              <option value="domme">Domme</option>
+            </select>
+          </label>
+          <label className="block text-xs text-zinc-500">
+            Name
+            <input
+              type="text"
+              name="name"
+              required
+              className="mt-1 block w-40 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm"
+            />
+          </label>
+          <label className="block text-xs text-zinc-500">
+            Slug (optional)
+            <input
+              type="text"
+              name="slug"
+              className="mt-1 block w-36 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-xs"
+            />
+          </label>
+          <label className="block text-xs text-zinc-500">
+            Sort
+            <input
+              type="number"
+              name="sortOrder"
+              defaultValue={99}
+              className="mt-1 block w-20 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm"
+            />
+          </label>
+          <button
+            type="submit"
+            className="rounded bg-zinc-800 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-700"
+          >
+            Add tag
+          </button>
+        </form>
+      </section>
+
       {createOk && (
         <p className="rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
           Used item created.
@@ -120,15 +208,13 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       {createErr && (
         <p className="rounded-lg border border-rose-900/50 bg-rose-950/30 px-4 py-2 text-sm text-rose-200/90">
           Could not create item
-          {createReason === "no_used_category"
-            ? " — add a category with slug “used” in the database."
-            : createReason === "category"
-              ? " — pick a valid Sub collection category (parent or subcategory)."
-              : createReason === "name"
-                ? " — title is required."
-                : createReason === "price"
-                  ? " — invalid price."
-                  : "."}
+          {createReason === "category"
+            ? " — pick at least one Sub shop tag."
+            : createReason === "name"
+              ? " — title is required."
+              : createReason === "price"
+                ? " — invalid price."
+                : "."}
         </p>
       )}
       {deleteOk && (
@@ -178,268 +264,284 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         <div className="p-4 pt-6 sm:p-6">
           {inventoryTab === "manual" ? (
             <section aria-label="Manual inventory">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
-          Used items (manual fulfillment)
-        </h2>
-        <p className="mt-1 text-xs text-zinc-600">
-          Shipped by you; stock is enforced at checkout. Photo URLs must be https — one per line.
-          Payment options apply to carts that include this item together with others (Stripe shows the
-          intersection of what every line allows).
-        </p>
+              <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
+                Used items (manual fulfillment)
+              </h2>
+              <p className="mt-1 text-xs text-zinc-600">
+                Shipped by you; stock is enforced at checkout. Photo URLs must be https — one per line.
+                Payment options apply to carts that include this item together with others (Stripe shows the
+                intersection of what every line allows).
+              </p>
 
-        <div className="mt-6 rounded-lg border border-dashed border-zinc-700 bg-zinc-900/30 p-4">
-          <h3 className="text-xs font-medium uppercase tracking-wide text-zinc-500">Add used item</h3>
-          <form action={createManualUsedProduct} className="mt-3 space-y-3">
-            <label className="block text-xs text-zinc-500">
-              Title
-              <input
-                type="text"
-                name="name"
-                required
-                className="mt-1 block w-full max-w-md rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-100"
-              />
-            </label>
-            <label className="block text-xs text-zinc-500">
-              Description
-              <textarea
-                name="description"
-                rows={3}
-                className="mt-1 block w-full max-w-xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200"
-              />
-            </label>
-            <div className="flex flex-wrap gap-4">
-              <label className="block text-xs text-zinc-500">
-                Price (USD)
-                <input
-                  type="number"
-                  name="price"
-                  required
-                  min={0}
-                  step={0.01}
-                  className="mt-1 block w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-sm"
-                />
-              </label>
-              <label className="block text-xs text-zinc-500">
-                Initial stock
-                <input
-                  type="number"
-                  name="stock"
-                  min={0}
-                  defaultValue={0}
-                  className="mt-1 block w-24 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm"
-                />
-              </label>
-            </div>
-            <label className="block text-xs text-zinc-500">
-              Photo URLs (one per line, https)
-              <textarea
-                name="gallery"
-                rows={3}
-                placeholder="https://…"
-                className="mt-1 block w-full max-w-xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-xs text-zinc-300"
-              />
-            </label>
-            <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
-              <label className="flex cursor-pointer items-center gap-2">
-                <input type="checkbox" name="payCard" defaultChecked className="rounded border-zinc-600" />
-                Card
-              </label>
-              <label className="flex cursor-pointer items-center gap-2">
-                <input
-                  type="checkbox"
-                  name="payCashApp"
-                  defaultChecked
-                  className="rounded border-zinc-600"
-                />
-                Cash App
-              </label>
-            </div>
-            {defaultSubCatalogCategoryId ? (
-              <ProductCategoryFields
-                key="create-manual-used"
-                categories={adminCategories}
-                defaultCategoryIds={[defaultSubCatalogCategoryId]}
-                variant="subOnly"
-              />
-            ) : null}
-            <button
-              type="submit"
-              className="rounded bg-emerald-900/80 px-3 py-2 text-xs font-medium text-emerald-100 hover:bg-emerald-800/80"
-            >
-              Add used item
-            </button>
-          </form>
-        </div>
-
-        <ul className="mt-6 space-y-6">
-          {manualProducts.map((p) => (
-            <li
-              key={p.id}
-              className="rounded-lg border border-zinc-800 bg-zinc-900/20 p-4"
-            >
-              <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                <div className="flex flex-wrap items-start gap-3">
-                  {productImageUrls(p)[0] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={productImageUrls(p)[0]}
-                      alt=""
-                      className="h-16 w-16 shrink-0 rounded border border-zinc-700 object-cover"
-                    />
-                  ) : null}
-                  <div className="text-xs text-zinc-500">
-                    <span className="text-zinc-400">
-                      {productCategoryIds(p)
-                        .map(
-                          (id) => adminCategories.find((c) => c.id === id)?.name ?? id,
-                        )
-                        .join(" · ")}
-                    </span>
-                    {" · "}
-                    <Link
-                      href={`/product/${p.slug}`}
-                      className="text-rose-400/90 hover:underline"
-                    >
-                      /product/{p.slug}
-                    </Link>
-                    {p.active ? "" : " · inactive"}
-                  </div>
-                </div>
-                <ConfirmDeleteForm
-                  action={deleteManualUsedProduct.bind(null, p.id)}
-                  message={`Delete “${p.name}”? This cannot be undone.`}
-                >
-                  <button
-                    type="submit"
-                    className="rounded border border-rose-900/60 bg-rose-950/40 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
-                  >
-                    Delete
-                  </button>
-                </ConfirmDeleteForm>
-              </div>
-              <form action={updateProductDetails.bind(null, p.id)} className="space-y-3">
-                <label className="block text-xs text-zinc-500">
-                  Title
-                  <input
-                    type="text"
-                    name="name"
-                    required
-                    defaultValue={p.name}
-                    className="mt-1 block w-full max-w-xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-100"
-                  />
-                </label>
-                <label className="block text-xs text-zinc-500">
-                  Description
-                  <textarea
-                    name="description"
-                    rows={4}
-                    defaultValue={p.description ?? ""}
-                    className="mt-1 block w-full max-w-2xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200"
-                  />
-                </label>
-                <ProductCategoryFields
-                  key={`edit-${p.id}-${productCategoryIds(p).join("-")}`}
-                  categories={adminCategories}
-                  defaultCategoryIds={productCategoryIds(p)}
-                  variant="subOnly"
-                />
-                <label className="block text-xs text-zinc-500">
-                  Photo URLs (one per line, https)
-                  <textarea
-                    name="gallery"
-                    rows={4}
-                    defaultValue={galleryTextareaDefault(p)}
-                    className="mt-1 block w-full max-w-2xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-xs text-zinc-300"
-                  />
-                </label>
-                <div className="flex flex-wrap items-end gap-4">
+              <div className="mt-6 rounded-lg border border-dashed border-zinc-700 bg-zinc-900/30 p-4">
+                <h3 className="text-xs font-medium uppercase tracking-wide text-zinc-500">Add used item</h3>
+                <form action={createManualUsedProduct} className="mt-3 space-y-3">
                   <label className="block text-xs text-zinc-500">
-                    Price (USD)
+                    Title
                     <input
-                      type="number"
-                      name="price"
+                      type="text"
+                      name="name"
                       required
-                      min={0}
-                      step={0.01}
-                      defaultValue={priceInputValue(p.priceCents)}
-                      className="mt-1 block w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-sm"
+                      className="mt-1 block w-full max-w-md rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-100"
                     />
                   </label>
-                  <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
-                    <input
-                      type="checkbox"
-                      name="active"
-                      defaultChecked={p.active}
-                      className="rounded border-zinc-600"
+                  <label className="block text-xs text-zinc-500">
+                    Description
+                    <textarea
+                      name="description"
+                      rows={3}
+                      className="mt-1 block w-full max-w-xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200"
                     />
-                    Visible in shop
+                  </label>
+                  <div className="flex flex-wrap gap-4">
+                    <label className="block text-xs text-zinc-500">
+                      Price (USD)
+                      <input
+                        type="number"
+                        name="price"
+                        required
+                        min={0}
+                        step={0.01}
+                        className="mt-1 block w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-sm"
+                      />
+                    </label>
+                    <label className="block text-xs text-zinc-500">
+                      Initial stock
+                      <input
+                        type="number"
+                        name="stock"
+                        min={0}
+                        defaultValue={0}
+                        className="mt-1 block w-24 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm"
+                      />
+                    </label>
+                  </div>
+                  <label className="block text-xs text-zinc-500">
+                    Photo URLs (one per line, https)
+                    <textarea
+                      name="gallery"
+                      rows={3}
+                      placeholder="https://…"
+                      className="mt-1 block w-full max-w-xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-xs text-zinc-300"
+                    />
                   </label>
                   <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
                     <label className="flex cursor-pointer items-center gap-2">
-                      <input
-                        type="checkbox"
-                        name="payCard"
-                        defaultChecked={p.payCard}
-                        className="rounded border-zinc-600"
-                      />
+                      <input type="checkbox" name="payCard" defaultChecked className="rounded border-zinc-600" />
                       Card
                     </label>
                     <label className="flex cursor-pointer items-center gap-2">
                       <input
                         type="checkbox"
                         name="payCashApp"
-                        defaultChecked={p.payCashApp}
+                        defaultChecked
                         className="rounded border-zinc-600"
                       />
                       Cash App
                     </label>
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="checkbox"
+                        name="checkoutTipEligible"
+                        defaultChecked
+                        className="rounded border-zinc-600"
+                      />
+                      Allow checkout tip (sub shop)
+                    </label>
                   </div>
-                  <button
-                    type="submit"
-                    className="rounded bg-rose-900/80 px-3 py-2 text-xs font-medium text-rose-100 hover:bg-rose-800/80"
-                  >
-                    Save
-                  </button>
-                </div>
-              </form>
-              <div className="mt-4 border-t border-zinc-800 pt-4">
-                <form
-                  action={async (fd) => {
-                    "use server";
-                    const q = parseInt(String(fd.get("stock")), 10);
-                    if (Number.isFinite(q)) await updateManualStock(p.id, q);
-                  }}
-                  className="flex flex-wrap items-center gap-2"
-                >
-                  <label className="text-xs text-zinc-500">
-                    Stock qty
-                    <input
-                      type="number"
-                      name="stock"
-                      min={0}
-                      defaultValue={p.stockQuantity}
-                      className="ml-2 w-24 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm"
+                  {defaultCreateTagIds.length > 0 ? (
+                    <ProductTagFields
+                      key="create-manual-used"
+                      tags={adminTags}
+                      defaultTagIds={defaultCreateTagIds}
+                      variant="subOnly"
                     />
-                  </label>
+                  ) : (
+                    <p className="text-xs text-amber-400/90">Add Sub shop tags before creating used items.</p>
+                  )}
                   <button
                     type="submit"
-                    className="rounded bg-zinc-800 px-3 py-1 text-xs text-zinc-200 hover:bg-zinc-700"
+                    className="rounded bg-emerald-900/80 px-3 py-2 text-xs font-medium text-emerald-100 hover:bg-emerald-800/80"
                   >
-                    Update stock
+                    Add used item
                   </button>
                 </form>
               </div>
-            </li>
-          ))}
-        </ul>
-        {manualProducts.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-600">No used items yet — add one above.</p>
-        ) : null}
+
+              <ul className="mt-6 space-y-6">
+                {manualProducts.map((p) => (
+                  <li
+                    key={p.id}
+                    className="rounded-lg border border-zinc-800 bg-zinc-900/20 p-4"
+                  >
+                    <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex flex-wrap items-start gap-3">
+                        {productImageUrls(p)[0] ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={productImageUrls(p)[0]}
+                            alt=""
+                            className="h-16 w-16 shrink-0 rounded border border-zinc-700 object-cover"
+                          />
+                        ) : null}
+                        <div className="text-xs text-zinc-500">
+                          <span className="text-zinc-400">
+                            {p.tags.map((x) => x.tag.name).join(" · ")}
+                          </span>
+                          {" · "}
+                          <Link
+                            href={`/product/${p.slug}`}
+                            className="text-rose-400/90 hover:underline"
+                          >
+                            /product/{p.slug}
+                          </Link>
+                          {p.active ? "" : " · inactive"}
+                        </div>
+                      </div>
+                      <ConfirmDeleteForm
+                        action={deleteManualUsedProduct.bind(null, p.id)}
+                        message={`Delete “${p.name}”? This cannot be undone.`}
+                      >
+                        <button
+                          type="submit"
+                          className="rounded border border-rose-900/60 bg-rose-950/40 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
+                        >
+                          Delete
+                        </button>
+                      </ConfirmDeleteForm>
+                    </div>
+                    <form action={updateProductDetails.bind(null, p.id)} className="space-y-3">
+                      <label className="block text-xs text-zinc-500">
+                        Title
+                        <input
+                          type="text"
+                          name="name"
+                          required
+                          defaultValue={p.name}
+                          className="mt-1 block w-full max-w-xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-100"
+                        />
+                      </label>
+                      <label className="block text-xs text-zinc-500">
+                        Description
+                        <textarea
+                          name="description"
+                          rows={4}
+                          defaultValue={p.description ?? ""}
+                          className="mt-1 block w-full max-w-2xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200"
+                        />
+                      </label>
+                      <ProductTagFields
+                        key={`edit-${p.id}-${productTagIds(p).join("-")}`}
+                        tags={adminTags}
+                        defaultTagIds={productTagIds(p)}
+                        variant="subOnly"
+                      />
+                      <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
+                        <input
+                          type="checkbox"
+                          name="checkoutTipEligible"
+                          defaultChecked={p.checkoutTipEligible}
+                          className="rounded border-zinc-600"
+                        />
+                        Allow checkout tip (sub shop)
+                      </label>
+                      <label className="block text-xs text-zinc-500">
+                        Photo URLs (one per line, https)
+                        <textarea
+                          name="gallery"
+                          rows={4}
+                          defaultValue={galleryTextareaDefault(p)}
+                          className="mt-1 block w-full max-w-2xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-xs text-zinc-300"
+                        />
+                      </label>
+                      <div className="flex flex-wrap items-end gap-4">
+                        <label className="block text-xs text-zinc-500">
+                          Price (USD)
+                          <input
+                            type="number"
+                            name="price"
+                            required
+                            min={0}
+                            step={0.01}
+                            defaultValue={priceInputValue(p.priceCents)}
+                            className="mt-1 block w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-sm"
+                          />
+                        </label>
+                        <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
+                          <input
+                            type="checkbox"
+                            name="active"
+                            defaultChecked={p.active}
+                            className="rounded border-zinc-600"
+                          />
+                          Visible in shop
+                        </label>
+                        <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
+                          <label className="flex cursor-pointer items-center gap-2">
+                            <input
+                              type="checkbox"
+                              name="payCard"
+                              defaultChecked={p.payCard}
+                              className="rounded border-zinc-600"
+                            />
+                            Card
+                          </label>
+                          <label className="flex cursor-pointer items-center gap-2">
+                            <input
+                              type="checkbox"
+                              name="payCashApp"
+                              defaultChecked={p.payCashApp}
+                              className="rounded border-zinc-600"
+                            />
+                            Cash App
+                          </label>
+                        </div>
+                        <button
+                          type="submit"
+                          className="rounded bg-rose-900/80 px-3 py-2 text-xs font-medium text-rose-100 hover:bg-rose-800/80"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </form>
+                    <div className="mt-4 border-t border-zinc-800 pt-4">
+                      <form
+                        action={async (fd) => {
+                          "use server";
+                          const q = parseInt(String(fd.get("stock")), 10);
+                          if (Number.isFinite(q)) await updateManualStock(p.id, q);
+                        }}
+                        className="flex flex-wrap items-center gap-2"
+                      >
+                        <label className="text-xs text-zinc-500">
+                          Stock qty
+                          <input
+                            type="number"
+                            name="stock"
+                            min={0}
+                            defaultValue={p.stockQuantity}
+                            className="ml-2 w-24 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm"
+                          />
+                        </label>
+                        <button
+                          type="submit"
+                          className="rounded bg-zinc-800 px-3 py-1 text-xs text-zinc-200 hover:bg-zinc-700"
+                        >
+                          Update stock
+                        </button>
+                      </form>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {manualProducts.length === 0 ? (
+                <p className="mt-4 text-sm text-zinc-600">No used items yet — add one above.</p>
+              ) : null}
             </section>
           ) : (
             <PrintifyInventoryTab
               products={printifyProducts}
-              allCategories={adminCategories}
+              allTags={adminTags}
               sync={sync}
               syncUpdated={syncUpdated}
               syncCreated={syncCreated}
@@ -452,9 +554,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       </div>
 
       <section>
-        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
-          Recent orders
-        </h2>
+        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Recent orders</h2>
         <ul className="mt-4 space-y-3">
           {orders.map((o) => (
             <li
@@ -462,9 +562,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
               className="rounded-lg border border-zinc-800 p-4 text-sm"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="font-mono text-xs text-zinc-500">
-                  {o.id.slice(0, 12)}…
-                </span>
+                <span className="font-mono text-xs text-zinc-500">{o.id.slice(0, 12)}…</span>
                 <span
                   className={
                     o.status === OrderStatus.paid

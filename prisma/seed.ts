@@ -2,165 +2,142 @@ import "dotenv/config";
 import { prisma } from "../src/lib/prisma";
 import { CatalogGroup } from "../src/generated/prisma/enums";
 
+const TYPE_TAGS: { slug: string; name: string; sortOrder: number }[] = [
+  { slug: "mug", name: "Mug", sortOrder: 1 },
+  { slug: "t-shirt", name: "T-shirt", sortOrder: 2 },
+  { slug: "keychain", name: "Keychain", sortOrder: 3 },
+  { slug: "sticker", name: "Sticker", sortOrder: 4 },
+  { slug: "canvas-print", name: "Canvas print", sortOrder: 5 },
+  { slug: "mousepad", name: "Mousepad", sortOrder: 6 },
+];
+
 async function main() {
   await prisma.orderLine.deleteMany();
   await prisma.fulfillmentJob.deleteMany();
   await prisma.processedStripeEvent.deleteMany();
   await prisma.order.deleteMany();
+  await prisma.productTag.deleteMany();
   await prisma.product.deleteMany();
-  await prisma.category.deleteMany();
+  await prisma.tag.deleteMany();
 
-  const photoPrinted = await prisma.category.create({
+  const tagIds = new Map<string, string>();
+
+  for (const collection of [CatalogGroup.sub, CatalogGroup.domme] as const) {
+    for (const t of TYPE_TAGS) {
+      const row = await prisma.tag.create({
+        data: {
+          slug: t.slug,
+          name: t.name,
+          sortOrder: t.sortOrder,
+          collection,
+        },
+      });
+      tagIds.set(`${collection}:${t.slug}`, row.id);
+    }
+  }
+
+  const sub = (slug: string) => tagIds.get(`sub:${slug}`)!;
+  const dom = (slug: string) => tagIds.get(`domme:${slug}`)!;
+
+  await prisma.product.create({
     data: {
-      slug: "photo-printed",
-      name: "Photo printed",
-      description:
-        "Photo printed goods — mugs, mousepads, keychains, canvas prints. Print on demand.",
-      sortOrder: 1,
-      catalogGroup: CatalogGroup.sub,
+      slug: "ceramic-mug-photo",
+      name: "Ceramic mug (photo print)",
+      description: "11oz ceramic mug with gallery-quality print.",
+      priceCents: 1899,
+      imageUrl: null,
+      audience: "sub",
+      fulfillmentType: "printify",
+      checkoutTipEligible: true,
+      primaryTagId: sub("mug"),
+      printifyProductId: null,
+      printifyVariantId: null,
+      stockQuantity: 0,
+      trackInventory: false,
+      active: true,
+      tags: { create: [{ tagId: sub("mug") }] },
     },
   });
 
-  const photoPrintedMugs = await prisma.category.create({
+  await prisma.product.create({
     data: {
-      slug: "photo-printed-mugs",
-      name: "Mugs",
-      description: "Photo-printed drinkware.",
-      sortOrder: 10,
-      parentId: photoPrinted.id,
+      slug: "canvas-print-12",
+      name: 'Canvas print 12"',
+      description: "Wrapped canvas, ready to hang.",
+      priceCents: 4499,
+      imageUrl: null,
+      audience: "sub",
+      fulfillmentType: "printify",
+      checkoutTipEligible: true,
+      primaryTagId: sub("canvas-print"),
+      printifyProductId: null,
+      printifyVariantId: null,
+      stockQuantity: 0,
+      trackInventory: false,
+      active: true,
+      tags: { create: [{ tagId: sub("canvas-print") }] },
     },
   });
 
-  const photoPrintedCanvas = await prisma.category.create({
+  await prisma.product.create({
     data: {
-      slug: "photo-printed-canvas",
-      name: "Canvas & prints",
-      description: "Wall art and wrapped canvas.",
-      sortOrder: 11,
-      parentId: photoPrinted.id,
+      slug: "sample-used-item",
+      name: "Sample used item",
+      description: "Example one-of-a-kind piece. Stock is managed in admin.",
+      priceCents: 3500,
+      imageUrl: null,
+      audience: "sub",
+      fulfillmentType: "manual",
+      checkoutTipEligible: true,
+      primaryTagId: sub("sticker"),
+      stockQuantity: 1,
+      trackInventory: true,
+      active: true,
+      tags: { create: [{ tagId: sub("sticker") }] },
     },
   });
 
-  const used = await prisma.category.create({
+  await prisma.product.create({
     data: {
-      slug: "used",
-      name: "Used items",
-      description: "Shipped directly by Xtinadom. Limited availability.",
-      sortOrder: 2,
-      catalogGroup: CatalogGroup.sub,
+      slug: "domme-tee",
+      name: "Domme graphic tee",
+      description: "Soft cotton tee, printed to order.",
+      priceCents: 2999,
+      imageUrl: null,
+      audience: "domme",
+      fulfillmentType: "printify",
+      checkoutTipEligible: false,
+      primaryTagId: dom("t-shirt"),
+      printifyProductId: null,
+      printifyVariantId: null,
+      stockQuantity: 0,
+      trackInventory: false,
+      active: true,
+      tags: { create: [{ tagId: dom("t-shirt") }] },
     },
   });
 
-  const dommeMugs = await prisma.category.create({
+  await prisma.product.create({
     data: {
-      slug: "domme-mugs",
-      name: "Mugs",
-      description: "Domme collection — mugs, print on demand.",
-      sortOrder: 3,
-      catalogGroup: CatalogGroup.domme,
+      slug: "domme-mug",
+      name: "Domme statement mug",
+      description: "Bold design on premium ceramic.",
+      priceCents: 1999,
+      imageUrl: null,
+      audience: "domme",
+      fulfillmentType: "printify",
+      checkoutTipEligible: false,
+      primaryTagId: dom("mug"),
+      printifyProductId: null,
+      printifyVariantId: null,
+      stockQuantity: 0,
+      trackInventory: false,
+      active: true,
+      tags: { create: [{ tagId: dom("mug") }] },
     },
   });
 
-  const dommeTees = await prisma.category.create({
-    data: {
-      slug: "domme-tees",
-      name: "Tees",
-      description: "Domme collection — tees, print on demand.",
-      sortOrder: 4,
-      catalogGroup: CatalogGroup.domme,
-    },
-  });
-
-  await prisma.category.create({
-    data: {
-      slug: "domme-website-services",
-      name: "Website services",
-      description:
-        "Custom merch storefronts — Printify, Stripe, and your branding. Request a quote below.",
-      sortOrder: 5,
-      catalogGroup: CatalogGroup.domme,
-    },
-  });
-
-  await prisma.product.createMany({
-    data: [
-      {
-        slug: "ceramic-mug-photo",
-        name: "Ceramic mug (photo print)",
-        description: "11oz ceramic mug with gallery-quality print.",
-        priceCents: 1899,
-        imageUrl: null,
-        audience: "sub",
-        fulfillmentType: "printify",
-        categoryId: photoPrintedMugs.id,
-        printifyProductId: null,
-        printifyVariantId: null,
-        stockQuantity: 0,
-        trackInventory: false,
-        active: true,
-      },
-      {
-        slug: "canvas-print-12",
-        name: 'Canvas print 12"',
-        description: "Wrapped canvas, ready to hang.",
-        priceCents: 4499,
-        imageUrl: null,
-        audience: "sub",
-        fulfillmentType: "printify",
-        categoryId: photoPrintedCanvas.id,
-        printifyProductId: null,
-        printifyVariantId: null,
-        stockQuantity: 0,
-        trackInventory: false,
-        active: true,
-      },
-      {
-        slug: "sample-used-item",
-        name: "Sample used item",
-        description: "Example one-of-a-kind piece. Stock is managed in admin.",
-        priceCents: 3500,
-        imageUrl: null,
-        audience: "sub",
-        fulfillmentType: "manual",
-        categoryId: used.id,
-        stockQuantity: 1,
-        trackInventory: true,
-        active: true,
-      },
-      {
-        slug: "domme-tee",
-        name: "Domme graphic tee",
-        description: "Soft cotton tee, printed to order.",
-        priceCents: 2999,
-        imageUrl: null,
-        audience: "domme",
-        fulfillmentType: "printify",
-        categoryId: dommeTees.id,
-        printifyProductId: null,
-        printifyVariantId: null,
-        stockQuantity: 0,
-        trackInventory: false,
-        active: true,
-      },
-      {
-        slug: "domme-mug",
-        name: "Domme statement mug",
-        description: "Bold design on premium ceramic.",
-        priceCents: 1999,
-        imageUrl: null,
-        audience: "domme",
-        fulfillmentType: "printify",
-        categoryId: dommeMugs.id,
-        printifyProductId: null,
-        printifyVariantId: null,
-        stockQuantity: 0,
-        trackInventory: false,
-        active: true,
-      },
-    ],
-  });
-
-  console.log("Seed complete: categories + sample products.");
+  console.log("Seed complete: tags + sample products.");
 }
 
 main()

@@ -4,7 +4,7 @@ import {
   updateProductDetails,
   updateProductPrintifyIds,
 } from "@/actions/admin";
-import type { Category, Prisma, Product } from "@/generated/prisma/client";
+import type { Prisma, Product, Tag } from "@/generated/prisma/client";
 import {
   fetchPrintifyCatalog,
   fetchPrintifyShops,
@@ -12,19 +12,18 @@ import {
   isPrintifyConfigured,
 } from "@/lib/printify";
 import { productImageUrls } from "@/lib/product-media";
-import type { AdminCategoryRow } from "@/components/admin/ProductCategoryFields";
-import { ProductCategoryFields } from "@/components/admin/ProductCategoryFields";
-import { productCategoryIds } from "@/lib/product-categories";
+import type { AdminTagRow } from "@/components/admin/ProductTagFields";
+import { ProductTagFields } from "@/components/admin/ProductTagFields";
+import { productTagIds } from "@/lib/product-tags";
 
-/** Shown in Printify API but not used with this storefront — hide from admin picker noise. */
 const PRINTIFY_ADMIN_HIDDEN_SHOP_IDS = new Set([24222433, 26248363]);
 
 export type PrintifyInventoryTabProps = {
   products: (Product & {
-    category: Category;
-    extraCategories: { categoryId: string }[];
+    primaryTag: Tag | null;
+    tags: { tagId: string; tag: Tag }[];
   })[];
-  allCategories: AdminCategoryRow[];
+  allTags: AdminTagRow[];
   sync?: string;
   syncUpdated?: string;
   syncCreated?: string;
@@ -53,7 +52,7 @@ function galleryTextareaDefault(product: {
 
 export async function PrintifyInventoryTab({
   products,
-  allCategories,
+  allTags,
   sync,
   syncUpdated,
   syncCreated,
@@ -92,6 +91,9 @@ export async function PrintifyInventoryTab({
     (s) => String(s.id) === shopIdEnv || (Number.isFinite(shopIdNum) && s.id === shopIdNum),
   );
 
+  const importSlug = process.env.PRINTIFY_IMPORT_TAG_SLUG?.trim() || "mug";
+  const importCol = process.env.PRINTIFY_IMPORT_COLLECTION?.trim().toLowerCase() || "sub";
+
   return (
     <div className="space-y-10" aria-label="Printify inventory">
       <div>
@@ -118,8 +120,8 @@ export async function PrintifyInventoryTab({
           Sync could not run
           {syncReason === "no_shop"
             ? " — set PRINTIFY_SHOP_ID in .env."
-            : syncReason === "no_category"
-              ? " — no category found (set PRINTIFY_IMPORT_CATEGORY_SLUG or add categories)."
+            : syncReason === "no_tag"
+              ? " — no tag found (set PRINTIFY_IMPORT_TAG_SLUG + PRINTIFY_IMPORT_COLLECTION or run seed)."
               : "."}
         </p>
       )}
@@ -129,11 +131,10 @@ export async function PrintifyInventoryTab({
           <h3 className="text-sm font-medium text-zinc-200">Automatic mapping</h3>
           <p className="mt-1 text-xs text-zinc-500">
             One storefront product per Printify product id: pulls every enabled variant into a dropdown on
-            the product page (prices and mockups per variant). Matches existing rows by Printify product id,
-            then unmapped POD rows by slug or title (from the Printify product title). New products use
-            category{" "}
+            the product page. Matches existing rows by Printify product id, then unmapped POD rows by slug or
+            title. New products get tag{" "}
             <code className="text-zinc-400">
-              {process.env.PRINTIFY_IMPORT_CATEGORY_SLUG?.trim() || "photo-printed"}
+              {importCol}/{importSlug}
             </code>{" "}
             and audience{" "}
             <code className="text-zinc-400">
@@ -181,6 +182,14 @@ export async function PrintifyInventoryTab({
           <li>
             <span className="text-zinc-400">PRINTIFY_SHIPPING_METHOD</span> —{" "}
             {process.env.PRINTIFY_SHIPPING_METHOD ?? "1"} (Printify shipping method id for orders)
+          </li>
+          <li>
+            <span className="text-zinc-400">PRINTIFY_IMPORT_TAG_SLUG</span> /{" "}
+            <span className="text-zinc-400">PRINTIFY_IMPORT_COLLECTION</span> — new listings default tag (
+            <code className="text-zinc-400">
+              {importCol}/{importSlug}
+            </code>
+            )
           </li>
         </ul>
         {!tokenSet && (
@@ -321,7 +330,9 @@ export async function PrintifyInventoryTab({
                   />
                 ) : null}
                 <div>
-                  <span className="text-zinc-400">{p.category.name}</span>
+                  <span className="text-zinc-400">
+                    {p.tags.map((x) => x.tag.name).join(" · ") || p.primaryTag?.name || "—"}
+                  </span>
                   {" · "}
                   <Link
                     href={`/product/${p.slug}`}
@@ -352,12 +363,21 @@ export async function PrintifyInventoryTab({
                     className="mt-1 block w-full max-w-2xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200"
                   />
                 </label>
-                <ProductCategoryFields
-                  key={`printify-${p.id}-${productCategoryIds(p).join("-")}`}
-                  categories={allCategories}
-                  defaultCategoryIds={productCategoryIds(p)}
+                <ProductTagFields
+                  key={`printify-${p.id}-${productTagIds(p).join("-")}`}
+                  tags={allTags}
+                  defaultTagIds={productTagIds(p)}
                   variant="all"
                 />
+                <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
+                  <input
+                    type="checkbox"
+                    name="checkoutTipEligible"
+                    defaultChecked={p.checkoutTipEligible}
+                    className="rounded border-zinc-600"
+                  />
+                  Allow checkout tip (sub-eligible items only)
+                </label>
                 <label className="block text-xs text-zinc-500">
                   Photo URLs (mockups; one per line)
                   <textarea

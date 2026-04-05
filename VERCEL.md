@@ -1,6 +1,6 @@
 # Deploy on Vercel
 
-This app uses **PostgreSQL** (SQLite is not supported on Vercel serverless).
+This app uses **PostgreSQL** (SQLite is not supported on Vercel serverless). **Neon** is a good default: create a project, set the pooled URL as `DATABASE_URL` and the direct URL as `DIRECT_URL` for local `prisma migrate deploy`.
 
 ## Why `npm run build` no longer touches the database
 
@@ -84,23 +84,57 @@ npx prisma db seed
 
 ## 5. Required environment variables (Vercel)
 
-Set for **Production** (and **Preview** if needed), then redeploy:
+Set in **Project → Settings → Environment Variables** for **Production** (and **Preview** if you use it), then **Redeploy**.
 
-**Minimum for the app to run**
+I cannot set these for you from the repo; copy from your local `.env` or create values in the dashboard.
 
-- `POSTGRES_PRISMA_URL` **or** `DATABASE_URL` (Postgres)
-- `NEXT_PUBLIC_APP_URL` — e.g. `https://your-project.vercel.app` or your custom domain
-- `SESSION_SECRET` — **at least 32 characters**
-- `ADMIN_PASSWORD`
+### Neon (recommended)
 
-**Site password gate** (optional): set **both** `SITE_ACCESS_PASSWORD` and `SITE_ACCESS_SECRET` (long random). If you only set one, the gate stays off.
+| Variable | Environment | Value |
+|----------|-------------|--------|
+| `DATABASE_URL` | Production, Preview | Neon **pooled** connection string (`sslmode=require` as Neon provides) |
+| `DIRECT_URL` | Production (optional on Vercel) | Neon **direct** URL — **required on your laptop** for `prisma migrate deploy`; on Vercel the app runtime uses `DATABASE_URL`, not `DIRECT_URL` |
 
-**Checkout**
+You may omit `DIRECT_URL` on Vercel if you only run migrations from your machine with `DIRECT_URL` / `DATABASE_URL` pointed at production.
 
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
-- `SHIPPING_FLAT_CENTS` (optional; default in code if unset)
+### Minimum for the app to run
 
-**Printify** (optional): `PRINTIFY_*` as in `.env.example`
+| Variable | Notes |
+|----------|--------|
+| `DATABASE_URL` | Neon pooled (or `POSTGRES_PRISMA_URL` if you use Vercel Postgres naming) |
+| `NEXT_PUBLIC_APP_URL` | `https://www.xtinadom.com` (or your Vercel URL); must be `https://` in production |
+| `SESSION_SECRET` | At least **32 characters** |
+| `ADMIN_PASSWORD` | Admin login |
+
+### Site password gate (optional)
+
+Set **both** `SITE_ACCESS_PASSWORD` and `SITE_ACCESS_SECRET` (long random). If either is missing, the gate is off.
+
+### Checkout (Stripe)
+
+| Variable |
+|----------|
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` |
+| `STRIPE_SECRET_KEY` |
+| `STRIPE_WEBHOOK_SECRET` |
+| `SHIPPING_FLAT_CENTS` (optional; default in code) |
+
+### Printify (optional)
+
+| Variable |
+|----------|
+| `PRINTIFY_API_TOKEN` |
+| `PRINTIFY_SHOP_ID` |
+| `PRINTIFY_SHIPPING_METHOD` |
+| `PRINTIFY_IMPORT_TAG_SLUG` |
+| `PRINTIFY_IMPORT_COLLECTION` (`sub` or `domme`) |
+| `PRINTIFY_IMPORT_AUDIENCE` |
+
+### Other
+
+| Variable | Notes |
+|----------|--------|
+| `NEXT_PUBLIC_MERCH_QUOTE_EMAIL` | Optional; domme shop promo mailto |
 
 ## 6. Stripe webhook
 

@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { CategoryMenu } from "@/components/CategoryMenu";
+import { ShopTagMenu } from "@/components/ShopTagMenu";
 
 export async function SiteHeader() {
-  const categories = await prisma.category.findMany({
-    orderBy: { sortOrder: "asc" },
+  const tags = await prisma.tag.findMany({
+    orderBy: [{ collection: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
   });
 
   return (
@@ -17,7 +17,7 @@ export async function SiteHeader() {
           Xtinadom
         </Link>
         <nav className="flex flex-1 items-center justify-end gap-6">
-          <CategoryMenu categories={categories} />
+          <ShopTagMenu tags={tags} />
           <Link
             href="/cart"
             className="text-sm text-zinc-400 transition hover:text-zinc-100"

@@ -20,15 +20,9 @@ export default async function CheckoutPage() {
   const ids = Object.keys(session.items).filter(
     (id) => (session.items[id]?.quantity ?? 0) > 0,
   );
-  const [products, categoryTree] = await Promise.all([
-    prisma.product.findMany({
-      where: { id: { in: ids }, active: true },
-      include: { category: true, extraCategories: true },
-    }),
-    prisma.category.findMany({
-      select: { id: true, slug: true, name: true, parentId: true, sortOrder: true },
-    }),
-  ]);
+  const products = await prisma.product.findMany({
+    where: { id: { in: ids }, active: true },
+  });
 
   if (ids.length === 0 || products.length === 0) {
     return (
@@ -51,7 +45,7 @@ export default async function CheckoutPage() {
     subtotalCents += cartLineUnitPriceCents(p, cartLine) * q;
   }
 
-  const tipAllowed = cartHasTipEligibleProduct(products, categoryTree);
+  const tipAllowed = cartHasTipEligibleProduct(products);
   const shippingCents = getShippingFlatCents();
 
   const allowCard = products.every((p) => p.payCard);

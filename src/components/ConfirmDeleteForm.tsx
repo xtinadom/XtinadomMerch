@@ -7,7 +7,7 @@ export function ConfirmDeleteForm({
   message,
   children,
 }: {
-  action: () => void | Promise<void>;
+  action: (formData: FormData) => void | Promise<void>;
   message: string;
   children: ReactNode;
 }) {
