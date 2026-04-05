@@ -9,6 +9,7 @@ import { defineConfig } from "prisma/config";
  */
 function migrateDatabaseUrl(): string | undefined {
   const direct =
+    process.env.PRISMA_MIGRATE_DATABASE_URL?.trim() ||
     process.env.POSTGRES_URL_NON_POOLING?.trim() ||
     process.env.DIRECT_URL?.trim() ||
     process.env.DATABASE_URL_UNPOOLED?.trim();

@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  serverExternalPackages: ["pg", "prisma", "@prisma/client", "@prisma/adapter-pg"],
   async redirects() {
     return [
       {

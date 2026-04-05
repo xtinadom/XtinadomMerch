@@ -15,7 +15,8 @@ In the Vercel project, add environment variables for Postgres:
 |------|--------|
 | `DATABASE_URL` | App runtime (optional if you use Vercel’s Postgres envs below) |
 | `POSTGRES_PRISMA_URL` | **Vercel Postgres**: pooled URL for the app (checked first at runtime in `src/lib/prisma.ts`) |
-| `POSTGRES_URL_NON_POOLING` | **Vercel Postgres**: direct URL — used first for `prisma migrate deploy` during build |
+| `POSTGRES_URL_NON_POOLING` | **Vercel Postgres**: direct URL — used for `prisma migrate deploy` during build |
+| `PRISMA_MIGRATE_DATABASE_URL` | Optional: **only** for migrations (highest priority in `prisma.config.ts`) if you want a separate direct URL |
 | `DIRECT_URL` or `DATABASE_URL_UNPOOLED` | Neon / others: direct URL for migrations |
 
 Neon and poolers **fail migrations** if only a pooled URL is set. Add a direct URL (`DIRECT_URL` or `POSTGRES_URL_NON_POOLING`).
@@ -24,7 +25,9 @@ This repo resolves URLs in `prisma.config.ts` (migrate) and `src/lib/prisma.ts` 
 
 Each deploy runs **`npm run build`**, which executes `scripts/vercel-build.cjs`: `prisma generate` → `prisma migrate deploy` → `next build`. The script logs which database env keys are present (names only) to help debug missing **Build**-time variables.
 
-**ESLint** is set to `ignoreDuringBuilds` in `next.config.ts` so lint rules cannot fail the production build; run `npm run lint` locally or in CI.
+Run `npm run lint` locally or in CI.
+
+Production builds on Vercel use **`next build --webpack`** (see `scripts/vercel-build.cjs`) for more stable bundling with `pg` / Prisma.
 
 If the build still fails, read the **first** error after `[build]` lines in the Vercel log (migrate vs `next build`).
 
