@@ -23,13 +23,25 @@ Neon and poolers **fail migrations** if only a pooled URL is set. Add a direct U
 
 This repo resolves URLs in `prisma.config.ts` (migrate) and `src/lib/prisma.ts` (runtime); fallbacks include `POSTGRES_URL` and `PRISMA_DATABASE_URL`.
 
-Each deploy runs **`npm run build`**, which executes `scripts/vercel-build.cjs`: `prisma generate` → `prisma migrate deploy` → `next build`. The script logs which database env keys are present (names only) to help debug missing **Build**-time variables.
+Each deploy runs **`npm run build`** → `scripts/vercel-build.cjs`:
 
-Run `npm run lint` locally or in CI.
+1. `prisma generate`
+2. **Schema sync**
+   - **Vercel + no direct URL** (`POSTGRES_URL_NON_POOLING`, `DIRECT_URL`, `PRISMA_MIGRATE_DATABASE_URL`, etc.): runs **`prisma db push` only** — matches a typical setup with only `POSTGRES_PRISMA_URL` + `DATABASE_URL`.
+   - **Direct URL set:** runs **`prisma migrate deploy`**, with **`db push` fallback** if migrate fails (unless `STRICT_PRISMA_MIGRATE=1`).
+3. If `DATABASE_URL` is empty but `POSTGRES_PRISMA_URL` is set, the script copies it to `DATABASE_URL` for tools that expect that name.
+4. `next build --webpack`
 
-Production builds on Vercel use **`next build --webpack`** (see `scripts/vercel-build.cjs`) for more stable bundling with `pg` / Prisma.
+Optional env:
 
-If the build still fails, read the **first** error after `[build]` lines in the Vercel log (migrate vs `next build`).
+| Variable | Effect |
+|----------|--------|
+| `STRICT_PRISMA_MIGRATE=1` | On Vercel with a direct URL: no `db push` fallback if migrate fails. |
+| `SKIP_PRISMA_SCHEMA_SYNC=1` | Skip migrate and db push (only if you apply schema elsewhere). |
+
+The script logs which database env keys are present (names only). Run `npm run lint` locally or in CI.
+
+If the build still fails, read errors after **`[build]`** in the Vercel log.
 
 ## 2. Seed data (once)
 

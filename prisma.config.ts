@@ -13,12 +13,25 @@ function migrateDatabaseUrl(): string | undefined {
     process.env.POSTGRES_URL_NON_POOLING?.trim() ||
     process.env.DIRECT_URL?.trim() ||
     process.env.DATABASE_URL_UNPOOLED?.trim();
-  const fallback =
+  if (direct) {
+    return direct;
+  }
+
+  if (process.env.VERCEL === "1") {
+    return (
+      process.env.POSTGRES_PRISMA_URL?.trim() ||
+      process.env.DATABASE_URL?.trim() ||
+      process.env.POSTGRES_URL?.trim() ||
+      process.env.PRISMA_DATABASE_URL?.trim()
+    );
+  }
+
+  return (
     process.env.DATABASE_URL?.trim() ||
     process.env.POSTGRES_URL?.trim() ||
     process.env.PRISMA_DATABASE_URL?.trim() ||
-    process.env.POSTGRES_PRISMA_URL?.trim();
-  return direct || fallback;
+    process.env.POSTGRES_PRISMA_URL?.trim()
+  );
 }
 
 export default defineConfig({
