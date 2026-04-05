@@ -3,7 +3,11 @@ export async function register() {
   if (process.env.NODE_ENV !== "development") return;
 
   try {
-    const { prisma } = await import("@/lib/prisma");
+    // Avoid bundling `pg` into the instrumentation chunk (webpack `--webpack` / Vercel).
+    const { prisma } = await import(
+      /* webpackIgnore: true */
+      "./lib/prisma"
+    );
     await prisma.$connect();
   } catch (e) {
     const detail = e instanceof Error ? e.message : String(e);

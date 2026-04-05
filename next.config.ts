@@ -8,7 +8,17 @@ const securityHeaders: { key: string; value: string }[] = [
 ];
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pg", "prisma", "@prisma/client", "@prisma/adapter-pg"],
+  serverExternalPackages: [
+    "pg",
+    "pgpass",
+    "pg-connection-string",
+    "pg-pool",
+    "pg-protocol",
+    "pg-types",
+    "prisma",
+    "@prisma/client",
+    "@prisma/adapter-pg",
+  ],
   async headers() {
     const headers = [...securityHeaders];
     if (process.env.VERCEL_ENV === "production") {
