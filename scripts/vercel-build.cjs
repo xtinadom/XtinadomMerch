@@ -65,6 +65,10 @@ function runShell(cmd) {
   return r.status === null ? 1 : r.status;
 }
 
+function hasAnyPostgresUrl() {
+  return DB_ENV_KEYS.some((k) => process.env[k]?.trim());
+}
+
 function syncDatabaseSchema() {
   if (process.env.SKIP_PRISMA_SCHEMA_SYNC === "1") {
     console.warn(
@@ -72,6 +76,15 @@ function syncDatabaseSchema() {
     );
     return;
   }
+
+  if (!hasAnyPostgresUrl()) {
+    console.warn(
+      "[build] WARN: No Postgres URL in env — skipping db push / migrate. Add POSTGRES_PRISMA_URL or DATABASE_URL (enable for **Build** on Vercel).",
+    );
+    return;
+  }
+
+  process.env.CI = process.env.CI || "true";
 
   const onVercel = process.env.VERCEL === "1";
   const strict = process.env.STRICT_PRISMA_MIGRATE === "1";
