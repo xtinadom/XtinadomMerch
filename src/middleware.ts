@@ -2,14 +2,28 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import { SITE_GATE_COOKIE } from "@/lib/site-gate";
+import { publicAppOrigin } from "@/lib/public-app-url";
+
+/** Force HTTPS in production (fixes “Not secure” when users hit http:// or env used http). */
+function redirectHttpToHttps(request: NextRequest): NextResponse | null {
+  if (process.env.NODE_ENV !== "production") {
+    return null;
+  }
+  const forwarded = request.headers.get("x-forwarded-proto");
+  if (forwarded === "http" || request.nextUrl.protocol === "http:") {
+    const url = request.nextUrl.clone();
+    url.protocol = "https:";
+    return NextResponse.redirect(url, 308);
+  }
+  return null;
+}
 
 function redirectToCanonicalHost(request: NextRequest): NextResponse | null {
-  const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (!raw || process.env.NODE_ENV !== "production") {
+  const canonical = publicAppOrigin();
+  if (!canonical || process.env.NODE_ENV !== "production") {
     return null;
   }
   try {
-    const canonical = new URL(raw);
     const host = request.nextUrl.hostname.toLowerCase();
     const canonicalHost = canonical.hostname.toLowerCase();
     if (host === canonicalHost) {
@@ -21,7 +35,7 @@ function redirectToCanonicalHost(request: NextRequest): NextResponse | null {
     }
     const url = request.nextUrl.clone();
     url.hostname = canonicalHost;
-    url.protocol = canonical.protocol === "http:" ? "https:" : canonical.protocol;
+    url.protocol = "https:";
     url.port = "";
     return NextResponse.redirect(url, 308);
   } catch {
@@ -30,6 +44,11 @@ function redirectToCanonicalHost(request: NextRequest): NextResponse | null {
 }
 
 export async function middleware(request: NextRequest) {
+  const httpsRedirect = redirectHttpToHttps(request);
+  if (httpsRedirect) {
+    return httpsRedirect;
+  }
+
   const canonicalRedirect = redirectToCanonicalHost(request);
   if (canonicalRedirect) {
     return canonicalRedirect;

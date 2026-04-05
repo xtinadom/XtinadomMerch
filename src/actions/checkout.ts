@@ -6,17 +6,18 @@ import { getCartSession } from "@/lib/session";
 import { cartHasTipEligibleProduct } from "@/lib/tip-eligibility";
 import { resolvePrintifyCheckoutLine } from "@/lib/printify-variants";
 import { FulfillmentType, OrderStatus } from "@/generated/prisma/enums";
+import { publicAppBaseUrl } from "@/lib/public-app-url";
 
 export type CheckoutResult =
   | { ok: true; url: string }
   | { ok: false; error: string };
 
 function appUrl() {
-  const u = process.env.NEXT_PUBLIC_APP_URL;
+  const u = publicAppBaseUrl();
   if (!u) {
     return { ok: false as const, error: "NEXT_PUBLIC_APP_URL is not configured." };
   }
-  return { ok: true as const, url: u.replace(/\/$/, "") };
+  return { ok: true as const, url: u };
 }
 
 function shippingCents() {

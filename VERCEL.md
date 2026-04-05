@@ -108,9 +108,23 @@ Set for **Production** (and **Preview** if needed), then redeploy:
 
 `https://<your-domain>/api/webhooks/stripe`
 
-## 7. Custom domain
+## 7. Custom domain & HTTPS (padlock / “not secure” / scam warnings)
 
-**Settings → Domains**. Match `NEXT_PUBLIC_APP_URL` to the canonical URL (e.g. `https://www.example.com`).
+Browsers show **HTTPS** only when **TLS is terminated correctly** for the hostname you’re visiting. That is almost always **DNS + Vercel**, not application code.
+
+1. **Vercel → Project → Settings → Domains**  
+   Add **both** `www.yourdomain.com` and `yourdomain.com` (or whichever you use). Wait until each row shows **Valid Configuration** (not “Invalid” or “Pending”).
+
+2. **DNS at your registrar** (or DNS host) must match **exactly** what Vercel shows for each domain (CNAME / A / ALIAS). If traffic goes to the wrong place, you get **no certificate** or the wrong site → address bar shows **Not secure**.
+
+3. **`NEXT_PUBLIC_APP_URL`** must be your real public URL with **`https://`** (e.g. `https://www.yourdomain.com`). Never `http://` in production.
+
+4. **Cloudflare in front of Vercel**  
+   SSL/TLS mode must be **Full** or **Full (strict)** — **not** “Flexible” (that can break HTTPS between Cloudflare and Vercel and confuse browsers).
+
+5. After DNS changes, allow propagation (often minutes, sometimes longer), then open `https://www.yourdomain.com` in a private window.
+
+The app also **redirects HTTP → HTTPS** in production and sends **HSTS** on production deployments; that only helps once requests actually reach your Vercel deployment with a valid certificate.
 
 ## Local development
 

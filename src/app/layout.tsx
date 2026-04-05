@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { metadataBaseUrl } from "@/lib/public-app-url";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,9 +13,31 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const site = metadataBaseUrl();
+
 export const metadata: Metadata = {
-  title: "Xtinadom — Merch",
+  metadataBase: site,
+  title: {
+    default: "Xtinadom — Merch",
+    template: "%s · Xtinadom",
+  },
   description: "Official merchandise for Xtinadom.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: site.origin,
+    siteName: "Xtinadom",
+    title: "Xtinadom — Merch",
+    description: "Official merchandise for Xtinadom.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Xtinadom — Merch",
+    description: "Official merchandise for Xtinadom.",
+  },
 };
 
 export default function RootLayout({
