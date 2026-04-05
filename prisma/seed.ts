@@ -1,23 +1,6 @@
 import "dotenv/config";
-import path from "node:path";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "../src/generated/prisma/client";
+import { prisma } from "../src/lib/prisma";
 import { CatalogGroup } from "../src/generated/prisma/enums";
-
-function sqliteUrl(): string {
-  const fromEnv = process.env.DATABASE_URL;
-  const defaultPath = path.join(process.cwd(), "prisma", "dev.db");
-  const raw = fromEnv?.trim() || `file:${defaultPath}`;
-  if (raw.startsWith("file:")) {
-    const w = raw.slice("file:".length).replace(/^\/+/, "");
-    const abs = path.isAbsolute(w) ? w : path.join(process.cwd(), w);
-    return `file:${abs}`;
-  }
-  return `file:${path.join(process.cwd(), raw)}`;
-}
-
-const adapter = new PrismaBetterSqlite3({ url: sqliteUrl() });
-const prisma = new PrismaClient({ adapter });
 
 async function main() {
   await prisma.orderLine.deleteMany();

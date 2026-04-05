@@ -3,6 +3,23 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+/**
+ * URL used by Prisma CLI (`migrate deploy`, etc.).
+ * Prefer a direct (non-pooled) URL — required for Neon poolers and Vercel Postgres migrations.
+ */
+function migrateDatabaseUrl(): string | undefined {
+  const direct =
+    process.env.POSTGRES_URL_NON_POOLING?.trim() ||
+    process.env.DIRECT_URL?.trim() ||
+    process.env.DATABASE_URL_UNPOOLED?.trim();
+  const fallback =
+    process.env.DATABASE_URL?.trim() ||
+    process.env.POSTGRES_URL?.trim() ||
+    process.env.PRISMA_DATABASE_URL?.trim() ||
+    process.env.POSTGRES_PRISMA_URL?.trim();
+  return direct || fallback;
+}
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
@@ -10,6 +27,6 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: migrateDatabaseUrl(),
   },
 });

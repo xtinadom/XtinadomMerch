@@ -1,42 +1,47 @@
-import path from "node:path";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
 /** Bump when `Product` (or other models) change in a way that requires a new client instance in dev. */
-const PRISMA_SINGLETON_STAMP = "product-printifyVariants-json-v1";
+const PRISMA_SINGLETON_STAMP = "postgres-adapter-v1";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
+  pgPool: Pool | undefined;
   prismaSingletonStamp?: string;
 };
 
-/** Resolve DATABASE_URL (file:...) to a form the SQLite adapter accepts. */
-function sqliteUrlForAdapter(): string {
-  const fromEnv = process.env.DATABASE_URL;
-  const defaultPath = path.join(process.cwd(), "prisma", "dev.db");
-  const raw = fromEnv?.trim() || `file:${defaultPath}`;
+function runtimeDatabaseUrl(): string | undefined {
+  return (
+    process.env.POSTGRES_PRISMA_URL?.trim() ||
+    process.env.DATABASE_URL?.trim() ||
+    process.env.POSTGRES_URL?.trim() ||
+    process.env.DIRECT_URL?.trim()
+  );
+}
 
-  if (raw.startsWith("postgres")) {
+function createPrisma(): PrismaClient {
+  const connectionString = runtimeDatabaseUrl();
+  if (!connectionString) {
     throw new Error(
-      "DATABASE_URL points to PostgreSQL but this app uses SQLite locally. Set DATABASE_URL=file:./prisma/dev.db",
+      "No database URL. Set DATABASE_URL or (on Vercel Postgres) POSTGRES_PRISMA_URL. Local: postgresql://postgres:postgres@localhost:5432/xtinadom_merch",
+    );
+  }
+  if (connectionString.startsWith("file:")) {
+    throw new Error(
+      "This app uses PostgreSQL only. Update DATABASE_URL to a postgresql://… connection string.",
     );
   }
 
-  if (raw.startsWith("file:")) {
-    const withoutScheme = raw.slice("file:".length).replace(/^\/+/, "");
-    const absolute = path.isAbsolute(withoutScheme)
-      ? withoutScheme
-      : path.join(process.cwd(), withoutScheme);
-    return `file:${absolute}`;
-  }
+  const pool =
+    globalForPrisma.pgPool ??
+    new Pool({
+      connectionString,
+      max: Number(process.env.PG_POOL_MAX ?? 10),
+    });
+  globalForPrisma.pgPool = pool;
 
-  return `file:${path.isAbsolute(raw) ? raw : path.join(process.cwd(), raw)}`;
-}
-
-function createPrisma() {
-  const adapter = new PrismaBetterSqlite3({
-    url: sqliteUrlForAdapter(),
-  });
+  const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
 
@@ -45,6 +50,7 @@ if (
   globalForPrisma.prismaSingletonStamp !== PRISMA_SINGLETON_STAMP
 ) {
   globalForPrisma.prisma = undefined;
+  globalForPrisma.pgPool = undefined;
   globalForPrisma.prismaSingletonStamp = PRISMA_SINGLETON_STAMP;
 }
 

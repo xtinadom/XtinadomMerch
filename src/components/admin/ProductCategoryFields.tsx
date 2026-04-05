@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { CatalogGroup } from "@/generated/prisma/enums";
 import type { CategoryNode } from "@/lib/category-tree";
@@ -116,15 +116,22 @@ export function ProductCategoryFields({
   useEffect(() => {
     if (dialog.open) {
       dialogRef.current?.showModal();
-      setDialogError(null);
-      if (dialog.mode === "addCategory") {
-        setCreatePlacement("top");
-        setCreateParentId(parentRoots[0]?.id ?? "");
-      }
     } else {
       dialogRef.current?.close();
     }
-  }, [dialog, parentRoots]);
+  }, [dialog.open]);
+
+  const openAddCategoryDialog = useCallback(() => {
+    setDialogError(null);
+    setCreatePlacement("top");
+    setCreateParentId(parentRoots[0]?.id ?? "");
+    setDialog({ open: true, mode: "addCategory" });
+  }, [parentRoots]);
+
+  const openEditCategoryDialog = useCallback((categoryId: string) => {
+    setDialogError(null);
+    setDialog({ open: true, mode: "editCategory", categoryId });
+  }, []);
 
   async function handleDialogSubmit(
     action: (fd: FormData) => Promise<
@@ -165,10 +172,6 @@ export function ProductCategoryFields({
     dialog.open && dialog.mode === "editCategory"
       ? byId.get(dialog.categoryId)
       : undefined;
-
-  function openEditCategory(categoryId: string) {
-    setDialog({ open: true, mode: "editCategory", categoryId });
-  }
 
   function addPickedTag() {
     if (!pickId || tagIds.includes(pickId)) return;
@@ -287,7 +290,7 @@ export function ProductCategoryFields({
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => openEditCategory(id)}
+                      onClick={() => openEditCategoryDialog(id)}
                       className="rounded-md border border-zinc-600 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 hover:border-zinc-500"
                     >
                       Edit
@@ -332,7 +335,7 @@ export function ProductCategoryFields({
           </button>
           <button
             type="button"
-            onClick={() => setDialog({ open: true, mode: "addCategory" })}
+            onClick={openAddCategoryDialog}
             className="rounded-lg border border-emerald-900/50 bg-emerald-950/35 px-4 py-2 text-sm font-medium text-emerald-100/90 hover:bg-emerald-950/50"
           >
             New category
