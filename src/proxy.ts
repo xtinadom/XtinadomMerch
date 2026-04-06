@@ -43,7 +43,7 @@ function redirectToCanonicalHost(request: NextRequest): NextResponse | null {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const httpsRedirect = redirectHttpToHttps(request);
   if (httpsRedirect) {
     return httpsRedirect;

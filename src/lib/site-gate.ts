@@ -1,6 +1,6 @@
 import { publicAppOrigin } from "@/lib/public-app-url";
 
-/** HttpOnly cookie storing a short-lived JWT; verified in middleware (Edge). */
+/** HttpOnly cookie storing a short-lived JWT; verified in proxy (Node). */
 export const SITE_GATE_COOKIE = "xtina_site_gate";
 
 /**
