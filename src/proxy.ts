@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
-import { SITE_GATE_COOKIE } from "@/lib/site-gate";
+import { SITE_GATE_COOKIE, siteGateCookieDomain } from "@/lib/site-gate";
 import { publicAppOrigin } from "@/lib/public-app-url";
 
 /** Force HTTPS in production (fixes “Not secure” when users hit http:// or env used http). */
@@ -79,7 +79,22 @@ export async function proxy(request: NextRequest) {
       await jwtVerify(token, new TextEncoder().encode(secret));
       return NextResponse.next();
     } catch {
-      /* redirect to gate */
+      /* Bad or expired token — clear it so /gate + login can recover cleanly. */
+      const gate = new URL("/gate", request.url);
+      if (pathname !== "/") {
+        gate.searchParams.set("from", pathname + request.nextUrl.search);
+      }
+      const res = NextResponse.redirect(gate);
+      const domain = siteGateCookieDomain();
+      res.cookies.set(SITE_GATE_COOKIE, "", {
+        path: "/",
+        maxAge: 0,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        ...(domain ? { domain } : {}),
+      });
+      return res;
     }
   }
 

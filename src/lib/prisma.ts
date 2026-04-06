@@ -39,6 +39,10 @@ function createPrisma(): PrismaClient {
     new Pool({
       connectionString,
       max: Number(process.env.PG_POOL_MAX ?? poolMaxDefault),
+      /** Avoid hanging forever if Postgres is unreachable (Neon/Vercel network issues). */
+      connectionTimeoutMillis: Number(
+        process.env.PG_CONNECTION_TIMEOUT_MS ?? 15_000,
+      ),
     });
   globalForPrisma.pgPool = pool;
 
