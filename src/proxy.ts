@@ -9,6 +9,10 @@ function redirectHttpToHttps(request: NextRequest): NextResponse | null {
   if (process.env.NODE_ENV !== "production") {
     return null;
   }
+  const host = request.nextUrl.hostname;
+  if (host === "localhost" || host === "127.0.0.1" || host === "[::1]") {
+    return null;
+  }
   const forwarded = request.headers.get("x-forwarded-proto");
   if (forwarded === "http" || request.nextUrl.protocol === "http:") {
     const url = request.nextUrl.clone();

@@ -16,7 +16,10 @@
     "db:seed": "prisma db seed",
     "cleanup-tags": "tsx scripts/cleanup-duplicate-tags.ts",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "build:prod": "node scripts/with-production-env.cjs scripts/vercel-build.cjs",
+    "start:prod": "node scripts/with-production-env.cjs node_modules/next/dist/bin/next start",
+    "preview:prod": "npm run build:prod && node scripts/with-production-env.cjs node_modules/next/dist/bin/next start -p 4173"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
