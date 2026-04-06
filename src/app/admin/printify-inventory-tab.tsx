@@ -13,6 +13,7 @@ import {
 } from "@/lib/printify";
 import { productImageUrls } from "@/lib/product-media";
 import type { AdminTagRow } from "@/components/admin/ProductTagFields";
+import { CollectionAssignmentFields } from "@/components/admin/CollectionAssignmentFields";
 import { ProductTagFields } from "@/components/admin/ProductTagFields";
 import { productTagIds } from "@/lib/product-tags";
 
@@ -92,7 +93,6 @@ export async function PrintifyInventoryTab({
   );
 
   const importSlug = process.env.PRINTIFY_IMPORT_TAG_SLUG?.trim() || "mug";
-  const importCol = process.env.PRINTIFY_IMPORT_COLLECTION?.trim().toLowerCase() || "sub";
 
   return (
     <div className="space-y-10" aria-label="Printify inventory">
@@ -121,7 +121,7 @@ export async function PrintifyInventoryTab({
           {syncReason === "no_shop"
             ? " — set PRINTIFY_SHOP_ID in .env."
             : syncReason === "no_tag"
-              ? " — no tag found (set PRINTIFY_IMPORT_TAG_SLUG + PRINTIFY_IMPORT_COLLECTION or run seed)."
+              ? " — no tag found (set PRINTIFY_IMPORT_TAG_SLUG or run seed)."
               : "."}
         </p>
       )}
@@ -133,10 +133,7 @@ export async function PrintifyInventoryTab({
             One storefront product per Printify product id: pulls every enabled variant into a dropdown on
             the product page. Matches existing rows by Printify product id, then unmapped POD rows by slug or
             title. New products get tag{" "}
-            <code className="text-zinc-400">
-              {importCol}/{importSlug}
-            </code>{" "}
-            and audience{" "}
+            <code className="text-zinc-400">{importSlug}</code> and audience{" "}
             <code className="text-zinc-400">
               {process.env.PRINTIFY_IMPORT_AUDIENCE?.trim() || "both"}
             </code>{" "}
@@ -184,12 +181,8 @@ export async function PrintifyInventoryTab({
             {process.env.PRINTIFY_SHIPPING_METHOD ?? "1"} (Printify shipping method id for orders)
           </li>
           <li>
-            <span className="text-zinc-400">PRINTIFY_IMPORT_TAG_SLUG</span> /{" "}
-            <span className="text-zinc-400">PRINTIFY_IMPORT_COLLECTION</span> — new listings default tag (
-            <code className="text-zinc-400">
-              {importCol}/{importSlug}
-            </code>
-            )
+            <span className="text-zinc-400">PRINTIFY_IMPORT_TAG_SLUG</span> — new listings default tag (
+            <code className="text-zinc-400">{importSlug}</code>)
           </li>
         </ul>
         {!tokenSet && (
@@ -367,8 +360,8 @@ export async function PrintifyInventoryTab({
                   key={`printify-${p.id}-${productTagIds(p).join("-")}`}
                   tags={allTags}
                   defaultTagIds={productTagIds(p)}
-                  variant="all"
                 />
+                <CollectionAssignmentFields audience={p.audience} />
                 <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
                   <input
                     type="checkbox"
@@ -378,6 +371,32 @@ export async function PrintifyInventoryTab({
                   />
                   Allow checkout tip (sub-eligible items only)
                 </label>
+                <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                    Payment at checkout
+                  </span>
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="payCard"
+                      defaultChecked={p.payCard}
+                      className="rounded border-zinc-600"
+                    />
+                    Card
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="payCashApp"
+                      defaultChecked={p.payCashApp}
+                      className="rounded border-zinc-600"
+                    />
+                    Cash App
+                  </label>
+                </div>
+                <p className="text-[11px] text-zinc-600">
+                  Stripe only shows methods every line in the cart allows.
+                </p>
                 <label className="block text-xs text-zinc-500">
                   Photo URLs (mockups; one per line)
                   <textarea

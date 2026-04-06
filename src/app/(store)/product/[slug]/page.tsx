@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { FulfillmentType, Audience, CatalogGroup } from "@/generated/prisma/enums";
+import { FulfillmentType, Audience } from "@/generated/prisma/enums";
 import { addToCart } from "@/actions/cart";
 import { getShippingFlatCents } from "@/lib/shipping";
 import { productImageUrls } from "@/lib/product-media";
@@ -63,11 +63,11 @@ export default async function ProductPage({ params }: Props) {
   const shopHref = shopHomeForAudience(product.audience);
   const primary = product.primaryTag;
   const tagHref =
-    primary && primary.collection === CatalogGroup.sub
-      ? `${SHOP_SUB_ROUTE}/tag/${primary.slug}`
-      : primary && primary.collection === CatalogGroup.domme
+    primary != null
+      ? product.audience === Audience.domme
         ? `${SHOP_DOMME_ROUTE}/tag/${primary.slug}`
-        : shopHref;
+        : `${SHOP_SUB_ROUTE}/tag/${primary.slug}`
+      : shopHref;
 
   return (
     <div className="grid gap-10 lg:grid-cols-2 lg:items-start">

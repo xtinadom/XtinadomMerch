@@ -9,11 +9,16 @@ import {
   updateManualStock,
   updateProductDetails,
 } from "@/actions/admin";
-import { adminCreateTagForm, adminDeleteTagForm } from "@/actions/admin-tags";
+import {
+  adminCreateTagForm,
+  adminDeleteTagForm,
+  adminUpdateTagForm,
+} from "@/actions/admin-tags";
 import type { Prisma } from "@/generated/prisma/client";
-import { CatalogGroup, FulfillmentType, OrderStatus } from "@/generated/prisma/enums";
+import { FulfillmentType, OrderStatus } from "@/generated/prisma/enums";
 import { productImageUrls } from "@/lib/product-media";
 import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
+import { CollectionAssignmentFields } from "@/components/admin/CollectionAssignmentFields";
 import { ProductTagFields } from "@/components/admin/ProductTagFields";
 import { productTagIds } from "@/lib/product-tags";
 import { PrintifyInventoryTab } from "./printify-inventory-tab";
@@ -78,7 +83,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       },
     }),
     prisma.tag.findMany({
-      orderBy: [{ collection: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
   ]);
 
@@ -87,10 +92,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     (p) => p.fulfillmentType === FulfillmentType.printify,
   );
 
-  const subTagsSorted = adminTags
-    .filter((t) => t.collection === CatalogGroup.sub)
-    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
-  const defaultCreateTagIds = subTagsSorted[0] ? [subTagsSorted[0].id] : [];
+  const defaultCreateTagIds = adminTags[0] ? [adminTags[0].id] : [];
 
   return (
     <div className="space-y-12">
@@ -118,32 +120,69 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           </p>
         ) : null}
         <p className="mt-1 text-xs text-zinc-600">
-          Tags are scoped to Sub shop or Domme shop. Products must use tags from the matching side (or a
-          single side for “both” audience).
+          Tags are shared. Use <strong className="font-medium text-zinc-500">Collection assignment</strong>{" "}
+          on each product to choose Sub shop, Domme shop, or both.
         </p>
         <ul className="mt-4 divide-y divide-zinc-800 border-y border-zinc-800 text-sm">
           {adminTags.map((t) => (
             <li
               key={t.id}
-              className="flex flex-wrap items-center justify-between gap-2 py-2 text-zinc-300"
+              className="flex flex-col gap-3 py-3 text-zinc-300 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between"
             >
-              <span>
-                <span className="text-zinc-100">{t.name}</span>{" "}
-                <code className="text-[11px] text-zinc-500">{t.slug}</code>{" "}
-                <span className="text-[11px] text-zinc-600">({t.collection})</span>
-              </span>
-              <ConfirmDeleteForm
-                action={adminDeleteTagForm}
-                message={`Delete tag “${t.name}”? Only if no products use it.`}
+              <form
+                action={adminUpdateTagForm}
+                className="flex min-w-0 flex-1 flex-wrap items-end gap-2"
               >
                 <input type="hidden" name="tagId" value={t.id} />
+                <label className="block text-[11px] text-zinc-500">
+                  Name
+                  <input
+                    type="text"
+                    name="name"
+                    required
+                    defaultValue={t.name}
+                    className="mt-0.5 block w-36 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100 sm:w-40"
+                  />
+                </label>
+                <label className="block text-[11px] text-zinc-500">
+                  Slug
+                  <input
+                    type="text"
+                    name="slug"
+                    defaultValue={t.slug}
+                    className="mt-0.5 block w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-200 sm:w-36"
+                  />
+                </label>
+                <label className="block text-[11px] text-zinc-500">
+                  Sort
+                  <input
+                    type="number"
+                    name="sortOrder"
+                    defaultValue={t.sortOrder}
+                    className="mt-0.5 block w-16 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm"
+                  />
+                </label>
                 <button
                   type="submit"
-                  className="text-[11px] text-rose-400/90 hover:underline"
+                  className="rounded border border-zinc-600 bg-zinc-800/80 px-2.5 py-1 text-[11px] text-zinc-200 hover:bg-zinc-700"
                 >
-                  Delete
+                  Save
                 </button>
-              </ConfirmDeleteForm>
+              </form>
+              <div className="flex shrink-0 items-center gap-3 sm:pb-0.5">
+                <ConfirmDeleteForm
+                  action={adminDeleteTagForm}
+                  message={`Delete tag “${t.name}”? Only if no products use it.`}
+                >
+                  <input type="hidden" name="tagId" value={t.id} />
+                  <button
+                    type="submit"
+                    className="text-[11px] text-rose-400/90 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </ConfirmDeleteForm>
+              </div>
             </li>
           ))}
         </ul>
@@ -154,17 +193,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           action={adminCreateTagForm}
           className="mt-6 flex flex-col gap-3 border-t border-zinc-800 pt-4 sm:flex-row sm:flex-wrap sm:items-end"
         >
-          <label className="block text-xs text-zinc-500">
-            Collection
-            <select
-              name="collection"
-              required
-              className="mt-1 block rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200"
-            >
-              <option value="sub">Sub</option>
-              <option value="domme">Domme</option>
-            </select>
-          </label>
           <label className="block text-xs text-zinc-500">
             Name
             <input
@@ -209,12 +237,14 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         <p className="rounded-lg border border-rose-900/50 bg-rose-950/30 px-4 py-2 text-sm text-rose-200/90">
           Could not create item
           {createReason === "category"
-            ? " — pick at least one Sub shop tag."
-            : createReason === "name"
-              ? " — title is required."
-              : createReason === "price"
-                ? " — invalid price."
-                : "."}
+            ? " — pick at least one tag."
+            : createReason === "collection"
+              ? " — choose at least one shop (Sub and/or Domme)."
+              : createReason === "name"
+                ? " — title is required."
+                : createReason === "price"
+                  ? " — invalid price."
+                  : "."}
         </p>
       )}
       {deleteOk && (
@@ -349,15 +379,17 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                       Allow checkout tip (sub shop)
                     </label>
                   </div>
-                  {defaultCreateTagIds.length > 0 ? (
+                  <CollectionAssignmentFields />
+                  {adminTags.length > 0 ? (
                     <ProductTagFields
                       key="create-manual-used"
                       tags={adminTags}
                       defaultTagIds={defaultCreateTagIds}
-                      variant="subOnly"
                     />
                   ) : (
-                    <p className="text-xs text-amber-400/90">Add Sub shop tags before creating used items.</p>
+                    <p className="text-xs text-amber-400/90">
+                      Add tags in Shop tags above before creating used items.
+                    </p>
                   )}
                   <button
                     type="submit"
@@ -434,8 +466,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                         key={`edit-${p.id}-${productTagIds(p).join("-")}`}
                         tags={adminTags}
                         defaultTagIds={productTagIds(p)}
-                        variant="subOnly"
                       />
+                      <CollectionAssignmentFields audience={p.audience} />
                       <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
                         <input
                           type="checkbox"
@@ -602,8 +634,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         </ul>
       </section>
 
-      <Link href="/shop" className="text-xs text-zinc-600 hover:underline">
-        ← Shop
+      <Link href="/" className="text-xs text-zinc-600 hover:underline">
+        ← Home
       </Link>
     </div>
   );

@@ -46,7 +46,7 @@ export async function addToCart(
   await session.save();
   revalidatePath("/cart");
   revalidatePath("/checkout");
-  revalidatePath("/shop");
+  revalidatePath("/");
   revalidatePath("/product/" + product.slug);
 }
 

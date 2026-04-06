@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect, useMemo } from "react";
-import { CatalogGroup } from "@/generated/prisma/enums";
 import {
   SHOP_SUB_ROUTE,
   SHOP_DOMME_ROUTE,
@@ -11,21 +10,19 @@ import {
 } from "@/lib/constants";
 import type { Tag } from "@/generated/prisma/client";
 
-type Row = Pick<Tag, "id" | "slug" | "name" | "sortOrder" | "collection">;
+type Row = Pick<Tag, "id" | "slug" | "name" | "sortOrder">;
 
 export function ShopTagMenu({ tags }: { tags: Row[] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const { subTags, dommeTags } = useMemo(() => {
-    const sub = tags
-      .filter((t) => t.collection === CatalogGroup.sub)
-      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
-    const domme = tags
-      .filter((t) => t.collection === CatalogGroup.domme)
-      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
-    return { subTags: sub, dommeTags: domme };
-  }, [tags]);
+  const sortedTags = useMemo(
+    () =>
+      [...tags].sort(
+        (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
+      ),
+    [tags],
+  );
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -64,7 +61,7 @@ export function ShopTagMenu({ tags }: { tags: Row[] }) {
               {SUB_SHOP_NAV_LABEL}
             </Link>
             <ul className="mt-0.5 space-y-0.5" role="group">
-              {subTags.map((t) => (
+              {sortedTags.map((t) => (
                 <li key={t.id} role="none">
                   <Link
                     role="menuitem"
@@ -88,7 +85,7 @@ export function ShopTagMenu({ tags }: { tags: Row[] }) {
               {DOMME_SHOP_NAV_LABEL}
             </Link>
             <ul className="mt-0.5 space-y-0.5" role="group">
-              {dommeTags.map((t) => (
+              {sortedTags.map((t) => (
                 <li key={t.id} role="none">
                   <Link
                     role="menuitem"

@@ -25,7 +25,7 @@ export default async function OrderSuccessPage({ searchParams }: Props) {
         </p>
       )}
       <Link
-        href="/shop"
+        href="/"
         className="mt-8 inline-block rounded-xl bg-zinc-800 px-6 py-3 text-sm text-zinc-100 hover:bg-zinc-700"
       >
         Continue shopping

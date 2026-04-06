@@ -25,7 +25,6 @@ export async function ShopCollectionPage({
 }) {
   const base = shopBase(collection);
   const tags = await prisma.tag.findMany({
-    where: { collection },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
 
@@ -97,7 +96,7 @@ export async function ShopCollectionPage({
           <p className="mt-1 text-sm text-zinc-500">
             Browse by tag from the menu above.{" "}
             <Link href="/" className="text-rose-400/90 hover:underline">
-              Change persona
+              All collections
             </Link>
           </p>
         </div>

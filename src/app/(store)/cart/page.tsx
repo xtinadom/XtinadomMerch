@@ -41,7 +41,7 @@ export default async function CartPage() {
       {rows.length === 0 ? (
         <p className="mt-6 text-sm text-zinc-500">
           Your cart is empty.{" "}
-          <Link href="/shop" className="text-rose-400/90 hover:underline">
+          <Link href="/" className="text-rose-400/90 hover:underline">
             Continue shopping
           </Link>
         </p>

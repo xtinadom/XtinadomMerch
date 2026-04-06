@@ -1,6 +1,5 @@
 import "dotenv/config";
 import { prisma } from "../src/lib/prisma";
-import { CatalogGroup } from "../src/generated/prisma/enums";
 
 const TYPE_TAGS: { slug: string; name: string; sortOrder: number }[] = [
   { slug: "mug", name: "Mug", sortOrder: 1 },
@@ -22,22 +21,18 @@ async function main() {
 
   const tagIds = new Map<string, string>();
 
-  for (const collection of [CatalogGroup.sub, CatalogGroup.domme] as const) {
-    for (const t of TYPE_TAGS) {
-      const row = await prisma.tag.create({
-        data: {
-          slug: t.slug,
-          name: t.name,
-          sortOrder: t.sortOrder,
-          collection,
-        },
-      });
-      tagIds.set(`${collection}:${t.slug}`, row.id);
-    }
+  for (const t of TYPE_TAGS) {
+    const row = await prisma.tag.create({
+      data: {
+        slug: t.slug,
+        name: t.name,
+        sortOrder: t.sortOrder,
+      },
+    });
+    tagIds.set(t.slug, row.id);
   }
 
-  const sub = (slug: string) => tagIds.get(`sub:${slug}`)!;
-  const dom = (slug: string) => tagIds.get(`domme:${slug}`)!;
+  const tid = (slug: string) => tagIds.get(slug)!;
 
   await prisma.product.create({
     data: {
@@ -49,13 +44,13 @@ async function main() {
       audience: "sub",
       fulfillmentType: "printify",
       checkoutTipEligible: true,
-      primaryTagId: sub("mug"),
+      primaryTagId: tid("mug"),
       printifyProductId: null,
       printifyVariantId: null,
       stockQuantity: 0,
       trackInventory: false,
       active: true,
-      tags: { create: [{ tagId: sub("mug") }] },
+      tags: { create: [{ tagId: tid("mug") }] },
     },
   });
 
@@ -69,13 +64,13 @@ async function main() {
       audience: "sub",
       fulfillmentType: "printify",
       checkoutTipEligible: true,
-      primaryTagId: sub("canvas-print"),
+      primaryTagId: tid("canvas-print"),
       printifyProductId: null,
       printifyVariantId: null,
       stockQuantity: 0,
       trackInventory: false,
       active: true,
-      tags: { create: [{ tagId: sub("canvas-print") }] },
+      tags: { create: [{ tagId: tid("canvas-print") }] },
     },
   });
 
@@ -89,11 +84,11 @@ async function main() {
       audience: "sub",
       fulfillmentType: "manual",
       checkoutTipEligible: true,
-      primaryTagId: sub("sticker"),
+      primaryTagId: tid("sticker"),
       stockQuantity: 1,
       trackInventory: true,
       active: true,
-      tags: { create: [{ tagId: sub("sticker") }] },
+      tags: { create: [{ tagId: tid("sticker") }] },
     },
   });
 
@@ -107,13 +102,13 @@ async function main() {
       audience: "domme",
       fulfillmentType: "printify",
       checkoutTipEligible: false,
-      primaryTagId: dom("t-shirt"),
+      primaryTagId: tid("t-shirt"),
       printifyProductId: null,
       printifyVariantId: null,
       stockQuantity: 0,
       trackInventory: false,
       active: true,
-      tags: { create: [{ tagId: dom("t-shirt") }] },
+      tags: { create: [{ tagId: tid("t-shirt") }] },
     },
   });
 
@@ -127,13 +122,13 @@ async function main() {
       audience: "domme",
       fulfillmentType: "printify",
       checkoutTipEligible: false,
-      primaryTagId: dom("mug"),
+      primaryTagId: tid("mug"),
       printifyProductId: null,
       printifyVariantId: null,
       stockQuantity: 0,
       trackInventory: false,
       active: true,
-      tags: { create: [{ tagId: dom("mug") }] },
+      tags: { create: [{ tagId: tid("mug") }] },
     },
   });
 

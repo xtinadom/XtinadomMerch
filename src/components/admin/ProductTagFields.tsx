@@ -1,36 +1,23 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { CatalogGroup } from "@/generated/prisma/enums";
 import type { Tag } from "@/generated/prisma/client";
 
-export type AdminTagRow = Pick<Tag, "id" | "slug" | "name" | "sortOrder" | "collection">;
-
-export type ProductTagFieldsVariant = "subOnly" | "dommeOnly" | "all";
+export type AdminTagRow = Pick<Tag, "id" | "slug" | "name" | "sortOrder">;
 
 type Props = {
   tags: AdminTagRow[];
   defaultTagIds: string[];
-  variant?: ProductTagFieldsVariant;
 };
 
-function filteredTags(tags: AdminTagRow[], variant: ProductTagFieldsVariant): AdminTagRow[] {
-  if (variant === "subOnly") return tags.filter((t) => t.collection === CatalogGroup.sub);
-  if (variant === "dommeOnly") return tags.filter((t) => t.collection === CatalogGroup.domme);
-  return [...tags].sort((a, b) => {
-    if (a.collection !== b.collection) {
-      return a.collection === CatalogGroup.sub ? -1 : 1;
-    }
-    return a.sortOrder - b.sortOrder || a.name.localeCompare(b.name);
-  });
-}
-
-export function ProductTagFields({
-  tags: allTags,
-  defaultTagIds,
-  variant = "all",
-}: Props) {
-  const tags = useMemo(() => filteredTags(allTags, variant), [allTags, variant]);
+export function ProductTagFields({ tags: allTags, defaultTagIds }: Props) {
+  const tags = useMemo(
+    () =>
+      [...allTags].sort(
+        (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
+      ),
+    [allTags],
+  );
 
   const [selected, setSelected] = useState<string[]>(() => {
     const allowed = new Set(tags.map((t) => t.id));
@@ -77,12 +64,7 @@ export function ProductTagFields({
                   onChange={() => toggle(t.id)}
                   className="rounded border-zinc-600"
                 />
-                <span>
-                  {t.name}
-                  <span className="ml-1 text-[10px] text-zinc-600">
-                    ({t.collection})
-                  </span>
-                </span>
+                <span>{t.name}</span>
               </label>
               {on ? (
                 <button

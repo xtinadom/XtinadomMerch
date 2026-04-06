@@ -30,8 +30,8 @@ export default async function CheckoutPage() {
         <h1 className="text-2xl font-semibold text-zinc-50">Checkout</h1>
         <p className="mt-4 text-sm text-zinc-500">
           Your cart is empty.{" "}
-          <Link href="/shop" className="text-rose-400/90 hover:underline">
-            Shop
+          <Link href="/" className="text-rose-400/90 hover:underline">
+            Browse collections
           </Link>
         </p>
       </div>

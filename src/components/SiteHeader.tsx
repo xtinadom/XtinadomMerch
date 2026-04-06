@@ -4,14 +4,14 @@ import { ShopTagMenu } from "@/components/ShopTagMenu";
 
 export async function SiteHeader() {
   const tags = await prisma.tag.findMany({
-    orderBy: [{ collection: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
 
   return (
     <header className="relative z-[1000] border-b border-zinc-800 bg-zinc-950/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
         <Link
-          href="/shop"
+          href="/"
           className="text-lg font-semibold tracking-tight text-zinc-100"
         >
           Xtinadom

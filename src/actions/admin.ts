@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { getAdminSession } from "@/lib/session";
-import { Audience, CatalogGroup, FulfillmentType } from "@/generated/prisma/enums";
+import { Audience, FulfillmentType } from "@/generated/prisma/enums";
 import { fetchPrintifyCatalogEnriched } from "@/lib/printify";
 import { pickImageForVariant } from "@/lib/printify-catalog";
 import { slugify } from "@/lib/slugify";
@@ -14,10 +14,14 @@ import {
   toGalleryJson,
 } from "@/lib/product-media";
 import { parseProductTagIdsFromForm } from "@/lib/product-tag-form";
+import {
+  audienceFromCollectionAssignment,
+  parseCollectionAssignmentFromForm,
+} from "@/lib/collection-assignment";
 import { assertTagsValidForAudience } from "@/actions/admin-tags";
 
 function revalidateShopSurface() {
-  revalidatePath("/shop");
+  revalidatePath("/");
   revalidatePath("/shop/sub");
   revalidatePath("/shop/domme");
   revalidatePath("/cart");
@@ -79,6 +83,11 @@ export async function updateProductDetails(
   const imageUrl = urls[0] ?? null;
   const imageGallery = toGalleryJson(urls);
 
+  const { sub: colSub, domme: colDomme } =
+    parseCollectionAssignmentFromForm(formData);
+  const audienceNext = audienceFromCollectionAssignment(colSub, colDomme);
+  if (!audienceNext) return;
+
   const data: Prisma.ProductUpdateInput = {
     name,
     description,
@@ -87,9 +96,13 @@ export async function updateProductDetails(
     imageGallery,
     active: formData.get("active") === "on",
     checkoutTipEligible: formData.get("checkoutTipEligible") === "on",
+    audience: audienceNext,
   };
 
-  if (product.fulfillmentType === FulfillmentType.manual) {
+  if (
+    product.fulfillmentType === FulfillmentType.manual ||
+    product.fulfillmentType === FulfillmentType.printify
+  ) {
     const payCashApp = formData.get("payCashApp") === "on";
     let payCard = formData.get("payCard") === "on";
     if (!payCard && !payCashApp) payCard = true;
@@ -99,7 +112,7 @@ export async function updateProductDetails(
 
   const tagIds = parseProductTagIdsFromForm(formData);
   if (tagIds.length > 0) {
-    const valid = await assertTagsValidForAudience(product.audience, tagIds);
+    const valid = await assertTagsValidForAudience(audienceNext, tagIds);
     if (!valid.ok) return;
     const primary = tagIds[0]!;
     data.primaryTag = { connect: { id: primary } };
@@ -173,7 +186,15 @@ export async function createManualUsedProduct(formData: FormData): Promise<void>
   if (tagIds.length === 0) {
     redirect("/admin?create=err&reason=category&tab=manual");
   }
-  const valid = await assertTagsValidForAudience(Audience.sub, tagIds);
+
+  const { sub: colSub, domme: colDomme } =
+    parseCollectionAssignmentFromForm(formData);
+  const audienceNew = audienceFromCollectionAssignment(colSub, colDomme);
+  if (!audienceNew) {
+    redirect("/admin?create=err&reason=collection&tab=manual");
+  }
+
+  const valid = await assertTagsValidForAudience(audienceNew, tagIds);
   if (!valid.ok) {
     redirect("/admin?create=err&reason=category&tab=manual");
   }
@@ -191,7 +212,7 @@ export async function createManualUsedProduct(formData: FormData): Promise<void>
       imageGallery: toGalleryJson(urls),
       payCard,
       payCashApp,
-      audience: Audience.sub,
+      audience: audienceNew,
       fulfillmentType: FulfillmentType.manual,
       primaryTagId: primary,
       checkoutTipEligible: formData.get("checkoutTipEligible") === "on",
@@ -285,10 +306,8 @@ function importAudience(): Audience {
 
 async function resolveImportTagId(): Promise<string | null> {
   const slug = process.env.PRINTIFY_IMPORT_TAG_SLUG?.trim() || "mug";
-  const colRaw = process.env.PRINTIFY_IMPORT_COLLECTION?.trim().toLowerCase();
-  const collection = colRaw === "domme" ? CatalogGroup.domme : CatalogGroup.sub;
   const tag = await prisma.tag.findUnique({
-    where: { collection_slug: { collection, slug } },
+    where: { slug },
   });
   return tag?.id ?? null;
 }
@@ -533,10 +552,10 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
 
   revalidatePath("/admin");
   revalidateShopSurface();
-  const allTags = await prisma.tag.findMany({ select: { slug: true, collection: true } });
+  const allTags = await prisma.tag.findMany({ select: { slug: true } });
   for (const t of allTags) {
-    const seg = t.collection === CatalogGroup.sub ? "sub" : "domme";
-    revalidatePath(`/shop/${seg}/tag/${t.slug}`);
+    revalidatePath(`/shop/sub/tag/${t.slug}`);
+    revalidatePath(`/shop/domme/tag/${t.slug}`);
   }
   const allSlugs = await prisma.product.findMany({ select: { slug: true } });
   for (const pr of allSlugs) {

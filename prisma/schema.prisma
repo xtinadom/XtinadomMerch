@@ -18,24 +18,21 @@ enum FulfillmentType {
   manual
 }
 
-/** Which shop collection a tag belongs to (sub shop vs domme shop). */
+/** Storefront “collection” routes: sub shop vs domme shop (product audience), not tag ownership. */
 enum CatalogGroup {
   sub
   domme
 }
 
 model Tag {
-  id              String         @id @default(cuid())
-  slug            String
+  id              String    @id @default(cuid())
+  slug            String    @unique
   name            String
-  sortOrder       Int            @default(0)
-  collection      CatalogGroup
+  sortOrder       Int       @default(0)
   productTags     ProductTag[]
-  primaryProducts Product[]      @relation("ProductPrimaryTag")
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-
-  @@unique([collection, slug])
+  primaryProducts Product[] @relation("ProductPrimaryTag")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model ProductTag {

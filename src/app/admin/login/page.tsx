@@ -43,8 +43,8 @@ export default function AdminLoginPage() {
           {pending ? "…" : "Sign in"}
         </button>
       </form>
-      <Link href="/shop" className="mt-8 inline-block text-xs text-zinc-600 hover:underline">
-        ← Shop
+      <Link href="/" className="mt-8 inline-block text-xs text-zinc-600 hover:underline">
+        ← Home
       </Link>
     </div>
   );
