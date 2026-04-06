@@ -3,6 +3,6 @@ import { CatalogGroup } from "@/generated/prisma/enums";
 
 export const dynamic = "force-dynamic";
 
-export default function SubShopPage() {
+export default async function SubShopPage() {
   return <ShopCollectionPage collection={CatalogGroup.sub} />;
 }

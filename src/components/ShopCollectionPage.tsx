@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getStoreTags } from "@/lib/store-tags";
 import { CatalogGroup } from "@/generated/prisma/enums";
 import { audienceWhereForCollection } from "@/lib/shop-queries";
 import { productHasTag } from "@/lib/product-tags";
@@ -24,9 +25,7 @@ export async function ShopCollectionPage({
   tagSlug?: string;
 }) {
   const base = shopBase(collection);
-  const tags = await prisma.tag.findMany({
-    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-  });
+  const tags = await getStoreTags();
 
   let activeTag: (typeof tags)[0] | null = null;
   if (tagSlug) {

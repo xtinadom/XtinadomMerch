@@ -1,11 +1,9 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { getStoreTags } from "@/lib/store-tags";
 import { ShopTagMenu } from "@/components/ShopTagMenu";
 
 export async function SiteHeader() {
-  const tags = await prisma.tag.findMany({
-    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-  });
+  const tags = await getStoreTags();
 
   return (
     <header className="relative z-[1000] border-b border-zinc-800 bg-zinc-950/90 backdrop-blur">
