@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { SignJWT } from "jose";
-import { SITE_GATE_COOKIE } from "@/lib/site-gate";
+import { SITE_GATE_COOKIE, siteGateCookieDomain } from "@/lib/site-gate";
 
 export const runtime = "nodejs";
 
@@ -41,12 +41,14 @@ export async function POST(request: Request) {
     .sign(new TextEncoder().encode(secret));
 
   const jar = await cookies();
+  const domain = siteGateCookieDomain();
   jar.set(SITE_GATE_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
+    ...(domain ? { domain } : {}),
   });
 
   return Response.json({ ok: true });
