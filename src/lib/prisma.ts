@@ -33,11 +33,12 @@ function createPrisma(): PrismaClient {
     );
   }
 
+  const poolMaxDefault = process.env.VERCEL === "1" ? 1 : 10;
   const pool =
     globalForPrisma.pgPool ??
     new Pool({
       connectionString,
-      max: Number(process.env.PG_POOL_MAX ?? 10),
+      max: Number(process.env.PG_POOL_MAX ?? poolMaxDefault),
     });
   globalForPrisma.pgPool = pool;
 

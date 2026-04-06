@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 function safeRedirectPath(from: string | null): string {
   if (!from || !from.startsWith("/") || from.startsWith("//")) {
@@ -11,7 +11,6 @@ function safeRedirectPath(from: string | null): string {
 }
 
 export function GateClient() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -33,8 +32,9 @@ export function GateClient() {
         return;
       }
       const target = safeRedirectPath(searchParams.get("from"));
-      router.replace(target);
-      router.refresh();
+      // Full navigation so the browser reliably applies Set-Cookie before the next request.
+      // Client router transitions can race the httpOnly gate cookie and bounce back to /gate.
+      window.location.assign(target);
     } finally {
       setPending(false);
     }

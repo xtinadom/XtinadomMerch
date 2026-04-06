@@ -35,6 +35,14 @@ export default function StoreError({
         </code>
         ).
       </p>
+      {error.digest ? (
+        <p className="mt-4 font-mono text-[11px] text-zinc-600">
+          Reference: {error.digest}{" "}
+          <span className="text-zinc-500">
+            (search this in Vercel → project → Logs for the server stack trace)
+          </span>
+        </p>
+      ) : null}
       <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
         <button
           type="button"
