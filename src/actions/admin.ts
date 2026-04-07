@@ -341,6 +341,29 @@ async function deleteOrArchivePrintifyListingById(
   return "deleted";
 }
 
+/** Printify sync updates omitted tags; storefront groups products by ProductTag rows. */
+async function ensurePrintifyProductTagged(
+  productId: string,
+  fallbackTagId: string,
+): Promise<void> {
+  const row = await prisma.product.findUnique({
+    where: { id: productId },
+    select: {
+      primaryTagId: true,
+      _count: { select: { tags: true } },
+    },
+  });
+  if (!row || row._count.tags > 0) return;
+  const tagId = row.primaryTagId ?? fallbackTagId;
+  await prisma.product.update({
+    where: { id: productId },
+    data: {
+      primaryTagId: tagId,
+      tags: { create: [{ tagId }] },
+    },
+  });
+}
+
 async function archiveOrDeleteOtherPrintifyRows(
   printifyProductId: string,
   keepId: string,
@@ -460,6 +483,7 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
           active: true,
         },
       });
+      await ensurePrintifyProductTagged(keep.id, importTagId);
       updated += 1;
       continue;
     }
@@ -492,6 +516,7 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
           active: true,
         },
       });
+      await ensurePrintifyProductTagged(match.id, importTagId);
       updated += 1;
       continue;
     }

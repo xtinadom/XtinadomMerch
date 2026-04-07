@@ -77,12 +77,29 @@ export async function ShopCollectionPage({
     include: productInclude,
   });
 
-  const sections = tags
+  const taggedSections = tags
     .map((tag) => ({
       tag,
       products: allProducts.filter((p) => productHasTag(p, tag.id)),
     }))
     .filter((s) => s.products.length > 0);
+
+  const untagged = allProducts.filter((p) => p.tags.length === 0);
+  const sections =
+    untagged.length > 0
+      ? [
+          ...taggedSections,
+          {
+            tag: {
+              id: "__untagged__",
+              name: "Other products",
+              slug: "",
+              sortOrder: 999,
+            },
+            products: untagged,
+          },
+        ]
+      : taggedSections;
 
   const title =
     collection === CatalogGroup.sub ? "Sub shop" : "Domme shop";
@@ -106,12 +123,16 @@ export async function ShopCollectionPage({
           <section key={tag.id}>
             <div className="mb-4 flex items-baseline justify-between gap-4">
               <h2 className="text-lg font-medium text-zinc-200">{tag.name}</h2>
-              <Link
-                href={`${base}/tag/${tag.slug}`}
-                className="text-xs text-rose-400/90 hover:underline"
-              >
-                View all
-              </Link>
+              {tag.slug ? (
+                <Link
+                  href={`${base}/tag/${tag.slug}`}
+                  className="text-xs text-rose-400/90 hover:underline"
+                >
+                  View all
+                </Link>
+              ) : (
+                <span className="text-xs text-zinc-600">Tag in admin to group these</span>
+              )}
             </div>
             <ul className="grid justify-center gap-3 [grid-template-columns:repeat(auto-fill,175px)] sm:justify-start">
               {products.slice(0, 6).map((p) => (
@@ -125,7 +146,10 @@ export async function ShopCollectionPage({
       </div>
 
       {sections.length === 0 ? (
-        <p className="mt-8 text-sm text-zinc-600">No products in this shop yet.</p>
+        <p className="mt-8 text-sm text-zinc-600">
+          No products in this shop yet. Import or sync items in admin, and assign at least one tag
+          so they appear under a category.
+        </p>
       ) : null}
 
       {collection === CatalogGroup.domme ? (
