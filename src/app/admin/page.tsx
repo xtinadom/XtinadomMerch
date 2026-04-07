@@ -6,7 +6,7 @@ import {
   createManualUsedProduct,
   deleteManualUsedProduct,
   logoutAdmin,
-  updateManualStock,
+  submitManualStockForm,
   updateProductDetails,
 } from "@/actions/admin";
 import {
@@ -21,7 +21,9 @@ import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
 import { CollectionAssignmentFields } from "@/components/admin/CollectionAssignmentFields";
 import { ProductTagFields } from "@/components/admin/ProductTagFields";
 import { productTagIds } from "@/lib/product-tags";
+import { PrintifyApiTab } from "./printify-api-tab";
 import { PrintifyInventoryTab } from "./printify-inventory-tab";
+import { SaveListingForm } from "@/components/admin/SaveListingForm";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +54,15 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   }
 
   const sp = await searchParams;
-  const inventoryTab = sp.tab === "printify" ? "printify" : "manual";
+  const tabParam = typeof sp.tab === "string" ? sp.tab : undefined;
+  const inventoryTab: "manual" | "printify" | "printify-api" | "tags" =
+    tabParam === "printify"
+      ? "printify"
+      : tabParam === "printify-api"
+        ? "printify-api"
+        : tabParam === "tags"
+          ? "tags"
+          : "manual";
   const createOk = sp.create === "ok";
   const createErr = typeof sp.create === "string" && sp.create === "err";
   const createReason = typeof sp.reason === "string" ? sp.reason : undefined;
@@ -64,7 +74,13 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const syncSkipped = typeof sp.skipped === "string" ? sp.skipped : undefined;
   const syncRemoved = typeof sp.removed === "string" ? sp.removed : undefined;
   const syncReason = typeof sp.reason === "string" ? sp.reason : undefined;
+  const syncMode = typeof sp.syncMode === "string" ? sp.syncMode : undefined;
   const tagErr = typeof sp.tag_err === "string" ? sp.tag_err : undefined;
+  const saved = typeof sp.saved === "string" ? sp.saved : undefined;
+  const listingSavedId =
+    typeof sp.listing === "string" ? sp.listing : undefined;
+  const tagSaved = typeof sp.tag_saved === "string" ? sp.tag_saved : undefined;
+  const stockErr = typeof sp.stock_err === "string" ? sp.stock_err : undefined;
 
   const [products, orders, adminTags] = await Promise.all([
     prisma.product.findMany({
@@ -110,158 +126,29 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      <section id="tags" className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 sm:p-6">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
-          Shop tags
-        </h2>
-        {tagErr ? (
-          <p className="mt-2 rounded border border-rose-900/50 bg-rose-950/30 px-3 py-2 text-xs text-rose-200/90">
-            {tagErr}
-          </p>
-        ) : null}
-        <p className="mt-1 text-xs text-zinc-600">
-          Tags are shared. Use <strong className="font-medium text-zinc-500">Collection assignment</strong>{" "}
-          on each product to choose Sub shop, Domme shop, or both.
-        </p>
-        <ul className="mt-4 divide-y divide-zinc-800 border-y border-zinc-800 text-sm">
-          {adminTags.map((t) => (
-            <li
-              key={t.id}
-              className="flex flex-col gap-3 py-3 text-zinc-300 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between"
-            >
-              <form
-                action={adminUpdateTagForm}
-                className="flex min-w-0 flex-1 flex-wrap items-end gap-2"
-              >
-                <input type="hidden" name="tagId" value={t.id} />
-                <label className="block text-[11px] text-zinc-500">
-                  Name
-                  <input
-                    type="text"
-                    name="name"
-                    required
-                    defaultValue={t.name}
-                    className="mt-0.5 block w-36 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100 sm:w-40"
-                  />
-                </label>
-                <label className="block text-[11px] text-zinc-500">
-                  Slug
-                  <input
-                    type="text"
-                    name="slug"
-                    defaultValue={t.slug}
-                    className="mt-0.5 block w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-200 sm:w-36"
-                  />
-                </label>
-                <label className="block text-[11px] text-zinc-500">
-                  Sort
-                  <input
-                    type="number"
-                    name="sortOrder"
-                    defaultValue={t.sortOrder}
-                    className="mt-0.5 block w-16 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm"
-                  />
-                </label>
-                <button
-                  type="submit"
-                  className="rounded border border-zinc-600 bg-zinc-800/80 px-2.5 py-1 text-[11px] text-zinc-200 hover:bg-zinc-700"
-                >
-                  Save
-                </button>
-              </form>
-              <div className="flex shrink-0 items-center gap-3 sm:pb-0.5">
-                <ConfirmDeleteForm
-                  action={adminDeleteTagForm}
-                  message={`Delete tag “${t.name}”? Only if no products use it.`}
-                >
-                  <input type="hidden" name="tagId" value={t.id} />
-                  <button
-                    type="submit"
-                    className="text-[11px] text-rose-400/90 hover:underline"
-                  >
-                    Delete
-                  </button>
-                </ConfirmDeleteForm>
-              </div>
-            </li>
-          ))}
-        </ul>
-        {adminTags.length === 0 ? (
-          <p className="mt-2 text-sm text-zinc-600">No tags — run db seed.</p>
-        ) : null}
-        <form
-          action={adminCreateTagForm}
-          className="mt-6 flex flex-col gap-3 border-t border-zinc-800 pt-4 sm:flex-row sm:flex-wrap sm:items-end"
+      {saved === "stock" ? (
+        <p
+          role="status"
+          className="rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90"
         >
-          <label className="block text-xs text-zinc-500">
-            Name
-            <input
-              type="text"
-              name="name"
-              required
-              className="mt-1 block w-40 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm"
-            />
-          </label>
-          <label className="block text-xs text-zinc-500">
-            Slug (optional)
-            <input
-              type="text"
-              name="slug"
-              className="mt-1 block w-36 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-xs"
-            />
-          </label>
-          <label className="block text-xs text-zinc-500">
-            Sort
-            <input
-              type="number"
-              name="sortOrder"
-              defaultValue={99}
-              className="mt-1 block w-20 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm"
-            />
-          </label>
-          <button
-            type="submit"
-            className="rounded bg-zinc-800 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-700"
-          >
-            Add tag
-          </button>
-        </form>
-      </section>
-
-      {createOk && (
-        <p className="rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
-          Used item created.
+          Stock updated.
         </p>
-      )}
-      {createErr && (
-        <p className="rounded-lg border border-rose-900/50 bg-rose-950/30 px-4 py-2 text-sm text-rose-200/90">
-          Could not create item
-          {createReason === "category"
-            ? " — pick at least one tag."
-            : createReason === "collection"
-              ? " — choose at least one shop (Sub and/or Domme)."
-              : createReason === "name"
-                ? " — title is required."
-                : createReason === "price"
-                  ? " — invalid price."
-                  : "."}
+      ) : null}
+      {stockErr ? (
+        <p
+          role="alert"
+          className="rounded-lg border border-rose-900/50 bg-rose-950/30 px-4 py-2 text-sm text-rose-200/90"
+        >
+          {stockErr === "invalid"
+            ? "Enter a valid whole number for stock."
+            : "Could not update stock."}
         </p>
-      )}
-      {deleteOk && (
-        <p className="rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
-          Used item deleted.
-        </p>
-      )}
-      {deleteArchived && (
-        <p className="rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-2 text-sm text-amber-200/90">
-          Item has order history — it was hidden from the shop (inactive) instead of being removed.
-        </p>
-      )}
+      ) : null}
 
       <div className="rounded-xl border border-zinc-800 bg-zinc-950/40">
         <nav
           className="flex flex-wrap gap-1 border-b border-zinc-800 px-2 pt-2"
-          aria-label="Inventory lists"
+          aria-label="Admin sections"
         >
           <Link
             href="/admin?tab=manual"
@@ -286,14 +173,68 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
             }`}
           >
-            Printify
+            Printify items
             <span className="ml-1.5 tabular-nums text-zinc-500">({printifyProducts.length})</span>
+          </Link>
+          <Link
+            href="/admin?tab=printify-api"
+            role="tab"
+            aria-selected={inventoryTab === "printify-api"}
+            className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "printify-api"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Printify API
+          </Link>
+          <Link
+            href="/admin?tab=tags"
+            role="tab"
+            aria-selected={inventoryTab === "tags"}
+            className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "tags"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Tags
+            <span className="ml-1.5 tabular-nums text-zinc-500">({adminTags.length})</span>
           </Link>
         </nav>
 
         <div className="p-4 pt-6 sm:p-6">
           {inventoryTab === "manual" ? (
             <section aria-label="Manual inventory">
+              {createOk && (
+                <p className="mb-4 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
+                  Used item created.
+                </p>
+              )}
+              {createErr && (
+                <p className="mb-4 rounded-lg border border-rose-900/50 bg-rose-950/30 px-4 py-2 text-sm text-rose-200/90">
+                  Could not create item
+                  {createReason === "category"
+                    ? " — pick at least one tag."
+                    : createReason === "collection"
+                      ? " — choose at least one shop (Sub and/or Domme)."
+                      : createReason === "name"
+                        ? " — title is required."
+                        : createReason === "price"
+                          ? " — invalid price."
+                          : "."}
+                </p>
+              )}
+              {deleteOk && (
+                <p className="mb-4 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
+                  Used item deleted.
+                </p>
+              )}
+              {deleteArchived && (
+                <p className="mb-4 rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-2 text-sm text-amber-200/90">
+                  Item has order history — it was hidden from the shop (inactive) instead of being removed.
+                </p>
+              )}
               <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
                 Used items (manual fulfillment)
               </h2>
@@ -388,7 +329,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                     />
                   ) : (
                     <p className="text-xs text-amber-400/90">
-                      Add tags in Shop tags above before creating used items.
+                      Add tags in the Tags tab before creating used items.
                     </p>
                   )}
                   <button
@@ -442,7 +383,12 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                         </button>
                       </ConfirmDeleteForm>
                     </div>
-                    <form action={updateProductDetails.bind(null, p.id)} className="space-y-3">
+                    <SaveListingForm
+                      action={updateProductDetails.bind(null, p.id)}
+                      savedHighlight={
+                        saved === "product" && listingSavedId === p.id
+                      }
+                    >
                       <label className="block text-xs text-zinc-500">
                         Title
                         <input
@@ -528,21 +474,11 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                             Cash App
                           </label>
                         </div>
-                        <button
-                          type="submit"
-                          className="rounded bg-rose-900/80 px-3 py-2 text-xs font-medium text-rose-100 hover:bg-rose-800/80"
-                        >
-                          Save
-                        </button>
                       </div>
-                    </form>
+                    </SaveListingForm>
                     <div className="mt-4 border-t border-zinc-800 pt-4">
                       <form
-                        action={async (fd) => {
-                          "use server";
-                          const q = parseInt(String(fd.get("stock")), 10);
-                          if (Number.isFinite(q)) await updateManualStock(p.id, q);
-                        }}
+                        action={submitManualStockForm.bind(null, p.id)}
                         className="flex flex-wrap items-center gap-2"
                       >
                         <label className="text-xs text-zinc-500">
@@ -570,17 +506,156 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 <p className="mt-4 text-sm text-zinc-600">No used items yet — add one above.</p>
               ) : null}
             </section>
-          ) : (
+          ) : inventoryTab === "printify" ? (
             <PrintifyInventoryTab
               products={printifyProducts}
               allTags={adminTags}
               sync={sync}
+              syncMode={syncMode}
               syncUpdated={syncUpdated}
               syncCreated={syncCreated}
               syncSkipped={syncSkipped}
               syncRemoved={syncRemoved}
               syncReason={syncReason}
+              listingSavedId={
+                saved === "product" ? listingSavedId : undefined
+              }
             />
+          ) : inventoryTab === "printify-api" ? (
+            <PrintifyApiTab />
+          ) : (
+            <section id="tags" aria-label="Shop tags">
+              <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
+                Shop tags
+              </h2>
+              {tagSaved === "created" ||
+              tagSaved === "updated" ||
+              tagSaved === "deleted" ? (
+                <p
+                  role="status"
+                  className="mt-2 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90"
+                >
+                  {tagSaved === "created"
+                    ? "Tag created."
+                    : tagSaved === "updated"
+                      ? "Tag saved."
+                      : "Tag deleted."}
+                </p>
+              ) : null}
+              {tagErr ? (
+                <p className="mt-2 rounded border border-rose-900/50 bg-rose-950/30 px-3 py-2 text-xs text-rose-200/90">
+                  {tagErr}
+                </p>
+              ) : null}
+              <p className="mt-1 text-xs text-zinc-600">
+                Tags are shared. Use{" "}
+                <strong className="font-medium text-zinc-500">Collection assignment</strong> on each product
+                to choose Sub collection, Domme collection, or both.
+              </p>
+              <ul className="mt-4 divide-y divide-zinc-800 border-y border-zinc-800 text-sm">
+                {adminTags.map((t) => (
+                  <li
+                    key={t.id}
+                    className="flex flex-col gap-3 py-3 text-zinc-300 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between"
+                  >
+                    <form
+                      action={adminUpdateTagForm}
+                      className="flex min-w-0 flex-1 flex-wrap items-end gap-2"
+                    >
+                      <input type="hidden" name="tagId" value={t.id} />
+                      <label className="block text-[11px] text-zinc-500">
+                        Name
+                        <input
+                          type="text"
+                          name="name"
+                          required
+                          defaultValue={t.name}
+                          className="mt-0.5 block w-36 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100 sm:w-40"
+                        />
+                      </label>
+                      <label className="block text-[11px] text-zinc-500">
+                        Slug
+                        <input
+                          type="text"
+                          name="slug"
+                          defaultValue={t.slug}
+                          className="mt-0.5 block w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-200 sm:w-36"
+                        />
+                      </label>
+                      <label className="block text-[11px] text-zinc-500">
+                        Sort
+                        <input
+                          type="number"
+                          name="sortOrder"
+                          defaultValue={t.sortOrder}
+                          className="mt-0.5 block w-16 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm"
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        className="rounded border border-zinc-600 bg-zinc-800/80 px-2.5 py-1 text-[11px] text-zinc-200 hover:bg-zinc-700"
+                      >
+                        Save
+                      </button>
+                    </form>
+                    <div className="flex shrink-0 items-center gap-3 sm:pb-0.5">
+                      <ConfirmDeleteForm
+                        action={adminDeleteTagForm}
+                        message={`Delete tag “${t.name}”? Only if no products use it.`}
+                      >
+                        <input type="hidden" name="tagId" value={t.id} />
+                        <button
+                          type="submit"
+                          className="text-[11px] text-rose-400/90 hover:underline"
+                        >
+                          Delete
+                        </button>
+                      </ConfirmDeleteForm>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {adminTags.length === 0 ? (
+                <p className="mt-2 text-sm text-zinc-600">No tags — run db seed.</p>
+              ) : null}
+              <form
+                action={adminCreateTagForm}
+                className="mt-6 flex flex-col gap-3 border-t border-zinc-800 pt-4 sm:flex-row sm:flex-wrap sm:items-end"
+              >
+                <label className="block text-xs text-zinc-500">
+                  Name
+                  <input
+                    type="text"
+                    name="name"
+                    required
+                    className="mt-1 block w-40 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm"
+                  />
+                </label>
+                <label className="block text-xs text-zinc-500">
+                  Slug (optional)
+                  <input
+                    type="text"
+                    name="slug"
+                    className="mt-1 block w-36 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-xs"
+                  />
+                </label>
+                <label className="block text-xs text-zinc-500">
+                  Sort
+                  <input
+                    type="number"
+                    name="sortOrder"
+                    defaultValue={99}
+                    className="mt-1 block w-20 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="rounded bg-zinc-800 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-700"
+                >
+                  Add tag
+                </button>
+              </form>
+            </section>
           )}
         </div>
       </div>

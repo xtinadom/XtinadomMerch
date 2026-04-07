@@ -141,25 +141,25 @@ export async function adminDeleteTag(
 export async function adminCreateTagForm(formData: FormData): Promise<void> {
   const r = await adminCreateTag(formData);
   if (!r.ok) {
-    redirect(`/admin?tag_err=${encodeURIComponent(r.error)}#tags`);
+    redirect(`/admin?tab=tags&tag_err=${encodeURIComponent(r.error)}#tags`);
   }
-  redirect("/admin#tags");
+  redirect("/admin?tab=tags&tag_saved=created#tags");
 }
 
 export async function adminUpdateTagForm(formData: FormData): Promise<void> {
   const r = await adminUpdateTag(formData);
   if (!r.ok) {
-    redirect(`/admin?tag_err=${encodeURIComponent(r.error)}#tags`);
+    redirect(`/admin?tab=tags&tag_err=${encodeURIComponent(r.error)}#tags`);
   }
-  redirect("/admin#tags");
+  redirect("/admin?tab=tags&tag_saved=updated#tags");
 }
 
 export async function adminDeleteTagForm(formData: FormData): Promise<void> {
   const r = await adminDeleteTag(formData);
   if (!r.ok) {
-    redirect(`/admin?tag_err=${encodeURIComponent(r.error)}#tags`);
+    redirect(`/admin?tab=tags&tag_err=${encodeURIComponent(r.error)}#tags`);
   }
-  redirect("/admin#tags");
+  redirect("/admin?tab=tags&tag_saved=deleted#tags");
 }
 
 /** Tags are universal; only require that selected ids exist. */

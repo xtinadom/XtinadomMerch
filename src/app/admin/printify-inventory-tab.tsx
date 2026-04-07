@@ -5,19 +5,15 @@ import {
   updateProductPrintifyIds,
 } from "@/actions/admin";
 import type { Prisma, Product, Tag } from "@/generated/prisma/client";
-import {
-  fetchPrintifyCatalog,
-  fetchPrintifyShops,
-  hasPrintifyApiToken,
-  isPrintifyConfigured,
-} from "@/lib/printify";
+import { FulfillmentType } from "@/generated/prisma/enums";
+import { prisma } from "@/lib/prisma";
+import { fetchPrintifyCatalog, hasPrintifyApiToken, isPrintifyConfigured } from "@/lib/printify";
 import { productImageUrls } from "@/lib/product-media";
 import type { AdminTagRow } from "@/components/admin/ProductTagFields";
 import { CollectionAssignmentFields } from "@/components/admin/CollectionAssignmentFields";
 import { ProductTagFields } from "@/components/admin/ProductTagFields";
 import { productTagIds } from "@/lib/product-tags";
-
-const PRINTIFY_ADMIN_HIDDEN_SHOP_IDS = new Set([24222433, 26248363]);
+import { SaveListingForm } from "@/components/admin/SaveListingForm";
 
 export type PrintifyInventoryTabProps = {
   products: (Product & {
@@ -26,11 +22,15 @@ export type PrintifyInventoryTabProps = {
   })[];
   allTags: AdminTagRow[];
   sync?: string;
+  /** Last completed sync mode: full | new | resync */
+  syncMode?: string;
   syncUpdated?: string;
   syncCreated?: string;
   syncSkipped?: string;
   syncRemoved?: string;
   syncReason?: string;
+  /** Product id that just saved — highlights that row’s Save listing button. */
+  listingSavedId?: string;
 };
 
 function formatMoneyCents(cents: number) {
@@ -55,42 +55,39 @@ export async function PrintifyInventoryTab({
   products,
   allTags,
   sync,
+  syncMode,
   syncUpdated,
   syncCreated,
   syncSkipped,
   syncRemoved,
   syncReason,
+  listingSavedId,
 }: PrintifyInventoryTabProps) {
+  const readyForFulfillment = isPrintifyConfigured();
   const shopIdEnv = process.env.PRINTIFY_SHOP_ID?.trim() ?? "";
   const tokenSet = hasPrintifyApiToken();
-  const readyForFulfillment = isPrintifyConfigured();
 
-  let shopsAll: Awaited<ReturnType<typeof fetchPrintifyShops>> = [];
-  let shopsError: string | null = null;
   let catalog: Awaited<ReturnType<typeof fetchPrintifyCatalog>> = [];
   let catalogError: string | null = null;
-
-  if (tokenSet) {
-    try {
-      shopsAll = await fetchPrintifyShops();
-    } catch (e) {
-      shopsError = e instanceof Error ? e.message : String(e);
-    }
-  }
-
-  const shops = shopsAll.filter((s) => !PRINTIFY_ADMIN_HIDDEN_SHOP_IDS.has(s.id));
+  const storefrontByPrintifyId = new Map<string, boolean>();
   if (tokenSet && shopIdEnv) {
     try {
       catalog = await fetchPrintifyCatalog(shopIdEnv);
     } catch (e) {
       catalogError = e instanceof Error ? e.message : String(e);
     }
+    const linkedProducts = await prisma.product.findMany({
+      where: {
+        fulfillmentType: FulfillmentType.printify,
+        printifyProductId: { not: null },
+      },
+      select: { printifyProductId: true, active: true },
+    });
+    for (const row of linkedProducts) {
+      const pid = row.printifyProductId?.trim();
+      if (pid) storefrontByPrintifyId.set(pid, row.active);
+    }
   }
-
-  const shopIdNum = Number(shopIdEnv);
-  const shopMatches = shopsAll.some(
-    (s) => String(s.id) === shopIdEnv || (Number.isFinite(shopIdNum) && s.id === shopIdNum),
-  );
 
   const importSlug = process.env.PRINTIFY_IMPORT_TAG_SLUG?.trim() || "mug";
 
@@ -101,18 +98,35 @@ export async function PrintifyInventoryTab({
           Print on demand (Printify)
         </h2>
         <p className="mt-1 text-xs text-zinc-600">
-          Connect your API token and shop in <code className="text-zinc-400">.env</code>, sync the catalog,
-          then edit storefront copy, mockups, and Printify product / variant ids below. Paid orders submit
-          to Printify from the Stripe webhook. Checkout uses card + Cash App for POD unless every line in
-          the cart agrees otherwise.
+          Connect your API token and shop in <code className="text-zinc-400">.env</code> (see{" "}
+          <Link href="/admin?tab=printify-api" className="text-rose-400/90 hover:underline">
+            Printify API
+          </Link>
+          ), sync the catalog, then edit storefront copy, mockups, and Printify product / variant ids below.
+          Paid orders submit to Printify from the Stripe webhook. Checkout uses card + Cash App for POD unless
+          every line in the cart agrees otherwise.
         </p>
       </div>
 
       {sync === "ok" && (
         <p className="rounded-lg border border-emerald-900/60 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-200/90">
-          Sync finished: updated {syncUpdated ?? "0"}, created {syncCreated ?? "0"}, skipped (unmapped){" "}
-          {syncSkipped ?? "0"}, removed (no longer in Printify catalog) {syncRemoved ?? "0"} — deleted unless
-          the product was on a past order (then archived and hidden).
+          <span className="font-medium text-emerald-100/95">
+            {syncMode === "new"
+              ? "Sync new"
+              : syncMode === "resync"
+                ? "Resync existing"
+                : "Full sync"}
+          </span>{" "}
+          finished: updated {syncUpdated ?? "0"}, created {syncCreated ?? "0"}, skipped{" "}
+          {syncSkipped ?? "0"}
+          {syncMode === "new" ? (
+            <> — only new catalog rows were added; existing listings were not updated and orphans were not removed.</>
+          ) : (
+            <>
+              , removed (no longer in Printify catalog) {syncRemoved ?? "0"} — deleted unless the product was on a
+              past order (then archived and hidden).
+            </>
+          )}
         </p>
       )}
       {sync === "err" && (
@@ -132,117 +146,48 @@ export async function PrintifyInventoryTab({
           <p className="mt-1 text-xs text-zinc-500">
             One storefront product per Printify product id: pulls every enabled variant into a dropdown on
             the product page. Matches existing rows by Printify product id, then unmapped POD rows by slug or
-            title. New products get tag{" "}
+            title. <strong className="font-medium text-zinc-400">Full sync</strong> updates everything, adds
+            missing listings, and removes storefront rows that no longer appear in the catalog.{" "}
+            <strong className="font-medium text-zinc-400">Sync new</strong> only creates rows for catalog
+            products that are not linked yet. <strong className="font-medium text-zinc-400">Resync existing</strong>{" "}
+            updates linked rows only and never creates new listings. New rows get tag{" "}
             <code className="text-zinc-400">{importSlug}</code> and audience{" "}
             <code className="text-zinc-400">
               {process.env.PRINTIFY_IMPORT_AUDIENCE?.trim() || "both"}
             </code>{" "}
             (override via <code className="text-zinc-400">.env</code>).
           </p>
-          <form action={syncPrintifyFromCatalog} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
-              <input type="checkbox" name="createMissing" className="rounded border-zinc-600" />
-              Create storefront products for Printify catalog items that did not match any row
-            </label>
+          <form
+            action={syncPrintifyFromCatalog}
+            className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3"
+          >
             <button
               type="submit"
-              className="rounded bg-rose-900/80 px-4 py-2 text-xs font-medium text-rose-100 hover:bg-rose-800/80"
+              name="syncMode"
+              value="new"
+              className="self-start rounded bg-rose-900/80 px-4 py-2 text-xs font-medium text-rose-100 hover:bg-rose-800/80"
             >
-              Sync from Printify
+              Sync new
             </button>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end sm:gap-3 sm:self-center">
+              <button
+                type="submit"
+                name="syncMode"
+                value="full"
+                className="rounded border border-zinc-600 bg-zinc-800/60 px-4 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-700/60"
+              >
+                Full sync
+              </button>
+              <button
+                type="submit"
+                name="syncMode"
+                value="resync"
+                className="rounded border border-zinc-600 bg-zinc-800/60 px-4 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-700/60"
+              >
+                Resync existing
+              </button>
+            </div>
           </form>
-        </section>
-      )}
-
-      <section className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4">
-        <h3 className="text-sm font-medium text-zinc-200">Environment</h3>
-        <ul className="mt-3 space-y-2 text-xs text-zinc-500">
-          <li>
-            <span className="text-zinc-400">PRINTIFY_API_TOKEN</span> —{" "}
-            {process.env.PRINTIFY_API_TOKEN?.trim()
-              ? "set (hidden)"
-              : "missing — create at printify.com → Account → Connections → API tokens"}
-          </li>
-          <li>
-            <span className="text-zinc-400">PRINTIFY_SHOP_ID</span> —{" "}
-            {shopIdEnv ? (
-              <code className="text-zinc-400">{shopIdEnv}</code>
-            ) : (
-              <>
-                missing — copy the numeric id from{" "}
-                <strong className="font-medium text-zinc-400">API check — shops</strong> below into{" "}
-                <code className="text-zinc-400">.env</code> as{" "}
-                <code className="text-zinc-400">PRINTIFY_SHOP_ID</code>, then restart the dev server
-              </>
-            )}
-          </li>
-          <li>
-            <span className="text-zinc-400">PRINTIFY_SHIPPING_METHOD</span> —{" "}
-            {process.env.PRINTIFY_SHIPPING_METHOD ?? "1"} (Printify shipping method id for orders)
-          </li>
-          <li>
-            <span className="text-zinc-400">PRINTIFY_IMPORT_TAG_SLUG</span> — new listings default tag (
-            <code className="text-zinc-400">{importSlug}</code>)
-          </li>
-        </ul>
-        {!tokenSet && (
-          <p className="mt-4 text-xs text-amber-400/90">
-            Add <code className="text-zinc-400">PRINTIFY_API_TOKEN</code> to{" "}
-            <code className="text-zinc-400">.env</code>, restart the dev server, then refresh — you’ll see
-            your shop ids below.
-          </p>
-        )}
-        {tokenSet && !shopIdEnv && (
-          <p className="mt-4 text-xs text-amber-400/90">
-            Token is set. Use the shop list below, add{" "}
-            <code className="text-zinc-400">PRINTIFY_SHOP_ID=&lt;that number&gt;</code> to{" "}
-            <code className="text-zinc-400">.env</code>, restart, and refresh so the catalog loads.
-          </p>
-        )}
-        {readyForFulfillment && (
-          <p className="mt-4 text-xs text-emerald-400/90">
-            Token and shop id are set — paid orders can be sent to Printify for mapped products.
-          </p>
-        )}
-      </section>
-
-      {tokenSet && (
-        <section>
-          <h3 className="text-sm font-medium uppercase tracking-wide text-zinc-500">API check — shops</h3>
-          {shopsError ? (
-            <p className="mt-2 text-sm text-rose-400/90">{shopsError}</p>
-          ) : shopsAll.length === 0 ? (
-            <p className="mt-2 text-sm text-zinc-500">No shops returned for this token.</p>
-          ) : shops.length === 0 ? (
-            <p className="mt-2 text-sm text-zinc-500">
-              No storefront shops to show (others are hidden on this page).
-            </p>
-          ) : (
-            <ul className="mt-3 space-y-1 text-sm text-zinc-300">
-              {shops.map((s) => (
-                <li key={s.id}>
-                  <code className="text-rose-300/80">{s.id}</code>
-                  {" — "}
-                  {s.title}
-                  {String(s.id) === shopIdEnv || s.id === shopIdNum ? (
-                    <span className="ml-2 text-xs text-emerald-400">← matches PRINTIFY_SHOP_ID</span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
-          {shopsAll.length > shops.length ? (
-            <p className="mt-2 text-xs text-zinc-600">
-              {shopsAll.length - shops.length} other Printify shop
-              {shopsAll.length - shops.length === 1 ? "" : "s"} (e.g. Etsy / Big Cartel) omitted here.
-            </p>
-          ) : null}
-          {shops.length > 0 && shopIdEnv && !shopMatches && !shopsError ? (
-            <p className="mt-3 text-xs text-amber-400/90">
-              PRINTIFY_SHOP_ID does not match any shop above — fix the id in{" "}
-              <code className="text-zinc-400">.env</code>.
-            </p>
-          ) : null}
         </section>
       )}
 
@@ -250,9 +195,13 @@ export async function PrintifyInventoryTab({
         <section>
           <h3 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Your Printify catalog</h3>
           <p className="mt-1 text-xs text-zinc-600">
-            Reference for ids. The storefront uses one product per Printify product id; customers pick a
-            variant on the product page. Default variant id in mappings below is the first enabled variant
-            after sync.
+            Reference for ids. <strong className="font-medium text-zinc-500">Shop</strong> compares this
+            catalog to your database: <span className="text-emerald-500/90">Listed</span> means a storefront
+            row with this Printify product id exists and is visible; <span className="text-zinc-500">Hidden</span>{" "}
+            means it exists but is inactive; <span className="text-amber-600/90">Not listed</span> means no
+            matching row yet. The storefront uses one product per Printify product id; customers pick a variant
+            on the product page. Default variant id in the listings below is the first enabled variant after
+            sync.
           </p>
           {catalogError ? (
             <p className="mt-2 text-sm text-rose-400/90">{catalogError}</p>
@@ -265,35 +214,48 @@ export async function PrintifyInventoryTab({
                   <tr>
                     <th className="p-2 font-medium">Product id</th>
                     <th className="p-2 font-medium">Title</th>
+                    <th className="p-2 font-medium">Shop</th>
                     <th className="p-2 font-medium">Variants</th>
                   </tr>
                 </thead>
                 <tbody className="text-zinc-400">
-                  {catalog.map((p) => (
-                    <tr key={p.id} className="border-t border-zinc-800/80">
-                      <td className="p-2 font-mono text-rose-300/80">{p.id}</td>
-                      <td className="p-2 text-zinc-300">{p.title}</td>
-                      <td className="p-2">
-                        <ul className="space-y-0.5">
-                          {p.variants.map((v) => (
-                            <li key={v.id}>
-                              <span className="font-mono text-zinc-500">{v.id}</span>
-                              {" — "}
-                              {v.title}
-                              {v.priceCents > 0 ? (
-                                <span className="ml-1 text-zinc-600">
-                                  ({formatMoneyCents(v.priceCents)})
-                                </span>
-                              ) : null}
-                              {!v.enabled ? (
-                                <span className="ml-1 text-amber-600/80">(disabled)</span>
-                              ) : null}
-                            </li>
-                          ))}
-                        </ul>
-                      </td>
-                    </tr>
-                  ))}
+                  {catalog.map((p) => {
+                    const active = storefrontByPrintifyId.get(p.id);
+                    const shopCell =
+                      active === undefined ? (
+                        <span className="text-amber-600/90">Not listed</span>
+                      ) : active ? (
+                        <span className="text-emerald-400/90">Listed</span>
+                      ) : (
+                        <span className="text-zinc-500">Hidden</span>
+                      );
+                    return (
+                      <tr key={p.id} className="border-t border-zinc-800/80">
+                        <td className="p-2 font-mono text-rose-300/80">{p.id}</td>
+                        <td className="p-2 text-zinc-300">{p.title}</td>
+                        <td className="p-2 whitespace-nowrap">{shopCell}</td>
+                        <td className="p-2">
+                          <ul className="space-y-0.5">
+                            {p.variants.map((v) => (
+                              <li key={v.id}>
+                                <span className="font-mono text-zinc-500">{v.id}</span>
+                                {" — "}
+                                {v.title}
+                                {v.priceCents > 0 ? (
+                                  <span className="ml-1 text-zinc-600">
+                                    ({formatMoneyCents(v.priceCents)})
+                                  </span>
+                                ) : null}
+                                {!v.enabled ? (
+                                  <span className="ml-1 text-amber-600/80">(disabled)</span>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ul>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -336,7 +298,10 @@ export async function PrintifyInventoryTab({
                   {p.active ? "" : " · inactive"}
                 </div>
               </div>
-              <form action={updateProductDetails.bind(null, p.id)} className="space-y-3">
+              <SaveListingForm
+                action={updateProductDetails.bind(null, p.id)}
+                savedHighlight={listingSavedId === p.id}
+              >
                 <label className="block text-xs text-zinc-500">
                   Title
                   <input
@@ -428,14 +393,8 @@ export async function PrintifyInventoryTab({
                     />
                     Visible in shop
                   </label>
-                  <button
-                    type="submit"
-                    className="rounded bg-rose-900/80 px-3 py-2 text-xs font-medium text-rose-100 hover:bg-rose-800/80"
-                  >
-                    Save listing
-                  </button>
                 </div>
-              </form>
+              </SaveListingForm>
 
               <div className="mt-4 border-t border-zinc-800 pt-4">
                 <p className="text-xs text-zinc-500">Printify API mapping</p>

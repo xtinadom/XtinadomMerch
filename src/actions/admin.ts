@@ -131,6 +131,31 @@ export async function updateProductDetails(
   revalidatePath("/admin");
   revalidateShopSurface();
   revalidatePath("/product/" + product.slug);
+
+  const tab =
+    product.fulfillmentType === FulfillmentType.printify ? "printify" : "manual";
+  redirect(
+    `/admin?saved=product&tab=${tab}&listing=${encodeURIComponent(productId)}`,
+  );
+}
+
+/** Stock update from admin form — shows confirmation after save. */
+export async function submitManualStockForm(
+  productId: string,
+  formData: FormData,
+): Promise<void> {
+  const admin = await getAdminSession();
+  if (!admin.isAdmin) return;
+  const raw = String(formData.get("stock") ?? "");
+  const q = parseInt(raw, 10);
+  if (!Number.isFinite(q)) {
+    redirect("/admin?tab=manual&stock_err=invalid");
+  }
+  const r = await updateManualStock(productId, q);
+  if (!r.ok) {
+    redirect("/admin?tab=manual&stock_err=1");
+  }
+  redirect("/admin?saved=stock&tab=manual");
 }
 
 export async function updateManualStock(productId: string, stockQuantity: number) {
@@ -279,6 +304,9 @@ export async function updateProductPrintifyIds(
   revalidatePath("/admin");
   revalidateShopSurface();
   revalidatePath("/product/" + product.slug);
+  redirect(
+    `/admin?saved=product&tab=printify&listing=${encodeURIComponent(productId)}`,
+  );
 }
 
 const unmappedPrintifyWhere = {
@@ -392,7 +420,9 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
     redirect("/admin?tab=printify&sync=err&reason=no_shop");
   }
 
-  const createMissing = formData.get("createMissing") === "on";
+  const syncModeRaw = String(formData.get("syncMode") ?? "full");
+  const syncMode: "full" | "new" | "resync" =
+    syncModeRaw === "new" || syncModeRaw === "resync" ? syncModeRaw : "full";
   const importTagId = await resolveImportTagId();
   if (!importTagId) {
     redirect("/admin?tab=printify&sync=err&reason=no_tag");
@@ -409,17 +439,19 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
   for (const p of catalog) {
     const enabledVariants = p.variants.filter((v) => v.enabled);
     if (enabledVariants.length === 0) {
-      const noVariantRows = await prisma.product.findMany({
-        where: {
-          fulfillmentType: FulfillmentType.printify,
-          printifyProductId: p.id,
-        },
-        select: { id: true },
-      });
-      for (const row of noVariantRows) {
-        const outcome = await deleteOrArchivePrintifyListingById(row.id);
-        if (outcome === "deleted" || outcome === "archived") {
-          removed += 1;
+      if (syncMode !== "new") {
+        const noVariantRows = await prisma.product.findMany({
+          where: {
+            fulfillmentType: FulfillmentType.printify,
+            printifyProductId: p.id,
+          },
+          select: { id: true },
+        });
+        for (const row of noVariantRows) {
+          const outcome = await deleteOrArchivePrintifyListingById(row.id);
+          if (outcome === "deleted" || outcome === "archived") {
+            removed += 1;
+          }
         }
       }
       continue;
@@ -463,6 +495,10 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
     });
 
     if (existingForProduct.length > 0) {
+      if (syncMode === "new") {
+        skipped += 1;
+        continue;
+      }
       const preferredSlug = slugify(p.title);
       const keep =
         existingForProduct.find((row) => row.slug === preferredSlug) ??
@@ -501,6 +537,10 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
     }
 
     if (match) {
+      if (syncMode === "new") {
+        skipped += 1;
+        continue;
+      }
       await prisma.product.update({
         where: { id: match.id },
         data: {
@@ -522,57 +562,60 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
       continue;
     }
 
-    if (createMissing) {
-      const aud = importAudience();
-      const slug = await uniqueProductSlug(slugify(p.title));
-      await prisma.product.create({
-        data: {
-          slug,
-          name,
-          description: p.description,
-          priceCents: first.priceCents,
-          imageUrl: heroImage,
-          imageGallery: toGalleryJson(
-            galleryUrls.length > 0 ? galleryUrls : heroImage ? [heroImage] : [],
-          ),
-          audience: aud,
-          fulfillmentType: FulfillmentType.printify,
-          primaryTagId: importTagId,
-          tags: { create: [{ tagId: importTagId }] },
-          printifyProductId: p.id,
-          printifyVariantId: first.id,
-          printifyVariants: variantsJson,
-          stockQuantity: 0,
-          trackInventory: false,
-          active: true,
-        },
-      });
-      created += 1;
-    } else {
+    if (syncMode === "resync") {
       skipped += 1;
+      continue;
     }
+
+    const aud = importAudience();
+    const slug = await uniqueProductSlug(slugify(p.title));
+    await prisma.product.create({
+      data: {
+        slug,
+        name,
+        description: p.description,
+        priceCents: first.priceCents,
+        imageUrl: heroImage,
+        imageGallery: toGalleryJson(
+          galleryUrls.length > 0 ? galleryUrls : heroImage ? [heroImage] : [],
+        ),
+        audience: aud,
+        fulfillmentType: FulfillmentType.printify,
+        primaryTagId: importTagId,
+        tags: { create: [{ tagId: importTagId }] },
+        printifyProductId: p.id,
+        printifyVariantId: first.id,
+        printifyVariants: variantsJson,
+        stockQuantity: 0,
+        trackInventory: false,
+        active: true,
+      },
+    });
+    created += 1;
   }
 
-  const orphans = await prisma.product.findMany({
-    where:
-      catalogIds.size > 0
-        ? {
-            fulfillmentType: FulfillmentType.printify,
-            OR: [
-              { printifyProductId: null },
-              { printifyProductId: { notIn: [...catalogIds] } },
-            ],
-          }
-        : {
-            fulfillmentType: FulfillmentType.printify,
-          },
-    select: { id: true },
-  });
+  if (syncMode !== "new") {
+    const orphans = await prisma.product.findMany({
+      where:
+        catalogIds.size > 0
+          ? {
+              fulfillmentType: FulfillmentType.printify,
+              OR: [
+                { printifyProductId: null },
+                { printifyProductId: { notIn: [...catalogIds] } },
+              ],
+            }
+          : {
+              fulfillmentType: FulfillmentType.printify,
+            },
+      select: { id: true },
+    });
 
-  for (const o of orphans) {
-    const outcome = await deleteOrArchivePrintifyListingById(o.id);
-    if (outcome === "deleted" || outcome === "archived") {
-      removed += 1;
+    for (const o of orphans) {
+      const outcome = await deleteOrArchivePrintifyListingById(o.id);
+      if (outcome === "deleted" || outcome === "archived") {
+        removed += 1;
+      }
     }
   }
 
@@ -590,6 +633,6 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
   }
 
   redirect(
-    `/admin?tab=printify&sync=ok&updated=${updated}&created=${created}&skipped=${skipped}&removed=${removed}`,
+    `/admin?tab=printify&sync=ok&syncMode=${syncMode}&updated=${updated}&created=${created}&skipped=${skipped}&removed=${removed}`,
   );
 }

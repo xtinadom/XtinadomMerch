@@ -7,7 +7,7 @@ import {
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col justify-center px-4 py-16">
+    <main className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 py-16">
       <header className="text-center">
         <p className="text-xs uppercase tracking-[0.2em] text-rose-400/80">
           Xtinadom
@@ -16,25 +16,13 @@ export default function HomePage() {
           Merch
         </h1>
         <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-zinc-400">
-          One shop and one cart. Browse everything below, or narrow by Sub collection,
-          Domme collection, and shared product tags.
+          One shop and one cart. Narrow by Sub or Domme collection below, or open the
+          full catalog at the end of this page.
         </p>
       </header>
 
-      <div className="mt-10 flex flex-col items-center gap-4">
-        <Link
-          href={SHOP_ALL_ROUTE}
-          className="inline-flex w-full max-w-sm items-center justify-center rounded-2xl bg-rose-700 px-8 py-4 text-sm font-semibold text-white transition hover:bg-rose-600 sm:text-base"
-        >
-          View all products
-        </Link>
-        <p className="text-center text-xs text-zinc-600">
-          Recommended — shows every active item, every tag, every collection.
-        </p>
-      </div>
-
       <p className="mt-12 text-center text-xs font-medium uppercase tracking-wide text-zinc-600">
-        Or start from a collection
+        Start from a collection
       </p>
 
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
@@ -69,6 +57,18 @@ export default function HomePage() {
             Browse Domme collection →
           </span>
         </Link>
+      </div>
+
+      <div className="mt-20 border-t border-zinc-800/80 pt-10 text-center">
+        <Link
+          href={SHOP_ALL_ROUTE}
+          className="text-sm text-zinc-500 underline decoration-zinc-700 underline-offset-4 transition hover:text-rose-400/90 hover:decoration-rose-400/50"
+        >
+          View all products
+        </Link>
+        <p className="mt-3 text-xs text-zinc-600">
+          Full catalog — every active item, tag, and collection.
+        </p>
       </div>
     </main>
   );

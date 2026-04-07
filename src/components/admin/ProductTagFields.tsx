@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useLayoutEffect } from "react";
 import type { Tag } from "@/generated/prisma/client";
+import { useListingFormRecalc } from "@/components/admin/listing-form-recalc-context";
 
 export type AdminTagRow = Pick<Tag, "id" | "slug" | "name" | "sortOrder">;
 
@@ -11,6 +12,8 @@ type Props = {
 };
 
 export function ProductTagFields({ tags: allTags, defaultTagIds }: Props) {
+  const recalcListing = useListingFormRecalc();
+
   const tags = useMemo(
     () =>
       [...allTags].sort(
@@ -42,6 +45,10 @@ export function ProductTagFields({ tags: allTags, defaultTagIds }: Props) {
   }, []);
 
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags]);
+
+  useLayoutEffect(() => {
+    recalcListing?.();
+  }, [selected, recalcListing]);
 
   return (
     <div className="space-y-2">
