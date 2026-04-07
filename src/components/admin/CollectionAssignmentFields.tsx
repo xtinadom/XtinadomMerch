@@ -6,7 +6,7 @@ import {
 } from "@/lib/collection-assignment";
 
 type Props = {
-  /** When omitted (e.g. create form), both shops default checked. */
+  /** When omitted (e.g. create form), both collections default checked. */
   audience?: Audience;
 };
 
@@ -21,7 +21,8 @@ export function CollectionAssignmentFields({ audience }: Props) {
         Collection assignment
       </legend>
       <p className="text-[11px] text-zinc-600">
-        Choose which shop(s) this product appears in. At least one is required.
+        Choose which top-level collection(s) this product appears in (Sub and/or
+        Domme). At least one is required.
       </p>
       <div className="flex flex-wrap gap-4">
         <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-300">
@@ -31,7 +32,7 @@ export function CollectionAssignmentFields({ audience }: Props) {
             defaultChecked={sub}
             className="rounded border-zinc-600"
           />
-          Sub shop
+          Sub collection
         </label>
         <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-300">
           <input
@@ -40,7 +41,7 @@ export function CollectionAssignmentFields({ audience }: Props) {
             defaultChecked={domme}
             className="rounded border-zinc-600"
           />
-          Domme shop
+          Domme collection
         </label>
       </div>
     </fieldset>

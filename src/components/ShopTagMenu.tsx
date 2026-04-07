@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useState, useRef, useEffect, useMemo } from "react";
 import {
+  SHOP_ALL_ROUTE,
   SHOP_SUB_ROUTE,
   SHOP_DOMME_ROUTE,
-  SUB_SHOP_NAV_LABEL,
-  DOMME_SHOP_NAV_LABEL,
+  SUB_COLLECTION_NAV_LABEL,
+  DOMME_COLLECTION_NAV_LABEL,
 } from "@/lib/constants";
 import type { Tag } from "@/generated/prisma/client";
 
@@ -43,22 +44,32 @@ export function ShopTagMenu({ tags }: { tags: Row[] }) {
         aria-expanded={open}
         aria-haspopup="true"
       >
-        Browse by tag
+        Browse shop
         <span className="text-xs opacity-70">{open ? "▴" : "▾"}</span>
       </button>
       {open && (
         <ul
-          className="absolute right-0 z-[1002] mt-2 max-h-[min(70vh,24rem)] min-w-[14rem] overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl"
+          className="absolute right-0 z-[1002] mt-2 max-h-[min(70vh,28rem)] min-w-[16rem] overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl"
           role="menu"
         >
           <li role="none" className="border-b border-zinc-800 pb-1">
+            <Link
+              href={SHOP_ALL_ROUTE}
+              role="menuitem"
+              className="block px-4 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800"
+              onClick={close}
+            >
+              All products
+            </Link>
+          </li>
+          <li role="none" className="border-b border-zinc-800 pb-1 pt-1">
             <Link
               href={SHOP_SUB_ROUTE}
               role="menuitem"
               className="block px-4 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
               onClick={close}
             >
-              {SUB_SHOP_NAV_LABEL}
+              {SUB_COLLECTION_NAV_LABEL}
             </Link>
             <ul className="mt-0.5 space-y-0.5" role="group">
               {sortedTags.map((t) => (
@@ -75,14 +86,14 @@ export function ShopTagMenu({ tags }: { tags: Row[] }) {
               ))}
             </ul>
           </li>
-          <li role="none" className="pt-1">
+          <li role="none" className="border-b border-zinc-800 pb-1 pt-1">
             <Link
               href={SHOP_DOMME_ROUTE}
               role="menuitem"
               className="block px-4 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
               onClick={close}
             >
-              {DOMME_SHOP_NAV_LABEL}
+              {DOMME_COLLECTION_NAV_LABEL}
             </Link>
             <ul className="mt-0.5 space-y-0.5" role="group">
               {sortedTags.map((t) => (
@@ -91,6 +102,25 @@ export function ShopTagMenu({ tags }: { tags: Row[] }) {
                     role="menuitem"
                     href={`${SHOP_DOMME_ROUTE}/tag/${t.slug}`}
                     className="block py-1.5 pl-6 pr-4 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                    onClick={close}
+                  >
+                    {t.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </li>
+          <li role="none" className="pt-1">
+            <p className="px-4 py-1 text-[10px] font-medium uppercase tracking-wide text-zinc-600">
+              Tags (all items)
+            </p>
+            <ul className="mt-0.5 space-y-0.5" role="group">
+              {sortedTags.map((t) => (
+                <li key={`all-${t.id}`} role="none">
+                  <Link
+                    role="menuitem"
+                    href={`/shop/tag/${t.slug}`}
+                    className="block py-1.5 pl-6 pr-4 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white"
                     onClick={close}
                   >
                     {t.name}

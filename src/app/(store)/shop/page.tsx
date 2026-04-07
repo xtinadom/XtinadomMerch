@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-/** Legacy `/shop` entry — home lists both collections. */
+/** `/shop` → full catalog (same as home “All products”). */
 export default function ShopRootRedirect() {
-  redirect("/");
+  redirect("/shop/all");
 }

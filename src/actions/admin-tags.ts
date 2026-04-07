@@ -55,6 +55,7 @@ export async function adminCreateTag(
   });
 
   revalidatePath("/admin");
+  revalidatePath("/shop/all");
   revalidatePath("/shop/sub");
   revalidatePath("/shop/domme");
   return { ok: true };
@@ -94,11 +95,13 @@ export async function adminUpdateTag(
   });
 
   revalidatePath("/admin");
+  revalidatePath("/shop/all");
   revalidatePath("/shop/sub");
   revalidatePath("/shop/domme");
   for (const slugPart of [existing.slug, slug]) {
     revalidatePath(`/shop/sub/tag/${slugPart}`);
     revalidatePath(`/shop/domme/tag/${slugPart}`);
+    revalidatePath(`/shop/tag/${slugPart}`);
   }
   return { ok: true };
 }
@@ -126,10 +129,12 @@ export async function adminDeleteTag(
   await prisma.tag.delete({ where: { id } });
 
   revalidatePath("/admin");
+  revalidatePath("/shop/all");
   revalidatePath("/shop/sub");
   revalidatePath("/shop/domme");
   revalidatePath(`/shop/sub/tag/${existing.slug}`);
   revalidatePath(`/shop/domme/tag/${existing.slug}`);
+  revalidatePath(`/shop/tag/${existing.slug}`);
   return { ok: true };
 }
 

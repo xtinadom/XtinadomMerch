@@ -22,6 +22,7 @@ import { assertTagsValidForAudience } from "@/actions/admin-tags";
 
 function revalidateShopSurface() {
   revalidatePath("/");
+  revalidatePath("/shop/all");
   revalidatePath("/shop/sub");
   revalidatePath("/shop/domme");
   revalidatePath("/cart");
@@ -581,6 +582,7 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
   for (const t of allTags) {
     revalidatePath(`/shop/sub/tag/${t.slug}`);
     revalidatePath(`/shop/domme/tag/${t.slug}`);
+    revalidatePath(`/shop/tag/${t.slug}`);
   }
   const allSlugs = await prisma.product.findMany({ select: { slug: true } });
   for (const pr of allSlugs) {

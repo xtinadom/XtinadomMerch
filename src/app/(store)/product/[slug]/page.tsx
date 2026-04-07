@@ -7,7 +7,11 @@ import { getShippingFlatCents } from "@/lib/shipping";
 import { productImageUrls } from "@/lib/product-media";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { PrintifyVariantAddToCart } from "@/components/PrintifyVariantAddToCart";
-import { SHOP_DOMME_ROUTE, SHOP_SUB_ROUTE } from "@/lib/constants";
+import {
+  SHOP_ALL_ROUTE,
+  SHOP_DOMME_ROUTE,
+  SHOP_SUB_ROUTE,
+} from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -31,8 +35,8 @@ function stockLabel(
 }
 
 function shopHomeForAudience(audience: Audience): string {
+  if (audience === Audience.both) return SHOP_ALL_ROUTE;
   if (audience === Audience.domme) return SHOP_DOMME_ROUTE;
-  if (audience === Audience.sub) return SHOP_SUB_ROUTE;
   return SHOP_SUB_ROUTE;
 }
 
@@ -63,11 +67,7 @@ export default async function ProductPage({ params }: Props) {
   const shopHref = shopHomeForAudience(product.audience);
   const primary = product.primaryTag;
   const tagHref =
-    primary != null
-      ? product.audience === Audience.domme
-        ? `${SHOP_DOMME_ROUTE}/tag/${primary.slug}`
-        : `${SHOP_SUB_ROUTE}/tag/${primary.slug}`
-      : shopHref;
+    primary != null ? `/shop/tag/${primary.slug}` : shopHref;
 
   return (
     <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
@@ -132,13 +132,19 @@ export default async function ProductPage({ params }: Props) {
       )}
       <div>
         <p className="text-xs uppercase tracking-wide text-zinc-500">
-          <Link href={shopHref} className="hover:text-rose-400/90">
-            {product.audience === Audience.domme
-              ? "Domme shop"
-              : product.audience === Audience.sub
-                ? "Sub shop"
-                : "Shop"}
+          <Link href={SHOP_ALL_ROUTE} className="hover:text-rose-400/90">
+            All products
           </Link>
+          {product.audience !== Audience.both ? (
+            <>
+              <span className="mx-1.5 text-zinc-600">/</span>
+              <Link href={shopHref} className="hover:text-rose-400/90">
+                {product.audience === Audience.domme
+                  ? "Domme collection"
+                  : "Sub collection"}
+              </Link>
+            </>
+          ) : null}
           {primary ? (
             <>
               <span className="mx-1.5 text-zinc-600">/</span>

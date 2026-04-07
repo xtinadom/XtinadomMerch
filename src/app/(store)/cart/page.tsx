@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { SHOP_ALL_ROUTE } from "@/lib/constants";
 import { getCartSession } from "@/lib/session";
 import { setCartQuantity } from "@/actions/cart";
 import {
@@ -41,7 +42,7 @@ export default async function CartPage() {
       {rows.length === 0 ? (
         <p className="mt-6 text-sm text-zinc-500">
           Your cart is empty.{" "}
-          <Link href="/" className="text-rose-400/90 hover:underline">
+          <Link href={SHOP_ALL_ROUTE} className="text-rose-400/90 hover:underline">
             Continue shopping
           </Link>
         </p>

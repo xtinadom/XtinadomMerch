@@ -3,7 +3,7 @@ import type { Product, Tag } from "@/generated/prisma/client";
 import { productPrimaryImage } from "@/lib/product-media";
 import { cardLabelTag } from "@/lib/product-tags";
 
-type P = Product & {
+export type ProductCardProduct = Product & {
   primaryTag: Tag | null;
   tags: { tagId: string; tag: Tag }[];
 };
@@ -15,7 +15,7 @@ function formatPrice(cents: number) {
   }).format(cents / 100);
 }
 
-export function ProductCard({ product }: { product: P }) {
+export function ProductCard({ product }: { product: ProductCardProduct }) {
   const img = productPrimaryImage(product);
   const label = cardLabelTag({
     primaryTagId: product.primaryTagId,

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getStoreTags } from "@/lib/store-tags";
 import { ShopTagMenu } from "@/components/ShopTagMenu";
+import { SHOP_ALL_ROUTE } from "@/lib/constants";
 
 export async function SiteHeader() {
   const tags = await getStoreTags();
@@ -15,6 +16,12 @@ export async function SiteHeader() {
           Xtinadom
         </Link>
         <nav className="flex flex-1 items-center justify-end gap-6">
+          <Link
+            href={SHOP_ALL_ROUTE}
+            className="text-sm text-zinc-400 transition hover:text-zinc-100"
+          >
+            All products
+          </Link>
           <ShopTagMenu tags={tags} />
           <Link
             href="/cart"
