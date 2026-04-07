@@ -48,18 +48,35 @@ function integrationPooledUrl(): string | undefined {
 const SUFFIX_NON_POOLING = "_POSTGRES_URL_NON_POOLING";
 const SUFFIX_UNPOOLED = "_DATABASE_URL_UNPOOLED";
 
+/** Skip localhost URLs so `DIRECT_URL` for local Docker does not win over Neon in `vercel env pull` mixes. */
+function isLocalDatabaseHost(url: string): boolean {
+  try {
+    const h = new URL(url).hostname.toLowerCase();
+    return h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+  } catch {
+    return false;
+  }
+}
+
+function tryMigrateDirectCandidate(raw: string | undefined): string | undefined {
+  const t = raw?.trim();
+  if (!t || !isPostgresUrl(t) || isLocalDatabaseHost(t)) return undefined;
+  return t;
+}
+
 /** Direct / non-pooling URL for `prisma migrate` (see prisma.config.ts). */
 export function migrateDirectUrlFromEnv(): string | undefined {
-  const direct =
-    process.env.PRISMA_MIGRATE_DATABASE_URL?.trim() ||
-    process.env.POSTGRES_URL_NON_POOLING?.trim() ||
-    process.env.DIRECT_URL?.trim() ||
-    process.env.DATABASE_URL_UNPOOLED?.trim();
-  if (direct && isPostgresUrl(direct)) return direct;
+  const standard =
+    tryMigrateDirectCandidate(process.env.PRISMA_MIGRATE_DATABASE_URL) ||
+    tryMigrateDirectCandidate(process.env.POSTGRES_URL_NON_POOLING) ||
+    tryMigrateDirectCandidate(process.env.DIRECT_URL) ||
+    tryMigrateDirectCandidate(process.env.DATABASE_URL_UNPOOLED);
+  if (standard) return standard;
 
   const found: { key: string; url: string }[] = [];
   for (const [k, v] of Object.entries(process.env)) {
     if (!v?.trim() || !isPostgresUrl(v)) continue;
+    if (isLocalDatabaseHost(v.trim())) continue;
     if (
       (k.length > SUFFIX_NON_POOLING.length && k.endsWith(SUFFIX_NON_POOLING)) ||
       (k.length > SUFFIX_UNPOOLED.length && k.endsWith(SUFFIX_UNPOOLED))

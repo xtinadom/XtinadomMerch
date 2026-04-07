@@ -50,6 +50,14 @@ npx vercel env pull .env.production.local --environment=production
 
 Load that file into your shell (or copy `DATABASE_URL` / `POSTGRES_PRISMA_URL` from it), then `npx prisma migrate deploy`.
 
+**Option C — npm script (recommended after `vercel env pull`)**
+
+Uses Neon's **direct** URL from `.env.production.local` and ignores a local `DIRECT_URL` that sometimes appears in the same file:
+
+```bash
+npm run db:migrate:prod
+```
+
 If `migrate deploy` fails (e.g. pooled URL only), use:
 
 ```powershell

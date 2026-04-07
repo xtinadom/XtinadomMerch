@@ -13,6 +13,7 @@
     "lint": "eslint",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
+    "db:migrate:prod": "node scripts/migrate-production.cjs",
     "db:seed": "prisma db seed",
     "cleanup-tags": "tsx scripts/cleanup-duplicate-tags.ts",
     "db:studio": "prisma studio",
