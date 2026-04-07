@@ -1,13 +1,30 @@
 /**
  * `NEXT_PUBLIC_APP_URL` for redirects, Stripe return URLs, and canonical host logic.
  * In production, `http://` is upgraded to `https://` so browsers stay on a secure origin.
+ *
+ * Bare hostnames (e.g. `xtinadom.com`) are normalized — `new URL()` requires a scheme.
+ * Prefer setting the full URL in Vercel: `https://www.xtinadom.com` (your real canonical host).
  */
 export function publicAppBaseUrl(): string | undefined {
   const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (!raw) return undefined;
   let u = raw.replace(/\/$/, "");
+  if (!/^https?:\/\//i.test(u)) {
+    const local =
+      u.startsWith("localhost") ||
+      u.startsWith("127.0.0.1") ||
+      u.startsWith("[::1]");
+    u = `${local ? "http" : "https"}://${u}`;
+  }
   if (process.env.NODE_ENV === "production" && u.startsWith("http://")) {
-    u = `https://${u.slice("http://".length)}`;
+    const rest = u.slice("http://".length);
+    const isLocalHost =
+      rest.startsWith("localhost") ||
+      rest.startsWith("127.0.0.1") ||
+      rest.startsWith("[::1]");
+    if (!isLocalHost) {
+      u = `https://${rest}`;
+    }
   }
   return u;
 }
