@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
+import { runtimeDatabaseUrlFromEnv } from "@/lib/env-postgres-url";
 
 /** Bump when `Product` (or other models) change in a way that requires a new client instance in dev. */
 const PRISMA_SINGLETON_STAMP = "postgres-adapter-v1";
@@ -11,17 +12,8 @@ const globalForPrisma = globalThis as unknown as {
   prismaSingletonStamp?: string;
 };
 
-function runtimeDatabaseUrl(): string | undefined {
-  return (
-    process.env.POSTGRES_PRISMA_URL?.trim() ||
-    process.env.DATABASE_URL?.trim() ||
-    process.env.POSTGRES_URL?.trim() ||
-    process.env.DIRECT_URL?.trim()
-  );
-}
-
 function createPrisma(): PrismaClient {
-  const connectionString = runtimeDatabaseUrl();
+  const connectionString = runtimeDatabaseUrlFromEnv();
   if (!connectionString) {
     throw new Error(
       "No database URL. Set DATABASE_URL or (on Vercel Postgres) POSTGRES_PRISMA_URL. Local: postgresql://postgres:postgres@localhost:5432/xtinadom_merch",

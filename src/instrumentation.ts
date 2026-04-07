@@ -27,11 +27,8 @@ export async function register() {
     return;
   }
 
-  const dbUrl =
-    process.env.POSTGRES_PRISMA_URL?.trim() ||
-    process.env.DATABASE_URL?.trim() ||
-    process.env.POSTGRES_URL?.trim() ||
-    process.env.DIRECT_URL?.trim();
+  const { runtimeDatabaseUrlFromEnv } = await import("./lib/env-postgres-url");
+  const dbUrl = runtimeDatabaseUrlFromEnv();
   if (!dbUrl) {
     console.error(
       "[xtinadom] No DATABASE_URL or POSTGRES_PRISMA_URL — shop and admin need Postgres. Set env on Vercel and redeploy. See VERCEL.md §5.",

@@ -2,36 +2,19 @@
 // npm install --save-dev prisma dotenv
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
+import {
+  migrateDirectUrlFromEnv,
+  runtimeDatabaseUrlFromEnv,
+} from "./src/lib/env-postgres-url";
 
 /**
  * URL used by Prisma CLI (`migrate deploy`, etc.).
  * Prefer a direct (non-pooled) URL — required for Neon poolers and Vercel Postgres migrations.
  */
 function migrateDatabaseUrl(): string | undefined {
-  const direct =
-    process.env.PRISMA_MIGRATE_DATABASE_URL?.trim() ||
-    process.env.POSTGRES_URL_NON_POOLING?.trim() ||
-    process.env.DIRECT_URL?.trim() ||
-    process.env.DATABASE_URL_UNPOOLED?.trim();
-  if (direct) {
-    return direct;
-  }
-
-  if (process.env.VERCEL === "1") {
-    return (
-      process.env.POSTGRES_PRISMA_URL?.trim() ||
-      process.env.DATABASE_URL?.trim() ||
-      process.env.POSTGRES_URL?.trim() ||
-      process.env.PRISMA_DATABASE_URL?.trim()
-    );
-  }
-
-  return (
-    process.env.DATABASE_URL?.trim() ||
-    process.env.POSTGRES_URL?.trim() ||
-    process.env.PRISMA_DATABASE_URL?.trim() ||
-    process.env.POSTGRES_PRISMA_URL?.trim()
-  );
+  const direct = migrateDirectUrlFromEnv();
+  if (direct) return direct;
+  return runtimeDatabaseUrlFromEnv();
 }
 
 export default defineConfig({
