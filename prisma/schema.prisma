@@ -143,3 +143,11 @@ model ProcessedStripeEvent {
   stripeEventId String   @unique
   processedAt   DateTime @default(now())
 }
+
+/** Free-form text rows (e.g. notes). Requires an id for Prisma; add rows via SQL or future UI. */
+model Comment {
+  id      String  @id @default(cuid())
+  comment String? @db.Text
+
+  @@map("comments")
+}
