@@ -23,6 +23,7 @@ import { ProductTagFields } from "@/components/admin/ProductTagFields";
 import { productTagIds } from "@/lib/product-tags";
 import { PrintifyApiTab } from "./printify-api-tab";
 import { PrintifyInventoryTab } from "./printify-inventory-tab";
+import { ListingGalleryEditor } from "@/components/admin/ListingGalleryEditor";
 import { SaveListingForm } from "@/components/admin/SaveListingForm";
 
 export const dynamic = "force-dynamic";
@@ -36,13 +37,6 @@ function formatPrice(cents: number) {
 
 function priceInputValue(cents: number): string {
   return (cents / 100).toFixed(2);
-}
-
-function galleryTextareaDefault(product: {
-  imageUrl: string | null;
-  imageGallery: Prisma.JsonValue | null;
-}): string {
-  return productImageUrls(product).join("\n");
 }
 
 type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -145,6 +139,48 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         </p>
       ) : null}
 
+      {products.length === 0 ? (
+        <div
+          role="status"
+          className="rounded-lg border border-amber-900/45 bg-amber-950/25 px-4 py-3 text-sm text-amber-100/90"
+        >
+          <p className="font-medium text-amber-50/95">No products in this database</p>
+          <p className="mt-2 text-xs leading-relaxed text-amber-200/85">
+            Admin and the shop use the same PostgreSQL connection. If both look empty, this environment is
+            almost certainly using a database with no product rows yet, or a different database than where you
+            created data (for example only on your laptop, not on Vercel).
+          </p>
+          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-xs text-amber-200/80">
+            <li>
+              Confirm{" "}
+              <code className="rounded bg-zinc-950/60 px-1 py-0.5 font-mono text-amber-100/90">
+                POSTGRES_PRISMA_URL
+              </code>{" "}
+              or{" "}
+              <code className="rounded bg-zinc-950/60 px-1 py-0.5 font-mono text-amber-100/90">
+                DATABASE_URL
+              </code>{" "}
+              in this deployment (e.g. Vercel → Production) points at the database you intend.
+            </li>
+            <li>
+              Run{" "}
+              <code className="rounded bg-zinc-950/60 px-1 py-0.5 font-mono text-amber-100/90">
+                npx prisma migrate deploy
+              </code>{" "}
+              and{" "}
+              <code className="rounded bg-zinc-950/60 px-1 py-0.5 font-mono text-amber-100/90">
+                npm run db:seed
+              </code>{" "}
+              from your machine using that same URL (see VERCEL.md).
+            </li>
+            <li>
+              Or add listings here in this Admin (and sync Printify if you use it)—they are stored only in the
+              database your env points to.
+            </li>
+          </ul>
+        </div>
+      ) : null}
+
       <div className="rounded-xl border border-zinc-800 bg-zinc-950/40">
         <nav
           className="flex flex-wrap gap-1 border-b border-zinc-800 px-2 pt-2"
@@ -239,7 +275,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 Used items (manual fulfillment)
               </h2>
               <p className="mt-1 text-xs text-zinc-600">
-                Shipped by you; stock is enforced at checkout. Photo URLs must be https — one per line.
+                Shipped by you; stock is enforced at checkout. Add photos by URL or upload (see .env for
+                Vercel Blob).
                 Payment options apply to carts that include this item together with others (Stripe shows the
                 intersection of what every line allows).
               </p>
@@ -287,15 +324,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                       />
                     </label>
                   </div>
-                  <label className="block text-xs text-zinc-500">
-                    Photo URLs (one per line, https)
-                    <textarea
-                      name="gallery"
-                      rows={3}
-                      placeholder="https://…"
-                      className="mt-1 block w-full max-w-xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-xs text-zinc-300"
-                    />
-                  </label>
+                  <ListingGalleryEditor defaultUrls={[]} />
                   <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
                     <label className="flex cursor-pointer items-center gap-2">
                       <input type="checkbox" name="payCard" defaultChecked className="rounded border-zinc-600" />
@@ -423,15 +452,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                         />
                         Allow checkout tip (sub shop)
                       </label>
-                      <label className="block text-xs text-zinc-500">
-                        Photo URLs (one per line, https)
-                        <textarea
-                          name="gallery"
-                          rows={4}
-                          defaultValue={galleryTextareaDefault(p)}
-                          className="mt-1 block w-full max-w-2xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-xs text-zinc-300"
-                        />
-                      </label>
+                      <ListingGalleryEditor defaultUrls={productImageUrls(p)} />
                       <div className="flex flex-wrap items-end gap-4">
                         <label className="block text-xs text-zinc-500">
                           Price (USD)

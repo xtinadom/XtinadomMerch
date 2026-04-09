@@ -1,6 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 
-const MAX_GALLERY = 20;
+/** Max images per product listing (admin + storefront). */
+export const MAX_GALLERY = 20;
 
 /** Parse newline- or comma-separated URLs; keep only http(s). */
 export function parseImageUrlList(raw: string): string[] {
@@ -60,4 +61,18 @@ export function productPrimaryImage(product: {
 
 export function toGalleryJson(urls: string[]): Prisma.InputJsonValue {
   return urls;
+}
+
+/** Deduplicate image URLs while preserving first-seen order (for storefront galleries). */
+export function uniqueImageUrlsOrdered(urls: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const u of urls) {
+    const s = typeof u === "string" ? u.trim() : "";
+    if (!s) continue;
+    if (seen.has(s)) continue;
+    seen.add(s);
+    out.push(s);
+  }
+  return out;
 }

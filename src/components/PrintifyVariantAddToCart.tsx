@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { addToCart } from "@/actions/cart";
+import { ProductImageGallery } from "@/components/ProductImageGallery";
+import { uniqueImageUrlsOrdered } from "@/lib/product-media";
 
 export type PrintifyVariantOption = {
   id: string;
@@ -35,44 +37,18 @@ export function PrintifyVariantAddToCart({
   );
 
   const heroSrc = selected?.imageUrl?.trim() || null;
-  const thumbs = useMemo(() => {
-    const base = heroSrc ? [heroSrc] : [];
-    const rest = galleryExtras.filter((u) => u !== heroSrc);
-    return [...base, ...rest].slice(0, 12);
+  /** Admin gallery first, then variant image (deduped). Avoids hiding extras when the variant URL matches mockups. */
+  const allImages = useMemo(() => {
+    const parts = [...galleryExtras];
+    if (heroSrc) parts.push(heroSrc);
+    return uniqueImageUrlsOrdered(parts);
   }, [galleryExtras, heroSrc]);
 
   if (!selected) return null;
 
   return (
     <div className="mx-auto w-full max-w-[400px]">
-      <div className="aspect-square w-full overflow-hidden rounded-2xl bg-zinc-900">
-        {heroSrc ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={heroSrc}
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full min-h-[200px] items-center justify-center text-zinc-600">
-            No image
-          </div>
-        )}
-      </div>
-      {thumbs.length > 1 ? (
-        <ul className="mt-3 flex flex-wrap justify-center gap-2">
-          {thumbs.slice(1).map((src) => (
-            <li key={src}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={src}
-                alt=""
-                className="h-16 w-16 rounded-lg border border-zinc-800 object-cover"
-              />
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <ProductImageGallery images={allImages} resetKey={variantId} />
 
       <label className="mt-4 block text-xs font-medium text-zinc-400">
         Option

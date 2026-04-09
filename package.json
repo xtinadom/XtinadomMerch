@@ -6,28 +6,30 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "prisma generate && next dev",
+    "dev": "prisma generate --schema prisma/schema.prisma && next dev",
     "build": "node scripts/vercel-build.cjs",
     "build:next": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate deploy",
+    "db:push": "prisma db push --schema prisma/schema.prisma",
+    "db:migrate": "prisma migrate deploy --schema prisma/schema.prisma",
     "db:migrate:prod": "node scripts/migrate-production.cjs",
-    "db:seed": "prisma db seed",
+    "db:seed": "prisma db seed --schema prisma/schema.prisma",
     "cleanup-tags": "tsx scripts/cleanup-duplicate-tags.ts",
-    "db:studio": "prisma studio",
-    "postinstall": "prisma generate",
+    "db:studio": "prisma studio --schema prisma/schema.prisma",
+    "postinstall": "prisma generate --schema prisma/schema.prisma",
     "build:prod": "node scripts/with-production-env.cjs scripts/vercel-build.cjs",
     "start:prod": "node scripts/with-production-env.cjs node_modules/next/dist/bin/next start",
     "preview:prod": "npm run build:prod && node scripts/with-production-env.cjs node_modules/next/dist/bin/next start -p 4173"
   },
   "prisma": {
+    "schema": "prisma/schema.prisma",
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
+    "@vercel/blob": "^2.3.3",
     "dotenv": "^17.4.0",
     "iron-session": "^8.0.4",
     "jose": "^6.2.2",

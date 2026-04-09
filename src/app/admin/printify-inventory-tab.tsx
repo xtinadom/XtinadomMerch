@@ -13,6 +13,7 @@ import type { AdminTagRow } from "@/components/admin/ProductTagFields";
 import { CollectionAssignmentFields } from "@/components/admin/CollectionAssignmentFields";
 import { ProductTagFields } from "@/components/admin/ProductTagFields";
 import { productTagIds } from "@/lib/product-tags";
+import { ListingGalleryEditor } from "@/components/admin/ListingGalleryEditor";
 import { SaveListingForm } from "@/components/admin/SaveListingForm";
 
 export type PrintifyInventoryTabProps = {
@@ -42,13 +43,6 @@ function formatMoneyCents(cents: number) {
 
 function priceInputValue(cents: number): string {
   return (cents / 100).toFixed(2);
-}
-
-function galleryTextareaDefault(product: {
-  imageUrl: string | null;
-  imageGallery: Prisma.JsonValue | null;
-}): string {
-  return productImageUrls(product).join("\n");
 }
 
 export async function PrintifyInventoryTab({
@@ -362,15 +356,7 @@ export async function PrintifyInventoryTab({
                 <p className="text-[11px] text-zinc-600">
                   Stripe only shows methods every line in the cart allows.
                 </p>
-                <label className="block text-xs text-zinc-500">
-                  Photo URLs (mockups; one per line)
-                  <textarea
-                    name="gallery"
-                    rows={4}
-                    defaultValue={galleryTextareaDefault(p)}
-                    className="mt-1 block w-full max-w-2xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-xs text-zinc-300"
-                  />
-                </label>
+                <ListingGalleryEditor defaultUrls={productImageUrls(p)} />
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="block text-xs text-zinc-500">
                     Price (USD)

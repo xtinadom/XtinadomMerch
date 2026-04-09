@@ -64,7 +64,7 @@ delete env.DIRECT_URL;
 delete env.DATABASE_URL;
 
 const prismaBin = path.join(root, "node_modules", "prisma", "build", "index.js");
-const r = spawnSync(process.execPath, [prismaBin, "migrate", "deploy"], {
+const r = spawnSync(process.execPath, [prismaBin, "migrate", "deploy", "--schema", "prisma/schema.prisma"], {
   stdio: "inherit",
   cwd: root,
   env,

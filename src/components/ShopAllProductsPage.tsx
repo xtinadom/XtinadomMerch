@@ -41,7 +41,7 @@ export async function ShopAllProductsPage() {
       <ShopProductSectionList
         sections={sections}
         viewAllHrefForTag={(slug) => `/shop/tag/${slug}`}
-        emptyMessage="No products yet. Add items in admin, assign tags, or sync from Printify."
+        emptyMessage="No products yet. Add items in admin, assign tags, or sync from Printify. If you expected data already, the database for this deployment may be empty or not migrated (local data does not sync to production automatically)."
       />
     </div>
   );

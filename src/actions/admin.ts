@@ -1,5 +1,7 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
+import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -635,4 +637,55 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
   redirect(
     `/admin?tab=printify&sync=ok&syncMode=${syncMode}&updated=${updated}&created=${created}&skipped=${skipped}&removed=${removed}`,
   );
+}
+
+const MAX_LISTING_UPLOAD_BYTES = 8 * 1024 * 1024;
+const LISTING_UPLOAD_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
+/** Upload a product listing image to Vercel Blob (requires BLOB_READ_WRITE_TOKEN). */
+export async function uploadListingImage(
+  formData: FormData,
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  const admin = await getAdminSession();
+  if (!admin.isAdmin) return { ok: false, error: "Unauthorized." };
+  if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
+    return {
+      ok: false,
+      error:
+        "Uploads need BLOB_READ_WRITE_TOKEN (Vercel Blob). Paste image URLs instead, or add the token from your Vercel project.",
+    };
+  }
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "No file uploaded." };
+  }
+  if (file.size > MAX_LISTING_UPLOAD_BYTES) {
+    return { ok: false, error: "File too large (max 8 MB)." };
+  }
+  if (!LISTING_UPLOAD_MIME.has(file.type)) {
+    return { ok: false, error: "Use JPEG, PNG, WebP, or GIF." };
+  }
+
+  const ext =
+    file.type === "image/jpeg"
+      ? "jpg"
+      : file.type === "image/png"
+        ? "png"
+        : file.type === "image/webp"
+          ? "webp"
+          : "gif";
+  const pathname = `listing/${Date.now()}-${randomBytes(8).toString("hex")}.${ext}`;
+
+  const blob = await put(pathname, file, {
+    access: "public",
+    addRandomSuffix: true,
+  });
+
+  return { ok: true, url: blob.url };
 }

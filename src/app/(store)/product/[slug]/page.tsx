@@ -7,6 +7,7 @@ import { getShippingFlatCents } from "@/lib/shipping";
 import { productImageUrls } from "@/lib/product-media";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { PrintifyVariantAddToCart } from "@/components/PrintifyVariantAddToCart";
+import { ProductImageGallery } from "@/components/ProductImageGallery";
 import {
   SHOP_ALL_ROUTE,
   SHOP_DOMME_ROUTE,
@@ -84,34 +85,7 @@ export default async function ProductPage({ params }: Props) {
         />
       ) : (
         <div className="mx-auto w-full max-w-[400px]">
-          <div className="aspect-square w-full overflow-hidden rounded-2xl bg-zinc-900">
-            {images[0] ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={images[0]}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full min-h-[200px] items-center justify-center text-zinc-600">
-                No image
-              </div>
-            )}
-          </div>
-          {images.length > 1 ? (
-            <ul className="mt-3 flex flex-wrap justify-center gap-2">
-              {images.slice(1).map((src) => (
-                <li key={src}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={src}
-                    alt=""
-                    className="h-16 w-16 rounded-lg border border-zinc-800 object-cover"
-                  />
-                </li>
-              ))}
-            </ul>
-          ) : null}
+          <ProductImageGallery images={images} />
           {availability !== "Sold out" && (
             <form
               action={async () => {

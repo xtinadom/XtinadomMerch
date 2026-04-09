@@ -26,7 +26,7 @@ function runOptionalSchemaSync() {
   process.env.CI = process.env.CI || "true";
   console.log("[build] RUN_PRISMA_SCHEMA_ON_BUILD=1 — prisma migrate deploy");
   let code =
-    spawnSync("npx prisma migrate deploy", {
+    spawnSync("npx prisma migrate deploy --schema prisma/schema.prisma", {
       stdio: "inherit",
       env: process.env,
       shell: true,
@@ -34,7 +34,7 @@ function runOptionalSchemaSync() {
   if (code !== 0) {
     console.warn("[build] migrate deploy failed — prisma db push --skip-generate");
     code =
-      spawnSync("npx prisma db push --skip-generate", {
+      spawnSync("npx prisma db push --skip-generate --schema prisma/schema.prisma", {
         stdio: "inherit",
         env: process.env,
         shell: true,
@@ -45,7 +45,7 @@ function runOptionalSchemaSync() {
   }
 }
 
-run("npx prisma generate");
+run("npx prisma generate --schema prisma/schema.prisma");
 runOptionalSchemaSync();
 
 const nextCmd =
