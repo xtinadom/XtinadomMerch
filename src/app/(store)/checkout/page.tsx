@@ -5,6 +5,7 @@ import { getCartSession } from "@/lib/session";
 import { cartHasTipEligibleProduct } from "@/lib/tip-eligibility";
 import { cartLineUnitPriceCents } from "@/lib/printify-variants";
 import { getShippingFlatCents } from "@/lib/shipping";
+import { parseEstimatedSalesTaxRate } from "@/lib/checkout-estimates";
 import { CheckoutForm } from "@/components/CheckoutForm";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +49,7 @@ export default async function CheckoutPage() {
 
   const tipAllowed = cartHasTipEligibleProduct(products);
   const shippingCents = getShippingFlatCents();
+  const estimatedSalesTaxRate = parseEstimatedSalesTaxRate();
 
   const allowCard = products.every((p) => p.payCard);
   const allowCashApp = products.every((p) => p.payCashApp);
@@ -88,6 +90,7 @@ export default async function CheckoutPage() {
           tipAllowed={tipAllowed}
           subtotalCents={subtotalCents}
           shippingCents={shippingCents}
+          estimatedSalesTaxRate={estimatedSalesTaxRate}
         />
       </div>
 

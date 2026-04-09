@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { addToCart } from "@/actions/cart";
 import { ProductImageGallery } from "@/components/ProductImageGallery";
 import { uniqueImageUrlsOrdered } from "@/lib/product-media";
@@ -19,6 +20,8 @@ function formatPrice(cents: number) {
   }).format(cents / 100);
 }
 
+const ADDED_MS = 2200;
+
 type Props = {
   productId: string;
   variants: PrintifyVariantOption[];
@@ -30,14 +33,28 @@ export function PrintifyVariantAddToCart({
   variants,
   galleryExtras,
 }: Props) {
+  const router = useRouter();
   const [variantId, setVariantId] = useState(variants[0]?.id ?? "");
+  const [pending, startTransition] = useTransition();
+  const [added, setAdded] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    setAdded(false);
+  }, [variantId]);
+
   const selected = useMemo(
     () => variants.find((v) => v.id === variantId) ?? variants[0],
     [variants, variantId],
   );
 
   const heroSrc = selected?.imageUrl?.trim() || null;
-  /** Admin gallery first, then variant image (deduped). Avoids hiding extras when the variant URL matches mockups. */
   const allImages = useMemo(() => {
     const parts = [...galleryExtras];
     if (heroSrc) parts.push(heroSrc);
@@ -66,18 +83,30 @@ export function PrintifyVariantAddToCart({
       </label>
 
       <form
-        action={async (fd) => {
-          const vid = String(fd.get("variantId") ?? "").trim();
-          await addToCart(productId, 1, vid);
-        }}
         className="mt-4 w-full"
+        onSubmit={(e) => {
+          e.preventDefault();
+          startTransition(async () => {
+            const r = await addToCart(productId, 1, variantId);
+            if (!r.ok) return;
+            router.refresh();
+            setAdded(true);
+            if (timerRef.current) clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(() => setAdded(false), ADDED_MS);
+          });
+        }}
       >
-        <input type="hidden" name="variantId" value={variantId} />
+        <span className="sr-only" role="status" aria-live="polite">
+          {added ? "Added to cart" : ""}
+        </span>
         <button
           type="submit"
-          className="w-full rounded-xl bg-rose-700 px-6 py-3 text-sm font-medium text-white transition hover:bg-rose-600"
+          disabled={pending}
+          className={`w-full rounded-xl px-6 py-3 text-sm font-medium text-white transition disabled:opacity-70 ${
+            added ? "bg-emerald-700 hover:bg-emerald-600" : "bg-rose-700 hover:bg-rose-600"
+          }`}
         >
-          Add to cart
+          {pending ? "Adding…" : added ? "Added to cart" : "Add to cart"}
         </button>
       </form>
     </div>

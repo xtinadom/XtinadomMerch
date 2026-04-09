@@ -9,6 +9,7 @@ type Props = {
   tipAllowed: boolean;
   subtotalCents: number;
   shippingCents: number;
+  estimatedSalesTaxRate: number | null;
 };
 
 function formatPrice(cents: number) {
@@ -22,11 +23,25 @@ export function CheckoutForm({
   tipAllowed,
   subtotalCents,
   shippingCents,
+  estimatedSalesTaxRate,
 }: Props) {
   const [tipCents, setTipCents] = useState(0);
   const [customTip, setCustomTip] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+
+  const taxableCents = subtotalCents + (tipAllowed ? tipCents : 0);
+  const taxCents =
+    estimatedSalesTaxRate != null && taxableCents > 0
+      ? Math.round(taxableCents * estimatedSalesTaxRate)
+      : estimatedSalesTaxRate != null
+        ? 0
+        : null;
+  const grandTotalCents =
+    subtotalCents +
+    (tipAllowed ? tipCents : 0) +
+    shippingCents +
+    (taxCents ?? 0);
 
   return (
     <form
@@ -127,14 +142,24 @@ export function CheckoutForm({
           <span>Shipping (flat)</span>
           <span>{formatPrice(shippingCents)}</span>
         </div>
+        <div className="mt-2 flex justify-between">
+          <span>Estimated sales tax</span>
+          {taxCents != null ? (
+            <span>{formatPrice(taxCents)}</span>
+          ) : (
+            <span className="text-right text-zinc-500">At checkout</span>
+          )}
+        </div>
         <div className="mt-3 flex justify-between border-t border-zinc-800 pt-3 font-medium text-zinc-100">
-          <span>Total due at checkout</span>
+          <span>Estimated total</span>
           <span>
-            {formatPrice(subtotalCents + (tipAllowed ? tipCents : 0) + shippingCents)}
+            {estimatedSalesTaxRate != null
+              ? formatPrice(grandTotalCents)
+              : `${formatPrice(subtotalCents + (tipAllowed ? tipCents : 0) + shippingCents)} + tax`}
           </span>
         </div>
         <p className="mt-3 text-xs text-zinc-600">
-          Pay with card or Cash App Pay (US). You will enter payment on Stripe&apos;s secure page.
+          Tax is finalized at payment from your address. Pay with card or Cash App Pay (US) on Stripe&apos;s page.
         </p>
       </div>
 

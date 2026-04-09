@@ -1,5 +1,6 @@
 import { SessionOptions, getIronSession } from "iron-session";
 import { cookies } from "next/headers";
+import { CART_SESSION_QUANTITY_CEILING } from "@/lib/cart-limits";
 
 /** One cart row per product; printifyVariantId set when the listing has multiple Printify variants. */
 export type CartLine = { quantity: number; printifyVariantId?: string };
@@ -10,7 +11,12 @@ export type CartSession = {
 
 function normalizeCartValue(v: unknown): CartLine | undefined {
   if (typeof v === "number" && v > 0) {
-    return { quantity: Math.min(99, Math.max(1, Math.floor(v))) };
+    return {
+      quantity: Math.min(
+        CART_SESSION_QUANTITY_CEILING,
+        Math.max(1, Math.floor(v)),
+      ),
+    };
   }
   if (v && typeof v === "object" && "quantity" in v) {
     const q = (v as CartLine).quantity;
@@ -18,7 +24,7 @@ function normalizeCartValue(v: unknown): CartLine | undefined {
     const vid = (v as CartLine).printifyVariantId;
     const trimmed = typeof vid === "string" ? vid.trim() : "";
     return {
-      quantity: Math.min(99, Math.max(1, Math.floor(q))),
+      quantity: Math.min(CART_SESSION_QUANTITY_CEILING, Math.max(1, Math.floor(q))),
       ...(trimmed ? { printifyVariantId: trimmed } : {}),
     };
   }

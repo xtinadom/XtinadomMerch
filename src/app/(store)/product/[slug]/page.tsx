@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { FulfillmentType, Audience } from "@/generated/prisma/enums";
-import { addToCart } from "@/actions/cart";
+import { ProductAddToCartForm } from "@/components/ProductAddToCartForm";
 import { getShippingFlatCents } from "@/lib/shipping";
 import { productImageUrls } from "@/lib/product-media";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
@@ -30,6 +30,7 @@ function stockLabel(
   track: boolean,
   qty: number,
 ): string {
+  if (fulfillment === FulfillmentType.printify) return "In stock";
   if (fulfillment !== FulfillmentType.manual || !track) return "Available";
   if (qty <= 0) return "Sold out";
   return "In stock";
@@ -87,20 +88,7 @@ export default async function ProductPage({ params }: Props) {
         <div className="mx-auto w-full max-w-[400px]">
           <ProductImageGallery images={images} />
           {availability !== "Sold out" && (
-            <form
-              action={async () => {
-                "use server";
-                await addToCart(product.id, 1);
-              }}
-              className="mt-4 w-full"
-            >
-              <button
-                type="submit"
-                className="w-full rounded-xl bg-rose-700 px-6 py-3 text-sm font-medium text-white transition hover:bg-rose-600"
-              >
-                Add to cart
-              </button>
-            </form>
+            <ProductAddToCartForm productId={product.id} />
           )}
         </div>
       )}

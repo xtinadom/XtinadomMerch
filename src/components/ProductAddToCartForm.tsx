@@ -1,0 +1,50 @@
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { addToCart } from "@/actions/cart";
+
+const ADDED_MS = 2200;
+
+export function ProductAddToCartForm({ productId }: { productId: string }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [added, setAdded] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  return (
+    <form
+      className="mt-4 w-full"
+      onSubmit={(e) => {
+        e.preventDefault();
+        startTransition(async () => {
+          const r = await addToCart(productId, 1);
+          if (!r.ok) return;
+          router.refresh();
+          setAdded(true);
+          if (timerRef.current) clearTimeout(timerRef.current);
+          timerRef.current = setTimeout(() => setAdded(false), ADDED_MS);
+        });
+      }}
+    >
+      <span className="sr-only" role="status" aria-live="polite">
+        {added ? "Added to cart" : ""}
+      </span>
+      <button
+        type="submit"
+        disabled={pending}
+        className={`w-full rounded-xl px-6 py-3 text-sm font-medium text-white transition disabled:opacity-70 ${
+          added ? "bg-emerald-700 hover:bg-emerald-600" : "bg-rose-700 hover:bg-rose-600"
+        }`}
+      >
+        {pending ? "Adding…" : added ? "Added to cart" : "Add to cart"}
+      </button>
+    </form>
+  );
+}

@@ -117,6 +117,10 @@ export async function updateProductDetails(
     data.payCashApp = payCashApp;
   }
 
+  if (product.fulfillmentType === FulfillmentType.printify) {
+    data.trackInventory = false;
+  }
+
   const tagIds = parseProductTagIdsFromForm(formData);
   if (tagIds.length > 0) {
     const valid = await assertTagsValidForAudience(audienceNext, tagIds);
@@ -304,6 +308,7 @@ export async function updateProductPrintifyIds(
     data: {
       printifyProductId: printifyProductId || null,
       printifyVariantId: printifyVariantId || null,
+      trackInventory: false,
     },
   });
   revalidatePath("/admin");
@@ -527,6 +532,7 @@ async function processOnePrintifyCatalogProduct(
           galleryUrls.length > 0 ? galleryUrls : heroImage ? [heroImage] : [],
         ),
         active: true,
+        trackInventory: false,
       },
     });
     await ensurePrintifyProductTagged(keep.id, importTagId);
@@ -562,6 +568,7 @@ async function processOnePrintifyCatalogProduct(
           galleryUrls.length > 0 ? galleryUrls : heroImage ? [heroImage] : [],
         ),
         active: true,
+        trackInventory: false,
       },
     });
     await ensurePrintifyProductTagged(match.id, importTagId);

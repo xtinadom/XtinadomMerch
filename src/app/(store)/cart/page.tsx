@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { SHOP_ALL_ROUTE } from "@/lib/constants";
 import { getCartSession } from "@/lib/session";
@@ -7,6 +8,13 @@ import {
   cartLineUnitPriceCents,
   cartLineVariantSubtitle,
 } from "@/lib/printify-variants";
+import { getShippingFlatCents } from "@/lib/shipping";
+import {
+  estimatedTaxCents,
+  parseEstimatedSalesTaxRate,
+} from "@/lib/checkout-estimates";
+import { FulfillmentType } from "@/generated/prisma/enums";
+import { CART_MAX_PRINTIFY_LINE_QTY, CART_MAX_MANUAL_LINE_QTY } from "@/lib/cart-limits";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +43,11 @@ export default async function CartPage() {
     return { product: p, quantity: q, line, unit, variantSub: cartLineVariantSubtitle(p, cartLine) };
   });
   const subtotal = rows.reduce((s, r) => s + r.line, 0);
+  const shippingCents = getShippingFlatCents();
+  const taxRate = parseEstimatedSalesTaxRate();
+  const taxCents = estimatedTaxCents(subtotal, taxRate);
+  const estimatedTotal =
+    taxCents != null ? subtotal + shippingCents + taxCents : null;
 
   return (
     <div>
@@ -68,7 +81,7 @@ export default async function CartPage() {
                     {formatPrice(unit)} each
                   </p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   <form
                     action={async (fd) => {
                       "use server";
@@ -83,7 +96,11 @@ export default async function CartPage() {
                         type="number"
                         name="qty"
                         min={1}
-                        max={99}
+                        max={
+                          p.fulfillmentType === FulfillmentType.printify
+                            ? CART_MAX_PRINTIFY_LINE_QTY
+                            : CART_MAX_MANUAL_LINE_QTY
+                        }
                         defaultValue={q}
                         className="ml-2 w-16 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm"
                       />
@@ -95,21 +112,65 @@ export default async function CartPage() {
                       Update
                     </button>
                   </form>
+                  <form
+                    action={async () => {
+                      "use server";
+                      await setCartQuantity(p.id, 0);
+                      revalidatePath("/product/" + p.slug);
+                    }}
+                  >
+                    <button
+                      type="submit"
+                      className="rounded-lg border border-zinc-700 px-3 py-1 text-xs text-rose-400/90 hover:border-rose-800/80 hover:bg-rose-950/40 hover:text-rose-300"
+                    >
+                      Remove
+                    </button>
+                  </form>
                   <span className="text-sm text-zinc-300">{formatPrice(line)}</span>
                 </div>
               </li>
             ))}
           </ul>
-          <div className="mt-8 flex flex-col items-end gap-4">
-            <p className="text-lg text-zinc-200">
-              Subtotal <span className="ml-4">{formatPrice(subtotal)}</span>
-            </p>
-            <Link
-              href="/checkout"
-              className="rounded-xl bg-rose-700 px-6 py-3 text-sm font-medium text-white hover:bg-rose-600"
-            >
-              Checkout
-            </Link>
+          <div className="mt-8 w-full max-w-md sm:ml-auto">
+            <div className="rounded-xl border border-zinc-800 p-5 text-sm text-zinc-400">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span className="text-zinc-200">{formatPrice(subtotal)}</span>
+              </div>
+              <div className="mt-2 flex justify-between">
+                <span>Shipping (flat)</span>
+                <span className="text-zinc-200">{formatPrice(shippingCents)}</span>
+              </div>
+              <div className="mt-2 flex justify-between">
+                <span>Estimated sales tax</span>
+                {taxCents != null ? (
+                  <span className="text-zinc-200">{formatPrice(taxCents)}</span>
+                ) : (
+                  <span className="text-right text-zinc-500">
+                    At checkout
+                  </span>
+                )}
+              </div>
+              <div className="mt-3 flex justify-between border-t border-zinc-800 pt-3 font-medium text-zinc-100">
+                <span>Estimated total</span>
+                <span>
+                  {estimatedTotal != null
+                    ? formatPrice(estimatedTotal)
+                    : `${formatPrice(subtotal + shippingCents)} + tax`}
+                </span>
+              </div>
+              <p className="mt-3 text-xs text-zinc-600">
+                Tax is finalized at payment from your shipping address. Shipping is the flat rate used at checkout.
+              </p>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Link
+                href="/checkout"
+                className="rounded-xl bg-rose-700 px-6 py-3 text-sm font-medium text-white hover:bg-rose-600"
+              >
+                Checkout
+              </Link>
+            </div>
           </div>
         </>
       )}
