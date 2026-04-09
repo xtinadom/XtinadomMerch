@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  resyncPrintifyCatalogProduct,
   syncPrintifyFromCatalog,
   updateProductDetails,
   updateProductPrintifyIds,
@@ -33,13 +34,6 @@ export type PrintifyInventoryTabProps = {
   /** Product id that just saved — highlights that row’s Save listing button. */
   listingSavedId?: string;
 };
-
-function formatMoneyCents(cents: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
-}
 
 function priceInputValue(cents: number): string {
   return (cents / 100).toFixed(2);
@@ -104,21 +98,31 @@ export async function PrintifyInventoryTab({
 
       {sync === "ok" && (
         <p className="rounded-lg border border-emerald-900/60 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-200/90">
-          <span className="font-medium text-emerald-100/95">
-            {syncMode === "new"
-              ? "Sync new"
-              : syncMode === "resync"
-                ? "Resync existing"
-                : "Full sync"}
-          </span>{" "}
-          finished: updated {syncUpdated ?? "0"}, created {syncCreated ?? "0"}, skipped{" "}
-          {syncSkipped ?? "0"}
-          {syncMode === "new" ? (
-            <> — only new catalog rows were added; existing listings were not updated and orphans were not removed.</>
+          {syncMode === "single" ? (
+            <>
+              <span className="font-medium text-emerald-100/95">Single product resync</span> finished: updated{" "}
+              {syncUpdated ?? "0"}, created {syncCreated ?? "0"}, skipped {syncSkipped ?? "0"}, removed{" "}
+              {syncRemoved ?? "0"}.
+            </>
           ) : (
             <>
-              , removed (no longer in Printify catalog) {syncRemoved ?? "0"} — deleted unless the product was on a
-              past order (then archived and hidden).
+              <span className="font-medium text-emerald-100/95">
+                {syncMode === "new"
+                  ? "Sync new"
+                  : syncMode === "resync"
+                    ? "Resync existing"
+                    : "Full sync"}
+              </span>{" "}
+              finished: updated {syncUpdated ?? "0"}, created {syncCreated ?? "0"}, skipped{" "}
+              {syncSkipped ?? "0"}
+              {syncMode === "new" ? (
+                <> — only new catalog rows were added; existing listings were not updated and orphans were not removed.</>
+              ) : (
+                <>
+                  , removed (no longer in Printify catalog) {syncRemoved ?? "0"} — deleted unless the product was on a
+                  past order (then archived and hidden).
+                </>
+              )}
             </>
           )}
         </p>
@@ -130,7 +134,11 @@ export async function PrintifyInventoryTab({
             ? " — set PRINTIFY_SHOP_ID in .env."
             : syncReason === "no_tag"
               ? " — no tag found (set PRINTIFY_IMPORT_TAG_SLUG or run seed)."
-              : "."}
+              : syncReason === "catalog_not_found"
+                ? " — Printify did not return that product id (check the id or API token)."
+                : syncReason === "no_product"
+                  ? " — missing Printify product id."
+                  : "."}
         </p>
       )}
 
@@ -193,9 +201,9 @@ export async function PrintifyInventoryTab({
             catalog to your database: <span className="text-emerald-500/90">Listed</span> means a storefront
             row with this Printify product id exists and is visible; <span className="text-zinc-500">Hidden</span>{" "}
             means it exists but is inactive; <span className="text-amber-600/90">Not listed</span> means no
-            matching row yet. The storefront uses one product per Printify product id; customers pick a variant
-            on the product page. Default variant id in the listings below is the first enabled variant after
-            sync.
+            matching row yet.             Use <strong className="font-medium text-zinc-500">Resync</strong> on a row to pull that product only
+            from Printify (variants, images, prices). The storefront uses one product per Printify product id;
+            default variant in listings is the first enabled variant after sync.
           </p>
           {catalogError ? (
             <p className="mt-2 text-sm text-rose-400/90">{catalogError}</p>
@@ -209,7 +217,7 @@ export async function PrintifyInventoryTab({
                     <th className="p-2 font-medium">Product id</th>
                     <th className="p-2 font-medium">Title</th>
                     <th className="p-2 font-medium">Shop</th>
-                    <th className="p-2 font-medium">Variants</th>
+                    <th className="p-2 font-medium">Action</th>
                   </tr>
                 </thead>
                 <tbody className="text-zinc-400">
@@ -228,24 +236,16 @@ export async function PrintifyInventoryTab({
                         <td className="p-2 font-mono text-rose-300/80">{p.id}</td>
                         <td className="p-2 text-zinc-300">{p.title}</td>
                         <td className="p-2 whitespace-nowrap">{shopCell}</td>
-                        <td className="p-2">
-                          <ul className="space-y-0.5">
-                            {p.variants.map((v) => (
-                              <li key={v.id}>
-                                <span className="font-mono text-zinc-500">{v.id}</span>
-                                {" — "}
-                                {v.title}
-                                {v.priceCents > 0 ? (
-                                  <span className="ml-1 text-zinc-600">
-                                    ({formatMoneyCents(v.priceCents)})
-                                  </span>
-                                ) : null}
-                                {!v.enabled ? (
-                                  <span className="ml-1 text-amber-600/80">(disabled)</span>
-                                ) : null}
-                              </li>
-                            ))}
-                          </ul>
+                        <td className="p-2 whitespace-nowrap">
+                          <form action={resyncPrintifyCatalogProduct}>
+                            <input type="hidden" name="printifyProductId" value={p.id} />
+                            <button
+                              type="submit"
+                              className="rounded border border-zinc-600 bg-zinc-800/60 px-2 py-1.5 text-[11px] font-medium text-zinc-200 hover:bg-zinc-700/60"
+                            >
+                              Resync
+                            </button>
+                          </form>
                         </td>
                       </tr>
                     );
