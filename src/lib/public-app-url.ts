@@ -1,10 +1,4 @@
-/**
- * `NEXT_PUBLIC_APP_URL` for redirects, Stripe return URLs, and canonical host logic.
- * In production, `http://` is upgraded to `https://` so browsers stay on a secure origin.
- *
- * Bare hostnames (e.g. `xtinadom.com`) are normalized — `new URL()` requires a scheme.
- * Prefer setting the full URL in Vercel: `https://www.xtinadom.com` (your real canonical host).
- */
+// NEXT_PUBLIC_APP_URL: redirects, Stripe, canonical. Production http→https; bare hosts get a scheme.
 export function publicAppBaseUrl(): string | undefined {
   const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (!raw) return undefined;
@@ -43,11 +37,7 @@ export function publicAppOrigin(): URL | null {
   }
 }
 
-/**
- * Base URL for Next.js `metadataBase`, Open Graph, and canonical links.
- * Prefer `NEXT_PUBLIC_APP_URL` (must be https:// in production for trust signals).
- * Falls back to `https://${VERCEL_URL}` on Vercel when the public URL env is unset.
- */
+// metadataBase / OG; then https://VERCEL_URL on Vercel if unset.
 export function metadataBaseUrl(): URL {
   const base = publicAppBaseUrl();
   if (base) {

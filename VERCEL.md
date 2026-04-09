@@ -90,59 +90,15 @@ npx prisma db push
 npx prisma db seed
 ```
 
-## 5. Required environment variables (Vercel)
+## 5. Environment variables (Vercel)
 
-Set in **Project → Settings → Environment Variables** for **Production** (and **Preview** if you use it), then **Redeploy**.
+**Project → Settings → Environment Variables** → Production (and Preview if needed) → **Redeploy** after edits.
 
-I cannot set these for you from the repo; copy from your local `.env` or create values in the dashboard.
+Names and placeholders: **`.env.example`** in the repo. Additional notes:
 
-### Neon (recommended)
-
-| Variable | Environment | Value |
-|----------|-------------|--------|
-| `DATABASE_URL` | Production, Preview | Neon **pooled** connection string (`sslmode=require` as Neon provides) |
-| `DIRECT_URL` | Production (optional on Vercel) | Neon **direct** URL — **required on your laptop** for `prisma migrate deploy`; on Vercel the app runtime uses `DATABASE_URL`, not `DIRECT_URL` |
-
-You may omit `DIRECT_URL` on Vercel if you only run migrations from your machine with `DIRECT_URL` / `DATABASE_URL` pointed at production.
-
-### Minimum for the app to run
-
-| Variable | Notes |
-|----------|--------|
-| `DATABASE_URL` | Neon pooled (or `POSTGRES_PRISMA_URL` if you use Vercel Postgres naming) |
-| `NEXT_PUBLIC_APP_URL` | `https://www.xtinadom.com` (or your Vercel URL); must be `https://` in production |
-| `SESSION_SECRET` | At least **32 characters** |
-| `ADMIN_PASSWORD` | Admin login |
-
-### Site password gate (optional)
-
-Set **both** `SITE_ACCESS_PASSWORD` and `SITE_ACCESS_SECRET` (long random). If either is missing, the gate is off.
-
-### Checkout (Stripe)
-
-| Variable |
-|----------|
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` |
-| `STRIPE_SECRET_KEY` |
-| `STRIPE_WEBHOOK_SECRET` |
-| `SHIPPING_FLAT_CENTS` (optional; default in code) |
-
-### Printify (optional)
-
-| Variable |
-|----------|
-| `PRINTIFY_API_TOKEN` |
-| `PRINTIFY_SHOP_ID` |
-| `PRINTIFY_SHIPPING_METHOD` |
-| `PRINTIFY_IMPORT_TAG_SLUG` |
-| `PRINTIFY_IMPORT_COLLECTION` (`sub` or `domme`) |
-| `PRINTIFY_IMPORT_AUDIENCE` |
-
-### Other
-
-| Variable | Notes |
-|----------|--------|
-| `NEXT_PUBLIC_MERCH_QUOTE_EMAIL` | Optional; domme shop promo mailto |
+- **Postgres:** `DATABASE_URL` is usually Neon **pooled**; use a **direct** URL on your laptop for `prisma migrate deploy` (section 2). Runtime also accepts `POSTGRES_PRISMA_URL` / `POSTGRES_URL` (see `src/lib/env-postgres-url.ts`).
+- **Site gate:** set both `SITE_ACCESS_PASSWORD` and `SITE_ACCESS_SECRET`, or leave the gate off.
+- **Stripe webhook:** URL in section 6.
 
 ## 6. Stripe webhook
 
@@ -172,7 +128,7 @@ The app also **redirects HTTP → HTTPS** in production and sends **HSTS** on pr
 
 ```bash
 docker compose up -d
-# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/xtinadom_merch in .env
+# .env: DATABASE_URL → local Postgres (see .env.example)
 npx prisma migrate deploy
 npm run db:seed
 npm run dev

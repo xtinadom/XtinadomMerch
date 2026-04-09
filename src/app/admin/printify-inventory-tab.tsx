@@ -24,14 +24,12 @@ export type PrintifyInventoryTabProps = {
   })[];
   allTags: AdminTagRow[];
   sync?: string;
-  /** Last completed sync mode: full | new | resync */
   syncMode?: string;
   syncUpdated?: string;
   syncCreated?: string;
   syncSkipped?: string;
   syncRemoved?: string;
   syncReason?: string;
-  /** Product id that just saved — highlights that row’s Save listing button. */
   listingSavedId?: string;
 };
 
@@ -86,13 +84,11 @@ export async function PrintifyInventoryTab({
           Print on demand (Printify)
         </h2>
         <p className="mt-1 text-xs text-zinc-600">
-          Connect your API token and shop in <code className="text-zinc-400">.env</code> (see{" "}
+          Set token and shop in <code className="text-zinc-400">.env</code> (
           <Link href="/admin?tab=printify-api" className="text-rose-400/90 hover:underline">
             Printify API
           </Link>
-          ), sync the catalog, then edit storefront copy, mockups, and Printify product / variant ids below.
-          Paid orders submit to Printify from the Stripe webhook. Checkout uses card + Cash App for POD unless
-          every line in the cart agrees otherwise.
+          ), sync, then edit listings below. Orders go to Printify via the Stripe webhook.
         </p>
       </div>
 
@@ -116,11 +112,10 @@ export async function PrintifyInventoryTab({
               finished: updated {syncUpdated ?? "0"}, created {syncCreated ?? "0"}, skipped{" "}
               {syncSkipped ?? "0"}
               {syncMode === "new" ? (
-                <> — only new catalog rows were added; existing listings were not updated and orphans were not removed.</>
+                <> — new rows only; no updates or orphan cleanup.</>
               ) : (
                 <>
-                  , removed (no longer in Printify catalog) {syncRemoved ?? "0"} — deleted unless the product was on a
-                  past order (then archived and hidden).
+                  , removed {syncRemoved ?? "0"} (gone from catalog; archived if ordered before).
                 </>
               )}
             </>
@@ -132,9 +127,7 @@ export async function PrintifyInventoryTab({
           Sync could not run
           {syncReason === "no_shop"
             ? " — set PRINTIFY_SHOP_ID in .env."
-            : syncReason === "no_tag"
-              ? " — no tag found (set PRINTIFY_IMPORT_TAG_SLUG or run seed)."
-              : syncReason === "catalog_not_found"
+            : syncReason === "catalog_not_found"
                 ? " — Printify did not return that product id (check the id or API token)."
                 : syncReason === "no_product"
                   ? " — missing Printify product id."
@@ -146,18 +139,11 @@ export async function PrintifyInventoryTab({
         <section className="rounded-lg border border-zinc-700 bg-zinc-900/50 p-4">
           <h3 className="text-sm font-medium text-zinc-200">Automatic mapping</h3>
           <p className="mt-1 text-xs text-zinc-500">
-            One storefront product per Printify product id: pulls every enabled variant into a dropdown on
-            the product page. Matches existing rows by Printify product id, then unmapped POD rows by slug or
-            title. <strong className="font-medium text-zinc-400">Full sync</strong> updates everything, adds
-            missing listings, and removes storefront rows that no longer appear in the catalog.{" "}
-            <strong className="font-medium text-zinc-400">Sync new</strong> only creates rows for catalog
-            products that are not linked yet. <strong className="font-medium text-zinc-400">Resync existing</strong>{" "}
-            updates linked rows only and never creates new listings. New rows get tag{" "}
-            <code className="text-zinc-400">{importSlug}</code> and audience{" "}
-            <code className="text-zinc-400">
-              {process.env.PRINTIFY_IMPORT_AUDIENCE?.trim() || "both"}
-            </code>{" "}
-            (override via <code className="text-zinc-400">.env</code>).
+            <strong className="font-medium text-zinc-400">Full</strong>: update all, add missing, remove orphans.{" "}
+            <strong className="font-medium text-zinc-400">Sync new</strong>: create only.{" "}
+            <strong className="font-medium text-zinc-400">Resync existing</strong>: update linked only. New rows:
+            tag <code className="text-zinc-400">{importSlug}</code>, audience{" "}
+            <code className="text-zinc-400">{process.env.PRINTIFY_IMPORT_AUDIENCE?.trim() || "both"}</code>.
           </p>
           <form
             action={syncPrintifyFromCatalog}
@@ -197,13 +183,10 @@ export async function PrintifyInventoryTab({
         <section>
           <h3 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Your Printify catalog</h3>
           <p className="mt-1 text-xs text-zinc-600">
-            Reference for ids. <strong className="font-medium text-zinc-500">Shop</strong> compares this
-            catalog to your database: <span className="text-emerald-500/90">Listed</span> means a storefront
-            row with this Printify product id exists and is visible; <span className="text-zinc-500">Hidden</span>{" "}
-            means it exists but is inactive; <span className="text-amber-600/90">Not listed</span> means no
-            matching row yet.             Use <strong className="font-medium text-zinc-500">Resync</strong> on a row to pull that product only
-            from Printify (variants, images, prices). The storefront uses one product per Printify product id;
-            default variant in listings is the first enabled variant after sync.
+            <strong className="font-medium text-zinc-500">Shop</strong>:{" "}
+            <span className="text-emerald-500/90">Listed</span> / <span className="text-zinc-500">Hidden</span> /{" "}
+            <span className="text-amber-600/90">Not listed</span>. <strong className="font-medium text-zinc-500">Resync</strong>{" "}
+            updates one Printify product from the API.
           </p>
           {catalogError ? (
             <p className="mt-2 text-sm text-rose-400/90">{catalogError}</p>
@@ -262,9 +245,7 @@ export async function PrintifyInventoryTab({
           Storefront listings &amp; Printify ids
         </h3>
         <p className="mt-1 text-xs text-zinc-600">
-          Sync fills product id, default variant id, and the full variant list. Override ids below if needed;
-          run sync again to refresh variant options from Printify. Checkout sends the customer&apos;s chosen
-          variant on each order line to Printify.
+          Sync fills ids and variants; override below if needed. Checkout sends the chosen variant per line.
         </p>
         <ul className="mt-4 space-y-6">
           {products.map((p) => (

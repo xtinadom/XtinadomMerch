@@ -10,7 +10,6 @@ import {
 } from "react";
 import { ListingFormRecalcContext } from "@/components/admin/listing-form-recalc-context";
 
-/** Stable snapshot of all named fields (checkboxes as on/off; DOM order for duplicates). */
 function serializeForm(form: HTMLFormElement): string {
   const parts: string[] = [];
   const elements = form.querySelectorAll("input, textarea, select");
@@ -45,7 +44,6 @@ export function SaveListingForm({ action, children, savedHighlight }: Props) {
     setDirty(now !== initialSnapshot.current);
   }, []);
 
-  /** Double rAF so client-only fields (e.g. tag hidden inputs) are in the DOM before baseline. */
   useLayoutEffect(() => {
     snapshotReady.current = false;
     let id2 = 0;

@@ -69,8 +69,8 @@ export async function PrintifyApiTab() {
             {process.env.PRINTIFY_SHIPPING_METHOD ?? "1"} (Printify shipping method id for orders)
           </li>
           <li>
-            <span className="text-zinc-400">PRINTIFY_IMPORT_TAG_SLUG</span> — new listings default tag (
-            <code className="text-zinc-400">{importSlug}</code>)
+            <span className="text-zinc-400">PRINTIFY_IMPORT_TAG_SLUG</span> — default tag for new listings (
+            <code className="text-zinc-400">{importSlug}</code>); created on first sync if missing
           </li>
         </ul>
         {!tokenSet && (

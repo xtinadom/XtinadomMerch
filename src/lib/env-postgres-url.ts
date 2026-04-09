@@ -1,15 +1,10 @@
-/**
- * Resolve Postgres URLs from Vercel env. Standard names first; then Neon (and
- * similar) integration vars like `prefix_POSTGRES_PRISMA_URL` when the
- * unprefixed names are unset.
- */
+// Pooled vs direct URLs: standard env names, then Vercel/Neon integration suffixes.
 
 function isPostgresUrl(v: string): boolean {
   const t = v.trim();
   return t.startsWith("postgresql://") || t.startsWith("postgres://");
 }
 
-/** Pooled URL for Prisma Client / `pg` (runtime). */
 export function runtimeDatabaseUrlFromEnv(): string | undefined {
   const standard =
     process.env.POSTGRES_PRISMA_URL?.trim() ||
@@ -48,7 +43,6 @@ function integrationPooledUrl(): string | undefined {
 const SUFFIX_NON_POOLING = "_POSTGRES_URL_NON_POOLING";
 const SUFFIX_UNPOOLED = "_DATABASE_URL_UNPOOLED";
 
-/** Skip localhost URLs so `DIRECT_URL` for local Docker does not win over Neon in `vercel env pull` mixes. */
 function isLocalDatabaseHost(url: string): boolean {
   try {
     const h = new URL(url).hostname.toLowerCase();
@@ -64,7 +58,6 @@ function tryMigrateDirectCandidate(raw: string | undefined): string | undefined 
   return t;
 }
 
-/** Direct / non-pooling URL for `prisma migrate` (see prisma.config.ts). */
 export function migrateDirectUrlFromEnv(): string | undefined {
   const standard =
     tryMigrateDirectCandidate(process.env.PRISMA_MIGRATE_DATABASE_URL) ||

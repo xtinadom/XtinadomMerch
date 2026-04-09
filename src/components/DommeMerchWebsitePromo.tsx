@@ -1,7 +1,3 @@
-/**
- * Domme collection add-on: merch website service CTA.
- * Set NEXT_PUBLIC_MERCH_QUOTE_EMAIL for a mailto link.
- */
 export function DommeMerchWebsitePromo() {
   const email = process.env.NEXT_PUBLIC_MERCH_QUOTE_EMAIL?.trim();
   const subject = encodeURIComponent("Merch website quote");

@@ -145,7 +145,6 @@ export async function updateProductDetails(
   );
 }
 
-/** Stock update from admin form — shows confirmation after save. */
 export async function submitManualStockForm(
   productId: string,
   formData: FormData,
@@ -339,12 +338,29 @@ function importAudience(): Audience {
   return Audience.both;
 }
 
-async function resolveImportTagId(): Promise<string | null> {
-  const slug = process.env.PRINTIFY_IMPORT_TAG_SLUG?.trim() || "mug";
-  const tag = await prisma.tag.findUnique({
+function displayNameForAutoImportTag(slug: string): string {
+  const parts = slug.split(/[-_]+/).filter(Boolean);
+  if (parts.length === 0) return slug;
+  return parts
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+async function resolveImportTagId(): Promise<string> {
+  const slug = (process.env.PRINTIFY_IMPORT_TAG_SLUG?.trim() || "mug").toLowerCase();
+  const maxSo = await prisma.tag.aggregate({ _max: { sortOrder: true } });
+  const sortOrder = (maxSo._max.sortOrder ?? -1) + 1;
+  const row = await prisma.tag.upsert({
     where: { slug },
+    create: {
+      slug,
+      name: displayNameForAutoImportTag(slug),
+      sortOrder,
+    },
+    update: {},
+    select: { id: true },
   });
-  return tag?.id ?? null;
+  return row.id;
 }
 
 async function deleteOrArchivePrintifyListingById(
@@ -376,7 +392,6 @@ async function deleteOrArchivePrintifyListingById(
   return "deleted";
 }
 
-/** Printify sync updates omitted tags; storefront groups products by ProductTag rows. */
 async function ensurePrintifyProductTagged(
   productId: string,
   fallbackTagId: string,
@@ -422,7 +437,6 @@ type SyncOnePrintifyRowResult = {
   removed: number;
 };
 
-/** Apply sync logic for one Printify catalog row (shared by full catalog sync and single-product resync). */
 async function processOnePrintifyCatalogProduct(
   p: PrintifyCatalogProduct,
   syncMode: "full" | "new" | "resync",
@@ -615,9 +629,6 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
   const syncMode: "full" | "new" | "resync" =
     syncModeRaw === "new" || syncModeRaw === "resync" ? syncModeRaw : "full";
   const importTagId = await resolveImportTagId();
-  if (!importTagId) {
-    redirect("/admin?tab=printify&sync=err&reason=no_tag");
-  }
 
   let updated = 0;
   let created = 0;
@@ -667,7 +678,6 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
   );
 }
 
-/** Resync one Printify catalog product (detail fetch) — full apply for that row only; orphan cleanup is not run. */
 export async function resyncPrintifyCatalogProduct(formData: FormData): Promise<void> {
   const admin = await getAdminSession();
   if (!admin.isAdmin) {
@@ -685,9 +695,6 @@ export async function resyncPrintifyCatalogProduct(formData: FormData): Promise<
   }
 
   const importTagId = await resolveImportTagId();
-  if (!importTagId) {
-    redirect("/admin?tab=printify&sync=err&reason=no_tag");
-  }
 
   const p = await fetchPrintifyProductDetail(shopId, printifyProductId);
   if (!p) {
@@ -711,7 +718,6 @@ const LISTING_UPLOAD_MIME = new Set([
   "image/gif",
 ]);
 
-/** Upload a product listing image to Vercel Blob (requires BLOB_READ_WRITE_TOKEN). */
 export async function uploadListingImage(
   formData: FormData,
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
@@ -720,8 +726,7 @@ export async function uploadListingImage(
   if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
     return {
       ok: false,
-      error:
-        "Uploads need BLOB_READ_WRITE_TOKEN (Vercel Blob). Paste image URLs instead, or add the token from your Vercel project.",
+      error: "Set BLOB_READ_WRITE_TOKEN for uploads, or paste image URLs.",
     };
   }
 
