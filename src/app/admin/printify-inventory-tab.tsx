@@ -85,7 +85,7 @@ export async function PrintifyInventoryTab({
         </h2>
         <p className="mt-1 text-xs text-zinc-600">
           Set token and shop in <code className="text-zinc-400">.env</code> (
-          <Link href="/admin?tab=printify-api" className="text-rose-400/90 hover:underline">
+          <Link href="/admin?tab=printify-api" className="text-blue-400/90 hover:underline">
             Printify API
           </Link>
           ), sync, then edit listings below. Orders go to Printify via the Stripe webhook.
@@ -123,7 +123,7 @@ export async function PrintifyInventoryTab({
         </p>
       )}
       {sync === "err" && (
-        <p className="rounded-lg border border-rose-900/60 bg-rose-950/40 px-4 py-3 text-sm text-rose-200/90">
+        <p className="rounded-lg border border-blue-900/60 bg-blue-950/40 px-4 py-3 text-sm text-blue-200/90">
           Sync could not run
           {syncReason === "no_shop"
             ? " — set PRINTIFY_SHOP_ID in .env."
@@ -153,7 +153,7 @@ export async function PrintifyInventoryTab({
               type="submit"
               name="syncMode"
               value="new"
-              className="self-start rounded bg-rose-900/80 px-4 py-2 text-xs font-medium text-rose-100 hover:bg-rose-800/80"
+              className="self-start rounded bg-blue-900/80 px-4 py-2 text-xs font-medium text-blue-100 hover:bg-blue-800/80"
             >
               Sync new
             </button>
@@ -189,7 +189,7 @@ export async function PrintifyInventoryTab({
             updates one Printify product from the API.
           </p>
           {catalogError ? (
-            <p className="mt-2 text-sm text-rose-400/90">{catalogError}</p>
+            <p className="mt-2 text-sm text-blue-400/90">{catalogError}</p>
           ) : catalog.length === 0 ? (
             <p className="mt-2 text-sm text-zinc-500">No products in this Printify shop yet.</p>
           ) : (
@@ -216,7 +216,7 @@ export async function PrintifyInventoryTab({
                       );
                     return (
                       <tr key={p.id} className="border-t border-zinc-800/80">
-                        <td className="p-2 font-mono text-rose-300/80">{p.id}</td>
+                        <td className="p-2 font-mono text-blue-300/80">{p.id}</td>
                         <td className="p-2 text-zinc-300">{p.title}</td>
                         <td className="p-2 whitespace-nowrap">{shopCell}</td>
                         <td className="p-2 whitespace-nowrap">
@@ -266,7 +266,7 @@ export async function PrintifyInventoryTab({
                   {" · "}
                   <Link
                     href={`/product/${p.slug}`}
-                    className="text-rose-400/90 hover:underline"
+                    className="text-blue-400/90 hover:underline"
                   >
                     /product/{p.slug}
                   </Link>

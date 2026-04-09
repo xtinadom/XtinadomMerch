@@ -53,7 +53,7 @@ export function ProductImageGallery({ images, resetKey }: Props) {
                 onClick={() => setMainIndex(i)}
                 className={`rounded-lg p-0 transition ${
                   i === mainIndex
-                    ? "ring-2 ring-rose-500/70 ring-offset-2 ring-offset-zinc-950"
+                    ? "ring-2 ring-blue-500/70 ring-offset-2 ring-offset-zinc-950"
                     : "opacity-90 hover:opacity-100"
                 }`}
               >

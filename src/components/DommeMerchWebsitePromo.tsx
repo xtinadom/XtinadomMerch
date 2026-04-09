@@ -3,8 +3,8 @@ export function DommeMerchWebsitePromo() {
   const subject = encodeURIComponent("Merch website quote");
 
   return (
-    <aside className="rounded-xl border border-rose-900/40 bg-gradient-to-br from-rose-950/50 to-zinc-900/80 p-5 sm:p-6">
-      <p className="text-xs font-medium uppercase tracking-wide text-rose-400/90">
+    <aside className="rounded-xl border border-blue-900/40 bg-gradient-to-br from-blue-950/50 to-zinc-900/80 p-5 sm:p-6">
+      <p className="text-xs font-medium uppercase tracking-wide text-blue-400/90">
         Service
       </p>
       <h2 className="mt-2 text-lg font-semibold text-zinc-100 sm:text-xl">
@@ -18,7 +18,7 @@ export function DommeMerchWebsitePromo() {
       {email ? (
         <a
           href={`mailto:${email}?subject=${subject}`}
-          className="mt-4 inline-flex items-center justify-center rounded-lg bg-rose-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-rose-600"
+          className="mt-4 inline-flex items-center justify-center rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-800"
         >
           Contact us for a quote
         </a>

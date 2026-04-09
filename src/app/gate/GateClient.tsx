@@ -43,10 +43,10 @@ export function GateClient() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 px-4">
       <div className="w-full max-w-sm">
-        <p className="text-center text-xs uppercase tracking-[0.2em] text-rose-400/80">
-          Xtinadom
+        <p className="store-dimension-brand text-center text-xs uppercase tracking-[0.2em] text-blue-400/80">
+          XTINADOM
         </p>
-        <h1 className="mt-3 text-center text-xl font-semibold text-zinc-100">
+        <h1 className="store-dimension-page-title mt-3 text-center text-xl text-zinc-100">
           Enter password
         </h1>
         <p className="mt-2 text-center text-sm text-zinc-500">
@@ -61,18 +61,18 @@ export function GateClient() {
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
               required
-              className="mt-1.5 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-zinc-100 outline-none ring-rose-500/30 focus:border-rose-600 focus:ring-2"
+              className="mt-1.5 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-zinc-100 outline-none ring-blue-500/30 focus:border-blue-600 focus:ring-2"
             />
           </label>
           {error && (
-            <p className="text-sm text-red-400" role="alert">
+            <p className="text-sm text-amber-400" role="alert">
               {error}
             </p>
           )}
           <button
             type="submit"
             disabled={pending}
-            className="w-full rounded-lg bg-rose-700 py-2.5 text-sm font-medium text-white transition hover:bg-rose-600 disabled:opacity-50"
+            className="w-full rounded-lg bg-blue-900 py-2.5 text-sm font-medium text-white transition hover:bg-blue-800 disabled:opacity-50"
           >
             {pending ? "Checking…" : "Continue"}
           </button>

@@ -39,8 +39,10 @@ export function ProductAddToCartForm({ productId }: { productId: string }) {
       <button
         type="submit"
         disabled={pending}
-        className={`w-full rounded-xl px-6 py-3 text-sm font-medium text-white transition disabled:opacity-70 ${
-          added ? "bg-emerald-700 hover:bg-emerald-600" : "bg-rose-700 hover:bg-rose-600"
+        className={`w-full rounded-xl px-6 py-3 text-sm font-medium transition disabled:opacity-70 ${
+          added
+            ? "bg-zinc-400 text-zinc-950 hover:bg-zinc-300"
+            : "bg-blue-900 text-white hover:bg-blue-800"
         }`}
       >
         {pending ? "Adding…" : added ? "Added to cart" : "Add to cart"}

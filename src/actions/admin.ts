@@ -31,8 +31,7 @@ function revalidateShopSurface() {
   revalidatePath("/shop/all");
   revalidatePath("/shop/sub");
   revalidatePath("/shop/domme");
-  revalidatePath("/cart");
-  revalidatePath("/checkout");
+  revalidatePath("/cart", "layout");
 }
 
 export async function loginAdmin(

@@ -32,13 +32,15 @@ export default async function ShopUniversalTagPage({ params }: Props) {
   return (
     <div>
       <p className="text-xs text-zinc-500">
-        <Link href={SHOP_ALL_ROUTE} className="hover:text-rose-400/90">
+        <Link href={SHOP_ALL_ROUTE} className="hover:text-blue-400/90">
           All products
         </Link>
         <span className="mx-1.5 text-zinc-600">/</span>
         <span className="text-zinc-400">{activeTag.name}</span>
       </p>
-      <h1 className="mt-2 text-2xl font-semibold text-zinc-50">{activeTag.name}</h1>
+      <h1 className="store-dimension-page-title mt-2 text-2xl !uppercase !tracking-[0.12em] text-zinc-50">
+        {activeTag.name}
+      </h1>
       <p className="mt-1 text-sm text-zinc-500">
         All items with this tag (Sub collection, Domme collection, or both).
       </p>

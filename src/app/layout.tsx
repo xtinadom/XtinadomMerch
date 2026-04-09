@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Source_Sans_3, Source_Code_Pro } from "next/font/google";
 import { metadataBaseUrl } from "@/lib/public-app-url";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+/* Dimension (html5up.net/dimension) uses Source Sans Pro; Source Sans 3 is the maintained successor. */
+const sourceSans = Source_Sans_3({
+  variable: "--font-source-sans",
   subsets: ["latin"],
+  weight: ["300", "400", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const sourceCode = Source_Code_Pro({
+  variable: "--font-source-code",
   subsets: ["latin"],
+  weight: ["400", "600"],
 });
 
 const site = metadataBaseUrl();
@@ -48,9 +51,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${sourceSans.variable} ${sourceCode.variable} ${sourceSans.className} h-full antialiased`}
     >
-      <body className="min-h-full bg-zinc-950 text-zinc-100">{children}</body>
+      <body className="min-h-full bg-zinc-950 font-sans text-zinc-100">
+        {children}
+      </body>
     </html>
   );
 }

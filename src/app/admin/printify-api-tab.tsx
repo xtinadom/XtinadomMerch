@@ -35,7 +35,7 @@ export async function PrintifyApiTab() {
         <p className="mt-1 text-xs text-zinc-600">
           Environment variables and the shop list from the Printify API. Sync, catalog reference, and
           storefront listings are on the{" "}
-          <Link href="/admin?tab=printify" className="text-rose-400/90 hover:underline">
+          <Link href="/admin?tab=printify" className="text-blue-400/90 hover:underline">
             Printify items
           </Link>{" "}
           tab.
@@ -98,7 +98,7 @@ export async function PrintifyApiTab() {
         <section>
           <h3 className="text-sm font-medium uppercase tracking-wide text-zinc-500">API check — shops</h3>
           {shopsError ? (
-            <p className="mt-2 text-sm text-rose-400/90">{shopsError}</p>
+            <p className="mt-2 text-sm text-blue-400/90">{shopsError}</p>
           ) : shopsAll.length === 0 ? (
             <p className="mt-2 text-sm text-zinc-500">No shops returned for this token.</p>
           ) : shops.length === 0 ? (
@@ -109,7 +109,7 @@ export async function PrintifyApiTab() {
             <ul className="mt-3 space-y-1 text-sm text-zinc-300">
               {shops.map((s) => (
                 <li key={s.id}>
-                  <code className="text-rose-300/80">{s.id}</code>
+                  <code className="text-blue-300/80">{s.id}</code>
                   {" — "}
                   {s.title}
                   {String(s.id) === shopIdEnv || s.id === shopIdNum ? (

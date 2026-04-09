@@ -47,7 +47,6 @@ export async function addToCart(
 
   await session.save();
   revalidatePath("/cart", "layout");
-  revalidatePath("/checkout", "layout");
   revalidatePath("/");
   revalidatePath("/product/" + product.slug);
   return { ok: true };
@@ -73,7 +72,7 @@ export async function setCartQuantity(productId: string, quantity: number) {
   }
   await session.save();
   revalidatePath("/cart", "layout");
-  revalidatePath("/checkout", "layout");
+  revalidatePath("/");
 }
 
 export async function clearCart() {
@@ -81,5 +80,21 @@ export async function clearCart() {
   session.items = {};
   await session.save();
   revalidatePath("/cart", "layout");
-  revalidatePath("/checkout", "layout");
+}
+
+export async function updateCartLineFromForm(formData: FormData) {
+  const productId = String(formData.get("productId") ?? "").trim();
+  const qty = parseInt(String(formData.get("qty") ?? ""), 10);
+  if (!productId || !Number.isFinite(qty)) return;
+  await setCartQuantity(productId, qty);
+}
+
+export async function removeCartLineFromForm(formData: FormData) {
+  const productId = String(formData.get("productId") ?? "").trim();
+  const slug = String(formData.get("slug") ?? "").trim();
+  if (!productId) return;
+  await setCartQuantity(productId, 0);
+  if (slug) {
+    revalidatePath("/product/" + slug);
+  }
 }

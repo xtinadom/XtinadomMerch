@@ -54,15 +54,17 @@ export async function ShopCollectionPage({
     return (
       <div>
         <p className="text-xs text-zinc-500">
-          <Link href={base} className="hover:text-rose-400/90">
+          <Link href={base} className="hover:text-blue-400/90">
             {collection === CatalogGroup.sub ? "Sub collection" : "Domme collection"}
           </Link>
           <span className="mx-1.5 text-zinc-600">/</span>
           <span className="text-zinc-400">{activeTag.name}</span>
         </p>
-        <h1 className="mt-2 text-2xl font-semibold text-zinc-50">{activeTag.name}</h1>
+        <h1 className="store-dimension-page-title mt-2 text-2xl !uppercase !tracking-[0.12em] text-zinc-50">
+          {activeTag.name}
+        </h1>
         <p className="mt-1 text-sm text-zinc-500">
-          <Link href={`/shop/tag/${activeTag.slug}`} className="text-rose-400/90 hover:underline">
+          <Link href={`/shop/tag/${activeTag.slug}`} className="text-blue-400/90 hover:underline">
             View this tag across all products
           </Link>
         </p>
@@ -96,14 +98,16 @@ export async function ShopCollectionPage({
     <div>
       <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-50">{title}</h1>
+          <h1 className="store-dimension-page-title text-2xl !uppercase !tracking-[0.12em] text-zinc-50">
+            {title}
+          </h1>
           <p className="mt-1 text-sm text-zinc-500">
             Narrow by tag from the menu, or{" "}
-            <Link href={SHOP_ALL_ROUTE} className="text-rose-400/90 hover:underline">
+            <Link href={SHOP_ALL_ROUTE} className="text-blue-400/90 hover:underline">
               view all products
             </Link>
             .{" "}
-            <Link href="/" className="text-zinc-500 hover:text-rose-400/90">
+            <Link href="/" className="text-zinc-500 hover:text-blue-400/90">
               Home
             </Link>
           </p>

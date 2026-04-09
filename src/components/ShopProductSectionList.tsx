@@ -35,7 +35,7 @@ export function ShopProductSectionList({
               {viewAll ? (
                 <Link
                   href={viewAll}
-                  className="text-xs text-rose-400/90 hover:underline"
+                  className="text-xs text-blue-400/90 hover:underline"
                 >
                   View all
                 </Link>

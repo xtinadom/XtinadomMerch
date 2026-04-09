@@ -22,14 +22,16 @@ export async function ShopAllProductsPage() {
     <div>
       <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-50">All products</h1>
+          <h1 className="store-dimension-page-title text-2xl !uppercase !tracking-[0.12em] text-zinc-50">
+            All products
+          </h1>
           <p className="mt-1 max-w-xl text-sm text-zinc-500">
             One shop and one cart. Use{" "}
-            <Link href="/shop/sub" className="text-rose-400/90 hover:underline">
+            <Link href="/shop/sub" className="text-blue-400/90 hover:underline">
               Sub collection
             </Link>{" "}
             or{" "}
-            <Link href="/shop/domme" className="text-rose-400/90 hover:underline">
+            <Link href="/shop/domme" className="text-blue-400/90 hover:underline">
               Domme collection
             </Link>{" "}
             to narrow by audience; tags describe product types and can apply across

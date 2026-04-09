@@ -25,6 +25,7 @@ export function ProductCard({ product }: { product: ProductCardProduct }) {
   return (
     <Link
       href={`/product/${product.slug}`}
+      scroll={false}
       className="group block w-full max-w-[175px] rounded-md border border-zinc-800 bg-zinc-900/50 p-1.5 transition hover:border-zinc-600 hover:bg-zinc-900"
     >
       <div className="mb-1.5 aspect-square w-full overflow-hidden rounded bg-zinc-800">
@@ -47,7 +48,7 @@ export function ProductCard({ product }: { product: ProductCardProduct }) {
       <h2 className="mt-0.5 line-clamp-2 text-[11px] font-medium leading-tight text-zinc-100">
         {product.name}
       </h2>
-      <p className="mt-1 text-[10px] text-rose-300/90">{formatPrice(product.priceCents)}</p>
+      <p className="mt-1 text-[10px] text-blue-300/90">{formatPrice(product.priceCents)}</p>
     </Link>
   );
 }

@@ -40,16 +40,16 @@ export function ShopTagMenu({ tags }: { tags: Row[] }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1 text-sm text-zinc-400 transition hover:text-zinc-100"
+        className="store-nav-link flex items-center gap-1 text-zinc-400 transition hover:text-white"
         aria-expanded={open}
         aria-haspopup="true"
       >
-        Browse shop
-        <span className="text-xs opacity-70">{open ? "▴" : "▾"}</span>
+        Browse
+        <span className="text-[10px] opacity-70">{open ? "▴" : "▾"}</span>
       </button>
       {open && (
         <ul
-          className="absolute right-0 z-[1002] mt-2 max-h-[min(70vh,28rem)] min-w-[16rem] overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl"
+          className="store-dimension-panel absolute right-0 z-[1002] mt-3 max-h-[min(70vh,28rem)] min-w-[17rem] overflow-y-auto py-2 shadow-2xl"
           role="menu"
         >
           <li role="none" className="border-b border-zinc-800 pb-1">

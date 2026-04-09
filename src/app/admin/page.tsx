@@ -131,7 +131,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       {stockErr ? (
         <p
           role="alert"
-          className="rounded-lg border border-rose-900/50 bg-rose-950/30 px-4 py-2 text-sm text-rose-200/90"
+          className="rounded-lg border border-blue-900/50 bg-blue-950/30 px-4 py-2 text-sm text-blue-200/90"
         >
           {stockErr === "invalid"
             ? "Enter a valid whole number for stock."
@@ -248,7 +248,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 </p>
               )}
               {createErr && (
-                <p className="mb-4 rounded-lg border border-rose-900/50 bg-rose-950/30 px-4 py-2 text-sm text-rose-200/90">
+                <p className="mb-4 rounded-lg border border-blue-900/50 bg-blue-950/30 px-4 py-2 text-sm text-blue-200/90">
                   Could not create item
                   {createReason === "category"
                     ? " — pick at least one tag."
@@ -393,7 +393,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                           {" · "}
                           <Link
                             href={`/product/${p.slug}`}
-                            className="text-rose-400/90 hover:underline"
+                            className="text-blue-400/90 hover:underline"
                           >
                             /product/{p.slug}
                           </Link>
@@ -406,7 +406,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                       >
                         <button
                           type="submit"
-                          className="rounded border border-rose-900/60 bg-rose-950/40 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
+                          className="rounded border border-blue-900/60 bg-blue-950/40 px-2 py-1 text-xs text-blue-300 hover:bg-blue-900/50"
                         >
                           Delete
                         </button>
@@ -564,7 +564,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 </p>
               ) : null}
               {tagErr ? (
-                <p className="mt-2 rounded border border-rose-900/50 bg-rose-950/30 px-3 py-2 text-xs text-rose-200/90">
+                <p className="mt-2 rounded border border-blue-900/50 bg-blue-950/30 px-3 py-2 text-xs text-blue-200/90">
                   {tagErr}
                 </p>
               ) : null}
@@ -627,7 +627,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                         <input type="hidden" name="tagId" value={t.id} />
                         <button
                           type="submit"
-                          className="text-[11px] text-rose-400/90 hover:underline"
+                          className="text-[11px] text-blue-400/90 hover:underline"
                         >
                           Delete
                         </button>

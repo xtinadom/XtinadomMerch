@@ -91,7 +91,7 @@ export function SaveListingForm({ action, children, savedHighlight }: Props) {
           }
           className={
             dirty
-              ? "rounded bg-rose-900/80 px-3 py-2 text-xs font-medium text-rose-100 hover:bg-rose-800/80"
+              ? "rounded bg-blue-900/80 px-3 py-2 text-xs font-medium text-blue-100 hover:bg-blue-800/80"
               : justSaved
                 ? "cursor-default rounded border border-emerald-900/40 bg-zinc-900/50 px-3 py-2 text-xs font-medium text-emerald-300/90"
                 : "cursor-default rounded border border-zinc-700 bg-zinc-900/40 px-3 py-2 text-xs font-medium text-zinc-400"

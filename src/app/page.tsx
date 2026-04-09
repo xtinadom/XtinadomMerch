@@ -9,10 +9,10 @@ export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 py-16">
       <header className="text-center">
-        <p className="text-xs uppercase tracking-[0.2em] text-rose-400/80">
-          Xtinadom
+        <p className="store-dimension-brand text-xs uppercase tracking-[0.2em] text-blue-400/80">
+          XTINADOM
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
+        <h1 className="store-dimension-page-title mt-3 text-3xl text-zinc-50 sm:text-4xl">
           Merch
         </h1>
         <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-zinc-400">
@@ -28,16 +28,16 @@ export default function HomePage() {
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
         <Link
           href={SHOP_SUB_ROUTE}
-          className="group flex flex-col rounded-2xl border border-rose-900/50 bg-gradient-to-b from-rose-950/40 to-zinc-950 p-8 transition hover:border-rose-700/60 hover:from-rose-950/55"
+          className="group flex flex-col rounded-2xl border border-blue-900/50 bg-gradient-to-b from-blue-950/40 to-zinc-950 p-8 transition hover:border-blue-700/60 hover:from-blue-950/55"
         >
-          <span className="text-xs font-medium uppercase tracking-[0.15em] text-rose-400/90">
+          <span className="text-xs font-medium uppercase tracking-[0.15em] text-blue-400/90">
             Collection
           </span>
           <h2 className="mt-2 text-xl font-semibold text-zinc-50">Sub</h2>
           <p className="mt-2 flex-1 text-sm leading-relaxed text-zinc-400">
             Photo-printed pieces, stickers, and sub-audience favorites.
           </p>
-          <span className="mt-6 text-sm font-medium text-rose-300 group-hover:text-rose-200">
+          <span className="mt-6 text-sm font-medium text-blue-300 group-hover:text-blue-200">
             Browse Sub collection →
           </span>
         </Link>
@@ -62,7 +62,7 @@ export default function HomePage() {
       <div className="mt-20 border-t border-zinc-800/80 pt-10 text-center">
         <Link
           href={SHOP_ALL_ROUTE}
-          className="text-sm text-zinc-500 underline decoration-zinc-700 underline-offset-4 transition hover:text-rose-400/90 hover:decoration-rose-400/50"
+          className="text-sm text-zinc-500 underline decoration-zinc-700 underline-offset-4 transition hover:text-blue-400/90 hover:decoration-blue-400/50"
         >
           View all products
         </Link>

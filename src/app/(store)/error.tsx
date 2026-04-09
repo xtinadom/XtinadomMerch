@@ -16,7 +16,7 @@ export default function StoreError({
 
   return (
     <main className="mx-auto max-w-lg px-4 py-16 text-center">
-      <h1 className="text-xl font-semibold text-zinc-100">
+      <h1 className="store-dimension-page-title text-xl text-zinc-100">
         This page couldn&apos;t load
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-400">
@@ -26,7 +26,7 @@ export default function StoreError({
           Postgres env vars are missing or migrations were not applied
         </span>
         . Check the deployment logs and{" "}
-        <code className="rounded bg-zinc-900 px-1.5 py-0.5 text-xs text-rose-300/90">
+        <code className="rounded bg-zinc-900 px-1.5 py-0.5 text-xs text-blue-300/90">
           VERCEL.md
         </code>{" "}
         (database URL, then{" "}
@@ -53,7 +53,7 @@ export default function StoreError({
         </button>
         <Link
           href="/"
-          className="rounded-lg border border-rose-900/50 bg-rose-950/30 px-4 py-2 text-sm text-rose-100 hover:bg-rose-950/50"
+          className="rounded-lg border border-blue-900/50 bg-blue-950/30 px-4 py-2 text-sm text-blue-100 hover:bg-blue-950/50"
         >
           Back to welcome
         </Link>

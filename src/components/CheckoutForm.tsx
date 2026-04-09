@@ -45,7 +45,7 @@ export function CheckoutForm({
 
   return (
     <form
-      className="space-y-8"
+      className="w-full space-y-8 text-center"
       action={async (formData) => {
         setError(null);
         setPending(true);
@@ -68,7 +68,7 @@ export function CheckoutForm({
           <p className="mt-1 text-xs text-zinc-500">
             Tips are available for photo-printed and used sub catalog items.
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
             <button
               key="none"
               type="button"
@@ -78,7 +78,7 @@ export function CheckoutForm({
               }}
               className={`rounded-lg px-3 py-1.5 text-sm ${
                 tipCents === 0
-                  ? "bg-rose-900/50 text-rose-100"
+                  ? "bg-blue-900/50 text-blue-100"
                   : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
               }`}
             >
@@ -94,7 +94,7 @@ export function CheckoutForm({
                 }}
                 className={`rounded-lg px-3 py-1.5 text-sm ${
                   tipCents === c
-                    ? "bg-rose-900/50 text-rose-100"
+                    ? "bg-blue-900/50 text-blue-100"
                     : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
                 }`}
               >
@@ -102,8 +102,8 @@ export function CheckoutForm({
               </button>
             ))}
           </div>
-          <div className="mt-4 flex items-end gap-3">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-zinc-500">
+          <div className="mt-4 flex justify-center">
+            <label className="flex w-full max-w-[12rem] flex-col gap-1 text-left text-xs text-zinc-500">
               Custom (USD)
               <input
                 type="number"
@@ -127,30 +127,30 @@ export function CheckoutForm({
         </div>
       )}
 
-      <div className="rounded-xl border border-zinc-800 p-5 text-sm text-zinc-400">
+      <div className="store-dimension-panel border-zinc-800/60 p-5 text-left text-sm text-zinc-400 shadow-none">
         <div className="flex justify-between">
           <span>Subtotal</span>
-          <span>{formatPrice(subtotalCents)}</span>
+          <span className="text-zinc-200">{formatPrice(subtotalCents)}</span>
         </div>
         {tipAllowed && tipCents > 0 && (
-          <div className="mt-2 flex justify-between text-rose-200/80">
+          <div className="mt-2 flex justify-between text-blue-200/80">
             <span>Tip</span>
             <span>{formatPrice(tipCents)}</span>
           </div>
         )}
         <div className="mt-2 flex justify-between">
           <span>Shipping (flat)</span>
-          <span>{formatPrice(shippingCents)}</span>
+          <span className="text-zinc-200">{formatPrice(shippingCents)}</span>
         </div>
         <div className="mt-2 flex justify-between">
           <span>Estimated sales tax</span>
           {taxCents != null ? (
-            <span>{formatPrice(taxCents)}</span>
+            <span className="text-zinc-200">{formatPrice(taxCents)}</span>
           ) : (
             <span className="text-right text-zinc-500">At checkout</span>
           )}
         </div>
-        <div className="mt-3 flex justify-between border-t border-zinc-800 pt-3 font-medium text-zinc-100">
+        <div className="mt-3 flex justify-between border-t border-zinc-800/80 pt-3 font-medium text-zinc-100">
           <span>Estimated total</span>
           <span>
             {estimatedSalesTaxRate != null
@@ -158,13 +158,14 @@ export function CheckoutForm({
               : `${formatPrice(subtotalCents + (tipAllowed ? tipCents : 0) + shippingCents)} + tax`}
           </span>
         </div>
-        <p className="mt-3 text-xs text-zinc-600">
-          Tax is finalized at payment from your address. Pay with card or Cash App Pay (US) on Stripe&apos;s page.
+        <p className="mt-3 text-center text-xs leading-relaxed text-zinc-600">
+          Tax is finalized at payment from your shipping address. Pay with card or Cash App Pay (US) on
+          Stripe&apos;s page.
         </p>
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-950/50 px-3 py-2 text-sm text-red-200">
+        <p className="rounded-lg bg-amber-950/50 px-3 py-2 text-center text-sm text-amber-200">
           {error}
         </p>
       )}
@@ -172,7 +173,7 @@ export function CheckoutForm({
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-xl bg-rose-700 py-3 text-sm font-medium text-white transition hover:bg-rose-600 disabled:opacity-50"
+        className="w-full rounded-xl bg-blue-900 py-3 text-sm font-medium text-white transition hover:bg-blue-800 disabled:opacity-50"
       >
         {pending ? "Redirecting…" : "Continue to payment"}
       </button>

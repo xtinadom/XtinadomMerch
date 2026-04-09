@@ -164,7 +164,7 @@ export function ListingGalleryEditor({ defaultUrls }: Props) {
                   type="button"
                   aria-label="Remove image"
                   onClick={() => applyUrls(urls.filter((_, j) => j !== i))}
-                  className="rounded border border-rose-900/50 bg-rose-950/30 px-2 py-1 text-xs text-rose-300/90 hover:bg-rose-950/50"
+                  className="rounded border border-blue-900/50 bg-blue-950/30 px-2 py-1 text-xs text-blue-300/90 hover:bg-blue-950/50"
                 >
                   Remove
                 </button>

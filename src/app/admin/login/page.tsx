@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
             className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100"
           />
         </label>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-amber-400">{error}</p>}
         <button
           type="submit"
           disabled={pending}

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { CartSession } from "@/lib/session";
 
-/** Units for active products only — matches /cart and /checkout. */
+/** Units for active products only — matches cart view. */
 export async function cartBadgeQuantity(
   items: CartSession["items"],
 ): Promise<number> {
