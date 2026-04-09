@@ -178,7 +178,6 @@ export function CartAndCheckoutClient({
                     Remove
                   </button>
                 </form>
-                <span className="text-sm text-zinc-200">{formatPrice(l.lineCents)}</span>
               </div>
             </li>
           );

@@ -2,6 +2,10 @@
 
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
+import {
+  isMockCheckoutEnabled,
+  MOCK_SESSION_PREFIX,
+} from "@/lib/checkout-mock";
 import { getCartSession } from "@/lib/session";
 import { cartHasTipEligibleProduct } from "@/lib/tip-eligibility";
 import { resolvePrintifyCheckoutLine } from "@/lib/printify-variants";
@@ -42,7 +46,9 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
     where: { id: { in: ids }, active: true },
   });
 
-  if (products.length !== ids.length) {
+  // Match loadActiveCartRows: ignore stale/inactive ids in the session so checkout
+  // agrees with what the cart/checkout UI already showed.
+  if (products.length === 0) {
     return { ok: false, error: "Some products are no longer available. Refresh your cart." };
   }
 
@@ -194,8 +200,22 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
     return o;
   });
 
-  const allowCard = products.every((p) => p.payCard);
-  const allowCashApp = products.every((p) => p.payCashApp);
+  const mockSessionId = `${MOCK_SESSION_PREFIX}${order.id}`;
+
+  if (isMockCheckoutEnabled()) {
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { stripeSessionId: mockSessionId },
+    });
+    return {
+      ok: true,
+      url: `${base.url}/order/success?session_id=${encodeURIComponent(mockSessionId)}`,
+    };
+  }
+
+  const lineProducts = lineInputs.map((x) => x.product);
+  const allowCard = lineProducts.every((p) => p.payCard);
+  const allowCashApp = lineProducts.every((p) => p.payCashApp);
   const payment_method_types: ("card" | "cashapp")[] = [];
   if (allowCard) payment_method_types.push("card");
   if (allowCashApp) payment_method_types.push("cashapp");

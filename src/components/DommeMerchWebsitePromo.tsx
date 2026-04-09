@@ -1,7 +1,6 @@
-export function DommeMerchWebsitePromo() {
-  const email = process.env.NEXT_PUBLIC_MERCH_QUOTE_EMAIL?.trim();
-  const subject = encodeURIComponent("Merch website quote");
+import Link from "next/link";
 
+export function DommeMerchWebsitePromo() {
   return (
     <aside className="rounded-xl border border-blue-900/40 bg-gradient-to-br from-blue-950/50 to-zinc-900/80 p-5 sm:p-6">
       <p className="text-xs font-medium uppercase tracking-wide text-blue-400/90">
@@ -15,22 +14,12 @@ export function DommeMerchWebsitePromo() {
         print-on-demand, and your look and feel. Tell us what you need and
         we&apos;ll send a quote.
       </p>
-      {email ? (
-        <a
-          href={`mailto:${email}?subject=${subject}`}
-          className="mt-4 inline-flex items-center justify-center rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-800"
-        >
-          Contact us for a quote
-        </a>
-      ) : (
-        <p className="mt-4 text-sm text-zinc-500">
-          Add{" "}
-          <code className="rounded bg-zinc-800 px-1 py-0.5 text-xs text-zinc-400">
-            NEXT_PUBLIC_MERCH_QUOTE_EMAIL
-          </code>{" "}
-          to your environment to enable the email link.
-        </p>
-      )}
+      <Link
+        href="/contact"
+        className="mt-4 inline-flex items-center justify-center rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-800"
+      >
+        Contact us for a quote
+      </Link>
     </aside>
   );
 }

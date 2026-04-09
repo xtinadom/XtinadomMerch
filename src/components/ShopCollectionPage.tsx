@@ -121,7 +121,7 @@ export async function ShopCollectionPage({
       />
 
       {collection === CatalogGroup.domme ? (
-        <div className="mt-16 border-t border-zinc-800 pt-12">
+        <div className="mt-6 border-t border-zinc-800 pt-6">
           <DommeMerchWebsitePromo />
         </div>
       ) : null}
