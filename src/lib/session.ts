@@ -43,6 +43,25 @@ function requireSessionSecret(): string {
   return sessionSecret;
 }
 
+let loggedCartSessionSecretFallback = false;
+
+/**
+ * Cart reads run on every storefront layout (shop, product, cart). If `SESSION_SECRET` is missing
+ * on production, throwing here breaks the whole shop with 500 while `/` still works (no cart session).
+ * Use a stable fallback so pages render; cart cookies from a previous real secret may not decrypt.
+ */
+function cartSessionPassword(): string {
+  const s = process.env.SESSION_SECRET?.trim();
+  if (s && s.length >= 32) return s;
+  if (!loggedCartSessionSecretFallback) {
+    loggedCartSessionSecretFallback = true;
+    console.error(
+      "[xtinadom] SESSION_SECRET is missing or shorter than 32 characters. Store pages use a fallback cart key so the shop can load; set SESSION_SECRET in Vercel (see .env.example) and redeploy.",
+    );
+  }
+  return "xtinadom-fallback-cart-session-key!!";
+}
+
 const cartBase: Omit<SessionOptions, "password"> = {
   cookieName: "xtina_cart",
   cookieOptions: {
@@ -68,7 +87,7 @@ const adminBase: Omit<SessionOptions, "password"> = {
 export async function getCartSession() {
   const session = await getIronSession<CartSession>(await cookies(), {
     ...cartBase,
-    password: requireSessionSecret(),
+    password: cartSessionPassword(),
   });
   if (!session.items) session.items = {};
   const normalized: Record<string, CartLine> = {};

@@ -15,12 +15,14 @@ const productInclude = {
 } as const;
 
 export async function ShopAllProductsPage() {
-  const tags = await getStoreTags();
-  const allProducts = await prisma.product.findMany({
-    where: { active: true },
-    orderBy: { name: "asc" },
-    include: productInclude,
-  });
+  const [tags, allProducts] = await Promise.all([
+    getStoreTags(),
+    prisma.product.findMany({
+      where: { active: true },
+      orderBy: { name: "asc" },
+      include: productInclude,
+    }),
+  ]);
   const byItemSections = buildByItemOnePerTag(allProducts, tags, {
     catalog: "all",
   });

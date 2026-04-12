@@ -97,6 +97,7 @@ npx prisma db seed
 Names and placeholders: **`.env.example`** in the repo. Additional notes:
 
 - **Postgres:** `DATABASE_URL` is usually Neon **pooled**; use a **direct** URL on your laptop for `prisma migrate deploy` (section 2). Runtime also accepts `POSTGRES_PRISMA_URL` / `POSTGRES_URL` (see `src/lib/env-postgres-url.ts`).
+- **`SESSION_SECRET`:** at least **32 characters**, required for admin login. The **shop layout** also opens the cart session on every request; without a valid secret the storefront used to 500 while `/` still loaded. Set this in Production (and Preview) on Vercel.
 - **Site gate:** set both `SITE_ACCESS_PASSWORD` and `SITE_ACCESS_SECRET`, or leave the gate off.
 - **Stripe webhook:** URL in section 6.
 
