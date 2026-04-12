@@ -7,6 +7,8 @@ import { ProductCard } from "@/components/ProductCard";
 import { SHOP_ALL_ROUTE } from "@/lib/constants";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
+import { productCardProductFromListing } from "@/lib/shop-listing-product";
+import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
 
 export const dynamic = "force-dynamic";
 
@@ -32,20 +34,29 @@ export default async function ShopUniversalTagPage({ params }: Props) {
     }
   }
 
-  let products;
+  const shop = await prisma.shop.findUnique({ where: { slug: PLATFORM_SHOP_SLUG } });
+  if (!shop) notFound();
+
+  let listings;
   try {
-    products = await prisma.product.findMany({
+    listings = await prisma.shopListing.findMany({
       where: {
+        shopId: shop.id,
         active: true,
-        tags: { some: { tagId: activeTag.id } },
+        product: {
+          active: true,
+          tags: { some: { tagId: activeTag.id } },
+        },
       },
-      orderBy: { name: "asc" },
-      include: productInclude,
+      orderBy: { product: { name: "asc" } },
+      include: { product: { include: productInclude } },
     });
   } catch (e) {
-    console.error("[ShopUniversalTagPage] products", e);
+    console.error("[ShopUniversalTagPage] listings", e);
     return <ShopDataLoadError cause={e} />;
   }
+
+  const products = listings.map((l) => productCardProductFromListing(l));
 
   return (
     <div>

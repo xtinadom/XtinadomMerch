@@ -13,6 +13,13 @@ import {
   SHOP_SUB_ROUTE,
 } from "@/lib/constants";
 import type { StorefrontProduct } from "@/lib/product-storefront";
+import {
+  PLATFORM_SHOP_SLUG,
+  shopAllProductsHref,
+  shopDommeHref,
+  shopSubHref,
+  shopUniversalTagHref,
+} from "@/lib/marketplace-constants";
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -38,6 +45,13 @@ function shopHomeForAudience(audience: Audience): string {
   return SHOP_SUB_ROUTE;
 }
 
+function shopHomeForAudienceTenant(audience: Audience, shopSlug: string): string {
+  if (shopSlug === PLATFORM_SHOP_SLUG) return shopHomeForAudience(audience);
+  if (audience === Audience.both) return shopAllProductsHref(shopSlug);
+  if (audience === Audience.domme) return shopDommeHref(shopSlug);
+  return shopSubHref(shopSlug);
+}
+
 function backLabelForAudience(audience: Audience): string {
   if (audience === Audience.both) return "All products";
   if (audience === Audience.domme) return "Domme collection";
@@ -47,10 +61,16 @@ function backLabelForAudience(audience: Audience): string {
 export function ProductDetailContent({
   product,
   variant,
+  tenant,
 }: {
   product: StorefrontProduct;
   variant: "page" | "modal";
+  /** When set, cart + breadcrumbs target this shop slug (`/s/...`). */
+  tenant?: { shopSlug: string; listingPriceCents: number };
 }) {
+  const shopSlug = tenant?.shopSlug ?? PLATFORM_SHOP_SLUG;
+  const displayPriceCents = tenant?.listingPriceCents ?? product.priceCents;
+
   const availability = stockLabel(
     product.fulfillmentType,
     product.trackInventory,
@@ -63,14 +83,16 @@ export function ProductDetailContent({
     product.fulfillmentType === FulfillmentType.printify &&
     printifyVariants.length > 1;
 
-  const shopHref = shopHomeForAudience(product.audience);
+  const shopHref = shopHomeForAudienceTenant(product.audience, shopSlug);
   const primary = product.primaryTag;
+  const allProductsHref =
+    shopSlug === PLATFORM_SHOP_SLUG ? SHOP_ALL_ROUTE : shopAllProductsHref(shopSlug);
   const tagHref =
-    primary != null ? `/shop/tag/${primary.slug}` : shopHref;
+    primary != null ? shopUniversalTagHref(shopSlug, primary.slug) : shopHref;
 
   const breadcrumb = (
     <p className="store-kicker mb-8 text-zinc-500">
-      <Link href={SHOP_ALL_ROUTE} className="hover:text-blue-400/90">
+      <Link href={allProductsHref} className="hover:text-blue-400/90">
         All products
       </Link>
       {product.audience !== Audience.both ? (
@@ -99,6 +121,7 @@ export function ProductDetailContent({
       {multiPrintify ? (
         <PrintifyVariantAddToCart
           productId={product.id}
+          shopSlug={shopSlug === PLATFORM_SHOP_SLUG ? undefined : shopSlug}
           variants={printifyVariants.map((v) => ({
             id: v.id,
             title: v.title,
@@ -111,15 +134,16 @@ export function ProductDetailContent({
         <div className="mx-auto w-full max-w-[400px]">
           <ProductImageGallery images={images} />
           {availability !== "Sold out" && (
-            <ProductAddToCartForm productId={product.id} />
+            <ProductAddToCartForm
+              productId={product.id}
+              shopSlug={shopSlug === PLATFORM_SHOP_SLUG ? undefined : shopSlug}
+            />
           )}
         </div>
       )}
       <div>
         {!multiPrintify ? (
-          <p className="text-2xl text-blue-200/90">
-            {formatPrice(product.priceCents)}
-          </p>
+          <p className="text-2xl text-blue-200/90">{formatPrice(displayPriceCents)}</p>
         ) : null}
         <p
           className={`mt-2 text-sm ${

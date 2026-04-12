@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getStoreTags } from "@/lib/store-tags";
+import { getStoreTags, getStoreTagsForShop } from "@/lib/store-tags";
 import { CatalogGroup } from "@/generated/prisma/enums";
 import { audienceWhereForCollection } from "@/lib/shop-queries";
 import {
@@ -14,14 +14,25 @@ import { ShopByItemAndDesignBrowse } from "@/components/ShopByItemAndDesignBrows
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { DommeMerchWebsitePromo } from "@/components/DommeMerchWebsitePromo";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
+import { productCardProductFromListing } from "@/lib/shop-listing-product";
+import {
+  PLATFORM_SHOP_SLUG,
+  shopAllProductsHref,
+  shopCollectionTagHref,
+  shopUniversalTagHref,
+} from "@/lib/marketplace-constants";
 import {
   SHOP_ALL_ROUTE,
   SHOP_DOMME_ROUTE,
   SHOP_SUB_ROUTE,
 } from "@/lib/constants";
 
-const shopBase = (c: CatalogGroup) =>
-  c === CatalogGroup.sub ? SHOP_SUB_ROUTE : SHOP_DOMME_ROUTE;
+function collectionBaseRoute(collection: CatalogGroup, shopSlug: string): string {
+  if (shopSlug === PLATFORM_SHOP_SLUG) {
+    return collection === CatalogGroup.sub ? SHOP_SUB_ROUTE : SHOP_DOMME_ROUTE;
+  }
+  return collection === CatalogGroup.sub ? `/s/${shopSlug}/sub` : `/s/${shopSlug}/domme`;
+}
 
 const productInclude = {
   primaryTag: true,
@@ -31,12 +42,22 @@ const productInclude = {
 export async function ShopCollectionPage({
   collection,
   tagSlug,
+  shopSlug = PLATFORM_SHOP_SLUG,
 }: {
   collection: CatalogGroup;
   tagSlug?: string;
+  shopSlug?: string;
 }) {
-  const base = shopBase(collection);
-  const tags = await getStoreTags();
+  const base = collectionBaseRoute(collection, shopSlug);
+  const shop = await prisma.shop.findFirst({
+    where: { slug: shopSlug, active: true },
+  });
+  if (!shop) notFound();
+
+  const tags =
+    shopSlug === PLATFORM_SHOP_SLUG
+      ? await getStoreTags()
+      : await getStoreTagsForShop(shop.id);
 
   let activeTag: (typeof tags)[0] | null = null;
   if (tagSlug) {
@@ -56,21 +77,27 @@ export async function ShopCollectionPage({
   const audience = audienceWhereForCollection(collection);
 
   if (activeTag) {
-    let products;
+    let listings;
     try {
-      products = await prisma.product.findMany({
+      listings = await prisma.shopListing.findMany({
         where: {
+          shopId: shop.id,
           active: true,
-          audience,
-          tags: { some: { tagId: activeTag.id } },
+          product: {
+            active: true,
+            audience,
+            tags: { some: { tagId: activeTag.id } },
+          },
         },
-        orderBy: { name: "asc" },
-        include: productInclude,
+        orderBy: { product: { name: "asc" } },
+        include: { product: { include: productInclude } },
       });
     } catch (e) {
-      console.error("[ShopCollectionPage] products (tag)", e);
+      console.error("[ShopCollectionPage] listings (tag)", e);
       return <ShopDataLoadError cause={e} />;
     }
+
+    const products = listings.map((l) => productCardProductFromListing(l));
 
     return (
       <div>
@@ -85,7 +112,10 @@ export async function ShopCollectionPage({
           {activeTag.name}
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
-          <Link href={`/shop/tag/${activeTag.slug}`} className="text-blue-400/90 hover:underline">
+          <Link
+            href={shopUniversalTagHref(shopSlug, activeTag.slug)}
+            className="text-blue-400/90 hover:underline"
+          >
             View this tag across all products
           </Link>
         </p>
@@ -94,12 +124,14 @@ export async function ShopCollectionPage({
           label={`Featured in ${activeTag.name}`}
         />
         {products.length === 0 ? (
-          <p className="mt-8 text-sm text-zinc-600">No products with this tag in this collection yet.</p>
+          <p className="mt-8 text-sm text-zinc-600">
+            No products with this tag in this collection yet.
+          </p>
         ) : (
           <ul className="mt-8 grid justify-center gap-3 [grid-template-columns:repeat(auto-fill,175px)] sm:justify-start">
             {products.map((p) => (
               <li key={p.id}>
-                <ProductCard product={p} />
+                <ProductCard product={p} shopSlug={shopSlug} />
               </li>
             ))}
           </ul>
@@ -108,17 +140,23 @@ export async function ShopCollectionPage({
     );
   }
 
-  let allProducts;
+  let listings;
   try {
-    allProducts = await prisma.product.findMany({
-      where: { active: true, audience },
-      orderBy: { name: "asc" },
-      include: productInclude,
+    listings = await prisma.shopListing.findMany({
+      where: {
+        shopId: shop.id,
+        active: true,
+        product: { active: true, audience },
+      },
+      orderBy: { product: { name: "asc" } },
+      include: { product: { include: productInclude } },
     });
   } catch (e) {
-    console.error("[ShopCollectionPage] products (collection)", e);
+    console.error("[ShopCollectionPage] listings (collection)", e);
     return <ShopDataLoadError cause={e} />;
   }
+
+  const allProducts = listings.map((l) => productCardProductFromListing(l));
 
   const byItemSections = buildByItemOnePerTag(allProducts, tags, {
     catalog: collection === CatalogGroup.sub ? "sub" : "domme",
@@ -127,6 +165,9 @@ export async function ShopCollectionPage({
 
   const title =
     collection === CatalogGroup.sub ? "Sub collection" : "Domme collection";
+
+  const allProductsHref =
+    shopSlug === PLATFORM_SHOP_SLUG ? SHOP_ALL_ROUTE : shopAllProductsHref(shopSlug);
 
   return (
     <div>
@@ -137,7 +178,7 @@ export async function ShopCollectionPage({
           </h1>
           <p className="mt-1 text-sm text-zinc-500">
             Browse by item tag and by design name below, use the tag menu for full lists, or{" "}
-            <Link href={SHOP_ALL_ROUTE} className="text-blue-400/90 hover:underline">
+            <Link href={allProductsHref} className="text-blue-400/90 hover:underline">
               view all products
             </Link>
             .{" "}
@@ -158,9 +199,16 @@ export async function ShopCollectionPage({
       />
 
       <ShopByItemAndDesignBrowse
+        shopSlug={shopSlug}
         byItemSections={byItemSections}
         byDesignSections={byDesignSections}
-        viewAllHrefForTag={(slug) => `${base}/tag/${slug}`}
+        viewAllHrefForTag={(slug) =>
+          shopCollectionTagHref(
+            shopSlug,
+            collection === CatalogGroup.sub ? "sub" : "domme",
+            slug,
+          )
+        }
         emptyMessage="No products in this collection yet. Import or sync in admin, assign tags, or browse all products."
       />
 

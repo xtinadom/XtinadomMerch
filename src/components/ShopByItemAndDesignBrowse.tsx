@@ -7,6 +7,7 @@ type Props = {
   /** “View all” for By Item rows (tag slug). Design rows ignore this. */
   viewAllHrefForTag: (slug: string) => string | null;
   emptyMessage: string;
+  shopSlug?: string;
 };
 
 export function ShopByItemAndDesignBrowse({
@@ -14,6 +15,7 @@ export function ShopByItemAndDesignBrowse({
   byDesignSections,
   viewAllHrefForTag,
   emptyMessage,
+  shopSlug,
 }: Props) {
   const emptyItem = byItemSections.length === 0;
   const emptyDesign = byDesignSections.length === 0;
@@ -33,6 +35,7 @@ export function ShopByItemAndDesignBrowse({
           </p>
           <div className="mt-6">
             <ShopProductSectionList
+              shopSlug={shopSlug}
               sections={byItemSections}
               viewAllHrefForTag={viewAllHrefForTag}
               emptyMessage=""
@@ -53,6 +56,7 @@ export function ShopByItemAndDesignBrowse({
           </p>
           <div className="mt-6">
             <ShopProductSectionList
+              shopSlug={shopSlug}
               sections={byDesignSections}
               viewAllHrefForTag={() => null}
               emptyMessage=""

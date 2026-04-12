@@ -29,16 +29,22 @@ export type AggregateOrderLine = {
 export type OrderLineAvgAggregateOutputType = {
   quantity: number | null
   unitPriceCents: number | null
+  platformCutCents: number | null
+  shopCutCents: number | null
 }
 
 export type OrderLineSumAggregateOutputType = {
   quantity: number | null
   unitPriceCents: number | null
+  platformCutCents: number | null
+  shopCutCents: number | null
 }
 
 export type OrderLineMinAggregateOutputType = {
   id: string | null
   orderId: string | null
+  shopId: string | null
+  shopListingId: string | null
   productId: string | null
   quantity: number | null
   unitPriceCents: number | null
@@ -46,12 +52,16 @@ export type OrderLineMinAggregateOutputType = {
   fulfillmentType: $Enums.FulfillmentType | null
   printifyProductId: string | null
   printifyVariantId: string | null
+  platformCutCents: number | null
+  shopCutCents: number | null
   createdAt: Date | null
 }
 
 export type OrderLineMaxAggregateOutputType = {
   id: string | null
   orderId: string | null
+  shopId: string | null
+  shopListingId: string | null
   productId: string | null
   quantity: number | null
   unitPriceCents: number | null
@@ -59,12 +69,16 @@ export type OrderLineMaxAggregateOutputType = {
   fulfillmentType: $Enums.FulfillmentType | null
   printifyProductId: string | null
   printifyVariantId: string | null
+  platformCutCents: number | null
+  shopCutCents: number | null
   createdAt: Date | null
 }
 
 export type OrderLineCountAggregateOutputType = {
   id: number
   orderId: number
+  shopId: number
+  shopListingId: number
   productId: number
   quantity: number
   unitPriceCents: number
@@ -72,6 +86,8 @@ export type OrderLineCountAggregateOutputType = {
   fulfillmentType: number
   printifyProductId: number
   printifyVariantId: number
+  platformCutCents: number
+  shopCutCents: number
   createdAt: number
   _all: number
 }
@@ -80,16 +96,22 @@ export type OrderLineCountAggregateOutputType = {
 export type OrderLineAvgAggregateInputType = {
   quantity?: true
   unitPriceCents?: true
+  platformCutCents?: true
+  shopCutCents?: true
 }
 
 export type OrderLineSumAggregateInputType = {
   quantity?: true
   unitPriceCents?: true
+  platformCutCents?: true
+  shopCutCents?: true
 }
 
 export type OrderLineMinAggregateInputType = {
   id?: true
   orderId?: true
+  shopId?: true
+  shopListingId?: true
   productId?: true
   quantity?: true
   unitPriceCents?: true
@@ -97,12 +119,16 @@ export type OrderLineMinAggregateInputType = {
   fulfillmentType?: true
   printifyProductId?: true
   printifyVariantId?: true
+  platformCutCents?: true
+  shopCutCents?: true
   createdAt?: true
 }
 
 export type OrderLineMaxAggregateInputType = {
   id?: true
   orderId?: true
+  shopId?: true
+  shopListingId?: true
   productId?: true
   quantity?: true
   unitPriceCents?: true
@@ -110,12 +136,16 @@ export type OrderLineMaxAggregateInputType = {
   fulfillmentType?: true
   printifyProductId?: true
   printifyVariantId?: true
+  platformCutCents?: true
+  shopCutCents?: true
   createdAt?: true
 }
 
 export type OrderLineCountAggregateInputType = {
   id?: true
   orderId?: true
+  shopId?: true
+  shopListingId?: true
   productId?: true
   quantity?: true
   unitPriceCents?: true
@@ -123,6 +153,8 @@ export type OrderLineCountAggregateInputType = {
   fulfillmentType?: true
   printifyProductId?: true
   printifyVariantId?: true
+  platformCutCents?: true
+  shopCutCents?: true
   createdAt?: true
   _all?: true
 }
@@ -216,6 +248,8 @@ export type OrderLineGroupByArgs<ExtArgs extends runtime.Types.Extensions.Intern
 export type OrderLineGroupByOutputType = {
   id: string
   orderId: string
+  shopId: string | null
+  shopListingId: string | null
   productId: string
   quantity: number
   unitPriceCents: number
@@ -223,6 +257,8 @@ export type OrderLineGroupByOutputType = {
   fulfillmentType: $Enums.FulfillmentType
   printifyProductId: string | null
   printifyVariantId: string | null
+  platformCutCents: number
+  shopCutCents: number
   createdAt: Date
   _count: OrderLineCountAggregateOutputType | null
   _avg: OrderLineAvgAggregateOutputType | null
@@ -252,6 +288,8 @@ export type OrderLineWhereInput = {
   NOT?: Prisma.OrderLineWhereInput | Prisma.OrderLineWhereInput[]
   id?: Prisma.StringFilter<"OrderLine"> | string
   orderId?: Prisma.StringFilter<"OrderLine"> | string
+  shopId?: Prisma.StringNullableFilter<"OrderLine"> | string | null
+  shopListingId?: Prisma.StringNullableFilter<"OrderLine"> | string | null
   productId?: Prisma.StringFilter<"OrderLine"> | string
   quantity?: Prisma.IntFilter<"OrderLine"> | number
   unitPriceCents?: Prisma.IntFilter<"OrderLine"> | number
@@ -259,14 +297,20 @@ export type OrderLineWhereInput = {
   fulfillmentType?: Prisma.EnumFulfillmentTypeFilter<"OrderLine"> | $Enums.FulfillmentType
   printifyProductId?: Prisma.StringNullableFilter<"OrderLine"> | string | null
   printifyVariantId?: Prisma.StringNullableFilter<"OrderLine"> | string | null
+  platformCutCents?: Prisma.IntFilter<"OrderLine"> | number
+  shopCutCents?: Prisma.IntFilter<"OrderLine"> | number
   createdAt?: Prisma.DateTimeFilter<"OrderLine"> | Date | string
   order?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
+  shop?: Prisma.XOR<Prisma.ShopNullableScalarRelationFilter, Prisma.ShopWhereInput> | null
+  shopListing?: Prisma.XOR<Prisma.ShopListingNullableScalarRelationFilter, Prisma.ShopListingWhereInput> | null
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
 }
 
 export type OrderLineOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
+  shopId?: Prisma.SortOrderInput | Prisma.SortOrder
+  shopListingId?: Prisma.SortOrderInput | Prisma.SortOrder
   productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   unitPriceCents?: Prisma.SortOrder
@@ -274,8 +318,12 @@ export type OrderLineOrderByWithRelationInput = {
   fulfillmentType?: Prisma.SortOrder
   printifyProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   printifyVariantId?: Prisma.SortOrderInput | Prisma.SortOrder
+  platformCutCents?: Prisma.SortOrder
+  shopCutCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   order?: Prisma.OrderOrderByWithRelationInput
+  shop?: Prisma.ShopOrderByWithRelationInput
+  shopListing?: Prisma.ShopListingOrderByWithRelationInput
   product?: Prisma.ProductOrderByWithRelationInput
 }
 
@@ -285,6 +333,8 @@ export type OrderLineWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.OrderLineWhereInput[]
   NOT?: Prisma.OrderLineWhereInput | Prisma.OrderLineWhereInput[]
   orderId?: Prisma.StringFilter<"OrderLine"> | string
+  shopId?: Prisma.StringNullableFilter<"OrderLine"> | string | null
+  shopListingId?: Prisma.StringNullableFilter<"OrderLine"> | string | null
   productId?: Prisma.StringFilter<"OrderLine"> | string
   quantity?: Prisma.IntFilter<"OrderLine"> | number
   unitPriceCents?: Prisma.IntFilter<"OrderLine"> | number
@@ -292,14 +342,20 @@ export type OrderLineWhereUniqueInput = Prisma.AtLeast<{
   fulfillmentType?: Prisma.EnumFulfillmentTypeFilter<"OrderLine"> | $Enums.FulfillmentType
   printifyProductId?: Prisma.StringNullableFilter<"OrderLine"> | string | null
   printifyVariantId?: Prisma.StringNullableFilter<"OrderLine"> | string | null
+  platformCutCents?: Prisma.IntFilter<"OrderLine"> | number
+  shopCutCents?: Prisma.IntFilter<"OrderLine"> | number
   createdAt?: Prisma.DateTimeFilter<"OrderLine"> | Date | string
   order?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
+  shop?: Prisma.XOR<Prisma.ShopNullableScalarRelationFilter, Prisma.ShopWhereInput> | null
+  shopListing?: Prisma.XOR<Prisma.ShopListingNullableScalarRelationFilter, Prisma.ShopListingWhereInput> | null
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
 }, "id">
 
 export type OrderLineOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
+  shopId?: Prisma.SortOrderInput | Prisma.SortOrder
+  shopListingId?: Prisma.SortOrderInput | Prisma.SortOrder
   productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   unitPriceCents?: Prisma.SortOrder
@@ -307,6 +363,8 @@ export type OrderLineOrderByWithAggregationInput = {
   fulfillmentType?: Prisma.SortOrder
   printifyProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   printifyVariantId?: Prisma.SortOrderInput | Prisma.SortOrder
+  platformCutCents?: Prisma.SortOrder
+  shopCutCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.OrderLineCountOrderByAggregateInput
   _avg?: Prisma.OrderLineAvgOrderByAggregateInput
@@ -321,6 +379,8 @@ export type OrderLineScalarWhereWithAggregatesInput = {
   NOT?: Prisma.OrderLineScalarWhereWithAggregatesInput | Prisma.OrderLineScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"OrderLine"> | string
   orderId?: Prisma.StringWithAggregatesFilter<"OrderLine"> | string
+  shopId?: Prisma.StringNullableWithAggregatesFilter<"OrderLine"> | string | null
+  shopListingId?: Prisma.StringNullableWithAggregatesFilter<"OrderLine"> | string | null
   productId?: Prisma.StringWithAggregatesFilter<"OrderLine"> | string
   quantity?: Prisma.IntWithAggregatesFilter<"OrderLine"> | number
   unitPriceCents?: Prisma.IntWithAggregatesFilter<"OrderLine"> | number
@@ -328,6 +388,8 @@ export type OrderLineScalarWhereWithAggregatesInput = {
   fulfillmentType?: Prisma.EnumFulfillmentTypeWithAggregatesFilter<"OrderLine"> | $Enums.FulfillmentType
   printifyProductId?: Prisma.StringNullableWithAggregatesFilter<"OrderLine"> | string | null
   printifyVariantId?: Prisma.StringNullableWithAggregatesFilter<"OrderLine"> | string | null
+  platformCutCents?: Prisma.IntWithAggregatesFilter<"OrderLine"> | number
+  shopCutCents?: Prisma.IntWithAggregatesFilter<"OrderLine"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"OrderLine"> | Date | string
 }
 
@@ -339,14 +401,20 @@ export type OrderLineCreateInput = {
   fulfillmentType: $Enums.FulfillmentType
   printifyProductId?: string | null
   printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
   createdAt?: Date | string
   order: Prisma.OrderCreateNestedOneWithoutLinesInput
+  shop?: Prisma.ShopCreateNestedOneWithoutOrderLinesInput
+  shopListing?: Prisma.ShopListingCreateNestedOneWithoutOrderLinesInput
   product: Prisma.ProductCreateNestedOneWithoutOrderLinesInput
 }
 
 export type OrderLineUncheckedCreateInput = {
   id?: string
   orderId: string
+  shopId?: string | null
+  shopListingId?: string | null
   productId: string
   quantity: number
   unitPriceCents: number
@@ -354,6 +422,8 @@ export type OrderLineUncheckedCreateInput = {
   fulfillmentType: $Enums.FulfillmentType
   printifyProductId?: string | null
   printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
   createdAt?: Date | string
 }
 
@@ -365,14 +435,20 @@ export type OrderLineUpdateInput = {
   fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
   printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   order?: Prisma.OrderUpdateOneRequiredWithoutLinesNestedInput
+  shop?: Prisma.ShopUpdateOneWithoutOrderLinesNestedInput
+  shopListing?: Prisma.ShopListingUpdateOneWithoutOrderLinesNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutOrderLinesNestedInput
 }
 
 export type OrderLineUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shopListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   unitPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
@@ -380,12 +456,16 @@ export type OrderLineUncheckedUpdateInput = {
   fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
   printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OrderLineCreateManyInput = {
   id?: string
   orderId: string
+  shopId?: string | null
+  shopListingId?: string | null
   productId: string
   quantity: number
   unitPriceCents: number
@@ -393,6 +473,8 @@ export type OrderLineCreateManyInput = {
   fulfillmentType: $Enums.FulfillmentType
   printifyProductId?: string | null
   printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
   createdAt?: Date | string
 }
 
@@ -404,12 +486,16 @@ export type OrderLineUpdateManyMutationInput = {
   fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
   printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OrderLineUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shopListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   unitPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
@@ -417,6 +503,8 @@ export type OrderLineUncheckedUpdateManyInput = {
   fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
   printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -433,6 +521,8 @@ export type OrderLineOrderByRelationAggregateInput = {
 export type OrderLineCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
+  shopId?: Prisma.SortOrder
+  shopListingId?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   unitPriceCents?: Prisma.SortOrder
@@ -440,17 +530,23 @@ export type OrderLineCountOrderByAggregateInput = {
   fulfillmentType?: Prisma.SortOrder
   printifyProductId?: Prisma.SortOrder
   printifyVariantId?: Prisma.SortOrder
+  platformCutCents?: Prisma.SortOrder
+  shopCutCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type OrderLineAvgOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
   unitPriceCents?: Prisma.SortOrder
+  platformCutCents?: Prisma.SortOrder
+  shopCutCents?: Prisma.SortOrder
 }
 
 export type OrderLineMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
+  shopId?: Prisma.SortOrder
+  shopListingId?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   unitPriceCents?: Prisma.SortOrder
@@ -458,12 +554,16 @@ export type OrderLineMaxOrderByAggregateInput = {
   fulfillmentType?: Prisma.SortOrder
   printifyProductId?: Prisma.SortOrder
   printifyVariantId?: Prisma.SortOrder
+  platformCutCents?: Prisma.SortOrder
+  shopCutCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type OrderLineMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
+  shopId?: Prisma.SortOrder
+  shopListingId?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   unitPriceCents?: Prisma.SortOrder
@@ -471,12 +571,16 @@ export type OrderLineMinOrderByAggregateInput = {
   fulfillmentType?: Prisma.SortOrder
   printifyProductId?: Prisma.SortOrder
   printifyVariantId?: Prisma.SortOrder
+  platformCutCents?: Prisma.SortOrder
+  shopCutCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type OrderLineSumOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
   unitPriceCents?: Prisma.SortOrder
+  platformCutCents?: Prisma.SortOrder
+  shopCutCents?: Prisma.SortOrder
 }
 
 export type OrderLineCreateNestedManyWithoutProductInput = {
@@ -518,6 +622,90 @@ export type OrderLineUncheckedUpdateManyWithoutProductNestedInput = {
   connect?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
   update?: Prisma.OrderLineUpdateWithWhereUniqueWithoutProductInput | Prisma.OrderLineUpdateWithWhereUniqueWithoutProductInput[]
   updateMany?: Prisma.OrderLineUpdateManyWithWhereWithoutProductInput | Prisma.OrderLineUpdateManyWithWhereWithoutProductInput[]
+  deleteMany?: Prisma.OrderLineScalarWhereInput | Prisma.OrderLineScalarWhereInput[]
+}
+
+export type OrderLineCreateNestedManyWithoutShopInput = {
+  create?: Prisma.XOR<Prisma.OrderLineCreateWithoutShopInput, Prisma.OrderLineUncheckedCreateWithoutShopInput> | Prisma.OrderLineCreateWithoutShopInput[] | Prisma.OrderLineUncheckedCreateWithoutShopInput[]
+  connectOrCreate?: Prisma.OrderLineCreateOrConnectWithoutShopInput | Prisma.OrderLineCreateOrConnectWithoutShopInput[]
+  createMany?: Prisma.OrderLineCreateManyShopInputEnvelope
+  connect?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+}
+
+export type OrderLineUncheckedCreateNestedManyWithoutShopInput = {
+  create?: Prisma.XOR<Prisma.OrderLineCreateWithoutShopInput, Prisma.OrderLineUncheckedCreateWithoutShopInput> | Prisma.OrderLineCreateWithoutShopInput[] | Prisma.OrderLineUncheckedCreateWithoutShopInput[]
+  connectOrCreate?: Prisma.OrderLineCreateOrConnectWithoutShopInput | Prisma.OrderLineCreateOrConnectWithoutShopInput[]
+  createMany?: Prisma.OrderLineCreateManyShopInputEnvelope
+  connect?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+}
+
+export type OrderLineUpdateManyWithoutShopNestedInput = {
+  create?: Prisma.XOR<Prisma.OrderLineCreateWithoutShopInput, Prisma.OrderLineUncheckedCreateWithoutShopInput> | Prisma.OrderLineCreateWithoutShopInput[] | Prisma.OrderLineUncheckedCreateWithoutShopInput[]
+  connectOrCreate?: Prisma.OrderLineCreateOrConnectWithoutShopInput | Prisma.OrderLineCreateOrConnectWithoutShopInput[]
+  upsert?: Prisma.OrderLineUpsertWithWhereUniqueWithoutShopInput | Prisma.OrderLineUpsertWithWhereUniqueWithoutShopInput[]
+  createMany?: Prisma.OrderLineCreateManyShopInputEnvelope
+  set?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  disconnect?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  delete?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  connect?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  update?: Prisma.OrderLineUpdateWithWhereUniqueWithoutShopInput | Prisma.OrderLineUpdateWithWhereUniqueWithoutShopInput[]
+  updateMany?: Prisma.OrderLineUpdateManyWithWhereWithoutShopInput | Prisma.OrderLineUpdateManyWithWhereWithoutShopInput[]
+  deleteMany?: Prisma.OrderLineScalarWhereInput | Prisma.OrderLineScalarWhereInput[]
+}
+
+export type OrderLineUncheckedUpdateManyWithoutShopNestedInput = {
+  create?: Prisma.XOR<Prisma.OrderLineCreateWithoutShopInput, Prisma.OrderLineUncheckedCreateWithoutShopInput> | Prisma.OrderLineCreateWithoutShopInput[] | Prisma.OrderLineUncheckedCreateWithoutShopInput[]
+  connectOrCreate?: Prisma.OrderLineCreateOrConnectWithoutShopInput | Prisma.OrderLineCreateOrConnectWithoutShopInput[]
+  upsert?: Prisma.OrderLineUpsertWithWhereUniqueWithoutShopInput | Prisma.OrderLineUpsertWithWhereUniqueWithoutShopInput[]
+  createMany?: Prisma.OrderLineCreateManyShopInputEnvelope
+  set?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  disconnect?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  delete?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  connect?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  update?: Prisma.OrderLineUpdateWithWhereUniqueWithoutShopInput | Prisma.OrderLineUpdateWithWhereUniqueWithoutShopInput[]
+  updateMany?: Prisma.OrderLineUpdateManyWithWhereWithoutShopInput | Prisma.OrderLineUpdateManyWithWhereWithoutShopInput[]
+  deleteMany?: Prisma.OrderLineScalarWhereInput | Prisma.OrderLineScalarWhereInput[]
+}
+
+export type OrderLineCreateNestedManyWithoutShopListingInput = {
+  create?: Prisma.XOR<Prisma.OrderLineCreateWithoutShopListingInput, Prisma.OrderLineUncheckedCreateWithoutShopListingInput> | Prisma.OrderLineCreateWithoutShopListingInput[] | Prisma.OrderLineUncheckedCreateWithoutShopListingInput[]
+  connectOrCreate?: Prisma.OrderLineCreateOrConnectWithoutShopListingInput | Prisma.OrderLineCreateOrConnectWithoutShopListingInput[]
+  createMany?: Prisma.OrderLineCreateManyShopListingInputEnvelope
+  connect?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+}
+
+export type OrderLineUncheckedCreateNestedManyWithoutShopListingInput = {
+  create?: Prisma.XOR<Prisma.OrderLineCreateWithoutShopListingInput, Prisma.OrderLineUncheckedCreateWithoutShopListingInput> | Prisma.OrderLineCreateWithoutShopListingInput[] | Prisma.OrderLineUncheckedCreateWithoutShopListingInput[]
+  connectOrCreate?: Prisma.OrderLineCreateOrConnectWithoutShopListingInput | Prisma.OrderLineCreateOrConnectWithoutShopListingInput[]
+  createMany?: Prisma.OrderLineCreateManyShopListingInputEnvelope
+  connect?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+}
+
+export type OrderLineUpdateManyWithoutShopListingNestedInput = {
+  create?: Prisma.XOR<Prisma.OrderLineCreateWithoutShopListingInput, Prisma.OrderLineUncheckedCreateWithoutShopListingInput> | Prisma.OrderLineCreateWithoutShopListingInput[] | Prisma.OrderLineUncheckedCreateWithoutShopListingInput[]
+  connectOrCreate?: Prisma.OrderLineCreateOrConnectWithoutShopListingInput | Prisma.OrderLineCreateOrConnectWithoutShopListingInput[]
+  upsert?: Prisma.OrderLineUpsertWithWhereUniqueWithoutShopListingInput | Prisma.OrderLineUpsertWithWhereUniqueWithoutShopListingInput[]
+  createMany?: Prisma.OrderLineCreateManyShopListingInputEnvelope
+  set?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  disconnect?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  delete?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  connect?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  update?: Prisma.OrderLineUpdateWithWhereUniqueWithoutShopListingInput | Prisma.OrderLineUpdateWithWhereUniqueWithoutShopListingInput[]
+  updateMany?: Prisma.OrderLineUpdateManyWithWhereWithoutShopListingInput | Prisma.OrderLineUpdateManyWithWhereWithoutShopListingInput[]
+  deleteMany?: Prisma.OrderLineScalarWhereInput | Prisma.OrderLineScalarWhereInput[]
+}
+
+export type OrderLineUncheckedUpdateManyWithoutShopListingNestedInput = {
+  create?: Prisma.XOR<Prisma.OrderLineCreateWithoutShopListingInput, Prisma.OrderLineUncheckedCreateWithoutShopListingInput> | Prisma.OrderLineCreateWithoutShopListingInput[] | Prisma.OrderLineUncheckedCreateWithoutShopListingInput[]
+  connectOrCreate?: Prisma.OrderLineCreateOrConnectWithoutShopListingInput | Prisma.OrderLineCreateOrConnectWithoutShopListingInput[]
+  upsert?: Prisma.OrderLineUpsertWithWhereUniqueWithoutShopListingInput | Prisma.OrderLineUpsertWithWhereUniqueWithoutShopListingInput[]
+  createMany?: Prisma.OrderLineCreateManyShopListingInputEnvelope
+  set?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  disconnect?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  delete?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  connect?: Prisma.OrderLineWhereUniqueInput | Prisma.OrderLineWhereUniqueInput[]
+  update?: Prisma.OrderLineUpdateWithWhereUniqueWithoutShopListingInput | Prisma.OrderLineUpdateWithWhereUniqueWithoutShopListingInput[]
+  updateMany?: Prisma.OrderLineUpdateManyWithWhereWithoutShopListingInput | Prisma.OrderLineUpdateManyWithWhereWithoutShopListingInput[]
   deleteMany?: Prisma.OrderLineScalarWhereInput | Prisma.OrderLineScalarWhereInput[]
 }
 
@@ -571,19 +759,27 @@ export type OrderLineCreateWithoutProductInput = {
   fulfillmentType: $Enums.FulfillmentType
   printifyProductId?: string | null
   printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
   createdAt?: Date | string
   order: Prisma.OrderCreateNestedOneWithoutLinesInput
+  shop?: Prisma.ShopCreateNestedOneWithoutOrderLinesInput
+  shopListing?: Prisma.ShopListingCreateNestedOneWithoutOrderLinesInput
 }
 
 export type OrderLineUncheckedCreateWithoutProductInput = {
   id?: string
   orderId: string
+  shopId?: string | null
+  shopListingId?: string | null
   quantity: number
   unitPriceCents: number
   productName: string
   fulfillmentType: $Enums.FulfillmentType
   printifyProductId?: string | null
   printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
   createdAt?: Date | string
 }
 
@@ -619,6 +815,8 @@ export type OrderLineScalarWhereInput = {
   NOT?: Prisma.OrderLineScalarWhereInput | Prisma.OrderLineScalarWhereInput[]
   id?: Prisma.StringFilter<"OrderLine"> | string
   orderId?: Prisma.StringFilter<"OrderLine"> | string
+  shopId?: Prisma.StringNullableFilter<"OrderLine"> | string | null
+  shopListingId?: Prisma.StringNullableFilter<"OrderLine"> | string | null
   productId?: Prisma.StringFilter<"OrderLine"> | string
   quantity?: Prisma.IntFilter<"OrderLine"> | number
   unitPriceCents?: Prisma.IntFilter<"OrderLine"> | number
@@ -626,7 +824,125 @@ export type OrderLineScalarWhereInput = {
   fulfillmentType?: Prisma.EnumFulfillmentTypeFilter<"OrderLine"> | $Enums.FulfillmentType
   printifyProductId?: Prisma.StringNullableFilter<"OrderLine"> | string | null
   printifyVariantId?: Prisma.StringNullableFilter<"OrderLine"> | string | null
+  platformCutCents?: Prisma.IntFilter<"OrderLine"> | number
+  shopCutCents?: Prisma.IntFilter<"OrderLine"> | number
   createdAt?: Prisma.DateTimeFilter<"OrderLine"> | Date | string
+}
+
+export type OrderLineCreateWithoutShopInput = {
+  id?: string
+  quantity: number
+  unitPriceCents: number
+  productName: string
+  fulfillmentType: $Enums.FulfillmentType
+  printifyProductId?: string | null
+  printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
+  createdAt?: Date | string
+  order: Prisma.OrderCreateNestedOneWithoutLinesInput
+  shopListing?: Prisma.ShopListingCreateNestedOneWithoutOrderLinesInput
+  product: Prisma.ProductCreateNestedOneWithoutOrderLinesInput
+}
+
+export type OrderLineUncheckedCreateWithoutShopInput = {
+  id?: string
+  orderId: string
+  shopListingId?: string | null
+  productId: string
+  quantity: number
+  unitPriceCents: number
+  productName: string
+  fulfillmentType: $Enums.FulfillmentType
+  printifyProductId?: string | null
+  printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
+  createdAt?: Date | string
+}
+
+export type OrderLineCreateOrConnectWithoutShopInput = {
+  where: Prisma.OrderLineWhereUniqueInput
+  create: Prisma.XOR<Prisma.OrderLineCreateWithoutShopInput, Prisma.OrderLineUncheckedCreateWithoutShopInput>
+}
+
+export type OrderLineCreateManyShopInputEnvelope = {
+  data: Prisma.OrderLineCreateManyShopInput | Prisma.OrderLineCreateManyShopInput[]
+  skipDuplicates?: boolean
+}
+
+export type OrderLineUpsertWithWhereUniqueWithoutShopInput = {
+  where: Prisma.OrderLineWhereUniqueInput
+  update: Prisma.XOR<Prisma.OrderLineUpdateWithoutShopInput, Prisma.OrderLineUncheckedUpdateWithoutShopInput>
+  create: Prisma.XOR<Prisma.OrderLineCreateWithoutShopInput, Prisma.OrderLineUncheckedCreateWithoutShopInput>
+}
+
+export type OrderLineUpdateWithWhereUniqueWithoutShopInput = {
+  where: Prisma.OrderLineWhereUniqueInput
+  data: Prisma.XOR<Prisma.OrderLineUpdateWithoutShopInput, Prisma.OrderLineUncheckedUpdateWithoutShopInput>
+}
+
+export type OrderLineUpdateManyWithWhereWithoutShopInput = {
+  where: Prisma.OrderLineScalarWhereInput
+  data: Prisma.XOR<Prisma.OrderLineUpdateManyMutationInput, Prisma.OrderLineUncheckedUpdateManyWithoutShopInput>
+}
+
+export type OrderLineCreateWithoutShopListingInput = {
+  id?: string
+  quantity: number
+  unitPriceCents: number
+  productName: string
+  fulfillmentType: $Enums.FulfillmentType
+  printifyProductId?: string | null
+  printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
+  createdAt?: Date | string
+  order: Prisma.OrderCreateNestedOneWithoutLinesInput
+  shop?: Prisma.ShopCreateNestedOneWithoutOrderLinesInput
+  product: Prisma.ProductCreateNestedOneWithoutOrderLinesInput
+}
+
+export type OrderLineUncheckedCreateWithoutShopListingInput = {
+  id?: string
+  orderId: string
+  shopId?: string | null
+  productId: string
+  quantity: number
+  unitPriceCents: number
+  productName: string
+  fulfillmentType: $Enums.FulfillmentType
+  printifyProductId?: string | null
+  printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
+  createdAt?: Date | string
+}
+
+export type OrderLineCreateOrConnectWithoutShopListingInput = {
+  where: Prisma.OrderLineWhereUniqueInput
+  create: Prisma.XOR<Prisma.OrderLineCreateWithoutShopListingInput, Prisma.OrderLineUncheckedCreateWithoutShopListingInput>
+}
+
+export type OrderLineCreateManyShopListingInputEnvelope = {
+  data: Prisma.OrderLineCreateManyShopListingInput | Prisma.OrderLineCreateManyShopListingInput[]
+  skipDuplicates?: boolean
+}
+
+export type OrderLineUpsertWithWhereUniqueWithoutShopListingInput = {
+  where: Prisma.OrderLineWhereUniqueInput
+  update: Prisma.XOR<Prisma.OrderLineUpdateWithoutShopListingInput, Prisma.OrderLineUncheckedUpdateWithoutShopListingInput>
+  create: Prisma.XOR<Prisma.OrderLineCreateWithoutShopListingInput, Prisma.OrderLineUncheckedCreateWithoutShopListingInput>
+}
+
+export type OrderLineUpdateWithWhereUniqueWithoutShopListingInput = {
+  where: Prisma.OrderLineWhereUniqueInput
+  data: Prisma.XOR<Prisma.OrderLineUpdateWithoutShopListingInput, Prisma.OrderLineUncheckedUpdateWithoutShopListingInput>
+}
+
+export type OrderLineUpdateManyWithWhereWithoutShopListingInput = {
+  where: Prisma.OrderLineScalarWhereInput
+  data: Prisma.XOR<Prisma.OrderLineUpdateManyMutationInput, Prisma.OrderLineUncheckedUpdateManyWithoutShopListingInput>
 }
 
 export type OrderLineCreateWithoutOrderInput = {
@@ -637,12 +953,18 @@ export type OrderLineCreateWithoutOrderInput = {
   fulfillmentType: $Enums.FulfillmentType
   printifyProductId?: string | null
   printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
   createdAt?: Date | string
+  shop?: Prisma.ShopCreateNestedOneWithoutOrderLinesInput
+  shopListing?: Prisma.ShopListingCreateNestedOneWithoutOrderLinesInput
   product: Prisma.ProductCreateNestedOneWithoutOrderLinesInput
 }
 
 export type OrderLineUncheckedCreateWithoutOrderInput = {
   id?: string
+  shopId?: string | null
+  shopListingId?: string | null
   productId: string
   quantity: number
   unitPriceCents: number
@@ -650,6 +972,8 @@ export type OrderLineUncheckedCreateWithoutOrderInput = {
   fulfillmentType: $Enums.FulfillmentType
   printifyProductId?: string | null
   printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
   createdAt?: Date | string
 }
 
@@ -682,12 +1006,16 @@ export type OrderLineUpdateManyWithWhereWithoutOrderInput = {
 export type OrderLineCreateManyProductInput = {
   id?: string
   orderId: string
+  shopId?: string | null
+  shopListingId?: string | null
   quantity: number
   unitPriceCents: number
   productName: string
   fulfillmentType: $Enums.FulfillmentType
   printifyProductId?: string | null
   printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
   createdAt?: Date | string
 }
 
@@ -699,36 +1027,50 @@ export type OrderLineUpdateWithoutProductInput = {
   fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
   printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   order?: Prisma.OrderUpdateOneRequiredWithoutLinesNestedInput
+  shop?: Prisma.ShopUpdateOneWithoutOrderLinesNestedInput
+  shopListing?: Prisma.ShopListingUpdateOneWithoutOrderLinesNestedInput
 }
 
 export type OrderLineUncheckedUpdateWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shopListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   unitPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   productName?: Prisma.StringFieldUpdateOperationsInput | string
   fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
   printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OrderLineUncheckedUpdateManyWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shopListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   unitPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   productName?: Prisma.StringFieldUpdateOperationsInput | string
   fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
   printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type OrderLineCreateManyOrderInput = {
+export type OrderLineCreateManyShopInput = {
   id?: string
+  orderId: string
+  shopListingId?: string | null
   productId: string
   quantity: number
   unitPriceCents: number
@@ -736,6 +1078,136 @@ export type OrderLineCreateManyOrderInput = {
   fulfillmentType: $Enums.FulfillmentType
   printifyProductId?: string | null
   printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
+  createdAt?: Date | string
+}
+
+export type OrderLineUpdateWithoutShopInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  productName?: Prisma.StringFieldUpdateOperationsInput | string
+  fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
+  printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  order?: Prisma.OrderUpdateOneRequiredWithoutLinesNestedInput
+  shopListing?: Prisma.ShopListingUpdateOneWithoutOrderLinesNestedInput
+  product?: Prisma.ProductUpdateOneRequiredWithoutOrderLinesNestedInput
+}
+
+export type OrderLineUncheckedUpdateWithoutShopInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  orderId?: Prisma.StringFieldUpdateOperationsInput | string
+  shopListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  productName?: Prisma.StringFieldUpdateOperationsInput | string
+  fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
+  printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type OrderLineUncheckedUpdateManyWithoutShopInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  orderId?: Prisma.StringFieldUpdateOperationsInput | string
+  shopListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  productName?: Prisma.StringFieldUpdateOperationsInput | string
+  fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
+  printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type OrderLineCreateManyShopListingInput = {
+  id?: string
+  orderId: string
+  shopId?: string | null
+  productId: string
+  quantity: number
+  unitPriceCents: number
+  productName: string
+  fulfillmentType: $Enums.FulfillmentType
+  printifyProductId?: string | null
+  printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
+  createdAt?: Date | string
+}
+
+export type OrderLineUpdateWithoutShopListingInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  productName?: Prisma.StringFieldUpdateOperationsInput | string
+  fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
+  printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  order?: Prisma.OrderUpdateOneRequiredWithoutLinesNestedInput
+  shop?: Prisma.ShopUpdateOneWithoutOrderLinesNestedInput
+  product?: Prisma.ProductUpdateOneRequiredWithoutOrderLinesNestedInput
+}
+
+export type OrderLineUncheckedUpdateWithoutShopListingInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  orderId?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  productName?: Prisma.StringFieldUpdateOperationsInput | string
+  fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
+  printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type OrderLineUncheckedUpdateManyWithoutShopListingInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  orderId?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  productName?: Prisma.StringFieldUpdateOperationsInput | string
+  fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
+  printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type OrderLineCreateManyOrderInput = {
+  id?: string
+  shopId?: string | null
+  shopListingId?: string | null
+  productId: string
+  quantity: number
+  unitPriceCents: number
+  productName: string
+  fulfillmentType: $Enums.FulfillmentType
+  printifyProductId?: string | null
+  printifyVariantId?: string | null
+  platformCutCents?: number
+  shopCutCents?: number
   createdAt?: Date | string
 }
 
@@ -747,12 +1219,18 @@ export type OrderLineUpdateWithoutOrderInput = {
   fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
   printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  shop?: Prisma.ShopUpdateOneWithoutOrderLinesNestedInput
+  shopListing?: Prisma.ShopListingUpdateOneWithoutOrderLinesNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutOrderLinesNestedInput
 }
 
 export type OrderLineUncheckedUpdateWithoutOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shopListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   unitPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
@@ -760,11 +1238,15 @@ export type OrderLineUncheckedUpdateWithoutOrderInput = {
   fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
   printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OrderLineUncheckedUpdateManyWithoutOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shopListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   unitPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
@@ -772,6 +1254,8 @@ export type OrderLineUncheckedUpdateManyWithoutOrderInput = {
   fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
   printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platformCutCents?: Prisma.IntFieldUpdateOperationsInput | number
+  shopCutCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -780,6 +1264,8 @@ export type OrderLineUncheckedUpdateManyWithoutOrderInput = {
 export type OrderLineSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   orderId?: boolean
+  shopId?: boolean
+  shopListingId?: boolean
   productId?: boolean
   quantity?: boolean
   unitPriceCents?: boolean
@@ -787,14 +1273,20 @@ export type OrderLineSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   fulfillmentType?: boolean
   printifyProductId?: boolean
   printifyVariantId?: boolean
+  platformCutCents?: boolean
+  shopCutCents?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  shop?: boolean | Prisma.OrderLine$shopArgs<ExtArgs>
+  shopListing?: boolean | Prisma.OrderLine$shopListingArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["orderLine"]>
 
 export type OrderLineSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   orderId?: boolean
+  shopId?: boolean
+  shopListingId?: boolean
   productId?: boolean
   quantity?: boolean
   unitPriceCents?: boolean
@@ -802,14 +1294,20 @@ export type OrderLineSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   fulfillmentType?: boolean
   printifyProductId?: boolean
   printifyVariantId?: boolean
+  platformCutCents?: boolean
+  shopCutCents?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  shop?: boolean | Prisma.OrderLine$shopArgs<ExtArgs>
+  shopListing?: boolean | Prisma.OrderLine$shopListingArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["orderLine"]>
 
 export type OrderLineSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   orderId?: boolean
+  shopId?: boolean
+  shopListingId?: boolean
   productId?: boolean
   quantity?: boolean
   unitPriceCents?: boolean
@@ -817,14 +1315,20 @@ export type OrderLineSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   fulfillmentType?: boolean
   printifyProductId?: boolean
   printifyVariantId?: boolean
+  platformCutCents?: boolean
+  shopCutCents?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  shop?: boolean | Prisma.OrderLine$shopArgs<ExtArgs>
+  shopListing?: boolean | Prisma.OrderLine$shopListingArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["orderLine"]>
 
 export type OrderLineSelectScalar = {
   id?: boolean
   orderId?: boolean
+  shopId?: boolean
+  shopListingId?: boolean
   productId?: boolean
   quantity?: boolean
   unitPriceCents?: boolean
@@ -832,20 +1336,28 @@ export type OrderLineSelectScalar = {
   fulfillmentType?: boolean
   printifyProductId?: boolean
   printifyVariantId?: boolean
+  platformCutCents?: boolean
+  shopCutCents?: boolean
   createdAt?: boolean
 }
 
-export type OrderLineOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "productId" | "quantity" | "unitPriceCents" | "productName" | "fulfillmentType" | "printifyProductId" | "printifyVariantId" | "createdAt", ExtArgs["result"]["orderLine"]>
+export type OrderLineOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "shopId" | "shopListingId" | "productId" | "quantity" | "unitPriceCents" | "productName" | "fulfillmentType" | "printifyProductId" | "printifyVariantId" | "platformCutCents" | "shopCutCents" | "createdAt", ExtArgs["result"]["orderLine"]>
 export type OrderLineInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  shop?: boolean | Prisma.OrderLine$shopArgs<ExtArgs>
+  shopListing?: boolean | Prisma.OrderLine$shopListingArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }
 export type OrderLineIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  shop?: boolean | Prisma.OrderLine$shopArgs<ExtArgs>
+  shopListing?: boolean | Prisma.OrderLine$shopListingArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }
 export type OrderLineIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  shop?: boolean | Prisma.OrderLine$shopArgs<ExtArgs>
+  shopListing?: boolean | Prisma.OrderLine$shopListingArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }
 
@@ -853,11 +1365,15 @@ export type $OrderLinePayload<ExtArgs extends runtime.Types.Extensions.InternalA
   name: "OrderLine"
   objects: {
     order: Prisma.$OrderPayload<ExtArgs>
+    shop: Prisma.$ShopPayload<ExtArgs> | null
+    shopListing: Prisma.$ShopListingPayload<ExtArgs> | null
     product: Prisma.$ProductPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     orderId: string
+    shopId: string | null
+    shopListingId: string | null
     productId: string
     quantity: number
     unitPriceCents: number
@@ -865,6 +1381,8 @@ export type $OrderLinePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     fulfillmentType: $Enums.FulfillmentType
     printifyProductId: string | null
     printifyVariantId: string | null
+    platformCutCents: number
+    shopCutCents: number
     createdAt: Date
   }, ExtArgs["result"]["orderLine"]>
   composites: {}
@@ -1261,6 +1779,8 @@ readonly fields: OrderLineFieldRefs;
 export interface Prisma__OrderLineClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   order<T extends Prisma.OrderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.OrderDefaultArgs<ExtArgs>>): Prisma.Prisma__OrderClient<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  shop<T extends Prisma.OrderLine$shopArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.OrderLine$shopArgs<ExtArgs>>): Prisma.Prisma__ShopClient<runtime.Types.Result.GetResult<Prisma.$ShopPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  shopListing<T extends Prisma.OrderLine$shopListingArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.OrderLine$shopListingArgs<ExtArgs>>): Prisma.Prisma__ShopListingClient<runtime.Types.Result.GetResult<Prisma.$ShopListingPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   product<T extends Prisma.ProductDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductClient<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1293,6 +1813,8 @@ export interface Prisma__OrderLineClient<T, Null = never, ExtArgs extends runtim
 export interface OrderLineFieldRefs {
   readonly id: Prisma.FieldRef<"OrderLine", 'String'>
   readonly orderId: Prisma.FieldRef<"OrderLine", 'String'>
+  readonly shopId: Prisma.FieldRef<"OrderLine", 'String'>
+  readonly shopListingId: Prisma.FieldRef<"OrderLine", 'String'>
   readonly productId: Prisma.FieldRef<"OrderLine", 'String'>
   readonly quantity: Prisma.FieldRef<"OrderLine", 'Int'>
   readonly unitPriceCents: Prisma.FieldRef<"OrderLine", 'Int'>
@@ -1300,6 +1822,8 @@ export interface OrderLineFieldRefs {
   readonly fulfillmentType: Prisma.FieldRef<"OrderLine", 'FulfillmentType'>
   readonly printifyProductId: Prisma.FieldRef<"OrderLine", 'String'>
   readonly printifyVariantId: Prisma.FieldRef<"OrderLine", 'String'>
+  readonly platformCutCents: Prisma.FieldRef<"OrderLine", 'Int'>
+  readonly shopCutCents: Prisma.FieldRef<"OrderLine", 'Int'>
   readonly createdAt: Prisma.FieldRef<"OrderLine", 'DateTime'>
 }
     
@@ -1699,6 +2223,44 @@ export type OrderLineDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Limit how many OrderLines to delete.
    */
   limit?: number
+}
+
+/**
+ * OrderLine.shop
+ */
+export type OrderLine$shopArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Shop
+   */
+  select?: Prisma.ShopSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Shop
+   */
+  omit?: Prisma.ShopOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ShopInclude<ExtArgs> | null
+  where?: Prisma.ShopWhereInput
+}
+
+/**
+ * OrderLine.shopListing
+ */
+export type OrderLine$shopListingArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ShopListing
+   */
+  select?: Prisma.ShopListingSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ShopListing
+   */
+  omit?: Prisma.ShopListingOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ShopListingInclude<ExtArgs> | null
+  where?: Prisma.ShopListingWhereInput
 }
 
 /**

@@ -10,12 +10,30 @@ import {
   DOMME_COLLECTION_NAV_LABEL,
 } from "@/lib/constants";
 import type { Tag } from "@/generated/prisma/client";
+import {
+  PLATFORM_SHOP_SLUG,
+  shopAllProductsHref,
+  shopCollectionTagHref,
+  shopDommeHref,
+  shopSubHref,
+  shopUniversalTagHref,
+} from "@/lib/marketplace-constants";
 
 type Row = Pick<Tag, "id" | "slug" | "name" | "sortOrder">;
 
-export function ShopTagMenu({ tags }: { tags: Row[] }) {
+export function ShopTagMenu({
+  tags,
+  shopSlug,
+}: {
+  tags: Row[];
+  shopSlug?: string;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const tenant = shopSlug && shopSlug !== PLATFORM_SHOP_SLUG;
+  const allHref = tenant ? shopAllProductsHref(shopSlug) : SHOP_ALL_ROUTE;
+  const subBase = tenant ? shopSubHref(shopSlug) : SHOP_SUB_ROUTE;
+  const dommeBase = tenant ? shopDommeHref(shopSlug) : SHOP_DOMME_ROUTE;
 
   const sortedTags = useMemo(
     () =>
@@ -54,7 +72,7 @@ export function ShopTagMenu({ tags }: { tags: Row[] }) {
         >
           <li role="none" className="border-b border-zinc-800 pb-1">
             <Link
-              href={SHOP_ALL_ROUTE}
+              href={allHref}
               role="menuitem"
               className="block px-4 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800"
               onClick={close}
@@ -64,7 +82,7 @@ export function ShopTagMenu({ tags }: { tags: Row[] }) {
           </li>
           <li role="none" className="border-b border-zinc-800 pb-1 pt-1">
             <Link
-              href={SHOP_SUB_ROUTE}
+              href={subBase}
               role="menuitem"
               className="block px-4 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
               onClick={close}
@@ -76,7 +94,11 @@ export function ShopTagMenu({ tags }: { tags: Row[] }) {
                 <li key={t.id} role="none">
                   <Link
                     role="menuitem"
-                    href={`${SHOP_SUB_ROUTE}/tag/${t.slug}`}
+                    href={
+                      tenant
+                        ? shopCollectionTagHref(shopSlug, "sub", t.slug)
+                        : `${SHOP_SUB_ROUTE}/tag/${t.slug}`
+                    }
                     className="block py-1.5 pl-6 pr-4 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white"
                     onClick={close}
                   >
@@ -88,7 +110,7 @@ export function ShopTagMenu({ tags }: { tags: Row[] }) {
           </li>
           <li role="none" className="border-b border-zinc-800 pb-1 pt-1">
             <Link
-              href={SHOP_DOMME_ROUTE}
+              href={dommeBase}
               role="menuitem"
               className="block px-4 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
               onClick={close}
@@ -100,7 +122,11 @@ export function ShopTagMenu({ tags }: { tags: Row[] }) {
                 <li key={t.id} role="none">
                   <Link
                     role="menuitem"
-                    href={`${SHOP_DOMME_ROUTE}/tag/${t.slug}`}
+                    href={
+                      tenant
+                        ? shopCollectionTagHref(shopSlug, "domme", t.slug)
+                        : `${SHOP_DOMME_ROUTE}/tag/${t.slug}`
+                    }
                     className="block py-1.5 pl-6 pr-4 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white"
                     onClick={close}
                   >
@@ -119,7 +145,7 @@ export function ShopTagMenu({ tags }: { tags: Row[] }) {
                 <li key={`all-${t.id}`} role="none">
                   <Link
                     role="menuitem"
-                    href={`/shop/tag/${t.slug}`}
+                    href={shopUniversalTagHref(shopSlug ?? PLATFORM_SHOP_SLUG, t.slug)}
                     className="block py-1.5 pl-6 pr-4 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white"
                     onClick={close}
                   >

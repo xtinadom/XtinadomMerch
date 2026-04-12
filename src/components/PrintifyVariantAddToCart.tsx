@@ -26,12 +26,14 @@ type Props = {
   productId: string;
   variants: PrintifyVariantOption[];
   galleryExtras: string[];
+  shopSlug?: string;
 };
 
 export function PrintifyVariantAddToCart({
   productId,
   variants,
   galleryExtras,
+  shopSlug,
 }: Props) {
   const router = useRouter();
   const [variantId, setVariantId] = useState(variants[0]?.id ?? "");
@@ -87,7 +89,7 @@ export function PrintifyVariantAddToCart({
         onSubmit={(e) => {
           e.preventDefault();
           startTransition(async () => {
-            const r = await addToCart(productId, 1, variantId);
+            const r = await addToCart(productId, 1, variantId, shopSlug ?? undefined);
             if (!r.ok) return;
             router.refresh();
             setAdded(true);

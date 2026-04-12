@@ -7,6 +7,8 @@ export type PrintifyCatalogVariant = {
   title: string;
   priceCents: number;
   enabled: boolean;
+  /** Printify variant SKU when present (used to dedupe catalog admin views). */
+  sku: string | null;
 };
 
 export type PrintifyCatalogProduct = {
@@ -67,7 +69,12 @@ function parseVariants(raw: unknown): PrintifyCatalogVariant[] {
         : typeof vr.is_available === "boolean"
           ? vr.is_available
           : true;
-    out.push({ id: vid, title, priceCents, enabled });
+    const skuRaw = vr.sku;
+    const sku =
+      typeof skuRaw === "string" && skuRaw.trim()
+        ? skuRaw.trim()
+        : null;
+    out.push({ id: vid, title, priceCents, enabled, sku });
   }
   return out;
 }

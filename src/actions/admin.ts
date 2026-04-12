@@ -550,6 +550,7 @@ async function processOnePrintifyCatalogProduct(
       title: v.title.trim() || `Variant ${v.id}`,
       priceCents,
       imageUrl: imageUrl ?? null,
+      sku: v.sku ?? null,
     };
   });
 

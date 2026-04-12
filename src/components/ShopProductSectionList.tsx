@@ -4,6 +4,7 @@ import type { ShopSectionRow } from "@/lib/shop-browse-sections";
 
 type Props = {
   sections: ShopSectionRow[];
+  shopSlug?: string;
   /** Return null to hide “View all” (e.g. untagged bucket). */
   viewAllHrefForTag: (slug: string) => string | null;
   emptyMessage: string;
@@ -18,6 +19,7 @@ type Props = {
 
 export function ShopProductSectionList({
   sections,
+  shopSlug,
   viewAllHrefForTag,
   emptyMessage,
   limitPerSection = 6,
@@ -60,7 +62,7 @@ export function ShopProductSectionList({
               <ul className="flex flex-col gap-2">
                 {shown.map((p) => (
                   <li key={p.id}>
-                    <ProductCard product={p} />
+                    <ProductCard product={p} shopSlug={shopSlug} />
                   </li>
                 ))}
               </ul>
@@ -95,7 +97,7 @@ export function ShopProductSectionList({
             <ul className="grid justify-center gap-3 [grid-template-columns:repeat(auto-fill,175px)] sm:justify-start">
               {shown.map((p) => (
                 <li key={p.id}>
-                  <ProductCard product={p} />
+                  <ProductCard product={p} shopSlug={shopSlug} />
                 </li>
               ))}
             </ul>

@@ -6,16 +6,40 @@ import { FulfillmentType } from "@/generated/prisma/enums";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { getCartSession } from "@/lib/session";
 import { maxCartLineQty } from "@/lib/cart-limits";
+import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
+
+async function resolveActiveListing(
+  productOrListingId: string,
+  shopSlug?: string | null,
+) {
+  if (productOrListingId.startsWith("sl_")) {
+    return prisma.shopListing.findFirst({
+      where: { id: productOrListingId, active: true },
+      include: { product: true, shop: { select: { id: true, slug: true } } },
+    });
+  }
+  const slug = shopSlug?.trim() || PLATFORM_SHOP_SLUG;
+  return prisma.shopListing.findFirst({
+    where: {
+      productId: productOrListingId,
+      shop: { slug },
+      active: true,
+    },
+    include: { product: true, shop: { select: { id: true, slug: true } } },
+  });
+}
 
 export async function addToCart(
-  productId: string,
+  productOrListingId: string,
   quantity = 1,
   printifyVariantId?: string | null,
+  shopSlug?: string | null,
 ): Promise<{ ok: true } | { ok: false }> {
   const session = await getCartSession();
-  const product = await prisma.product.findUnique({ where: { id: productId } });
-  if (!product?.active) return { ok: false };
+  const listing = await resolveActiveListing(productOrListingId, shopSlug);
+  if (!listing?.product.active) return { ok: false };
 
+  const product = listing.product;
   const lineMax = maxCartLineQty(product.fulfillmentType);
   const q = Math.max(1, Math.min(lineMax, quantity));
   const variants = getPrintifyVariantsForProduct(product);
@@ -36,35 +60,48 @@ export async function addToCart(
     vid = undefined;
   }
 
-  const prev = session.items[productId];
+  const keys = Object.keys(session.items).filter(
+    (k) => (session.items[k]?.quantity ?? 0) > 0,
+  );
+  if (keys.length > 0 && session.shopId && session.shopId !== listing.shopId) {
+    return { ok: false };
+  }
+
+  const listingId = listing.id;
+  const prev = session.items[listingId];
   const prevQty = prev?.quantity ?? 0;
   const newQty = Math.min(lineMax, prevQty + q);
 
-  session.items[productId] =
+  session.items[listingId] =
     vid !== undefined
       ? { quantity: newQty, printifyVariantId: vid }
       : { quantity: newQty };
+  session.shopId = listing.shopId;
 
   await session.save();
   revalidatePath("/cart", "layout");
   revalidatePath("/");
   revalidatePath("/product/" + product.slug);
+  revalidatePath(`/s/${listing.shop.slug}/product/${product.slug}`);
   return { ok: true };
 }
 
-export async function setCartQuantity(productId: string, quantity: number) {
+export async function setCartQuantity(listingId: string, quantity: number) {
   const session = await getCartSession();
   if (quantity <= 0) {
-    delete session.items[productId];
+    delete session.items[listingId];
+    if (Object.keys(session.items).every((k) => (session.items[k]?.quantity ?? 0) <= 0)) {
+      session.shopId = null;
+    }
   } else {
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
-      select: { fulfillmentType: true },
+    const listing = await prisma.shopListing.findUnique({
+      where: { id: listingId },
+      include: { product: { select: { fulfillmentType: true } } },
     });
-    const lineMax = maxCartLineQty(product?.fulfillmentType);
-    const prev = session.items[productId];
-    session.items[productId] = {
-      quantity: Math.min(lineMax, quantity),
+    const lineMax = maxCartLineQty(listing?.product.fulfillmentType);
+    const prev = session.items[listingId];
+    session.items[listingId] = {
+      quantity: Math.min(lineMax ?? 99, quantity),
       ...(prev?.printifyVariantId
         ? { printifyVariantId: prev.printifyVariantId }
         : {}),
@@ -78,22 +115,27 @@ export async function setCartQuantity(productId: string, quantity: number) {
 export async function clearCart() {
   const session = await getCartSession();
   session.items = {};
+  session.shopId = null;
   await session.save();
   revalidatePath("/cart", "layout");
 }
 
 export async function updateCartLineFromForm(formData: FormData) {
-  const productId = String(formData.get("productId") ?? "").trim();
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  const legacyProductId = String(formData.get("productId") ?? "").trim();
+  const id = listingId || legacyProductId;
   const qty = parseInt(String(formData.get("qty") ?? ""), 10);
-  if (!productId || !Number.isFinite(qty)) return;
-  await setCartQuantity(productId, qty);
+  if (!id || !Number.isFinite(qty)) return;
+  await setCartQuantity(id, qty);
 }
 
 export async function removeCartLineFromForm(formData: FormData) {
-  const productId = String(formData.get("productId") ?? "").trim();
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  const legacyProductId = String(formData.get("productId") ?? "").trim();
+  const id = listingId || legacyProductId;
   const slug = String(formData.get("slug") ?? "").trim();
-  if (!productId) return;
-  await setCartQuantity(productId, 0);
+  if (!id) return;
+  await setCartQuantity(id, 0);
   if (slug) {
     revalidatePath("/product/" + slug);
   }

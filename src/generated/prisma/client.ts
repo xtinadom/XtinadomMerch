@@ -57,6 +57,21 @@ export type ProductTag = Prisma.ProductTagModel
  */
 export type Product = Prisma.ProductModel
 /**
+ * Model Shop
+ * 
+ */
+export type Shop = Prisma.ShopModel
+/**
+ * Model ShopUser
+ * 
+ */
+export type ShopUser = Prisma.ShopUserModel
+/**
+ * Model ShopListing
+ * 
+ */
+export type ShopListing = Prisma.ShopListingModel
+/**
  * Model Order
  * 
  */
@@ -76,6 +91,12 @@ export type FulfillmentJob = Prisma.FulfillmentJobModel
  * 
  */
 export type ProcessedStripeEvent = Prisma.ProcessedStripeEventModel
+/**
+ * Model AdminCatalogItem
+ * *
+ *  * Manual admin reference catalog (Admin list tab): item name, variants, example listing URL, min price per variant.
+ */
+export type AdminCatalogItem = Prisma.AdminCatalogItemModel
 /**
  * Model Comment
  * * Free-form text rows (e.g. notes). Requires an id for Prisma; add rows via SQL or future UI.

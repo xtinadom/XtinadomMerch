@@ -165,6 +165,41 @@ export async function listR2ObjectKeysWithPrefix(prefix: string): Promise<string
   return keys;
 }
 
+/** Single object key for a shop’s profile image (Put overwrites on each upload). */
+export function shopProfileAvatarObjectKey(shopId: string): string {
+  return `shops/${shopId}/avatar.webp`;
+}
+
+/**
+ * Remove legacy profile avatars (`avatar-<uuid>.webp`) under `shops/{shopId}/`.
+ * Does not touch `listing-request/` or the canonical `avatar.webp`.
+ */
+export async function deleteLegacyShopProfileAvatarKeys(shopId: string): Promise<void> {
+  if (!isR2UploadConfigured()) return;
+  const prefix = `shops/${shopId}/`;
+  let keys: string[];
+  try {
+    keys = await listR2ObjectKeysWithPrefix(prefix);
+  } catch {
+    return;
+  }
+  const bucket = readR2BucketName();
+  if (!bucket) return;
+  const client = r2S3Client();
+  const legacyName = /^avatar-.+\.webp$/i;
+  for (const key of keys) {
+    if (key.startsWith(`${prefix}listing-request/`)) continue;
+    const rest = key.slice(prefix.length);
+    if (!rest.includes("/") && legacyName.test(rest)) {
+      try {
+        await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+}
+
 /** Best-effort delete by key. Only keys under `listing/` are removed (safety guard). */
 export async function deleteR2ObjectsByKeys(keys: readonly string[]): Promise<number> {
   if (!isR2UploadConfigured() || keys.length === 0) return 0;

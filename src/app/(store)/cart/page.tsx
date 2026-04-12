@@ -23,7 +23,7 @@ export default async function CartPage() {
           </Link>
         </p>
       ) : (
-        <CartAndCheckoutClient mode="page" initialState={state} />
+        <CartAndCheckoutClient mode="page" initialState={state} fullCartHref="/cart" />
       )}
     </StoreDocumentPanel>
   );

@@ -7,6 +7,7 @@ export type StoredPrintifyVariant = {
   title: string;
   priceCents: number;
   imageUrl?: string | null;
+  sku?: string | null;
 };
 
 function isGenericVariantTitle(title: string): boolean {
@@ -36,7 +37,10 @@ export function parsePrintifyVariantsJson(value: unknown): StoredPrintifyVariant
     if (priceCents <= 0) priceCents = 100;
     const imageUrl =
       typeof o.imageUrl === "string" && o.imageUrl.trim() ? o.imageUrl.trim() : null;
-    out.push({ id, title: title || `Option ${id}`, priceCents, imageUrl });
+    const skuRaw = o.sku;
+    const sku =
+      typeof skuRaw === "string" && skuRaw.trim() ? skuRaw.trim() : null;
+    out.push({ id, title: title || `Option ${id}`, priceCents, imageUrl, sku });
   }
   return out;
 }

@@ -34,6 +34,23 @@ export const CatalogGroup = {
 export type CatalogGroup = (typeof CatalogGroup)[keyof typeof CatalogGroup]
 
 
+export const ListingRequestStatus = {
+  draft: 'draft',
+  submitted: 'submitted',
+  approved: 'approved',
+  rejected: 'rejected'
+} as const
+
+export type ListingRequestStatus = (typeof ListingRequestStatus)[keyof typeof ListingRequestStatus]
+
+
+export const ShopUserRole = {
+  owner: 'owner'
+} as const
+
+export type ShopUserRole = (typeof ShopUserRole)[keyof typeof ShopUserRole]
+
+
 export const OrderStatus = {
   pending_payment: 'pending_payment',
   paid: 'paid',

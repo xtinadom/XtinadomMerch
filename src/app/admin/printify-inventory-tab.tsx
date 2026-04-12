@@ -476,7 +476,20 @@ export async function PrintifyInventoryTab({
                             </div>
                           )}
                         </td>
-                        <td className="p-2 text-zinc-300">{p.title}</td>
+                        <td className="p-2 align-middle">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="min-w-0 text-zinc-300">{p.title}</span>
+                            {productIdByPrintifyId.has(p.id) ? (
+                              <Link
+                                href={`/admin?tab=printify&listing=${encodeURIComponent(productIdByPrintifyId.get(p.id)!)}`}
+                                title="Admin storefront listing details"
+                                className="shrink-0 pt-0.5 text-[10px] font-normal normal-case tracking-normal text-zinc-600 underline-offset-2 hover:text-zinc-400 hover:underline"
+                              >
+                                example
+                              </Link>
+                            ) : null}
+                          </div>
+                        </td>
                         <td className="p-2 text-center align-middle">
                           {updatedCell}
                         </td>

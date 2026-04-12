@@ -4,12 +4,12 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { runtimeDatabaseUrlFromEnv } from "@/lib/env-postgres-url";
 
 /**
- * Bump when the Prisma schema (or generated client shape) changes so dev must drop the cached
- * `globalThis` client — otherwise you get validation errors like unknown `designNames` after generate,
- * or `Unknown argument subCollectionSpotlightProductId` when the process still holds an old client.
- * After `npx prisma generate`, bump this (or restart the dev server and delete `.next`).
+ * Bump when the Prisma schema (or generated client shape) changes so the cached `globalThis` client
+ * is dropped — otherwise delegates like `adminCatalogItem` are missing (`findMany` of undefined) or
+ * you get unknown-field validation errors. After `npx prisma generate`, bump this and restart dev
+ * (or delete `.next`) if needed.
  */
-const PRISMA_SINGLETON_STAMP = "postgres-adapter-v4-tag-sub-domme-spotlight";
+const PRISMA_SINGLETON_STAMP = "postgres-adapter-v9-admin-catalog-platform-product";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -47,10 +47,7 @@ function createPrisma(): PrismaClient {
   return new PrismaClient({ adapter });
 }
 
-if (
-  process.env.NODE_ENV !== "production" &&
-  globalForPrisma.prismaSingletonStamp !== PRISMA_SINGLETON_STAMP
-) {
+if (globalForPrisma.prismaSingletonStamp !== PRISMA_SINGLETON_STAMP) {
   globalForPrisma.prisma = undefined;
   globalForPrisma.pgPool = undefined;
   globalForPrisma.prismaSingletonStamp = PRISMA_SINGLETON_STAMP;

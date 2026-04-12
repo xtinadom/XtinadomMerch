@@ -6,7 +6,14 @@ import { addToCart } from "@/actions/cart";
 
 const ADDED_MS = 2200;
 
-export function ProductAddToCartForm({ productId }: { productId: string }) {
+export function ProductAddToCartForm({
+  productId,
+  shopSlug,
+}: {
+  productId: string;
+  /** When set, resolves the listing in this shop (required for non-platform shops). */
+  shopSlug?: string;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [added, setAdded] = useState(false);
@@ -24,7 +31,7 @@ export function ProductAddToCartForm({ productId }: { productId: string }) {
       onSubmit={(e) => {
         e.preventDefault();
         startTransition(async () => {
-          const r = await addToCart(productId, 1);
+          const r = await addToCart(productId, 1, undefined, shopSlug ?? undefined);
           if (!r.ok) return;
           router.refresh();
           setAdded(true);

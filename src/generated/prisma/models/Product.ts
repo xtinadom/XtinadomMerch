@@ -29,11 +29,13 @@ export type AggregateProduct = {
 export type ProductAvgAggregateOutputType = {
   priceCents: number | null
   stockQuantity: number | null
+  minPriceCents: number | null
 }
 
 export type ProductSumAggregateOutputType = {
   priceCents: number | null
   stockQuantity: number | null
+  minPriceCents: number | null
 }
 
 export type ProductMinAggregateOutputType = {
@@ -54,6 +56,7 @@ export type ProductMinAggregateOutputType = {
   stockQuantity: number | null
   trackInventory: boolean | null
   active: boolean | null
+  minPriceCents: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -76,6 +79,7 @@ export type ProductMaxAggregateOutputType = {
   stockQuantity: number | null
   trackInventory: boolean | null
   active: boolean | null
+  minPriceCents: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -101,6 +105,7 @@ export type ProductCountAggregateOutputType = {
   stockQuantity: number
   trackInventory: number
   active: number
+  minPriceCents: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -110,11 +115,13 @@ export type ProductCountAggregateOutputType = {
 export type ProductAvgAggregateInputType = {
   priceCents?: true
   stockQuantity?: true
+  minPriceCents?: true
 }
 
 export type ProductSumAggregateInputType = {
   priceCents?: true
   stockQuantity?: true
+  minPriceCents?: true
 }
 
 export type ProductMinAggregateInputType = {
@@ -135,6 +142,7 @@ export type ProductMinAggregateInputType = {
   stockQuantity?: true
   trackInventory?: true
   active?: true
+  minPriceCents?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -157,6 +165,7 @@ export type ProductMaxAggregateInputType = {
   stockQuantity?: true
   trackInventory?: true
   active?: true
+  minPriceCents?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -182,6 +191,7 @@ export type ProductCountAggregateInputType = {
   stockQuantity?: true
   trackInventory?: true
   active?: true
+  minPriceCents?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -294,6 +304,7 @@ export type ProductGroupByOutputType = {
   stockQuantity: number
   trackInventory: boolean
   active: boolean
+  minPriceCents: number
   createdAt: Date
   updatedAt: Date
   _count: ProductCountAggregateOutputType | null
@@ -342,13 +353,16 @@ export type ProductWhereInput = {
   stockQuantity?: Prisma.IntFilter<"Product"> | number
   trackInventory?: Prisma.BoolFilter<"Product"> | boolean
   active?: Prisma.BoolFilter<"Product"> | boolean
+  minPriceCents?: Prisma.IntFilter<"Product"> | number
   createdAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   primaryTag?: Prisma.XOR<Prisma.TagNullableScalarRelationFilter, Prisma.TagWhereInput> | null
   tags?: Prisma.ProductTagListRelationFilter
   tagSubCollectionSpotlights?: Prisma.TagListRelationFilter
   tagDommeCollectionSpotlights?: Prisma.TagListRelationFilter
+  shopListings?: Prisma.ShopListingListRelationFilter
   orderLines?: Prisma.OrderLineListRelationFilter
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemListRelationFilter
 }
 
 export type ProductOrderByWithRelationInput = {
@@ -372,13 +386,16 @@ export type ProductOrderByWithRelationInput = {
   stockQuantity?: Prisma.SortOrder
   trackInventory?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  minPriceCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   primaryTag?: Prisma.TagOrderByWithRelationInput
   tags?: Prisma.ProductTagOrderByRelationAggregateInput
   tagSubCollectionSpotlights?: Prisma.TagOrderByRelationAggregateInput
   tagDommeCollectionSpotlights?: Prisma.TagOrderByRelationAggregateInput
+  shopListings?: Prisma.ShopListingOrderByRelationAggregateInput
   orderLines?: Prisma.OrderLineOrderByRelationAggregateInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemOrderByRelationAggregateInput
 }
 
 export type ProductWhereUniqueInput = Prisma.AtLeast<{
@@ -405,13 +422,16 @@ export type ProductWhereUniqueInput = Prisma.AtLeast<{
   stockQuantity?: Prisma.IntFilter<"Product"> | number
   trackInventory?: Prisma.BoolFilter<"Product"> | boolean
   active?: Prisma.BoolFilter<"Product"> | boolean
+  minPriceCents?: Prisma.IntFilter<"Product"> | number
   createdAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   primaryTag?: Prisma.XOR<Prisma.TagNullableScalarRelationFilter, Prisma.TagWhereInput> | null
   tags?: Prisma.ProductTagListRelationFilter
   tagSubCollectionSpotlights?: Prisma.TagListRelationFilter
   tagDommeCollectionSpotlights?: Prisma.TagListRelationFilter
+  shopListings?: Prisma.ShopListingListRelationFilter
   orderLines?: Prisma.OrderLineListRelationFilter
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemListRelationFilter
 }, "id" | "slug">
 
 export type ProductOrderByWithAggregationInput = {
@@ -435,6 +455,7 @@ export type ProductOrderByWithAggregationInput = {
   stockQuantity?: Prisma.SortOrder
   trackInventory?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  minPriceCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ProductCountOrderByAggregateInput
@@ -468,6 +489,7 @@ export type ProductScalarWhereWithAggregatesInput = {
   stockQuantity?: Prisma.IntWithAggregatesFilter<"Product"> | number
   trackInventory?: Prisma.BoolWithAggregatesFilter<"Product"> | boolean
   active?: Prisma.BoolWithAggregatesFilter<"Product"> | boolean
+  minPriceCents?: Prisma.IntWithAggregatesFilter<"Product"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Product"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Product"> | Date | string
 }
@@ -492,13 +514,16 @@ export type ProductCreateInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   primaryTag?: Prisma.TagCreateNestedOneWithoutPrimaryProductsInput
   tags?: Prisma.ProductTagCreateNestedManyWithoutProductInput
   tagSubCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutSubCollectionSpotlightProductInput
   tagDommeCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingCreateNestedManyWithoutProductInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemCreateNestedManyWithoutItemPlatformProductInput
 }
 
 export type ProductUncheckedCreateInput = {
@@ -522,12 +547,15 @@ export type ProductUncheckedCreateInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutProductInput
   tagSubCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutSubCollectionSpotlightProductInput
   tagDommeCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingUncheckedCreateNestedManyWithoutProductInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedCreateNestedManyWithoutItemPlatformProductInput
 }
 
 export type ProductUpdateInput = {
@@ -550,13 +578,16 @@ export type ProductUpdateInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryTag?: Prisma.TagUpdateOneWithoutPrimaryProductsNestedInput
   tags?: Prisma.ProductTagUpdateManyWithoutProductNestedInput
   tagSubCollectionSpotlights?: Prisma.TagUpdateManyWithoutSubCollectionSpotlightProductNestedInput
   tagDommeCollectionSpotlights?: Prisma.TagUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUpdateManyWithoutProductNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUpdateManyWithoutItemPlatformProductNestedInput
 }
 
 export type ProductUncheckedUpdateInput = {
@@ -580,12 +611,15 @@ export type ProductUncheckedUpdateInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.ProductTagUncheckedUpdateManyWithoutProductNestedInput
   tagSubCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutSubCollectionSpotlightProductNestedInput
   tagDommeCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUncheckedUpdateManyWithoutProductNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedUpdateManyWithoutItemPlatformProductNestedInput
 }
 
 export type ProductCreateManyInput = {
@@ -609,6 +643,7 @@ export type ProductCreateManyInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -633,6 +668,7 @@ export type ProductUpdateManyMutationInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -658,6 +694,7 @@ export type ProductUncheckedUpdateManyInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -703,6 +740,7 @@ export type ProductCountOrderByAggregateInput = {
   stockQuantity?: Prisma.SortOrder
   trackInventory?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  minPriceCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -710,6 +748,7 @@ export type ProductCountOrderByAggregateInput = {
 export type ProductAvgOrderByAggregateInput = {
   priceCents?: Prisma.SortOrder
   stockQuantity?: Prisma.SortOrder
+  minPriceCents?: Prisma.SortOrder
 }
 
 export type ProductMaxOrderByAggregateInput = {
@@ -730,6 +769,7 @@ export type ProductMaxOrderByAggregateInput = {
   stockQuantity?: Prisma.SortOrder
   trackInventory?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  minPriceCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -752,6 +792,7 @@ export type ProductMinOrderByAggregateInput = {
   stockQuantity?: Prisma.SortOrder
   trackInventory?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  minPriceCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -759,6 +800,7 @@ export type ProductMinOrderByAggregateInput = {
 export type ProductSumOrderByAggregateInput = {
   priceCents?: Prisma.SortOrder
   stockQuantity?: Prisma.SortOrder
+  minPriceCents?: Prisma.SortOrder
 }
 
 export type ProductCreateNestedOneWithoutTagSubCollectionSpotlightsInput = {
@@ -861,6 +903,20 @@ export type EnumFulfillmentTypeFieldUpdateOperationsInput = {
   set?: $Enums.FulfillmentType
 }
 
+export type ProductCreateNestedOneWithoutShopListingsInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutShopListingsInput, Prisma.ProductUncheckedCreateWithoutShopListingsInput>
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutShopListingsInput
+  connect?: Prisma.ProductWhereUniqueInput
+}
+
+export type ProductUpdateOneRequiredWithoutShopListingsNestedInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutShopListingsInput, Prisma.ProductUncheckedCreateWithoutShopListingsInput>
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutShopListingsInput
+  upsert?: Prisma.ProductUpsertWithoutShopListingsInput
+  connect?: Prisma.ProductWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProductUpdateToOneWithWhereWithoutShopListingsInput, Prisma.ProductUpdateWithoutShopListingsInput>, Prisma.ProductUncheckedUpdateWithoutShopListingsInput>
+}
+
 export type ProductCreateNestedOneWithoutOrderLinesInput = {
   create?: Prisma.XOR<Prisma.ProductCreateWithoutOrderLinesInput, Prisma.ProductUncheckedCreateWithoutOrderLinesInput>
   connectOrCreate?: Prisma.ProductCreateOrConnectWithoutOrderLinesInput
@@ -873,6 +929,22 @@ export type ProductUpdateOneRequiredWithoutOrderLinesNestedInput = {
   upsert?: Prisma.ProductUpsertWithoutOrderLinesInput
   connect?: Prisma.ProductWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProductUpdateToOneWithWhereWithoutOrderLinesInput, Prisma.ProductUpdateWithoutOrderLinesInput>, Prisma.ProductUncheckedUpdateWithoutOrderLinesInput>
+}
+
+export type ProductCreateNestedOneWithoutAdminCatalogItemPlatformLinksInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutAdminCatalogItemPlatformLinksInput, Prisma.ProductUncheckedCreateWithoutAdminCatalogItemPlatformLinksInput>
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutAdminCatalogItemPlatformLinksInput
+  connect?: Prisma.ProductWhereUniqueInput
+}
+
+export type ProductUpdateOneWithoutAdminCatalogItemPlatformLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutAdminCatalogItemPlatformLinksInput, Prisma.ProductUncheckedCreateWithoutAdminCatalogItemPlatformLinksInput>
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutAdminCatalogItemPlatformLinksInput
+  upsert?: Prisma.ProductUpsertWithoutAdminCatalogItemPlatformLinksInput
+  disconnect?: Prisma.ProductWhereInput | boolean
+  delete?: Prisma.ProductWhereInput | boolean
+  connect?: Prisma.ProductWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProductUpdateToOneWithWhereWithoutAdminCatalogItemPlatformLinksInput, Prisma.ProductUpdateWithoutAdminCatalogItemPlatformLinksInput>, Prisma.ProductUncheckedUpdateWithoutAdminCatalogItemPlatformLinksInput>
 }
 
 export type ProductCreateWithoutTagSubCollectionSpotlightsInput = {
@@ -895,12 +967,15 @@ export type ProductCreateWithoutTagSubCollectionSpotlightsInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   primaryTag?: Prisma.TagCreateNestedOneWithoutPrimaryProductsInput
   tags?: Prisma.ProductTagCreateNestedManyWithoutProductInput
   tagDommeCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingCreateNestedManyWithoutProductInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemCreateNestedManyWithoutItemPlatformProductInput
 }
 
 export type ProductUncheckedCreateWithoutTagSubCollectionSpotlightsInput = {
@@ -924,11 +999,14 @@ export type ProductUncheckedCreateWithoutTagSubCollectionSpotlightsInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutProductInput
   tagDommeCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingUncheckedCreateNestedManyWithoutProductInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedCreateNestedManyWithoutItemPlatformProductInput
 }
 
 export type ProductCreateOrConnectWithoutTagSubCollectionSpotlightsInput = {
@@ -956,12 +1034,15 @@ export type ProductCreateWithoutTagDommeCollectionSpotlightsInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   primaryTag?: Prisma.TagCreateNestedOneWithoutPrimaryProductsInput
   tags?: Prisma.ProductTagCreateNestedManyWithoutProductInput
   tagSubCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutSubCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingCreateNestedManyWithoutProductInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemCreateNestedManyWithoutItemPlatformProductInput
 }
 
 export type ProductUncheckedCreateWithoutTagDommeCollectionSpotlightsInput = {
@@ -985,11 +1066,14 @@ export type ProductUncheckedCreateWithoutTagDommeCollectionSpotlightsInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutProductInput
   tagSubCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutSubCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingUncheckedCreateNestedManyWithoutProductInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedCreateNestedManyWithoutItemPlatformProductInput
 }
 
 export type ProductCreateOrConnectWithoutTagDommeCollectionSpotlightsInput = {
@@ -1017,12 +1101,15 @@ export type ProductCreateWithoutPrimaryTagInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.ProductTagCreateNestedManyWithoutProductInput
   tagSubCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutSubCollectionSpotlightProductInput
   tagDommeCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingCreateNestedManyWithoutProductInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemCreateNestedManyWithoutItemPlatformProductInput
 }
 
 export type ProductUncheckedCreateWithoutPrimaryTagInput = {
@@ -1045,12 +1132,15 @@ export type ProductUncheckedCreateWithoutPrimaryTagInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutProductInput
   tagSubCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutSubCollectionSpotlightProductInput
   tagDommeCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingUncheckedCreateNestedManyWithoutProductInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedCreateNestedManyWithoutItemPlatformProductInput
 }
 
 export type ProductCreateOrConnectWithoutPrimaryTagInput = {
@@ -1094,12 +1184,15 @@ export type ProductUpdateWithoutTagSubCollectionSpotlightsInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryTag?: Prisma.TagUpdateOneWithoutPrimaryProductsNestedInput
   tags?: Prisma.ProductTagUpdateManyWithoutProductNestedInput
   tagDommeCollectionSpotlights?: Prisma.TagUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUpdateManyWithoutProductNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUpdateManyWithoutItemPlatformProductNestedInput
 }
 
 export type ProductUncheckedUpdateWithoutTagSubCollectionSpotlightsInput = {
@@ -1123,11 +1216,14 @@ export type ProductUncheckedUpdateWithoutTagSubCollectionSpotlightsInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.ProductTagUncheckedUpdateManyWithoutProductNestedInput
   tagDommeCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUncheckedUpdateManyWithoutProductNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedUpdateManyWithoutItemPlatformProductNestedInput
 }
 
 export type ProductUpsertWithoutTagDommeCollectionSpotlightsInput = {
@@ -1161,12 +1257,15 @@ export type ProductUpdateWithoutTagDommeCollectionSpotlightsInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryTag?: Prisma.TagUpdateOneWithoutPrimaryProductsNestedInput
   tags?: Prisma.ProductTagUpdateManyWithoutProductNestedInput
   tagSubCollectionSpotlights?: Prisma.TagUpdateManyWithoutSubCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUpdateManyWithoutProductNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUpdateManyWithoutItemPlatformProductNestedInput
 }
 
 export type ProductUncheckedUpdateWithoutTagDommeCollectionSpotlightsInput = {
@@ -1190,11 +1289,14 @@ export type ProductUncheckedUpdateWithoutTagDommeCollectionSpotlightsInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.ProductTagUncheckedUpdateManyWithoutProductNestedInput
   tagSubCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutSubCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUncheckedUpdateManyWithoutProductNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedUpdateManyWithoutItemPlatformProductNestedInput
 }
 
 export type ProductUpsertWithWhereUniqueWithoutPrimaryTagInput = {
@@ -1237,6 +1339,7 @@ export type ProductScalarWhereInput = {
   stockQuantity?: Prisma.IntFilter<"Product"> | number
   trackInventory?: Prisma.BoolFilter<"Product"> | boolean
   active?: Prisma.BoolFilter<"Product"> | boolean
+  minPriceCents?: Prisma.IntFilter<"Product"> | number
   createdAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Product"> | Date | string
 }
@@ -1261,12 +1364,15 @@ export type ProductCreateWithoutTagsInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   primaryTag?: Prisma.TagCreateNestedOneWithoutPrimaryProductsInput
   tagSubCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutSubCollectionSpotlightProductInput
   tagDommeCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingCreateNestedManyWithoutProductInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemCreateNestedManyWithoutItemPlatformProductInput
 }
 
 export type ProductUncheckedCreateWithoutTagsInput = {
@@ -1290,11 +1396,14 @@ export type ProductUncheckedCreateWithoutTagsInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tagSubCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutSubCollectionSpotlightProductInput
   tagDommeCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingUncheckedCreateNestedManyWithoutProductInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedCreateNestedManyWithoutItemPlatformProductInput
 }
 
 export type ProductCreateOrConnectWithoutTagsInput = {
@@ -1333,12 +1442,15 @@ export type ProductUpdateWithoutTagsInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryTag?: Prisma.TagUpdateOneWithoutPrimaryProductsNestedInput
   tagSubCollectionSpotlights?: Prisma.TagUpdateManyWithoutSubCollectionSpotlightProductNestedInput
   tagDommeCollectionSpotlights?: Prisma.TagUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUpdateManyWithoutProductNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUpdateManyWithoutItemPlatformProductNestedInput
 }
 
 export type ProductUncheckedUpdateWithoutTagsInput = {
@@ -1362,11 +1474,154 @@ export type ProductUncheckedUpdateWithoutTagsInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tagSubCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutSubCollectionSpotlightProductNestedInput
   tagDommeCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUncheckedUpdateManyWithoutProductNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedUpdateManyWithoutItemPlatformProductNestedInput
+}
+
+export type ProductCreateWithoutShopListingsInput = {
+  id?: string
+  slug: string
+  name: string
+  description?: string | null
+  priceCents: number
+  imageUrl?: string | null
+  imageGallery?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  payCard?: boolean
+  payCashApp?: boolean
+  audience: $Enums.Audience
+  fulfillmentType: $Enums.FulfillmentType
+  checkoutTipEligible?: boolean
+  printifyProductId?: string | null
+  printifyVariantId?: string | null
+  printifyVariants?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  designNames?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stockQuantity?: number
+  trackInventory?: boolean
+  active?: boolean
+  minPriceCents?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  primaryTag?: Prisma.TagCreateNestedOneWithoutPrimaryProductsInput
+  tags?: Prisma.ProductTagCreateNestedManyWithoutProductInput
+  tagSubCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutSubCollectionSpotlightProductInput
+  tagDommeCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  orderLines?: Prisma.OrderLineCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemCreateNestedManyWithoutItemPlatformProductInput
+}
+
+export type ProductUncheckedCreateWithoutShopListingsInput = {
+  id?: string
+  slug: string
+  name: string
+  description?: string | null
+  priceCents: number
+  imageUrl?: string | null
+  imageGallery?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  payCard?: boolean
+  payCashApp?: boolean
+  audience: $Enums.Audience
+  fulfillmentType: $Enums.FulfillmentType
+  primaryTagId?: string | null
+  checkoutTipEligible?: boolean
+  printifyProductId?: string | null
+  printifyVariantId?: string | null
+  printifyVariants?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  designNames?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stockQuantity?: number
+  trackInventory?: boolean
+  active?: boolean
+  minPriceCents?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  tags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutProductInput
+  tagSubCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutSubCollectionSpotlightProductInput
+  tagDommeCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedCreateNestedManyWithoutItemPlatformProductInput
+}
+
+export type ProductCreateOrConnectWithoutShopListingsInput = {
+  where: Prisma.ProductWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProductCreateWithoutShopListingsInput, Prisma.ProductUncheckedCreateWithoutShopListingsInput>
+}
+
+export type ProductUpsertWithoutShopListingsInput = {
+  update: Prisma.XOR<Prisma.ProductUpdateWithoutShopListingsInput, Prisma.ProductUncheckedUpdateWithoutShopListingsInput>
+  create: Prisma.XOR<Prisma.ProductCreateWithoutShopListingsInput, Prisma.ProductUncheckedCreateWithoutShopListingsInput>
+  where?: Prisma.ProductWhereInput
+}
+
+export type ProductUpdateToOneWithWhereWithoutShopListingsInput = {
+  where?: Prisma.ProductWhereInput
+  data: Prisma.XOR<Prisma.ProductUpdateWithoutShopListingsInput, Prisma.ProductUncheckedUpdateWithoutShopListingsInput>
+}
+
+export type ProductUpdateWithoutShopListingsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageGallery?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  payCard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  payCashApp?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  audience?: Prisma.EnumAudienceFieldUpdateOperationsInput | $Enums.Audience
+  fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
+  checkoutTipEligible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariants?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  designNames?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  primaryTag?: Prisma.TagUpdateOneWithoutPrimaryProductsNestedInput
+  tags?: Prisma.ProductTagUpdateManyWithoutProductNestedInput
+  tagSubCollectionSpotlights?: Prisma.TagUpdateManyWithoutSubCollectionSpotlightProductNestedInput
+  tagDommeCollectionSpotlights?: Prisma.TagUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  orderLines?: Prisma.OrderLineUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUpdateManyWithoutItemPlatformProductNestedInput
+}
+
+export type ProductUncheckedUpdateWithoutShopListingsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageGallery?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  payCard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  payCashApp?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  audience?: Prisma.EnumAudienceFieldUpdateOperationsInput | $Enums.Audience
+  fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
+  primaryTagId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutTipEligible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariants?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  designNames?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tags?: Prisma.ProductTagUncheckedUpdateManyWithoutProductNestedInput
+  tagSubCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutSubCollectionSpotlightProductNestedInput
+  tagDommeCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedUpdateManyWithoutItemPlatformProductNestedInput
 }
 
 export type ProductCreateWithoutOrderLinesInput = {
@@ -1389,12 +1644,15 @@ export type ProductCreateWithoutOrderLinesInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   primaryTag?: Prisma.TagCreateNestedOneWithoutPrimaryProductsInput
   tags?: Prisma.ProductTagCreateNestedManyWithoutProductInput
   tagSubCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutSubCollectionSpotlightProductInput
   tagDommeCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemCreateNestedManyWithoutItemPlatformProductInput
 }
 
 export type ProductUncheckedCreateWithoutOrderLinesInput = {
@@ -1418,11 +1676,14 @@ export type ProductUncheckedCreateWithoutOrderLinesInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutProductInput
   tagSubCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutSubCollectionSpotlightProductInput
   tagDommeCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingUncheckedCreateNestedManyWithoutProductInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedCreateNestedManyWithoutItemPlatformProductInput
 }
 
 export type ProductCreateOrConnectWithoutOrderLinesInput = {
@@ -1461,12 +1722,15 @@ export type ProductUpdateWithoutOrderLinesInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryTag?: Prisma.TagUpdateOneWithoutPrimaryProductsNestedInput
   tags?: Prisma.ProductTagUpdateManyWithoutProductNestedInput
   tagSubCollectionSpotlights?: Prisma.TagUpdateManyWithoutSubCollectionSpotlightProductNestedInput
   tagDommeCollectionSpotlights?: Prisma.TagUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUpdateManyWithoutItemPlatformProductNestedInput
 }
 
 export type ProductUncheckedUpdateWithoutOrderLinesInput = {
@@ -1490,11 +1754,154 @@ export type ProductUncheckedUpdateWithoutOrderLinesInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.ProductTagUncheckedUpdateManyWithoutProductNestedInput
   tagSubCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutSubCollectionSpotlightProductNestedInput
   tagDommeCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUncheckedUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedUpdateManyWithoutItemPlatformProductNestedInput
+}
+
+export type ProductCreateWithoutAdminCatalogItemPlatformLinksInput = {
+  id?: string
+  slug: string
+  name: string
+  description?: string | null
+  priceCents: number
+  imageUrl?: string | null
+  imageGallery?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  payCard?: boolean
+  payCashApp?: boolean
+  audience: $Enums.Audience
+  fulfillmentType: $Enums.FulfillmentType
+  checkoutTipEligible?: boolean
+  printifyProductId?: string | null
+  printifyVariantId?: string | null
+  printifyVariants?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  designNames?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stockQuantity?: number
+  trackInventory?: boolean
+  active?: boolean
+  minPriceCents?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  primaryTag?: Prisma.TagCreateNestedOneWithoutPrimaryProductsInput
+  tags?: Prisma.ProductTagCreateNestedManyWithoutProductInput
+  tagSubCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutSubCollectionSpotlightProductInput
+  tagDommeCollectionSpotlights?: Prisma.TagCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingCreateNestedManyWithoutProductInput
+  orderLines?: Prisma.OrderLineCreateNestedManyWithoutProductInput
+}
+
+export type ProductUncheckedCreateWithoutAdminCatalogItemPlatformLinksInput = {
+  id?: string
+  slug: string
+  name: string
+  description?: string | null
+  priceCents: number
+  imageUrl?: string | null
+  imageGallery?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  payCard?: boolean
+  payCashApp?: boolean
+  audience: $Enums.Audience
+  fulfillmentType: $Enums.FulfillmentType
+  primaryTagId?: string | null
+  checkoutTipEligible?: boolean
+  printifyProductId?: string | null
+  printifyVariantId?: string | null
+  printifyVariants?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  designNames?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stockQuantity?: number
+  trackInventory?: boolean
+  active?: boolean
+  minPriceCents?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  tags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutProductInput
+  tagSubCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutSubCollectionSpotlightProductInput
+  tagDommeCollectionSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutDommeCollectionSpotlightProductInput
+  shopListings?: Prisma.ShopListingUncheckedCreateNestedManyWithoutProductInput
+  orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutProductInput
+}
+
+export type ProductCreateOrConnectWithoutAdminCatalogItemPlatformLinksInput = {
+  where: Prisma.ProductWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProductCreateWithoutAdminCatalogItemPlatformLinksInput, Prisma.ProductUncheckedCreateWithoutAdminCatalogItemPlatformLinksInput>
+}
+
+export type ProductUpsertWithoutAdminCatalogItemPlatformLinksInput = {
+  update: Prisma.XOR<Prisma.ProductUpdateWithoutAdminCatalogItemPlatformLinksInput, Prisma.ProductUncheckedUpdateWithoutAdminCatalogItemPlatformLinksInput>
+  create: Prisma.XOR<Prisma.ProductCreateWithoutAdminCatalogItemPlatformLinksInput, Prisma.ProductUncheckedCreateWithoutAdminCatalogItemPlatformLinksInput>
+  where?: Prisma.ProductWhereInput
+}
+
+export type ProductUpdateToOneWithWhereWithoutAdminCatalogItemPlatformLinksInput = {
+  where?: Prisma.ProductWhereInput
+  data: Prisma.XOR<Prisma.ProductUpdateWithoutAdminCatalogItemPlatformLinksInput, Prisma.ProductUncheckedUpdateWithoutAdminCatalogItemPlatformLinksInput>
+}
+
+export type ProductUpdateWithoutAdminCatalogItemPlatformLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageGallery?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  payCard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  payCashApp?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  audience?: Prisma.EnumAudienceFieldUpdateOperationsInput | $Enums.Audience
+  fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
+  checkoutTipEligible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariants?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  designNames?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  primaryTag?: Prisma.TagUpdateOneWithoutPrimaryProductsNestedInput
+  tags?: Prisma.ProductTagUpdateManyWithoutProductNestedInput
+  tagSubCollectionSpotlights?: Prisma.TagUpdateManyWithoutSubCollectionSpotlightProductNestedInput
+  tagDommeCollectionSpotlights?: Prisma.TagUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUpdateManyWithoutProductNestedInput
+  orderLines?: Prisma.OrderLineUpdateManyWithoutProductNestedInput
+}
+
+export type ProductUncheckedUpdateWithoutAdminCatalogItemPlatformLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageGallery?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  payCard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  payCashApp?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  audience?: Prisma.EnumAudienceFieldUpdateOperationsInput | $Enums.Audience
+  fulfillmentType?: Prisma.EnumFulfillmentTypeFieldUpdateOperationsInput | $Enums.FulfillmentType
+  primaryTagId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutTipEligible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  printifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printifyVariants?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  designNames?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tags?: Prisma.ProductTagUncheckedUpdateManyWithoutProductNestedInput
+  tagSubCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutSubCollectionSpotlightProductNestedInput
+  tagDommeCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUncheckedUpdateManyWithoutProductNestedInput
+  orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutProductNestedInput
 }
 
 export type ProductCreateManyPrimaryTagInput = {
@@ -1517,6 +1924,7 @@ export type ProductCreateManyPrimaryTagInput = {
   stockQuantity?: number
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1541,12 +1949,15 @@ export type ProductUpdateWithoutPrimaryTagInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.ProductTagUpdateManyWithoutProductNestedInput
   tagSubCollectionSpotlights?: Prisma.TagUpdateManyWithoutSubCollectionSpotlightProductNestedInput
   tagDommeCollectionSpotlights?: Prisma.TagUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUpdateManyWithoutProductNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUpdateManyWithoutItemPlatformProductNestedInput
 }
 
 export type ProductUncheckedUpdateWithoutPrimaryTagInput = {
@@ -1569,12 +1980,15 @@ export type ProductUncheckedUpdateWithoutPrimaryTagInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.ProductTagUncheckedUpdateManyWithoutProductNestedInput
   tagSubCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutSubCollectionSpotlightProductNestedInput
   tagDommeCollectionSpotlights?: Prisma.TagUncheckedUpdateManyWithoutDommeCollectionSpotlightProductNestedInput
+  shopListings?: Prisma.ShopListingUncheckedUpdateManyWithoutProductNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutProductNestedInput
+  adminCatalogItemPlatformLinks?: Prisma.AdminCatalogItemUncheckedUpdateManyWithoutItemPlatformProductNestedInput
 }
 
 export type ProductUncheckedUpdateManyWithoutPrimaryTagInput = {
@@ -1597,6 +2011,7 @@ export type ProductUncheckedUpdateManyWithoutPrimaryTagInput = {
   stockQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1610,14 +2025,18 @@ export type ProductCountOutputType = {
   tags: number
   tagSubCollectionSpotlights: number
   tagDommeCollectionSpotlights: number
+  shopListings: number
   orderLines: number
+  adminCatalogItemPlatformLinks: number
 }
 
 export type ProductCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   tags?: boolean | ProductCountOutputTypeCountTagsArgs
   tagSubCollectionSpotlights?: boolean | ProductCountOutputTypeCountTagSubCollectionSpotlightsArgs
   tagDommeCollectionSpotlights?: boolean | ProductCountOutputTypeCountTagDommeCollectionSpotlightsArgs
+  shopListings?: boolean | ProductCountOutputTypeCountShopListingsArgs
   orderLines?: boolean | ProductCountOutputTypeCountOrderLinesArgs
+  adminCatalogItemPlatformLinks?: boolean | ProductCountOutputTypeCountAdminCatalogItemPlatformLinksArgs
 }
 
 /**
@@ -1654,8 +2073,22 @@ export type ProductCountOutputTypeCountTagDommeCollectionSpotlightsArgs<ExtArgs 
 /**
  * ProductCountOutputType without action
  */
+export type ProductCountOutputTypeCountShopListingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ShopListingWhereInput
+}
+
+/**
+ * ProductCountOutputType without action
+ */
 export type ProductCountOutputTypeCountOrderLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.OrderLineWhereInput
+}
+
+/**
+ * ProductCountOutputType without action
+ */
+export type ProductCountOutputTypeCountAdminCatalogItemPlatformLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AdminCatalogItemWhereInput
 }
 
 
@@ -1680,13 +2113,16 @@ export type ProductSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   stockQuantity?: boolean
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   primaryTag?: boolean | Prisma.Product$primaryTagArgs<ExtArgs>
   tags?: boolean | Prisma.Product$tagsArgs<ExtArgs>
   tagSubCollectionSpotlights?: boolean | Prisma.Product$tagSubCollectionSpotlightsArgs<ExtArgs>
   tagDommeCollectionSpotlights?: boolean | Prisma.Product$tagDommeCollectionSpotlightsArgs<ExtArgs>
+  shopListings?: boolean | Prisma.Product$shopListingsArgs<ExtArgs>
   orderLines?: boolean | Prisma.Product$orderLinesArgs<ExtArgs>
+  adminCatalogItemPlatformLinks?: boolean | Prisma.Product$adminCatalogItemPlatformLinksArgs<ExtArgs>
   _count?: boolean | Prisma.ProductCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["product"]>
 
@@ -1711,6 +2147,7 @@ export type ProductSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   stockQuantity?: boolean
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   primaryTag?: boolean | Prisma.Product$primaryTagArgs<ExtArgs>
@@ -1737,6 +2174,7 @@ export type ProductSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   stockQuantity?: boolean
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   primaryTag?: boolean | Prisma.Product$primaryTagArgs<ExtArgs>
@@ -1763,17 +2201,20 @@ export type ProductSelectScalar = {
   stockQuantity?: boolean
   trackInventory?: boolean
   active?: boolean
+  minPriceCents?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ProductOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "description" | "priceCents" | "imageUrl" | "imageGallery" | "payCard" | "payCashApp" | "audience" | "fulfillmentType" | "primaryTagId" | "checkoutTipEligible" | "printifyProductId" | "printifyVariantId" | "printifyVariants" | "designNames" | "stockQuantity" | "trackInventory" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+export type ProductOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "description" | "priceCents" | "imageUrl" | "imageGallery" | "payCard" | "payCashApp" | "audience" | "fulfillmentType" | "primaryTagId" | "checkoutTipEligible" | "printifyProductId" | "printifyVariantId" | "printifyVariants" | "designNames" | "stockQuantity" | "trackInventory" | "active" | "minPriceCents" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
 export type ProductInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   primaryTag?: boolean | Prisma.Product$primaryTagArgs<ExtArgs>
   tags?: boolean | Prisma.Product$tagsArgs<ExtArgs>
   tagSubCollectionSpotlights?: boolean | Prisma.Product$tagSubCollectionSpotlightsArgs<ExtArgs>
   tagDommeCollectionSpotlights?: boolean | Prisma.Product$tagDommeCollectionSpotlightsArgs<ExtArgs>
+  shopListings?: boolean | Prisma.Product$shopListingsArgs<ExtArgs>
   orderLines?: boolean | Prisma.Product$orderLinesArgs<ExtArgs>
+  adminCatalogItemPlatformLinks?: boolean | Prisma.Product$adminCatalogItemPlatformLinksArgs<ExtArgs>
   _count?: boolean | Prisma.ProductCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProductIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1790,7 +2231,9 @@ export type $ProductPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     tags: Prisma.$ProductTagPayload<ExtArgs>[]
     tagSubCollectionSpotlights: Prisma.$TagPayload<ExtArgs>[]
     tagDommeCollectionSpotlights: Prisma.$TagPayload<ExtArgs>[]
+    shopListings: Prisma.$ShopListingPayload<ExtArgs>[]
     orderLines: Prisma.$OrderLinePayload<ExtArgs>[]
+    adminCatalogItemPlatformLinks: Prisma.$AdminCatalogItemPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1816,6 +2259,10 @@ export type $ProductPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     stockQuantity: number
     trackInventory: boolean
     active: boolean
+    /**
+     * * Minimum price (cents) a shop may set on a listing; defaults to priceCents in migration.
+     */
+    minPriceCents: number
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["product"]>
@@ -2216,7 +2663,9 @@ export interface Prisma__ProductClient<T, Null = never, ExtArgs extends runtime.
   tags<T extends Prisma.Product$tagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$tagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductTagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   tagSubCollectionSpotlights<T extends Prisma.Product$tagSubCollectionSpotlightsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$tagSubCollectionSpotlightsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   tagDommeCollectionSpotlights<T extends Prisma.Product$tagDommeCollectionSpotlightsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$tagDommeCollectionSpotlightsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  shopListings<T extends Prisma.Product$shopListingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$shopListingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ShopListingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   orderLines<T extends Prisma.Product$orderLinesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$orderLinesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  adminCatalogItemPlatformLinks<T extends Prisma.Product$adminCatalogItemPlatformLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$adminCatalogItemPlatformLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AdminCatalogItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2266,6 +2715,7 @@ export interface ProductFieldRefs {
   readonly stockQuantity: Prisma.FieldRef<"Product", 'Int'>
   readonly trackInventory: Prisma.FieldRef<"Product", 'Boolean'>
   readonly active: Prisma.FieldRef<"Product", 'Boolean'>
+  readonly minPriceCents: Prisma.FieldRef<"Product", 'Int'>
   readonly createdAt: Prisma.FieldRef<"Product", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Product", 'DateTime'>
 }
@@ -2760,6 +3210,30 @@ export type Product$tagDommeCollectionSpotlightsArgs<ExtArgs extends runtime.Typ
 }
 
 /**
+ * Product.shopListings
+ */
+export type Product$shopListingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ShopListing
+   */
+  select?: Prisma.ShopListingSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ShopListing
+   */
+  omit?: Prisma.ShopListingOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ShopListingInclude<ExtArgs> | null
+  where?: Prisma.ShopListingWhereInput
+  orderBy?: Prisma.ShopListingOrderByWithRelationInput | Prisma.ShopListingOrderByWithRelationInput[]
+  cursor?: Prisma.ShopListingWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ShopListingScalarFieldEnum | Prisma.ShopListingScalarFieldEnum[]
+}
+
+/**
  * Product.orderLines
  */
 export type Product$orderLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2781,6 +3255,30 @@ export type Product$orderLinesArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.OrderLineScalarFieldEnum | Prisma.OrderLineScalarFieldEnum[]
+}
+
+/**
+ * Product.adminCatalogItemPlatformLinks
+ */
+export type Product$adminCatalogItemPlatformLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AdminCatalogItem
+   */
+  select?: Prisma.AdminCatalogItemSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AdminCatalogItem
+   */
+  omit?: Prisma.AdminCatalogItemOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AdminCatalogItemInclude<ExtArgs> | null
+  where?: Prisma.AdminCatalogItemWhereInput
+  orderBy?: Prisma.AdminCatalogItemOrderByWithRelationInput | Prisma.AdminCatalogItemOrderByWithRelationInput[]
+  cursor?: Prisma.AdminCatalogItemWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AdminCatalogItemScalarFieldEnum | Prisma.AdminCatalogItemScalarFieldEnum[]
 }
 
 /**

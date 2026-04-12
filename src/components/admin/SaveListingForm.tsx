@@ -8,6 +8,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import { useFormStatus } from "react-dom";
 import { ListingFormRecalcContext } from "@/components/admin/listing-form-recalc-context";
 
 function serializeForm(form: HTMLFormElement): string {
@@ -31,6 +32,38 @@ type Props = {
   /** After redirect from server — show “Saved” on the disabled button until the user edits. */
   savedHighlight?: boolean;
 };
+
+function SaveListingSubmitButton({ dirty, justSaved }: { dirty: boolean; justSaved: boolean }) {
+  const { pending } = useFormStatus();
+  const label = pending ? "Saving..." : dirty ? "Save listing" : justSaved ? "Saved" : "Save listing";
+  const canClick = dirty && !pending;
+  return (
+    <button
+      type="submit"
+      disabled={!canClick}
+      title={
+        pending
+          ? "Saving..."
+          : dirty
+            ? "Save changes to this listing"
+            : justSaved
+              ? "Listing is up to date"
+              : "No changes to save"
+      }
+      className={
+        pending
+          ? "cursor-wait rounded bg-blue-950/50 px-3 py-2 text-xs font-medium text-blue-200/80 ring-1 ring-blue-900/40"
+          : dirty
+            ? "rounded bg-blue-900/80 px-3 py-2 text-xs font-medium text-blue-100 hover:bg-blue-800/80"
+            : justSaved
+              ? "cursor-default rounded border border-emerald-900/40 bg-zinc-900/50 px-3 py-2 text-xs font-medium text-emerald-300/90"
+              : "cursor-default rounded border border-zinc-700 bg-zinc-900/40 px-3 py-2 text-xs font-medium text-zinc-500"
+      }
+    >
+      {label}
+    </button>
+  );
+}
 
 export function SaveListingForm({ action, children, savedHighlight }: Props) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -69,7 +102,6 @@ export function SaveListingForm({ action, children, savedHighlight }: Props) {
   );
 
   const justSaved = Boolean(savedHighlight && !dirty);
-  const canSubmit = dirty;
 
   return (
     <form
@@ -83,22 +115,7 @@ export function SaveListingForm({ action, children, savedHighlight }: Props) {
         {children}
       </ListingFormRecalcContext.Provider>
       <div className="flex flex-wrap items-center gap-3 pt-1">
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          title={
-            dirty ? "Save changes to this listing" : "Listing is up to date"
-          }
-          className={
-            dirty
-              ? "rounded bg-blue-900/80 px-3 py-2 text-xs font-medium text-blue-100 hover:bg-blue-800/80"
-              : justSaved
-                ? "cursor-default rounded border border-emerald-900/40 bg-zinc-900/50 px-3 py-2 text-xs font-medium text-emerald-300/90"
-                : "cursor-default rounded border border-zinc-700 bg-zinc-900/40 px-3 py-2 text-xs font-medium text-zinc-400"
-          }
-        >
-          {dirty ? "Save listing" : "Saved"}
-        </button>
+        <SaveListingSubmitButton dirty={dirty} justSaved={justSaved} />
       </div>
     </form>
   );

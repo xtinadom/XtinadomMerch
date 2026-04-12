@@ -19,6 +19,20 @@ function splitName(full: string | null | undefined): { first: string; last: stri
   return { first: parts[0], last: parts.slice(1).join(" ") };
 }
 
+/**
+ * Listing-fee Checkout Sessions (no `Order` row). Returns true when this event was handled here.
+ */
+async function fulfillListingFeeCheckout(session: Stripe.Checkout.Session): Promise<boolean> {
+  if (session.metadata?.kind !== "listing_fee") return false;
+  const listingId = session.metadata.shopListingId;
+  if (!listingId || typeof listingId !== "string") return true;
+  await prisma.shopListing.updateMany({
+    where: { id: listingId },
+    data: { listingFeePaidAt: new Date() },
+  });
+  return true;
+}
+
 async function fulfillOrder(session: Stripe.Checkout.Session) {
   const orderId = session.metadata?.orderId;
   if (!orderId) return;
@@ -66,6 +80,17 @@ async function fulfillOrder(session: Stripe.Checkout.Session) {
     });
 
     if (updated.count === 0) return;
+
+    const merchandiseCents = order.lines.reduce(
+      (s, l) => s + l.unitPriceCents * l.quantity,
+      0,
+    );
+    if (order.shopId && merchandiseCents > 0) {
+      await tx.shop.update({
+        where: { id: order.shopId },
+        data: { totalSalesCents: { increment: merchandiseCents } },
+      });
+    }
 
     for (const line of order.lines) {
       if (
@@ -237,7 +262,10 @@ export async function POST(req: Request) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    await fulfillOrder(session);
+    const listingFee = await fulfillListingFeeCheckout(session);
+    if (!listingFee) {
+      await fulfillOrder(session);
+    }
   }
 
   return NextResponse.json({ received: true });

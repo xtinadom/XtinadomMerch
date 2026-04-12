@@ -1,14 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import type { Product, Tag } from "@/generated/prisma/client";
 import { getCartSessionReadonly } from "@/lib/session";
-import {
-  cartLineUnitPriceCents,
-  cartLineVariantSubtitle,
-} from "@/lib/printify-variants";
+import { cartLineVariantSubtitle } from "@/lib/printify-variants";
+import { listingCartUnitCents } from "@/lib/listing-cart-price";
+import { productHref } from "@/lib/marketplace-constants";
 
 export type ActiveCartRowProduct = Product & { primaryTag: Tag | null };
 
 export type ActiveCartRow = {
+  listingId: string;
+  shopSlug: string;
   product: ActiveCartRowProduct;
   quantity: number;
   line: number;
@@ -24,17 +25,32 @@ export async function loadActiveCartRows(): Promise<{
   const ids = Object.keys(session.items).filter(
     (id) => (session.items[id]?.quantity ?? 0) > 0,
   );
-  const products = await prisma.product.findMany({
+  if (ids.length === 0) {
+    return { rows: [], subtotal: 0 };
+  }
+
+  const listings = await prisma.shopListing.findMany({
     where: { id: { in: ids }, active: true },
-    include: { primaryTag: true },
+    include: {
+      shop: { select: { slug: true } },
+      product: {
+        include: {
+          primaryTag: true,
+          tags: { include: { tag: true } },
+        },
+      },
+    },
   });
 
-  const rows: ActiveCartRow[] = products.map((p) => {
-    const cartLine = session.items[p.id];
+  const rows: ActiveCartRow[] = listings.map((listing) => {
+    const p = listing.product;
+    const cartLine = session.items[listing.id];
     const q = cartLine?.quantity ?? 0;
-    const unit = cartLineUnitPriceCents(p, cartLine);
+    const unit = listingCartUnitCents(listing, cartLine);
     const line = unit * q;
     return {
+      listingId: listing.id,
+      shopSlug: listing.shop.slug,
       product: p,
       quantity: q,
       line,
@@ -42,6 +58,11 @@ export async function loadActiveCartRows(): Promise<{
       variantSub: cartLineVariantSubtitle(p, cartLine) ?? null,
     };
   });
+
   const subtotal = rows.reduce((s, r) => s + r.line, 0);
   return { rows, subtotal };
+}
+
+export function cartRowProductHref(row: ActiveCartRow): string {
+  return productHref(row.shopSlug, row.product.slug);
 }

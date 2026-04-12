@@ -18,6 +18,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import {
   Audience,
   FulfillmentType,
+  ListingRequestStatus,
   OrderStatus,
 } from "@/generated/prisma/enums";
 import { productImageUrls } from "@/lib/product-media";
@@ -34,6 +35,11 @@ import {
   collectKnownDesignNamesFromProducts,
   designNamesFromJson,
 } from "@/lib/product-design-names";
+import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
+import { AdminPlatformSalesTab } from "@/components/admin/AdminPlatformSalesTab";
+import { AdminShopsMarketplaceTab } from "@/components/admin/AdminShopsMarketplaceTab";
+import { AdminListingRequestsTab } from "@/components/admin/AdminListingRequestsTab";
+import { AdminListTab } from "@/components/admin/AdminListTab";
 
 export const dynamic = "force-dynamic";
 
@@ -58,16 +64,47 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
   const sp = await searchParams;
   const tabParam = typeof sp.tab === "string" ? sp.tab : undefined;
-  const inventoryTab: "manual" | "printify" | "orders" | "printify-api" | "tags" =
-    tabParam === "printify"
-      ? "printify"
-      : tabParam === "orders"
-        ? "orders"
-        : tabParam === "printify-api"
-          ? "printify-api"
-          : tabParam === "tags"
-            ? "tags"
-            : "manual";
+  const inventoryTabLiterals = [
+    "manual",
+    "printify",
+    "admin-list",
+    "orders",
+    "sales",
+    "shops",
+    "requests",
+    "printify-api",
+    "tags",
+  ] as const;
+  type InventoryTab = (typeof inventoryTabLiterals)[number];
+  const inventoryTab: InventoryTab = inventoryTabLiterals.includes(
+    tabParam as InventoryTab,
+  )
+    ? (tabParam as InventoryTab)
+    : "manual";
+
+  const salesFromRaw = typeof sp.salesFrom === "string" ? sp.salesFrom : "";
+  const salesToRaw = typeof sp.salesTo === "string" ? sp.salesTo : "";
+  function parseIsoDateBoundary(s: string): Date | undefined {
+    const t = s.trim();
+    if (!t) return undefined;
+    const d = new Date(t);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+  }
+  const salesFrom = parseIsoDateBoundary(salesFromRaw);
+  const salesTo = parseIsoDateBoundary(salesToRaw);
+  const salesOrderCreatedAt =
+    salesFrom || salesTo
+      ? {
+          ...(salesFrom ? { gte: salesFrom } : {}),
+          ...(salesTo ? { lte: salesTo } : {}),
+        }
+      : undefined;
+  const platformSalesWhere = {
+    order: {
+      status: OrderStatus.paid,
+      ...(salesOrderCreatedAt ? { createdAt: salesOrderCreatedAt } : {}),
+    },
+  };
   const createOk = sp.create === "ok";
   const createErr = typeof sp.create === "string" && sp.create === "err";
   const createReason = typeof sp.reason === "string" ? sp.reason : undefined;
@@ -168,7 +205,14 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           }
         : undefined;
 
-  const [products, orders, adminTags] = await Promise.all([
+  const [
+    products,
+    orders,
+    adminTags,
+    platformSalesLines,
+    marketplaceShops,
+    listingRequestRows,
+  ] = await Promise.all([
     prisma.product.findMany({
       orderBy: [{ name: "asc" }],
       include: {
@@ -186,6 +230,37 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     }),
     prisma.tag.findMany({
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    }),
+    prisma.orderLine.findMany({
+      where: platformSalesWhere,
+      orderBy: { order: { createdAt: "desc" } },
+      take: 500,
+      include: {
+        order: { select: { id: true, createdAt: true } },
+        shop: { select: { displayName: true, slug: true } },
+      },
+    }),
+    prisma.shop.findMany({
+      where: { slug: { not: PLATFORM_SHOP_SLUG } },
+      orderBy: { displayName: "asc" },
+      include: {
+        listings: {
+          orderBy: { updatedAt: "desc" },
+          select: {
+            id: true,
+            active: true,
+            product: { select: { name: true } },
+          },
+        },
+      },
+    }),
+    prisma.shopListing.findMany({
+      where: { requestStatus: ListingRequestStatus.submitted },
+      orderBy: { updatedAt: "desc" },
+      include: {
+        shop: true,
+        product: { select: { id: true, name: true, slug: true } },
+      },
     }),
   ]);
 
@@ -307,6 +382,18 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             <span className="ml-1.5 tabular-nums text-zinc-500">({printifyProducts.length})</span>
           </Link>
           <Link
+            href="/admin?tab=admin-list"
+            role="tab"
+            aria-selected={inventoryTab === "admin-list"}
+            className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "admin-list"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Admin list
+          </Link>
+          <Link
             href="/admin?tab=orders"
             role="tab"
             aria-selected={inventoryTab === "orders"}
@@ -318,6 +405,45 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           >
             Orders
             <span className="ml-1.5 tabular-nums text-zinc-500">({orders.length})</span>
+          </Link>
+          <Link
+            href="/admin?tab=sales"
+            role="tab"
+            aria-selected={inventoryTab === "sales"}
+            className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "sales"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Platform sales
+            <span className="ml-1.5 tabular-nums text-zinc-500">({platformSalesLines.length})</span>
+          </Link>
+          <Link
+            href="/admin?tab=shops"
+            role="tab"
+            aria-selected={inventoryTab === "shops"}
+            className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "shops"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Shops
+            <span className="ml-1.5 tabular-nums text-zinc-500">({marketplaceShops.length})</span>
+          </Link>
+          <Link
+            href="/admin?tab=requests"
+            role="tab"
+            aria-selected={inventoryTab === "requests"}
+            className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "requests"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Requests
+            <span className="ml-1.5 tabular-nums text-zinc-500">({listingRequestRows.length})</span>
           </Link>
           <Link
             href="/admin?tab=printify-api"
@@ -734,8 +860,32 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 <p className="mt-4 text-sm text-zinc-600">No orders yet.</p>
               ) : null}
             </section>
+          ) : inventoryTab === "sales" ? (
+            <AdminPlatformSalesTab
+              lines={platformSalesLines}
+              salesFromValue={salesFromRaw}
+              salesToValue={salesToRaw}
+            />
+          ) : inventoryTab === "shops" ? (
+            <AdminShopsMarketplaceTab
+              shops={marketplaceShops}
+              products={products.map((p) => ({
+                id: p.id,
+                name: p.name,
+                minPriceCents: p.minPriceCents,
+                priceCents: p.priceCents,
+              }))}
+              allProductsForAssign={products.map((p) => ({ id: p.id, name: p.name }))}
+            />
+          ) : inventoryTab === "requests" ? (
+            <AdminListingRequestsTab
+              rows={listingRequestRows}
+              productOptions={products.map((p) => ({ id: p.id, name: p.name }))}
+            />
           ) : inventoryTab === "printify-api" ? (
             <PrintifyApiTab hookBanner={printifyHookBanner} />
+          ) : inventoryTab === "admin-list" ? (
+            <AdminListTab />
           ) : (
             <section id="tags" aria-label="Shop tags">
               <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">

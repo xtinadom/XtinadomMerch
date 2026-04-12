@@ -25,11 +25,13 @@ export function CartAndCheckoutClient({
   initialState,
   open = true,
   onClose,
+  fullCartHref = "/cart",
 }: {
   mode: "page" | "drawer";
   initialState: CartCheckoutState;
   open?: boolean;
   onClose?: () => void;
+  fullCartHref?: string;
 }) {
   const router = useRouter();
   const [state, setState] = useState<CartCheckoutState>(initialState);
@@ -112,12 +114,12 @@ export function CartAndCheckoutClient({
               : CART_MAX_MANUAL_LINE_QTY;
           return (
             <li
-              key={l.productId}
+              key={l.listingId}
               className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
                 <Link
-                  href={`/product/${l.slug}`}
+                  href={l.productHref}
                   scroll={false}
                   className="font-medium text-zinc-100 hover:text-blue-300"
                   onClick={onClose}
@@ -142,6 +144,7 @@ export function CartAndCheckoutClient({
                   }}
                   className="flex items-center gap-2"
                 >
+                  <input type="hidden" name="listingId" value={l.listingId} />
                   <input type="hidden" name="productId" value={l.productId} />
                   <label className="store-kicker text-zinc-500">
                     Qty
@@ -168,6 +171,7 @@ export function CartAndCheckoutClient({
                     handleRemoveSubmit(new FormData(e.currentTarget));
                   }}
                 >
+                  <input type="hidden" name="listingId" value={l.listingId} />
                   <input type="hidden" name="productId" value={l.productId} />
                   <input type="hidden" name="slug" value={l.slug} />
                   <button
@@ -196,7 +200,7 @@ export function CartAndCheckoutClient({
       {mode === "drawer" ? (
         <p className="mt-6 text-center">
           <Link
-            href="/cart"
+            href={fullCartHref}
             className="store-kicker text-zinc-500 hover:text-zinc-300"
             onClick={onClose}
           >

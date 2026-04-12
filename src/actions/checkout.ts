@@ -8,9 +8,12 @@ import {
 } from "@/lib/checkout-mock";
 import { getCartSessionReadonly } from "@/lib/session";
 import { cartHasTipEligibleProduct } from "@/lib/tip-eligibility";
-import { resolvePrintifyCheckoutLine } from "@/lib/printify-variants";
 import { FulfillmentType, OrderStatus } from "@/generated/prisma/enums";
 import { publicAppBaseUrl } from "@/lib/public-app-url";
+import { listingCartUnitCents } from "@/lib/listing-cart-price";
+import { listingStripeProductName } from "@/lib/listing-cart-stripe-name";
+import { splitLineRevenueMerchandiseCents } from "@/lib/marketplace-fee";
+import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
 
 export type CheckoutResult =
   | { ok: true; url: string }
@@ -35,22 +38,27 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
   if (!base.ok) return base;
 
   const session = await getCartSessionReadonly();
-  const ids = Object.keys(session.items).filter(
+  const listingIds = Object.keys(session.items).filter(
     (id) => (session.items[id]?.quantity ?? 0) > 0,
   );
-  if (ids.length === 0) {
+  if (listingIds.length === 0) {
     return { ok: false, error: "Your cart is empty." };
   }
 
-  const products = await prisma.product.findMany({
-    where: { id: { in: ids }, active: true },
+  const listings = await prisma.shopListing.findMany({
+    where: { id: { in: listingIds }, active: true },
+    include: { product: true, shop: { select: { id: true, slug: true } } },
   });
 
-  // Match loadActiveCartRows: ignore stale/inactive ids in the session so checkout
-  // agrees with what the cart/checkout UI already showed.
-  if (products.length === 0) {
+  if (listings.length === 0) {
     return { ok: false, error: "Some products are no longer available. Refresh your cart." };
   }
+
+  const shopIds = new Set(listings.map((l) => l.shopId));
+  if (shopIds.size !== 1) {
+    return { ok: false, error: "Your cart mixes different shops. Check out one shop at a time." };
+  }
+  const shopId = [...shopIds][0]!;
 
   const tipRaw = formData.get("tipCents");
   let tipCents = 0;
@@ -61,6 +69,7 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
     }
   }
 
+  const products = listings.map((l) => l.product);
   const tipAllowed = cartHasTipEligibleProduct(products);
   if (!tipAllowed && tipCents > 0) {
     return { ok: false, error: "Tips apply only when your cart includes sub catalog items." };
@@ -68,16 +77,20 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
 
   let subtotalCents = 0;
   const lineInputs: {
-    product: (typeof products)[0];
+    listing: (typeof listings)[0];
+    product: (typeof listings)[0]["product"];
     quantity: number;
     lineTotal: number;
     unitPriceCents: number;
     stripeProductName: string;
     orderPrintifyVariantId: string | null;
+    platformCutCents: number;
+    shopCutCents: number;
   }[] = [];
 
-  for (const p of products) {
-    const cartLine = session.items[p.id];
+  for (const listing of listings) {
+    const p = listing.product;
+    const cartLine = session.items[listing.id];
     const quantity = cartLine?.quantity ?? 0;
     if (quantity <= 0) continue;
 
@@ -87,32 +100,31 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
       }
     }
 
-    let unitPriceCents = p.priceCents;
-    let stripeProductName = p.name;
-    let orderPrintifyVariantId: string | null = p.printifyVariantId;
+    const unitPriceCents = listingCartUnitCents(listing, cartLine);
+    const { name: stripeProductName, printifyVariantId: orderPrintifyVariantId } =
+      listingStripeProductName(listing, cartLine);
 
-    if (p.fulfillmentType === FulfillmentType.printify) {
-      const resolved = resolvePrintifyCheckoutLine(p, cartLine);
-      if (!resolved) {
-        return {
-          ok: false,
-          error: `“${p.name}” is missing Printify variant data. Remove it from your cart and add it again from the product page.`,
-        };
-      }
-      unitPriceCents = resolved.unitPriceCents;
-      stripeProductName = resolved.stripeName;
-      orderPrintifyVariantId = resolved.printifyVariantId;
+    if (p.fulfillmentType === FulfillmentType.printify && !orderPrintifyVariantId) {
+      return {
+        ok: false,
+        error: `“${p.name}” is missing Printify variant data. Remove it from your cart and add it again from the product page.`,
+      };
     }
 
     const lineTotal = unitPriceCents * quantity;
+    const { platformCutCents, shopCutCents } =
+      splitLineRevenueMerchandiseCents(lineTotal);
     subtotalCents += lineTotal;
     lineInputs.push({
+      listing,
       product: p,
       quantity,
       lineTotal,
       unitPriceCents,
       stripeProductName,
       orderPrintifyVariantId,
+      platformCutCents,
+      shopCutCents,
     });
   }
 
@@ -131,26 +143,22 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
       product_data: {
         name: string;
         description?: string;
-        metadata?: { productId: string };
+        metadata?: { productId: string; shopListingId: string };
       };
     };
   }> = [];
 
-  for (const {
-    product: p,
-    quantity,
-    unitPriceCents,
-    stripeProductName,
-  } of lineInputs) {
+  for (const row of lineInputs) {
+    const p = row.product;
     stripeLineItems.push({
-      quantity,
+      quantity: row.quantity,
       price_data: {
         currency: "usd",
-        unit_amount: unitPriceCents,
+        unit_amount: row.unitPriceCents,
         product_data: {
-          name: stripeProductName,
+          name: row.stripeProductName,
           description: p.description ?? undefined,
-          metadata: { productId: p.id },
+          metadata: { productId: p.id, shopListingId: row.listing.id },
         },
       },
     });
@@ -170,6 +178,7 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
   const order = await prisma.$transaction(async (tx) => {
     const o = await tx.order.create({
       data: {
+        shopId,
         status: OrderStatus.pending_payment,
         subtotalCents,
         tipCents,
@@ -179,11 +188,14 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
         lines: {
           create: lineInputs.map(
             ({
+              listing,
               product: p,
               quantity,
               unitPriceCents,
               stripeProductName,
               orderPrintifyVariantId,
+              platformCutCents,
+              shopCutCents,
             }) => ({
               quantity,
               unitPriceCents,
@@ -192,6 +204,10 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
               productId: p.id,
               printifyProductId: p.printifyProductId,
               printifyVariantId: orderPrintifyVariantId,
+              shopId,
+              shopListingId: listing.id,
+              platformCutCents,
+              shopCutCents,
             }),
           ),
         },
@@ -221,6 +237,24 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
   if (allowCashApp) payment_method_types.push("cashapp");
   if (payment_method_types.length === 0) payment_method_types.push("card");
 
+  const cancelShopSlug = lineInputs[0]!.listing.shop.slug;
+  const cancelPath =
+    cancelShopSlug === PLATFORM_SHOP_SLUG ? "/cart" : `/s/${cancelShopSlug}/cart`;
+
+  const shopRecord = await prisma.shop.findUnique({
+    where: { id: shopId },
+    select: {
+      stripeConnectAccountId: true,
+      connectChargesEnabled: true,
+    },
+  });
+  const useStripeConnect =
+    process.env.MARKETPLACE_STRIPE_CONNECT === "1" &&
+    shopRecord?.stripeConnectAccountId &&
+    shopRecord.connectChargesEnabled;
+  const applicationFeeCents =
+    lineInputs.reduce((s, x) => s + x.platformCutCents, 0) + tipCents;
+
   let checkoutSession;
   try {
     checkoutSession = await getStripe().checkout.sessions.create({
@@ -237,10 +271,20 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
           },
         },
       ],
-      metadata: { orderId: order.id },
+      metadata: { orderId: order.id, shopId },
       client_reference_id: order.id,
       success_url: `${base.url}/order/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${base.url}/cart`,
+      cancel_url: `${base.url}${cancelPath}`,
+      ...(useStripeConnect
+        ? {
+            payment_intent_data: {
+              application_fee_amount: applicationFeeCents,
+              transfer_data: {
+                destination: shopRecord.stripeConnectAccountId!,
+              },
+            },
+          }
+        : {}),
     });
   } catch (e) {
     await prisma.order.delete({ where: { id: order.id } });

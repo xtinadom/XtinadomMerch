@@ -8,7 +8,7 @@ export async function cartBadgeQuantity(
   const ids = Object.keys(items).filter((id) => (items[id]?.quantity ?? 0) > 0);
   if (ids.length === 0) return 0;
   try {
-    const rows = await prisma.product.findMany({
+    const rows = await prisma.shopListing.findMany({
       where: { id: { in: ids }, active: true },
       select: { id: true },
     });

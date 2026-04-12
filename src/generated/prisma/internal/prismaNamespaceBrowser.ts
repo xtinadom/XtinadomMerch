@@ -54,10 +54,14 @@ export const ModelName = {
   Tag: 'Tag',
   ProductTag: 'ProductTag',
   Product: 'Product',
+  Shop: 'Shop',
+  ShopUser: 'ShopUser',
+  ShopListing: 'ShopListing',
   Order: 'Order',
   OrderLine: 'OrderLine',
   FulfillmentJob: 'FulfillmentJob',
   ProcessedStripeEvent: 'ProcessedStripeEvent',
+  AdminCatalogItem: 'AdminCatalogItem',
   Comment: 'Comment'
 } as const
 
@@ -120,6 +124,7 @@ export const ProductScalarFieldEnum = {
   stockQuantity: 'stockQuantity',
   trackInventory: 'trackInventory',
   active: 'active',
+  minPriceCents: 'minPriceCents',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -127,8 +132,63 @@ export const ProductScalarFieldEnum = {
 export type ProductScalarFieldEnum = (typeof ProductScalarFieldEnum)[keyof typeof ProductScalarFieldEnum]
 
 
+export const ShopScalarFieldEnum = {
+  id: 'id',
+  slug: 'slug',
+  displayName: 'displayName',
+  profileImageUrl: 'profileImageUrl',
+  bio: 'bio',
+  welcomeMessage: 'welcomeMessage',
+  socialLinks: 'socialLinks',
+  active: 'active',
+  stripeConnectAccountId: 'stripeConnectAccountId',
+  connectChargesEnabled: 'connectChargesEnabled',
+  payoutsEnabled: 'payoutsEnabled',
+  editorialPriority: 'editorialPriority',
+  editorialPinnedUntil: 'editorialPinnedUntil',
+  totalSalesCents: 'totalSalesCents',
+  homeFeaturedListingId: 'homeFeaturedListingId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ShopScalarFieldEnum = (typeof ShopScalarFieldEnum)[keyof typeof ShopScalarFieldEnum]
+
+
+export const ShopUserScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  passwordHash: 'passwordHash',
+  shopId: 'shopId',
+  role: 'role',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ShopUserScalarFieldEnum = (typeof ShopUserScalarFieldEnum)[keyof typeof ShopUserScalarFieldEnum]
+
+
+export const ShopListingScalarFieldEnum = {
+  id: 'id',
+  shopId: 'shopId',
+  productId: 'productId',
+  priceCents: 'priceCents',
+  active: 'active',
+  featuredOnShop: 'featuredOnShop',
+  featuredForHome: 'featuredForHome',
+  listingFeePaidAt: 'listingFeePaidAt',
+  requestImages: 'requestImages',
+  requestStatus: 'requestStatus',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ShopListingScalarFieldEnum = (typeof ShopListingScalarFieldEnum)[keyof typeof ShopListingScalarFieldEnum]
+
+
 export const OrderScalarFieldEnum = {
   id: 'id',
+  shopId: 'shopId',
   stripeSessionId: 'stripeSessionId',
   stripePaymentIntentId: 'stripePaymentIntentId',
   email: 'email',
@@ -156,6 +216,8 @@ export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof Or
 export const OrderLineScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
+  shopId: 'shopId',
+  shopListingId: 'shopListingId',
   productId: 'productId',
   quantity: 'quantity',
   unitPriceCents: 'unitPriceCents',
@@ -163,6 +225,8 @@ export const OrderLineScalarFieldEnum = {
   fulfillmentType: 'fulfillmentType',
   printifyProductId: 'printifyProductId',
   printifyVariantId: 'printifyVariantId',
+  platformCutCents: 'platformCutCents',
+  shopCutCents: 'shopCutCents',
   createdAt: 'createdAt'
 } as const
 
@@ -194,6 +258,21 @@ export const ProcessedStripeEventScalarFieldEnum = {
 export type ProcessedStripeEventScalarFieldEnum = (typeof ProcessedStripeEventScalarFieldEnum)[keyof typeof ProcessedStripeEventScalarFieldEnum]
 
 
+export const AdminCatalogItemScalarFieldEnum = {
+  id: 'id',
+  sortOrder: 'sortOrder',
+  name: 'name',
+  variants: 'variants',
+  itemPlatformProductId: 'itemPlatformProductId',
+  itemExampleListingUrl: 'itemExampleListingUrl',
+  itemMinPriceCents: 'itemMinPriceCents',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AdminCatalogItemScalarFieldEnum = (typeof AdminCatalogItemScalarFieldEnum)[keyof typeof AdminCatalogItemScalarFieldEnum]
+
+
 export const CommentScalarFieldEnum = {
   id: 'id',
   comment: 'comment'
@@ -216,6 +295,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {

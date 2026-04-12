@@ -17,9 +17,12 @@ const DRAWER_SEED: CartCheckoutState = {
 export function CartDrawer({
   open,
   onClose,
+  fullCartHref = "/cart",
 }: {
   open: boolean;
   onClose: () => void;
+  /** Full-page cart URL (platform `/cart` or tenant `/s/:slug/cart`). */
+  fullCartHref?: string;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -74,6 +77,7 @@ export function CartDrawer({
           initialState={DRAWER_SEED}
           open={open}
           onClose={onClose}
+          fullCartHref={fullCartHref}
         />
       </div>
     </div>

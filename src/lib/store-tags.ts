@@ -12,3 +12,24 @@ export const getStoreTags = cache(async () => {
     return [];
   }
 });
+
+/** Tags that appear on at least one active listing in the shop. */
+export const getStoreTagsForShop = cache(async (shopId: string) => {
+  try {
+    return await prisma.tag.findMany({
+      where: {
+        productTags: {
+          some: {
+            product: {
+              shopListings: { some: { shopId, active: true } },
+            },
+          },
+        },
+      },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    });
+  } catch (e) {
+    console.error("[getStoreTagsForShop]", e);
+    return [];
+  }
+});

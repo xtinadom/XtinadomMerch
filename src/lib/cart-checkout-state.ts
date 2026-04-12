@@ -4,9 +4,10 @@ import {
   parseEstimatedSalesTaxRate,
 } from "@/lib/checkout-estimates";
 import { cartHasTipEligibleProduct } from "@/lib/tip-eligibility";
-import { loadActiveCartRows } from "@/lib/cart-rows-active";
+import { cartRowProductHref, loadActiveCartRows } from "@/lib/cart-rows-active";
 
 export type CartCheckoutLine = {
+  listingId: string;
   productId: string;
   slug: string;
   name: string;
@@ -16,6 +17,7 @@ export type CartCheckoutLine = {
   variantSub: string | null;
   primaryTagName: string | null;
   fulfillmentType: string;
+  productHref: string;
 };
 
 export type CartCheckoutState = {
@@ -39,6 +41,7 @@ export async function loadCartCheckoutState(): Promise<CartCheckoutState> {
 
   return {
     lines: rows.map((r) => ({
+      listingId: r.listingId,
       productId: r.product.id,
       slug: r.product.slug,
       name: r.product.name,
@@ -48,6 +51,7 @@ export async function loadCartCheckoutState(): Promise<CartCheckoutState> {
       variantSub: r.variantSub,
       primaryTagName: r.product.primaryTag?.name ?? null,
       fulfillmentType: r.product.fulfillmentType,
+      productHref: cartRowProductHref(r),
     })),
     subtotalCents: subtotal,
     shippingCents,

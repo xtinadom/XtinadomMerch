@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Product, Tag } from "@/generated/prisma/client";
 import { productPrimaryImage } from "@/lib/product-media";
 import { cardLabelTag } from "@/lib/product-tags";
+import { PLATFORM_SHOP_SLUG, productHref } from "@/lib/marketplace-constants";
 
 export type ProductCardProduct = Product & {
   primaryTag: Tag | null;
@@ -15,7 +16,13 @@ function formatPrice(cents: number) {
   }).format(cents / 100);
 }
 
-export function ProductCard({ product }: { product: ProductCardProduct }) {
+export function ProductCard({
+  product,
+  shopSlug = PLATFORM_SHOP_SLUG,
+}: {
+  product: ProductCardProduct;
+  shopSlug?: string;
+}) {
   const img = productPrimaryImage(product);
   const label = cardLabelTag({
     primaryTagId: product.primaryTagId,
@@ -24,7 +31,7 @@ export function ProductCard({ product }: { product: ProductCardProduct }) {
   });
   return (
     <Link
-      href={`/product/${product.slug}`}
+      href={productHref(shopSlug, product.slug)}
       scroll={false}
       className="group block w-full max-w-[175px] rounded-md border border-zinc-800 bg-zinc-900/50 p-1.5 transition hover:border-zinc-600 hover:bg-zinc-900"
     >

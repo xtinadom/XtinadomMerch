@@ -1,11 +1,17 @@
 import { SessionOptions, getIronSession } from "iron-session";
 import { cookies } from "next/headers";
 import { CART_SESSION_QUANTITY_CEILING } from "@/lib/cart-limits";
+import {
+  hydrateCartListingKeys,
+  inferShopIdFromListingIds,
+} from "@/lib/cart-hydration";
 
-/** One cart row per product; printifyVariantId set when the listing has multiple Printify variants. */
+/** One cart row per shop listing; printifyVariantId set when the listing has multiple Printify variants. */
 export type CartLine = { quantity: number; printifyVariantId?: string };
 
 export type CartSession = {
+  /** All lines belong to this shop (single-shop cart). */
+  shopId?: string | null;
   items: Record<string, CartLine>;
 };
 
@@ -35,14 +41,40 @@ function normalizeCartItems(raw: unknown): Record<string, CartLine> {
   if (raw == null || typeof raw !== "object") return {};
   const out: Record<string, CartLine> = {};
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (k === "shopId") continue;
     const line = normalizeCartValue(v);
     if (line) out[k] = line;
   }
   return out;
 }
 
+function readShopIdFromRaw(raw: unknown): string | null | undefined {
+  if (raw == null || typeof raw !== "object") return undefined;
+  const sid = (raw as Record<string, unknown>).shopId;
+  if (typeof sid === "string" && sid.trim()) return sid.trim();
+  if (sid === null) return null;
+  return undefined;
+}
+
+async function finalizeCartSessionShape(
+  raw: unknown,
+  items: Record<string, CartLine>,
+): Promise<{ shopId: string | null; items: Record<string, CartLine> }> {
+  const hydrated = await hydrateCartListingKeys(items);
+  const keys = Object.keys(hydrated);
+  const inferred =
+    keys.length > 0 ? await inferShopIdFromListingIds(keys) : null;
+  const explicit = readShopIdFromRaw(raw);
+  const shopId = explicit ?? inferred ?? null;
+  return { shopId, items: hydrated };
+}
+
 export type AdminSession = {
   isAdmin?: boolean;
+};
+
+export type ShopOwnerSession = {
+  shopUserId?: string;
 };
 
 function requireSessionSecret(): string {
@@ -94,6 +126,17 @@ const adminBase: Omit<SessionOptions, "password"> = {
   },
 };
 
+const shopOwnerBase: Omit<SessionOptions, "password"> = {
+  cookieName: "xtina_shop_owner",
+  cookieOptions: {
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 14,
+  },
+};
+
 /**
  * Full iron-session (mutate `items` then `save()`). Used by cart server actions.
  * Do not wrap in try/catch here — callers that only read `items` should use `getCartSessionReadonly`.
@@ -103,7 +146,11 @@ export async function getCartSession() {
     ...cartBase,
     password: cartSessionPassword(),
   });
-  session.items = normalizeCartItems(session.items);
+  const raw = session as unknown as Record<string, unknown>;
+  const normalized = normalizeCartItems(session.items);
+  const fin = await finalizeCartSessionShape(raw, normalized);
+  session.items = fin.items;
+  session.shopId = fin.shopId;
   return session;
 }
 
@@ -117,10 +164,13 @@ export async function getCartSessionReadonly(): Promise<CartSession> {
       ...cartBase,
       password: cartSessionPassword(),
     });
-    return { items: normalizeCartItems(session.items) };
+    const raw = session as unknown as Record<string, unknown>;
+    const normalized = normalizeCartItems(session.items);
+    const fin = await finalizeCartSessionShape(raw, normalized);
+    return { shopId: fin.shopId, items: fin.items };
   } catch (e) {
     console.error("[getCartSessionReadonly]", e);
-    return { items: {} };
+    return { shopId: null, items: {} };
   }
 }
 
@@ -129,4 +179,25 @@ export async function getAdminSession() {
     ...adminBase,
     password: requireSessionSecret(),
   });
+}
+
+/** Shop owner session for server actions that mutate the cookie (login / logout). */
+export async function getShopOwnerSession() {
+  return getIronSession<ShopOwnerSession>(await cookies(), {
+    ...shopOwnerBase,
+    password: requireSessionSecret(),
+  });
+}
+
+/** Read-only shop owner payload; never throws (bad secret / corrupt cookie). */
+export async function getShopOwnerSessionReadonly(): Promise<ShopOwnerSession> {
+  try {
+    return await getIronSession<ShopOwnerSession>(await cookies(), {
+      ...shopOwnerBase,
+      password: requireSessionSecret(),
+    });
+  } catch (e) {
+    console.error("[getShopOwnerSessionReadonly]", e);
+    return {};
+  }
 }

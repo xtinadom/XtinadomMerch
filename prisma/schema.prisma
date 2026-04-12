@@ -24,6 +24,17 @@ enum CatalogGroup {
   domme
 }
 
+enum ListingRequestStatus {
+  draft
+  submitted
+  approved
+  rejected
+}
+
+enum ShopUserRole {
+  owner
+}
+
 model Tag {
   id                                String    @id @default(cuid())
   slug                              String    @unique
@@ -76,9 +87,76 @@ model Product {
   stockQuantity       Int             @default(0)
   trackInventory      Boolean         @default(true)
   active              Boolean         @default(true)
+  /** Minimum price (cents) a shop may set on a listing; defaults to priceCents in migration. */
+  minPriceCents       Int             @default(0)
+  shopListings        ShopListing[]
   orderLines          OrderLine[]
+  adminCatalogItemPlatformLinks AdminCatalogItem[] @relation("AdminCatalogItemPlatformProduct")
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
+}
+
+model Shop {
+  id                       String         @id @default(cuid())
+  slug                     String         @unique
+  displayName              String
+  profileImageUrl          String?
+  bio                      String?        @db.Text
+  /** Short welcome shown on storefront (max 280 chars, tweet length). */
+  welcomeMessage           String?        @db.VarChar(280)
+  /** Optional social URLs: reddit, x, bluesky, twitch, loyalfans, onlyfans, instagram. */
+  socialLinks              Json?
+  active                   Boolean        @default(true)
+  stripeConnectAccountId   String?        @unique
+  connectChargesEnabled    Boolean        @default(false)
+  payoutsEnabled           Boolean        @default(false)
+  /** Higher sorts first when browsing; null = organic only. */
+  editorialPriority        Int?
+  editorialPinnedUntil     DateTime?
+  /** Cached from paid orders for browse sort (webhook updates). */
+  totalSalesCents          Int            @default(0)
+  homeFeaturedListingId    String?        @unique
+  homeFeaturedListing      ShopListing?   @relation("ShopHomeFeatured", fields: [homeFeaturedListingId], references: [id], onDelete: SetNull)
+  users                    ShopUser[]
+  listings                 ShopListing[]  @relation("ShopListings")
+  orders                   Order[]
+  orderLines               OrderLine[]
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+}
+
+model ShopUser {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  shopId       String
+  shop         Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  role         ShopUserRole @default(owner)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model ShopListing {
+  id                 String                 @id @default(cuid())
+  shopId             String
+  shop               Shop                   @relation("ShopListings", fields: [shopId], references: [id], onDelete: Cascade)
+  productId          String
+  product            Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
+  priceCents         Int
+  active             Boolean                @default(false)
+  featuredOnShop     Boolean                @default(false)
+  featuredForHome    Boolean                @default(false)
+  listingFeePaidAt   DateTime?
+  requestImages      Json?
+  requestStatus      ListingRequestStatus   @default(draft)
+  shopHomeFeatured   Shop?                  @relation("ShopHomeFeatured")
+  orderLines         OrderLine[]
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  @@unique([shopId, productId])
+  @@index([shopId, active])
+  @@index([requestStatus])
 }
 
 enum OrderStatus {
@@ -89,6 +167,8 @@ enum OrderStatus {
 
 model Order {
   id                    String            @id @default(cuid())
+  shopId                String?
+  shop                  Shop?             @relation(fields: [shopId], references: [id], onDelete: SetNull)
   stripeSessionId       String?           @unique
   stripePaymentIntentId String?           @unique
   email                 String?
@@ -110,21 +190,32 @@ model Order {
   fulfillmentJobs       FulfillmentJob[]
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
+
+  @@index([shopId])
 }
 
 model OrderLine {
-  id                String          @id @default(cuid())
-  orderId           String
-  order             Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId         String
-  product           Product         @relation(fields: [productId], references: [id])
-  quantity          Int
-  unitPriceCents    Int
-  productName       String
-  fulfillmentType FulfillmentType
-  printifyProductId String?
-  printifyVariantId String?
-  createdAt         DateTime        @default(now())
+  id                 String         @id @default(cuid())
+  orderId            String
+  order              Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shopId             String?
+  shop               Shop?          @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  shopListingId      String?
+  shopListing        ShopListing?   @relation(fields: [shopListingId], references: [id], onDelete: SetNull)
+  productId          String
+  product            Product        @relation(fields: [productId], references: [id])
+  quantity           Int
+  unitPriceCents     Int
+  productName        String
+  fulfillmentType    FulfillmentType
+  printifyProductId  String?
+  printifyVariantId  String?
+  platformCutCents   Int            @default(0)
+  shopCutCents       Int            @default(0)
+  createdAt          DateTime       @default(now())
+
+  @@index([shopId])
+  @@index([shopListingId])
 }
 
 enum FulfillmentJobStatus {
@@ -152,6 +243,35 @@ model ProcessedStripeEvent {
   id            String   @id @default(cuid())
   stripeEventId String   @unique
   processedAt   DateTime @default(now())
+}
+
+/**
+ * Manual admin reference catalog (Admin list tab): item name, variants, example listing URL, min price per variant.
+ */
+model AdminCatalogItem {
+  id        String   @id @default(cuid())
+  sortOrder Int      @default(0)
+  name      String
+  /** JSON array: { id, label, minPriceCents, exampleListingUrl, platformProductId? }[] */
+  variants  Json
+  /**
+   * When `variants` is empty: optional storefront Product id (active Printify) for shop catalog
+   * resolution when there is no example URL / name match.
+   */
+  itemPlatformProductId String?
+  itemPlatformProduct   Product? @relation("AdminCatalogItemPlatformProduct", fields: [itemPlatformProductId], references: [id], onDelete: SetNull)
+  /**
+   * When `variants` is empty: optional example listing for the whole item.
+   * Cleared when the item has one or more variants.
+   */
+  itemExampleListingUrl String? @db.VarChar(2048)
+  /**
+   * When `variants` is empty: minimum price in cents for the whole item (required on save).
+   * Set to 0 when the item has variants.
+   */
+  itemMinPriceCents     Int     @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 /** Free-form text rows (e.g. notes). Requires an id for Prisma; add rows via SQL or future UI. */
