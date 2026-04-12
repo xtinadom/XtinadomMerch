@@ -1,8 +1,30 @@
 // Pooled vs direct URLs: standard env names, then Vercel/Neon integration suffixes.
 
+/** Matches `docker-compose.yml` (postgres:16-alpine). Development only when no env URL is set. */
+export const LOCAL_DOCKER_DATABASE_URL =
+  "postgresql://postgres:postgres@127.0.0.1:5432/xtinadom_merch";
+
 function isPostgresUrl(v: string): boolean {
   const t = v.trim();
   return t.startsWith("postgresql://") || t.startsWith("postgres://");
+}
+
+let loggedDevDatabaseFallback = false;
+
+/** In development, `localhost` → `127.0.0.1` avoids intermittent ECONNREFUSED on some Windows setups. */
+function normalizePostgresUrlForDevelopment(url: string): string {
+  if (process.env.NODE_ENV !== "development") return url;
+  try {
+    const u = new URL(url);
+    const h = u.hostname.toLowerCase();
+    if (h === "localhost" || h === "[::1]" || h === "::1") {
+      u.hostname = "127.0.0.1";
+      return u.toString();
+    }
+  } catch {
+    /* keep original */
+  }
+  return url;
 }
 
 export function runtimeDatabaseUrlFromEnv(): string | undefined {
@@ -11,9 +33,26 @@ export function runtimeDatabaseUrlFromEnv(): string | undefined {
     process.env.DATABASE_URL?.trim() ||
     process.env.POSTGRES_URL?.trim() ||
     process.env.DIRECT_URL?.trim();
-  if (standard && isPostgresUrl(standard)) return standard;
+  if (standard && isPostgresUrl(standard)) {
+    return normalizePostgresUrlForDevelopment(standard);
+  }
 
-  return integrationPooledUrl();
+  const integrated = integrationPooledUrl();
+  if (integrated) {
+    return normalizePostgresUrlForDevelopment(integrated);
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    if (!loggedDevDatabaseFallback) {
+      loggedDevDatabaseFallback = true;
+      console.info(
+        "[xtinadom] No DATABASE_URL in env — using Docker Compose default. Start Postgres: npm run db:up",
+      );
+    }
+    return LOCAL_DOCKER_DATABASE_URL;
+  }
+
+  return undefined;
 }
 
 const SUFFIX_PRISMA = "_POSTGRES_PRISMA_URL";

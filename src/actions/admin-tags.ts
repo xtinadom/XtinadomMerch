@@ -89,9 +89,75 @@ export async function adminUpdateTag(
     ? parseInt(sortRaw, 10)
     : existing.sortOrder;
 
+  async function parseCollectionSpotlight(
+    raw: string,
+    collection: "sub" | "domme",
+  ): Promise<{ ok: true; id: string | null } | { ok: false; error: string }> {
+    const trimmed = raw.trim();
+    if (trimmed === "" || trimmed === "__auto__") {
+      return { ok: true, id: null };
+    }
+    const link = await prisma.productTag.findUnique({
+      where: { productId_tagId: { productId: trimmed, tagId: id } },
+    });
+    if (!link) {
+      return {
+        ok: false,
+        error: "Top pick must be a product that has this tag.",
+      };
+    }
+    const product = await prisma.product.findUnique({
+      where: { id: trimmed },
+      select: { audience: true },
+    });
+    if (!product) {
+      return { ok: false, error: "Product not found." };
+    }
+    if (collection === "sub") {
+      if (
+        product.audience !== Audience.sub &&
+        product.audience !== Audience.both
+      ) {
+        return {
+          ok: false,
+          error:
+            "Sub collection top pick must appear in the Sub shop (collection assignment Sub or Both).",
+        };
+      }
+    } else if (
+      product.audience !== Audience.domme &&
+      product.audience !== Audience.both
+    ) {
+      return {
+        ok: false,
+        error:
+          "Domme collection top pick must appear in the Domme shop (collection assignment Domme or Both).",
+      };
+    }
+    return { ok: true, id: trimmed };
+  }
+
+  const rawSub = String(
+    formData.get("subCollectionSpotlightProductId") ?? "",
+  ).trim();
+  const rawDomme = String(
+    formData.get("dommeCollectionSpotlightProductId") ?? "",
+  ).trim();
+
+  const subPick = await parseCollectionSpotlight(rawSub, "sub");
+  if (!subPick.ok) return { ok: false, error: subPick.error };
+  const dommePick = await parseCollectionSpotlight(rawDomme, "domme");
+  if (!dommePick.ok) return { ok: false, error: dommePick.error };
+
   await prisma.tag.update({
     where: { id },
-    data: { name, slug, sortOrder },
+    data: {
+      name,
+      slug,
+      sortOrder,
+      subCollectionSpotlightProductId: subPick.id,
+      dommeCollectionSpotlightProductId: dommePick.id,
+    },
   });
 
   revalidatePath("/admin");
@@ -147,11 +213,17 @@ export async function adminCreateTagForm(formData: FormData): Promise<void> {
 }
 
 export async function adminUpdateTagForm(formData: FormData): Promise<void> {
+  const savedTagId = String(formData.get("tagId") ?? "").trim();
   const r = await adminUpdateTag(formData);
   if (!r.ok) {
     redirect(`/admin?tab=tags&tag_err=${encodeURIComponent(r.error)}#tags`);
   }
-  redirect("/admin?tab=tags&tag_saved=updated#tags");
+  const q = new URLSearchParams({
+    tab: "tags",
+    tag_saved: "updated",
+    ...(savedTagId ? { saved_tag_id: savedTagId } : {}),
+  });
+  redirect(`/admin?${q.toString()}#tags`);
 }
 
 export async function adminDeleteTagForm(formData: FormData): Promise<void> {
@@ -160,6 +232,74 @@ export async function adminDeleteTagForm(formData: FormData): Promise<void> {
     redirect(`/admin?tab=tags&tag_err=${encodeURIComponent(r.error)}#tags`);
   }
   redirect("/admin?tab=tags&tag_saved=deleted#tags");
+}
+
+export type AdminEnsureTagRow = {
+  id: string;
+  name: string;
+  slug: string;
+  sortOrder: number;
+};
+
+export type AdminEnsureTagByNameResult =
+  | { ok: true; tag: AdminEnsureTagRow }
+  | { ok: false; error: string };
+
+/** Find existing tag by name/slug (case-insensitive) or create one for listing editors. */
+export async function adminEnsureTagByName(
+  rawName: string,
+): Promise<AdminEnsureTagByNameResult> {
+  const admin = await getAdminSession();
+  if (!admin.isAdmin) return { ok: false, error: "Unauthorized." };
+
+  const name = rawName.trim();
+  if (!name) return { ok: false, error: "Name is required." };
+
+  const baseSlug = slugify(name);
+  const existing = await prisma.tag.findFirst({
+    where: {
+      OR: [
+        { name: { equals: name, mode: "insensitive" } },
+        { slug: { equals: baseSlug, mode: "insensitive" } },
+      ],
+    },
+  });
+  if (existing) {
+    return {
+      ok: true,
+      tag: {
+        id: existing.id,
+        name: existing.name,
+        slug: existing.slug,
+        sortOrder: existing.sortOrder,
+      },
+    };
+  }
+
+  let slug = baseSlug;
+  let n = 2;
+  while (await prisma.tag.findUnique({ where: { slug } })) {
+    slug = `${baseSlug}-${n++}`;
+  }
+
+  const created = await prisma.tag.create({
+    data: { name, slug, sortOrder: 99 },
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/shop/all");
+  revalidatePath("/shop/sub");
+  revalidatePath("/shop/domme");
+
+  return {
+    ok: true,
+    tag: {
+      id: created.id,
+      name: created.name,
+      slug: created.slug,
+      sortOrder: created.sortOrder,
+    },
+  };
 }
 
 /** Tags are universal; only require that selected ids exist. */

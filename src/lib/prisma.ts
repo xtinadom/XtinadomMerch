@@ -3,8 +3,13 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 import { runtimeDatabaseUrlFromEnv } from "@/lib/env-postgres-url";
 
-/** Bump when `Product` (or other models) change in a way that requires a new client instance in dev. */
-const PRISMA_SINGLETON_STAMP = "postgres-adapter-v1";
+/**
+ * Bump when the Prisma schema (or generated client shape) changes so dev must drop the cached
+ * `globalThis` client — otherwise you get validation errors like unknown `designNames` after generate,
+ * or `Unknown argument subCollectionSpotlightProductId` when the process still holds an old client.
+ * After `npx prisma generate`, bump this (or restart the dev server and delete `.next`).
+ */
+const PRISMA_SINGLETON_STAMP = "postgres-adapter-v4-tag-sub-domme-spotlight";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -16,7 +21,7 @@ function createPrisma(): PrismaClient {
   const connectionString = runtimeDatabaseUrlFromEnv();
   if (!connectionString) {
     throw new Error(
-      "No database URL. Set DATABASE_URL or (on Vercel Postgres) POSTGRES_PRISMA_URL. Local: postgresql://postgres:postgres@localhost:5432/xtinadom_merch",
+      "No database URL. Set DATABASE_URL or POSTGRES_PRISMA_URL. Local: npm run db:up then use postgresql://postgres:postgres@127.0.0.1:5432/xtinadom_merch",
     );
   }
   if (connectionString.startsWith("file:")) {

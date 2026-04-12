@@ -27,9 +27,19 @@ function isValidHttpUrl(s: string): boolean {
 type Props = {
   /** Initial image URLs (order preserved). */
   defaultUrls: string[];
+  /**
+   * When `"printify"`, uploads use `listing/printify/…` (same R2 prefix as Printify hero).
+   * Pass {@link printifyProductId} when known for stable key grouping.
+   */
+  listingUploadVariant?: "printify";
+  printifyProductId?: string | null;
 };
 
-export function ListingGalleryEditor({ defaultUrls }: Props) {
+export function ListingGalleryEditor({
+  defaultUrls,
+  listingUploadVariant,
+  printifyProductId,
+}: Props) {
   const snapshot = defaultUrls.join("\u001f");
   const [urls, setUrls] = useState(() => uniqueImageUrlsOrdered(defaultUrls));
   const [urlDraft, setUrlDraft] = useState("");
@@ -88,6 +98,12 @@ export function ListingGalleryEditor({ defaultUrls }: Props) {
     setMessage(null);
     const fd = new FormData();
     fd.append("file", file);
+    if (listingUploadVariant === "printify") {
+      fd.append("listingUploadVariant", "printify");
+      if (printifyProductId?.trim()) {
+        fd.append("printifyProductId", printifyProductId.trim());
+      }
+    }
     const r = await uploadListingImage(fd);
     setUploading(false);
     if (!r.ok) {

@@ -4,9 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { getStoreTags } from "@/lib/store-tags";
 import { CatalogGroup } from "@/generated/prisma/enums";
 import { audienceWhereForCollection } from "@/lib/shop-queries";
-import { buildShopSections } from "@/lib/shop-browse-sections";
+import {
+  buildByDesignOnePerName,
+  buildByItemOnePerTag,
+} from "@/lib/shop-by-item-and-design";
+import { FeaturedProductsCarousel } from "@/components/FeaturedProductsCarousel";
 import { ProductCard } from "@/components/ProductCard";
-import { ShopProductSectionList } from "@/components/ShopProductSectionList";
+import { ShopByItemAndDesignBrowse } from "@/components/ShopByItemAndDesignBrowse";
+import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { DommeMerchWebsitePromo } from "@/components/DommeMerchWebsitePromo";
 import {
   SHOP_ALL_ROUTE,
@@ -68,6 +73,10 @@ export async function ShopCollectionPage({
             View this tag across all products
           </Link>
         </p>
+        <FeaturedProductsCarousel
+          items={productsToFeaturedCarouselItems(products)}
+          label={`Featured in ${activeTag.name}`}
+        />
         {products.length === 0 ? (
           <p className="mt-8 text-sm text-zinc-600">No products with this tag in this collection yet.</p>
         ) : (
@@ -89,7 +98,10 @@ export async function ShopCollectionPage({
     include: productInclude,
   });
 
-  const sections = buildShopSections(allProducts, tags);
+  const byItemSections = buildByItemOnePerTag(allProducts, tags, {
+    catalog: collection === CatalogGroup.sub ? "sub" : "domme",
+  });
+  const byDesignSections = buildByDesignOnePerName(allProducts);
 
   const title =
     collection === CatalogGroup.sub ? "Sub collection" : "Domme collection";
@@ -102,7 +114,7 @@ export async function ShopCollectionPage({
             {title}
           </h1>
           <p className="mt-1 text-sm text-zinc-500">
-            Narrow by tag from the menu, or{" "}
+            Browse by item tag and by design name below, use the tag menu for full lists, or{" "}
             <Link href={SHOP_ALL_ROUTE} className="text-blue-400/90 hover:underline">
               view all products
             </Link>
@@ -114,8 +126,18 @@ export async function ShopCollectionPage({
         </div>
       </div>
 
-      <ShopProductSectionList
-        sections={sections}
+      <FeaturedProductsCarousel
+        items={productsToFeaturedCarouselItems(allProducts)}
+        label={
+          collection === CatalogGroup.sub
+            ? "Featured in Sub collection"
+            : "Featured in Domme collection"
+        }
+      />
+
+      <ShopByItemAndDesignBrowse
+        byItemSections={byItemSections}
+        byDesignSections={byDesignSections}
         viewAllHrefForTag={(slug) => `${base}/tag/${slug}`}
         emptyMessage="No products in this collection yet. Import or sync in admin, assign tags, or browse all products."
       />

@@ -1,9 +1,9 @@
 "use server";
 
 import { randomBytes } from "node:crypto";
-import { put } from "@vercel/blob";
+import { Buffer } from "node:buffer";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { getAdminSession } from "@/lib/session";
@@ -11,20 +11,47 @@ import { Audience, FulfillmentType } from "@/generated/prisma/enums";
 import {
   fetchPrintifyCatalogEnriched,
   fetchPrintifyProductDetail,
+  setPrintifyProductPublishingFailed,
+  setPrintifyProductPublishingSucceeded,
   type PrintifyCatalogProduct,
 } from "@/lib/printify";
 import { pickImageForVariant } from "@/lib/printify-catalog";
+import {
+  getPrintifyVariantsForProduct,
+  parsePrintifyVariantsJson,
+} from "@/lib/printify-variants";
+import {
+  buildListingPrintifyUserUploadKey,
+  isPrintifyManagedListingImageUrl,
+  mergePrintifyResyncGallery,
+  resolvePrintifyPrimaryImageUrl,
+} from "@/lib/printify-import-image";
+import { pruneOrphanListingImagesFromR2 } from "@/lib/r2-listing-prune";
+import {
+  deleteListingImagesFromR2,
+  isR2UploadConfigured,
+  putPublicR2Object,
+} from "@/lib/r2-upload";
 import { slugify } from "@/lib/slugify";
 import {
   parseImageUrlList,
+  productAllStoredImageUrls,
+  productImageUrls,
+  productImageUrlsUnionHero,
   toGalleryJson,
 } from "@/lib/product-media";
+import { parseDesignNamesFromForm } from "@/lib/product-design-name-form";
 import { parseProductTagIdsFromForm } from "@/lib/product-tag-form";
+import { toDesignNamesJson } from "@/lib/product-design-names";
 import {
   audienceFromCollectionAssignment,
   parseCollectionAssignmentFromForm,
 } from "@/lib/collection-assignment";
 import { assertTagsValidForAudience } from "@/actions/admin-tags";
+import {
+  normalizeProductTagIds,
+  resolveNoTagId,
+} from "@/lib/no-tag";
 
 function revalidateShopSurface() {
   revalidatePath("/");
@@ -78,21 +105,61 @@ export async function updateProductDetails(
   const description =
     descRaw.trim() === "" ? null : descRaw.trim().slice(0, MAX_DESC_LEN);
 
-  const priceRaw = String(formData.get("price") ?? "").trim();
-  const priceFloat = parseFloat(priceRaw.replace(/,/g, ""));
-  if (!Number.isFinite(priceFloat) || priceFloat < 0) return;
-  const priceCents = Math.round(priceFloat * 100);
-  if (priceCents > 99_999_999) return;
+  const printifyVariantRows = getPrintifyVariantsForProduct(product);
+  let priceCents: number;
+  let printifyVariantsNext: Prisma.InputJsonValue | undefined;
+
+  if (
+    product.fulfillmentType === FulfillmentType.printify &&
+    printifyVariantRows.length > 0
+  ) {
+    const nextVariants: {
+      id: string;
+      title: string;
+      priceCents: number;
+      imageUrl: string | null;
+    }[] = [];
+    for (const v of printifyVariantRows) {
+      const raw = String(formData.get(`variantPrice_${v.id}`) ?? "").trim();
+      const priceFloat = parseFloat(raw.replace(/,/g, ""));
+      if (!Number.isFinite(priceFloat) || priceFloat < 0) return;
+      const pc = Math.round(priceFloat * 100);
+      if (pc > 99_999_999) return;
+      nextVariants.push({
+        id: v.id,
+        title: v.title,
+        priceCents: pc,
+        imageUrl: v.imageUrl ?? null,
+      });
+    }
+    printifyVariantsNext = nextVariants;
+    priceCents = nextVariants[0]!.priceCents;
+  } else {
+    const priceRaw = String(formData.get("price") ?? "").trim();
+    const priceFloat = parseFloat(priceRaw.replace(/,/g, ""));
+    if (!Number.isFinite(priceFloat) || priceFloat < 0) return;
+    priceCents = Math.round(priceFloat * 100);
+    if (priceCents > 99_999_999) return;
+  }
 
   const galleryRaw = String(formData.get("gallery") ?? "");
   const urls = parseImageUrlList(galleryRaw);
   const imageUrl = urls[0] ?? null;
   const imageGallery = toGalleryJson(urls);
+  const previousUrls = productAllStoredImageUrls(product);
+  const stillReferenced = new Set(urls.map((s) => s.trim()).filter(Boolean));
+  for (const v of parsePrintifyVariantsJson(product.printifyVariants)) {
+    const u = v.imageUrl?.trim();
+    if (u) stillReferenced.add(u);
+  }
+  const removedImageUrls = previousUrls.filter((u) => !stillReferenced.has(u.trim()));
 
   const { sub: colSub, domme: colDomme } =
     parseCollectionAssignmentFromForm(formData);
   const audienceNext = audienceFromCollectionAssignment(colSub, colDomme);
   if (!audienceNext) return;
+
+  const designNameList = parseDesignNamesFromForm(formData);
 
   const data: Prisma.ProductUpdateInput = {
     name,
@@ -100,9 +167,13 @@ export async function updateProductDetails(
     priceCents,
     imageUrl,
     imageGallery,
+    designNames: toDesignNamesJson(designNameList),
     active: formData.get("active") === "on",
     checkoutTipEligible: formData.get("checkoutTipEligible") === "on",
     audience: audienceNext,
+    ...(printifyVariantsNext !== undefined
+      ? { printifyVariants: printifyVariantsNext }
+      : {}),
   };
 
   if (
@@ -120,26 +191,39 @@ export async function updateProductDetails(
     data.trackInventory = false;
   }
 
-  const tagIds = parseProductTagIdsFromForm(formData);
-  if (tagIds.length > 0) {
-    const valid = await assertTagsValidForAudience(audienceNext, tagIds);
-    if (!valid.ok) return;
-    const primary = tagIds[0]!;
-    data.primaryTag = { connect: { id: primary } };
-    data.tags = {
-      deleteMany: {},
-      create: tagIds.map((tagId) => ({ tagId })),
-    };
-  }
+  const noTagId = await resolveNoTagId();
+  const tagIds = normalizeProductTagIds(
+    parseProductTagIdsFromForm(formData),
+    noTagId,
+  );
+  const valid = await assertTagsValidForAudience(audienceNext, tagIds);
+  if (!valid.ok) return;
+  const primary = tagIds[0]!;
+  data.primaryTag = { connect: { id: primary } };
+  data.tags = {
+    deleteMany: {},
+    create: tagIds.map((tagId) => ({ tagId })),
+  };
+
+  const slugBase = slugify(name).slice(0, 96);
+  const slugNext = await uniqueProductSlug(slugBase, { excludeProductId: productId });
+  data.slug = slugNext;
+
+  const previousSlug = product.slug;
 
   await prisma.product.update({
     where: { id: productId },
     data,
   });
 
+  await deleteListingImagesFromR2(removedImageUrls);
+
   revalidatePath("/admin");
   revalidateShopSurface();
-  revalidatePath("/product/" + product.slug);
+  revalidatePath("/product/" + previousSlug);
+  if (slugNext !== previousSlug) {
+    revalidatePath("/product/" + slugNext);
+  }
 
   const tab =
     product.fulfillmentType === FulfillmentType.printify ? "printify" : "manual";
@@ -216,10 +300,11 @@ export async function createManualUsedProduct(formData: FormData): Promise<void>
   let payCard = formData.get("payCard") === "on";
   if (!payCard && !payCashApp) payCard = true;
 
-  const tagIds = parseProductTagIdsFromForm(formData);
-  if (tagIds.length === 0) {
-    redirect("/admin?create=err&reason=category&tab=manual");
-  }
+  const noTagId = await resolveNoTagId();
+  const tagIds = normalizeProductTagIds(
+    parseProductTagIdsFromForm(formData),
+    noTagId,
+  );
 
   const { sub: colSub, domme: colDomme } =
     parseCollectionAssignmentFromForm(formData);
@@ -233,6 +318,7 @@ export async function createManualUsedProduct(formData: FormData): Promise<void>
     redirect("/admin?create=err&reason=category&tab=manual");
   }
   const primary = tagIds[0]!;
+  const designNameList = parseDesignNamesFromForm(formData);
 
   const slug = await uniqueProductSlug(slugify(name));
 
@@ -244,6 +330,7 @@ export async function createManualUsedProduct(formData: FormData): Promise<void>
       priceCents,
       imageUrl: urls[0] ?? null,
       imageGallery: toGalleryJson(urls),
+      designNames: toDesignNamesJson(designNameList),
       payCard,
       payCashApp,
       audience: audienceNew,
@@ -281,6 +368,7 @@ export async function deleteManualUsedProduct(productId: string): Promise<void> 
     redirect("/admin?delete=archived&tab=manual");
   }
 
+  await deleteListingImagesFromR2(productImageUrls(product));
   await prisma.product.delete({ where: { id: productId } });
 
   revalidatePath("/admin");
@@ -324,10 +412,16 @@ const unmappedPrintifyWhere = {
   printifyVariantId: null,
 } as const;
 
-async function uniqueProductSlug(base: string): Promise<string> {
+async function uniqueProductSlug(
+  base: string,
+  options?: { excludeProductId?: string },
+): Promise<string> {
+  const excludeId = options?.excludeProductId;
   let slug = base.slice(0, 96);
   let n = 0;
-  while (await prisma.product.findUnique({ where: { slug } })) {
+  while (true) {
+    const row = await prisma.product.findUnique({ where: { slug } });
+    if (!row || row.id === excludeId) break;
     n += 1;
     slug = `${base}-${n}`.slice(0, 96);
   }
@@ -342,37 +436,12 @@ function importAudience(): Audience {
   return Audience.both;
 }
 
-function displayNameForAutoImportTag(slug: string): string {
-  const parts = slug.split(/[-_]+/).filter(Boolean);
-  if (parts.length === 0) return slug;
-  return parts
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
-}
-
-async function resolveImportTagId(): Promise<string> {
-  const slug = (process.env.PRINTIFY_IMPORT_TAG_SLUG?.trim() || "mug").toLowerCase();
-  const maxSo = await prisma.tag.aggregate({ _max: { sortOrder: true } });
-  const sortOrder = (maxSo._max.sortOrder ?? -1) + 1;
-  const row = await prisma.tag.upsert({
-    where: { slug },
-    create: {
-      slug,
-      name: displayNameForAutoImportTag(slug),
-      sortOrder,
-    },
-    update: {},
-    select: { id: true },
-  });
-  return row.id;
-}
-
 async function deleteOrArchivePrintifyListingById(
   productId: string,
 ): Promise<"deleted" | "archived" | "noop"> {
   const row = await prisma.product.findUnique({
     where: { id: productId },
-    select: { slug: true },
+    select: { slug: true, imageUrl: true, imageGallery: true },
   });
   if (!row) return "noop";
 
@@ -391,15 +460,14 @@ async function deleteOrArchivePrintifyListingById(
     return "archived";
   }
 
+  await deleteListingImagesFromR2(productImageUrls(row));
   await prisma.product.delete({ where: { id: productId } });
   revalidatePath("/product/" + row.slug);
   return "deleted";
 }
 
-async function ensurePrintifyProductTagged(
-  productId: string,
-  fallbackTagId: string,
-): Promise<void> {
+async function ensurePrintifyProductTagged(productId: string): Promise<void> {
+  const noTagId = await resolveNoTagId();
   const row = await prisma.product.findUnique({
     where: { id: productId },
     select: {
@@ -408,7 +476,7 @@ async function ensurePrintifyProductTagged(
     },
   });
   if (!row || row._count.tags > 0) return;
-  const tagId = row.primaryTagId ?? fallbackTagId;
+  const tagId = row.primaryTagId ?? noTagId;
   await prisma.product.update({
     where: { id: productId },
     data: {
@@ -443,13 +511,16 @@ type SyncOnePrintifyRowResult = {
 
 async function processOnePrintifyCatalogProduct(
   p: PrintifyCatalogProduct,
-  syncMode: "full" | "new" | "resync",
-  importTagId: string,
+  syncMode: "full" | "new" | "resync" | "single",
+  noTagId: string,
 ): Promise<SyncOnePrintifyRowResult> {
   let updated = 0;
   let created = 0;
   let skipped = 0;
   let removed = 0;
+
+  /** Resync / single: keep storefront title, description. Gallery always merges a fresh Printify hero with manual uploads. */
+  const resyncPreservesStorefront = syncMode === "resync" || syncMode === "single";
 
   const enabledVariants = p.variants.filter((v) => v.enabled);
   if (enabledVariants.length === 0) {
@@ -483,19 +554,11 @@ async function processOnePrintifyCatalogProduct(
   });
 
   const first = variantRows[0]!;
-  const galleryUrls: string[] = [];
-  const seen = new Set<string>();
-  for (const vr of variantRows) {
-    if (vr.imageUrl && !seen.has(vr.imageUrl)) {
-      seen.add(vr.imageUrl);
-      galleryUrls.push(vr.imageUrl);
-      if (galleryUrls.length >= 20) break;
-    }
-  }
   const heroImage =
     first.imageUrl ??
     pickImageForVariant(p.images, enabledVariants[0]!.id) ??
     null;
+  const primaryImageUrl = await resolvePrintifyPrimaryImageUrl(heroImage, p.id);
 
   const name = p.title.slice(0, MAX_NAME_LEN);
   const variantsJson = variantRows as unknown as Prisma.InputJsonValue;
@@ -517,24 +580,41 @@ async function processOnePrintifyCatalogProduct(
       existingForProduct.find((row) => row.slug === preferredSlug) ??
       existingForProduct[0]!;
     await archiveOrDeleteOtherPrintifyRows(p.id, keep.id);
+    const previousAll = productAllStoredImageUrls(keep);
+    const nextUrls = mergePrintifyResyncGallery(
+      productImageUrlsUnionHero(keep),
+      primaryImageUrl,
+    );
+    const variantImageUrls = variantRows
+      .map((v) => v.imageUrl?.trim())
+      .filter((u): u is string => Boolean(u));
+    const nextSet = new Set(
+      [...nextUrls, ...variantImageUrls].map((x) => x.trim()).filter(Boolean),
+    );
+    const printifyOrphansToDelete = previousAll.filter(
+      (u) => isPrintifyManagedListingImageUrl(u) && !nextSet.has(u.trim()),
+    );
     await prisma.product.update({
       where: { id: keep.id },
       data: {
-        name,
+        ...(resyncPreservesStorefront ? {} : { name }),
         printifyProductId: p.id,
         printifyVariantId: first.id,
         printifyVariants: variantsJson,
         priceCents: first.priceCents,
-        ...(typeof p.description === "string" ? { description: p.description } : {}),
-        imageUrl: heroImage,
-        imageGallery: toGalleryJson(
-          galleryUrls.length > 0 ? galleryUrls : heroImage ? [heroImage] : [],
-        ),
+        ...(resyncPreservesStorefront
+          ? {}
+          : typeof p.description === "string"
+            ? { description: p.description }
+            : {}),
+        imageUrl: nextUrls[0] ?? null,
+        imageGallery: toGalleryJson(nextUrls),
         active: true,
         trackInventory: false,
       },
     });
-    await ensurePrintifyProductTagged(keep.id, importTagId);
+    await deleteListingImagesFromR2(printifyOrphansToDelete);
+    await ensurePrintifyProductTagged(keep.id);
     return { updated: 1, created: 0, skipped: 0, removed: 0 };
   }
 
@@ -553,28 +633,45 @@ async function processOnePrintifyCatalogProduct(
     if (syncMode === "new") {
       return { updated: 0, created: 0, skipped: 1, removed: 0 };
     }
+    const previousAll = productAllStoredImageUrls(match);
+    const nextUrls = mergePrintifyResyncGallery(
+      productImageUrlsUnionHero(match),
+      primaryImageUrl,
+    );
+    const variantImageUrls = variantRows
+      .map((v) => v.imageUrl?.trim())
+      .filter((u): u is string => Boolean(u));
+    const nextSet = new Set(
+      [...nextUrls, ...variantImageUrls].map((x) => x.trim()).filter(Boolean),
+    );
+    const printifyOrphansToDelete = previousAll.filter(
+      (u) => isPrintifyManagedListingImageUrl(u) && !nextSet.has(u.trim()),
+    );
     await prisma.product.update({
       where: { id: match.id },
       data: {
-        name,
+        ...(resyncPreservesStorefront ? {} : { name }),
         printifyProductId: p.id,
         printifyVariantId: first.id,
         printifyVariants: variantsJson,
         priceCents: first.priceCents,
-        ...(typeof p.description === "string" ? { description: p.description } : {}),
-        imageUrl: heroImage,
-        imageGallery: toGalleryJson(
-          galleryUrls.length > 0 ? galleryUrls : heroImage ? [heroImage] : [],
-        ),
+        ...(resyncPreservesStorefront
+          ? {}
+          : typeof p.description === "string"
+            ? { description: p.description }
+            : {}),
+        imageUrl: nextUrls[0] ?? null,
+        imageGallery: toGalleryJson(nextUrls),
         active: true,
         trackInventory: false,
       },
     });
-    await ensurePrintifyProductTagged(match.id, importTagId);
+    await deleteListingImagesFromR2(printifyOrphansToDelete);
+    await ensurePrintifyProductTagged(match.id);
     return { updated: 1, created: 0, skipped: 0, removed: 0 };
   }
 
-  if (syncMode === "resync") {
+  if (syncMode === "resync" || syncMode === "single") {
     return { updated: 0, created: 0, skipped: 1, removed: 0 };
   }
 
@@ -586,14 +683,12 @@ async function processOnePrintifyCatalogProduct(
       name,
       description: p.description,
       priceCents: first.priceCents,
-      imageUrl: heroImage,
-      imageGallery: toGalleryJson(
-        galleryUrls.length > 0 ? galleryUrls : heroImage ? [heroImage] : [],
-      ),
+      imageUrl: primaryImageUrl,
+      imageGallery: toGalleryJson(primaryImageUrl ? [primaryImageUrl] : []),
       audience: aud,
       fulfillmentType: FulfillmentType.printify,
-      primaryTagId: importTagId,
-      tags: { create: [{ tagId: importTagId }] },
+      primaryTagId: noTagId,
+      tags: { create: [{ tagId: noTagId }] },
       printifyProductId: p.id,
       printifyVariantId: first.id,
       printifyVariants: variantsJson,
@@ -632,20 +727,24 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
   }
 
   const syncModeRaw = String(formData.get("syncMode") ?? "full");
-  const syncMode: "full" | "new" | "resync" =
-    syncModeRaw === "new" || syncModeRaw === "resync" ? syncModeRaw : "full";
-  const importTagId = await resolveImportTagId();
+  const syncMode: "full" | "new" | "resync" | "single" =
+    syncModeRaw === "new" || syncModeRaw === "resync" || syncModeRaw === "single"
+      ? syncModeRaw
+      : "full";
+  const noTagId = await resolveNoTagId();
 
   let updated = 0;
   let created = 0;
   let skipped = 0;
   let removed = 0;
 
-  const catalog = await fetchPrintifyCatalogEnriched(shopId);
+  const catalog = await fetchPrintifyCatalogEnriched(shopId, {
+    forceProductDetail: syncMode === "full" || syncMode === "resync",
+  });
   const catalogIds = new Set(catalog.map((c) => c.id));
 
   for (const p of catalog) {
-    const r = await processOnePrintifyCatalogProduct(p, syncMode, importTagId);
+    const r = await processOnePrintifyCatalogProduct(p, syncMode, noTagId);
     updated += r.updated;
     created += r.created;
     skipped += r.skipped;
@@ -679,8 +778,12 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
 
   await revalidatePrintifyDependentPaths();
 
+  const fullSyncAtQuery =
+    syncMode === "full"
+      ? `&fullSyncAt=${encodeURIComponent(new Date().toISOString())}`
+      : "";
   redirect(
-    `/admin?tab=printify&sync=ok&syncMode=${syncMode}&updated=${updated}&created=${created}&skipped=${skipped}&removed=${removed}`,
+    `/admin?tab=printify&sync=ok&syncMode=${syncMode}&updated=${updated}&created=${created}&skipped=${skipped}&removed=${removed}${fullSyncAtQuery}`,
   );
 }
 
@@ -700,19 +803,110 @@ export async function resyncPrintifyCatalogProduct(formData: FormData): Promise<
     redirect("/admin?tab=printify&sync=err&reason=no_shop");
   }
 
-  const importTagId = await resolveImportTagId();
+  const noTagId = await resolveNoTagId();
 
   const p = await fetchPrintifyProductDetail(shopId, printifyProductId);
   if (!p) {
     redirect("/admin?tab=printify&sync=err&reason=catalog_not_found");
   }
 
-  const r = await processOnePrintifyCatalogProduct(p, "full", importTagId);
+  const r = await processOnePrintifyCatalogProduct(p, "single", noTagId);
 
   await revalidatePrintifyDependentPaths();
 
   redirect(
     `/admin?tab=printify&sync=ok&syncMode=single&updated=${r.updated}&created=${r.created}&skipped=${r.skipped}&removed=${r.removed}&printifyId=${encodeURIComponent(printifyProductId)}`,
+  );
+}
+
+export async function adminPruneOrphanListingImagesR2(formData: FormData): Promise<void> {
+  const admin = await getAdminSession();
+  if (!admin.isAdmin) {
+    redirect("/admin/login");
+  }
+
+  const intent = String(formData.get("intent") ?? "preview").trim();
+  const dryRun = intent !== "delete";
+
+  if (dryRun === false && formData.get("confirm") !== "on") {
+    redirect("/admin?tab=printify&r2Prune=err&r2PruneReason=confirm_required");
+  }
+
+  if (!isR2UploadConfigured()) {
+    redirect("/admin?tab=printify&r2Prune=err&r2PruneReason=no_r2");
+  }
+
+  try {
+    const r = await pruneOrphanListingImagesFromR2({ dryRun });
+    const q = new URLSearchParams({
+      tab: "printify",
+      r2Prune: dryRun ? "preview" : "ok",
+      r2Listed: String(r.listedObjectCount),
+      r2Ref: String(r.referencedKeyCount),
+      r2Orphans: String(r.orphanKeyCount),
+      r2Deleted: String(r.deletedCount),
+    });
+    redirect(`/admin?${q.toString()}`);
+  } catch (e) {
+    unstable_rethrow(e);
+    const msg = e instanceof Error ? e.message : String(e);
+    redirect(
+      `/admin?tab=printify&r2Prune=err&r2PruneReason=${encodeURIComponent(msg.replace(/\s+/g, " ").slice(0, 240))}`,
+    );
+  }
+}
+
+export async function notifyPrintifyPublishingSucceeded(formData: FormData): Promise<void> {
+  const admin = await getAdminSession();
+  if (!admin.isAdmin) {
+    redirect("/admin/login");
+  }
+
+  const printifyProductId = String(formData.get("printifyProductId") ?? "").trim();
+  const shopId = process.env.PRINTIFY_SHOP_ID?.trim();
+  if (!shopId) {
+    redirect("/admin?tab=printify&pub=err&pubReason=no_shop");
+  }
+  if (!printifyProductId) {
+    redirect("/admin?tab=printify&pub=err&pubReason=no_product");
+  }
+
+  const r = await setPrintifyProductPublishingSucceeded(shopId, printifyProductId);
+  if (!r.ok) {
+    redirect(
+      `/admin?tab=printify&pub=err&pubReason=api&pubPid=${encodeURIComponent(printifyProductId)}&pubDetail=${encodeURIComponent(r.body.replace(/\s+/g, " ").slice(0, 280))}`,
+    );
+  }
+
+  redirect(
+    `/admin?tab=printify&pub=ok&pubKind=succeeded&pubPid=${encodeURIComponent(printifyProductId)}`,
+  );
+}
+
+export async function notifyPrintifyPublishingFailed(formData: FormData): Promise<void> {
+  const admin = await getAdminSession();
+  if (!admin.isAdmin) {
+    redirect("/admin/login");
+  }
+
+  const printifyProductId = String(formData.get("printifyProductId") ?? "").trim();
+  const shopId = process.env.PRINTIFY_SHOP_ID?.trim();
+  if (!shopId) {
+    redirect("/admin?tab=printify&pub=err&pubReason=no_shop");
+  }
+  if (!printifyProductId) {
+    redirect("/admin?tab=printify&pub=err&pubReason=no_product");
+  }
+
+  const r = await setPrintifyProductPublishingFailed(shopId, printifyProductId);
+  if (!r.ok) {
+    redirect(
+      `/admin?tab=printify&pub=err&pubReason=api&pubPid=${encodeURIComponent(printifyProductId)}&pubDetail=${encodeURIComponent(r.body.replace(/\s+/g, " ").slice(0, 280))}`,
+    );
+  }
+
+  redirect(
+    `/admin?tab=printify&pub=ok&pubKind=failed&pubPid=${encodeURIComponent(printifyProductId)}`,
   );
 }
 
@@ -729,10 +923,11 @@ export async function uploadListingImage(
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   const admin = await getAdminSession();
   if (!admin.isAdmin) return { ok: false, error: "Unauthorized." };
-  if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
+  if (!isR2UploadConfigured()) {
     return {
       ok: false,
-      error: "Set BLOB_READ_WRITE_TOKEN for uploads, or paste image URLs.",
+      error:
+        "Set R2_ACCOUNT_ID (or R2_ENDPOINT), R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, and R2_PUBLIC_BASE_URL — or paste image URLs.",
     };
   }
 
@@ -755,12 +950,27 @@ export async function uploadListingImage(
         : file.type === "image/webp"
           ? "webp"
           : "gif";
-  const pathname = `listing/${Date.now()}-${randomBytes(8).toString("hex")}.${ext}`;
 
-  const blob = await put(pathname, file, {
-    access: "public",
-    addRandomSuffix: true,
-  });
+  const listingUploadVariant = String(formData.get("listingUploadVariant") ?? "").trim();
+  const printifyProductIdForUpload = String(formData.get("printifyProductId") ?? "").trim();
+  const key =
+    listingUploadVariant === "printify"
+      ? buildListingPrintifyUserUploadKey(
+          printifyProductIdForUpload || null,
+          ext,
+        )
+      : `listing/${Date.now()}-${randomBytes(8).toString("hex")}.${ext}`;
 
-  return { ok: true, url: blob.url };
+  try {
+    const buf = Buffer.from(await file.arrayBuffer());
+    const url = await putPublicR2Object({
+      key,
+      body: buf,
+      contentType: file.type,
+    });
+    return { ok: true, url };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: `R2 upload failed: ${msg}` };
+  }
 }

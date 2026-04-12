@@ -60,3 +60,17 @@ export function metadataBaseUrl(): URL {
 
   return new URL("http://localhost:3000");
 }
+
+/** Live HTTPS origin for Printify webhooks: `NEXT_PUBLIC_APP_URL`, else `https://VERCEL_URL` in production. */
+export function webhookPublicBaseUrl(): string | undefined {
+  const base = publicAppBaseUrl()?.replace(/\/$/, "");
+  if (base) return base;
+  if (process.env.NODE_ENV === "production") {
+    const vu = process.env.VERCEL_URL?.trim();
+    if (vu) {
+      const host = vu.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+      return `https://${host}`;
+    }
+  }
+  return undefined;
+}

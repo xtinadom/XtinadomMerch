@@ -15,6 +15,8 @@ export type PrintifyCatalogProduct = {
   description: string | null;
   variants: PrintifyCatalogVariant[];
   images: PrintifyCatalogImage[];
+  /** From Printify `updated_at` / `created_at` when present (ISO). */
+  updatedAt: Date | null;
 };
 
 function parseImages(raw: unknown): PrintifyCatalogImage[] {
@@ -23,9 +25,10 @@ function parseImages(raw: unknown): PrintifyCatalogImage[] {
   for (const img of raw) {
     if (!img || typeof img !== "object") continue;
     const o = img as Record<string, unknown>;
-    const src = typeof o.src === "string" && o.src.trim() ? o.src.trim() : "";
+    const srcRaw = o.src ?? o.url ?? o.preview_url;
+    const src = typeof srcRaw === "string" && srcRaw.trim() ? srcRaw.trim() : "";
     if (!src) continue;
-    const idsRaw = o.variant_ids;
+    const idsRaw = o.variant_ids ?? o.variantIds;
     const variantIds: number[] = [];
     if (Array.isArray(idsRaw)) {
       for (const x of idsRaw) {
@@ -69,6 +72,12 @@ function parseVariants(raw: unknown): PrintifyCatalogVariant[] {
   return out;
 }
 
+function parseIsoDate(value: unknown): Date | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const d = new Date(value.trim());
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
 export function parsePrintifyProductRow(row: unknown): PrintifyCatalogProduct | null {
   if (!row || typeof row !== "object") return null;
   const r = row as Record<string, unknown>;
@@ -81,7 +90,13 @@ export function parsePrintifyProductRow(row: unknown): PrintifyCatalogProduct | 
       : null;
   const variants = parseVariants(r.variants);
   const images = parseImages(r.images);
-  return { id, title, description, variants, images };
+  const updatedAt =
+    parseIsoDate(r.updated_at) ??
+    parseIsoDate(r.updatedAt) ??
+    parseIsoDate(r.created_at) ??
+    parseIsoDate(r.createdAt) ??
+    null;
+  return { id, title, description, variants, images, updatedAt };
 }
 
 export function pickImageForVariant(

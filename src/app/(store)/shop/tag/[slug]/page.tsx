@@ -2,8 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getStoreTags } from "@/lib/store-tags";
+import { FeaturedProductsCarousel } from "@/components/FeaturedProductsCarousel";
 import { ProductCard } from "@/components/ProductCard";
 import { SHOP_ALL_ROUTE } from "@/lib/constants";
+import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +46,11 @@ export default async function ShopUniversalTagPage({ params }: Props) {
       <p className="mt-1 text-sm text-zinc-500">
         All items with this tag (Sub collection, Domme collection, or both).
       </p>
+
+      <FeaturedProductsCarousel
+        items={productsToFeaturedCarouselItems(products)}
+        label={`Featured with tag ${activeTag.name}`}
+      />
 
       {products.length === 0 ? (
         <p className="mt-8 text-sm text-zinc-600">No products with this tag yet.</p>

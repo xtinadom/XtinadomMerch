@@ -25,14 +25,20 @@ enum CatalogGroup {
 }
 
 model Tag {
-  id              String    @id @default(cuid())
-  slug            String    @unique
-  name            String
-  sortOrder       Int       @default(0)
-  productTags     ProductTag[]
-  primaryProducts Product[] @relation("ProductPrimaryTag")
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                                String    @id @default(cuid())
+  slug                              String    @unique
+  name                              String
+  sortOrder                         Int       @default(0)
+  /** Optional: “By Item” pick for Sub collection; product must have this tag and Sub or Both audience. */
+  subCollectionSpotlightProductId   String?
+  subCollectionSpotlightProduct     Product?  @relation("TagSubCollectionSpotlight", fields: [subCollectionSpotlightProductId], references: [id], onDelete: SetNull)
+  /** Optional: “By Item” pick for Domme collection; product must have this tag and Domme or Both audience. */
+  dommeCollectionSpotlightProductId String?
+  dommeCollectionSpotlightProduct   Product?  @relation("TagDommeCollectionSpotlight", fields: [dommeCollectionSpotlightProductId], references: [id], onDelete: SetNull)
+  productTags                       ProductTag[]
+  primaryProducts                   Product[] @relation("ProductPrimaryTag")
+  createdAt                         DateTime  @default(now())
+  updatedAt                         DateTime  @updatedAt
 }
 
 model ProductTag {
@@ -58,11 +64,15 @@ model Product {
   fulfillmentType     FulfillmentType
   primaryTagId        String?
   primaryTag          Tag?            @relation("ProductPrimaryTag", fields: [primaryTagId], references: [id], onDelete: SetNull)
-  tags                ProductTag[]
+  tags                          ProductTag[]
+  tagSubCollectionSpotlights    Tag[]           @relation("TagSubCollectionSpotlight")
+  tagDommeCollectionSpotlights  Tag[]           @relation("TagDommeCollectionSpotlight")
   checkoutTipEligible Boolean         @default(false)
   printifyProductId   String?
   printifyVariantId   String?
   printifyVariants    Json?
+  /** Ordered display labels (e.g. design series); first is primary. JSON string[]. */
+  designNames         Json?
   stockQuantity       Int             @default(0)
   trackInventory      Boolean         @default(true)
   active              Boolean         @default(true)

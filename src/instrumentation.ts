@@ -15,9 +15,9 @@ export async function register() {
         [
           "",
           "[xtinadom] Cannot reach PostgreSQL. Prisma may report this as «Invalid … findMany() invocation» (often with ECONNREFUSED).",
-          "  • From repo root: docker compose up -d",
+          "  • From repo root: npm run db:up   (or: docker compose up -d)",
           "  • Or install PostgreSQL locally and set DATABASE_URL in .env",
-          "  • If connection still fails on Windows, try 127.0.0.1 instead of localhost in DATABASE_URL",
+          "  • If connection still fails on Windows, use 127.0.0.1 instead of localhost in DATABASE_URL",
           "  • Then: npx prisma db push && npm run db:seed",
           `  (${detail})`,
           "",

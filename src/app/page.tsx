@@ -15,10 +15,6 @@ export default function HomePage() {
         <h1 className="store-dimension-page-title mt-3 text-3xl text-zinc-50 sm:text-4xl">
           Merch
         </h1>
-        <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-zinc-400">
-          One shop and one cart. Narrow by Sub or Domme collection below, or open the
-          full catalog at the end of this page.
-        </p>
       </header>
 
       <p className="mt-12 text-center text-xs font-medium uppercase tracking-wide text-zinc-600">
@@ -35,10 +31,10 @@ export default function HomePage() {
           </span>
           <h2 className="mt-2 text-xl font-semibold text-zinc-50">Sub</h2>
           <p className="mt-2 flex-1 text-sm leading-relaxed text-zinc-400">
-            Photo-printed pieces, stickers, and sub-audience favorites.
+            Items with Goddess Xtina's photos.
           </p>
           <span className="mt-6 text-sm font-medium text-blue-300 group-hover:text-blue-200">
-            Browse Sub collection →
+            Buy Goddess Xtina merch →
           </span>
         </Link>
 
@@ -51,7 +47,7 @@ export default function HomePage() {
           </span>
           <h2 className="mt-2 text-xl font-semibold text-zinc-50">Domme</h2>
           <p className="mt-2 flex-1 text-sm leading-relaxed text-zinc-400">
-            Domme-audience merch and staples — mugs, apparel, and more.
+            Domme themed staples — mugs, apparel, and more.
           </p>
           <span className="mt-6 text-sm font-medium text-zinc-300 group-hover:text-zinc-100">
             Browse Domme collection →

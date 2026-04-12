@@ -8,6 +8,7 @@ const TYPE_TAGS: { slug: string; name: string; sortOrder: number }[] = [
   { slug: "sticker", name: "Sticker", sortOrder: 4 },
   { slug: "canvas-print", name: "Canvas print", sortOrder: 5 },
   { slug: "mousepad", name: "Mousepad", sortOrder: 6 },
+  { slug: "no-tag", name: "No tag", sortOrder: 999 },
 ];
 
 async function main() {

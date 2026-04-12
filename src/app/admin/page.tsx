@@ -15,16 +15,25 @@ import {
   adminUpdateTagForm,
 } from "@/actions/admin-tags";
 import type { Prisma } from "@/generated/prisma/client";
-import { FulfillmentType, OrderStatus } from "@/generated/prisma/enums";
+import {
+  Audience,
+  FulfillmentType,
+  OrderStatus,
+} from "@/generated/prisma/enums";
 import { productImageUrls } from "@/lib/product-media";
 import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
 import { CollectionAssignmentFields } from "@/components/admin/CollectionAssignmentFields";
+import { ProductDesignNameFields } from "@/components/admin/ProductDesignNameFields";
 import { ProductTagFields } from "@/components/admin/ProductTagFields";
-import { productTagIds } from "@/lib/product-tags";
+import { productHasTag, productTagIds } from "@/lib/product-tags";
 import { PrintifyApiTab } from "./printify-api-tab";
 import { PrintifyInventoryTab } from "./printify-inventory-tab";
 import { ListingGalleryEditor } from "@/components/admin/ListingGalleryEditor";
 import { SaveListingForm } from "@/components/admin/SaveListingForm";
+import {
+  collectKnownDesignNamesFromProducts,
+  designNamesFromJson,
+} from "@/lib/product-design-names";
 
 export const dynamic = "force-dynamic";
 
@@ -49,14 +58,16 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
   const sp = await searchParams;
   const tabParam = typeof sp.tab === "string" ? sp.tab : undefined;
-  const inventoryTab: "manual" | "printify" | "printify-api" | "tags" =
+  const inventoryTab: "manual" | "printify" | "orders" | "printify-api" | "tags" =
     tabParam === "printify"
       ? "printify"
-      : tabParam === "printify-api"
-        ? "printify-api"
-        : tabParam === "tags"
-          ? "tags"
-          : "manual";
+      : tabParam === "orders"
+        ? "orders"
+        : tabParam === "printify-api"
+          ? "printify-api"
+          : tabParam === "tags"
+            ? "tags"
+            : "manual";
   const createOk = sp.create === "ok";
   const createErr = typeof sp.create === "string" && sp.create === "err";
   const createReason = typeof sp.reason === "string" ? sp.reason : undefined;
@@ -69,12 +80,93 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const syncRemoved = typeof sp.removed === "string" ? sp.removed : undefined;
   const syncReason = typeof sp.reason === "string" ? sp.reason : undefined;
   const syncMode = typeof sp.syncMode === "string" ? sp.syncMode : undefined;
+  const fullSyncAtRaw = typeof sp.fullSyncAt === "string" ? sp.fullSyncAt : undefined;
+  const fullSyncAt =
+    fullSyncAtRaw != null
+      ? (() => {
+          try {
+            return decodeURIComponent(fullSyncAtRaw);
+          } catch {
+            return fullSyncAtRaw;
+          }
+        })()
+      : undefined;
   const tagErr = typeof sp.tag_err === "string" ? sp.tag_err : undefined;
   const saved = typeof sp.saved === "string" ? sp.saved : undefined;
-  const listingSavedId =
+  const listingQueryId =
     typeof sp.listing === "string" ? sp.listing : undefined;
   const tagSaved = typeof sp.tag_saved === "string" ? sp.tag_saved : undefined;
+  const savedTagId =
+    typeof sp.saved_tag_id === "string" ? sp.saved_tag_id : undefined;
   const stockErr = typeof sp.stock_err === "string" ? sp.stock_err : undefined;
+  const pfyHook = typeof sp.pfyHook === "string" ? sp.pfyHook : undefined;
+  const pfyHookReason = typeof sp.pfyHookReason === "string" ? sp.pfyHookReason : undefined;
+  const pfyHookDetail = typeof sp.pfyHookDetail === "string" ? sp.pfyHookDetail : undefined;
+  const pub = typeof sp.pub === "string" ? sp.pub : undefined;
+  const pubKind = typeof sp.pubKind === "string" ? sp.pubKind : undefined;
+  const pubPid = typeof sp.pubPid === "string" ? sp.pubPid : undefined;
+  const pubReason = typeof sp.pubReason === "string" ? sp.pubReason : undefined;
+  const pubDetail = typeof sp.pubDetail === "string" ? sp.pubDetail : undefined;
+  const r2Prune = typeof sp.r2Prune === "string" ? sp.r2Prune : undefined;
+  const r2PruneReason =
+    typeof sp.r2PruneReason === "string" ? sp.r2PruneReason : undefined;
+  const r2Listed = typeof sp.r2Listed === "string" ? sp.r2Listed : undefined;
+  const r2Ref = typeof sp.r2Ref === "string" ? sp.r2Ref : undefined;
+  const r2Orphans = typeof sp.r2Orphans === "string" ? sp.r2Orphans : undefined;
+  const r2Deleted = typeof sp.r2Deleted === "string" ? sp.r2Deleted : undefined;
+
+  const printifyHookBanner =
+    pfyHook === "ok"
+      ? {
+          variant: "ok" as const,
+          text:
+            pfyHookDetail === "already"
+              ? "This storefront webhook is already registered with Printify."
+              : "Registered the order webhook with Printify. They can POST events to your live URL.",
+        }
+      : pfyHook === "err"
+        ? {
+            variant: "err" as const,
+            text:
+              pfyHookReason === "no_shop"
+                ? "Set PRINTIFY_SHOP_ID in the environment."
+                : pfyHookReason === "no_secret"
+                  ? "Set PRINTIFY_WEBHOOK_SECRET (at least 16 random characters) in the environment."
+                  : pfyHookReason === "no_public_url"
+                    ? "Set NEXT_PUBLIC_APP_URL to your live https origin (or deploy on Vercel so VERCEL_URL is available)."
+                    : (() => {
+                        try {
+                          return decodeURIComponent(pfyHookReason ?? "Something went wrong.");
+                        } catch {
+                          return pfyHookReason ?? "Something went wrong.";
+                        }
+                      })(),
+          }
+        : undefined;
+
+  const printifyPublishNotice =
+    pub === "ok"
+      ? {
+          variant: "ok" as const,
+          kind: pubKind === "failed" ? ("failed" as const) : ("succeeded" as const),
+          productId: pubPid,
+        }
+      : pub === "err"
+        ? {
+            variant: "err" as const,
+            reason: pubReason,
+            productId: pubPid,
+            detail: pubDetail
+              ? (() => {
+                  try {
+                    return decodeURIComponent(pubDetail);
+                  } catch {
+                    return pubDetail;
+                  }
+                })()
+              : undefined,
+          }
+        : undefined;
 
   const [products, orders, adminTags] = await Promise.all([
     prisma.product.findMany({
@@ -101,6 +193,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const printifyProducts = products.filter(
     (p) => p.fulfillmentType === FulfillmentType.printify,
   );
+
+  const knownDesignNames = collectKnownDesignNamesFromProducts(products);
 
   const defaultCreateTagIds = adminTags[0] ? [adminTags[0].id] : [];
 
@@ -211,6 +305,19 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           >
             Printify items
             <span className="ml-1.5 tabular-nums text-zinc-500">({printifyProducts.length})</span>
+          </Link>
+          <Link
+            href="/admin?tab=orders"
+            role="tab"
+            aria-selected={inventoryTab === "orders"}
+            className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "orders"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Orders
+            <span className="ml-1.5 tabular-nums text-zinc-500">({orders.length})</span>
           </Link>
           <Link
             href="/admin?tab=printify-api"
@@ -361,6 +468,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                       Add tags in the Tags tab before creating used items.
                     </p>
                   )}
+                  <ProductDesignNameFields knownNames={knownDesignNames} defaultNames={[]} />
                   <button
                     type="submit"
                     className="rounded bg-emerald-900/80 px-3 py-2 text-xs font-medium text-emerald-100 hover:bg-emerald-800/80"
@@ -415,7 +523,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                     <SaveListingForm
                       action={updateProductDetails.bind(null, p.id)}
                       savedHighlight={
-                        saved === "product" && listingSavedId === p.id
+                        saved === "product" && listingQueryId === p.id
                       }
                     >
                       <label className="block text-xs text-zinc-500">
@@ -441,6 +549,11 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                         key={`edit-${p.id}-${productTagIds(p).join("-")}`}
                         tags={adminTags}
                         defaultTagIds={productTagIds(p)}
+                      />
+                      <ProductDesignNameFields
+                        key={`edit-design-${p.id}-${designNamesFromJson(p.designNames).join("|")}`}
+                        knownNames={knownDesignNames}
+                        defaultNames={designNamesFromJson(p.designNames)}
                       />
                       <CollectionAssignmentFields audience={p.audience} />
                       <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
@@ -533,17 +646,96 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
               allTags={adminTags}
               sync={sync}
               syncMode={syncMode}
+              fullSyncAtIso={fullSyncAt}
               syncUpdated={syncUpdated}
               syncCreated={syncCreated}
               syncSkipped={syncSkipped}
               syncRemoved={syncRemoved}
               syncReason={syncReason}
+              openListingId={listingQueryId}
               listingSavedId={
-                saved === "product" ? listingSavedId : undefined
+                saved === "product" ? listingQueryId : undefined
+              }
+              publishNotice={printifyPublishNotice}
+              r2PruneNotice={
+                r2Prune === "preview" && r2Listed !== undefined
+                  ? {
+                      variant: "preview",
+                      listed: parseInt(r2Listed, 10) || 0,
+                      referenced: parseInt(r2Ref ?? "0", 10) || 0,
+                      orphans: parseInt(r2Orphans ?? "0", 10) || 0,
+                    }
+                  : r2Prune === "ok" && r2Listed !== undefined
+                    ? {
+                        variant: "ok",
+                        listed: parseInt(r2Listed, 10) || 0,
+                        referenced: parseInt(r2Ref ?? "0", 10) || 0,
+                        orphans: parseInt(r2Orphans ?? "0", 10) || 0,
+                        deleted: parseInt(r2Deleted ?? "0", 10) || 0,
+                      }
+                    : r2Prune === "err"
+                      ? {
+                          variant: "err",
+                          reason: r2PruneReason ?? "Unknown error.",
+                        }
+                      : undefined
               }
             />
+          ) : inventoryTab === "orders" ? (
+            <section aria-label="Recent orders">
+              <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Recent orders</h2>
+              <p className="mt-1 text-xs text-zinc-600">Latest 25 orders, newest first.</p>
+              <ul className="mt-4 space-y-3">
+                {orders.map((o) => (
+                  <li
+                    key={o.id}
+                    className="rounded-lg border border-zinc-800 p-4 text-sm"
+                  >
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <span className="font-mono text-xs text-zinc-500">{o.id.slice(0, 12)}…</span>
+                      <span
+                        className={
+                          o.status === OrderStatus.paid
+                            ? "text-emerald-400"
+                            : o.status === OrderStatus.pending_payment
+                              ? "text-amber-400"
+                              : "text-zinc-500"
+                        }
+                      >
+                        {o.status}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-zinc-300">
+                      {formatPrice(o.totalCents)} · tip {formatPrice(o.tipCents)} ·{" "}
+                      {o.email ?? "no email"}
+                    </p>
+                    <ul className="mt-2 text-xs text-zinc-500">
+                      {o.lines.map((l) => (
+                        <li key={l.id}>
+                          {l.productName} × {l.quantity} ({l.fulfillmentType})
+                        </li>
+                      ))}
+                    </ul>
+                    {o.fulfillmentJobs.length > 0 && (
+                      <ul className="mt-2 border-t border-zinc-800 pt-2 text-xs text-zinc-600">
+                        {o.fulfillmentJobs.map((j) => (
+                          <li key={j.id}>
+                            {j.provider}: {j.status}
+                            {j.externalId ? ` · ${j.externalId}` : ""}
+                            {j.lastError ? ` — ${j.lastError}` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {orders.length === 0 ? (
+                <p className="mt-4 text-sm text-zinc-600">No orders yet.</p>
+              ) : null}
+            </section>
           ) : inventoryTab === "printify-api" ? (
-            <PrintifyApiTab />
+            <PrintifyApiTab hookBanner={printifyHookBanner} />
           ) : (
             <section id="tags" aria-label="Shop tags">
               <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
@@ -574,50 +766,139 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 to choose Sub collection, Domme collection, or both.
               </p>
               <ul className="mt-4 divide-y divide-zinc-800 border-y border-zinc-800 text-sm">
-                {adminTags.map((t) => (
+                {adminTags.map((t) => {
+                  const subSpotlightSelectDefault =
+                    t.subCollectionSpotlightProductId &&
+                    products.some(
+                      (p) =>
+                        p.id === t.subCollectionSpotlightProductId &&
+                        productHasTag(p, t.id) &&
+                        (p.audience === Audience.sub ||
+                          p.audience === Audience.both),
+                    )
+                      ? t.subCollectionSpotlightProductId
+                      : "__auto__";
+                  const dommeSpotlightSelectDefault =
+                    t.dommeCollectionSpotlightProductId &&
+                    products.some(
+                      (p) =>
+                        p.id === t.dommeCollectionSpotlightProductId &&
+                        productHasTag(p, t.id) &&
+                        (p.audience === Audience.domme ||
+                          p.audience === Audience.both),
+                    )
+                      ? t.dommeCollectionSpotlightProductId
+                      : "__auto__";
+                  return (
                   <li
                     key={t.id}
                     className="flex flex-col gap-3 py-3 text-zinc-300 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between"
                   >
                     <form
                       action={adminUpdateTagForm}
-                      className="flex min-w-0 flex-1 flex-wrap items-end gap-2"
+                      className="flex min-w-0 flex-1 flex-col gap-2"
                     >
                       <input type="hidden" name="tagId" value={t.id} />
-                      <label className="block text-[11px] text-zinc-500">
-                        Name
-                        <input
-                          type="text"
-                          name="name"
-                          required
-                          defaultValue={t.name}
-                          className="mt-0.5 block w-36 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100 sm:w-40"
-                        />
-                      </label>
-                      <label className="block text-[11px] text-zinc-500">
-                        Slug
-                        <input
-                          type="text"
-                          name="slug"
-                          defaultValue={t.slug}
-                          className="mt-0.5 block w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-200 sm:w-36"
-                        />
-                      </label>
-                      <label className="block text-[11px] text-zinc-500">
-                        Sort
-                        <input
-                          type="number"
-                          name="sortOrder"
-                          defaultValue={t.sortOrder}
-                          className="mt-0.5 block w-16 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm"
-                        />
-                      </label>
-                      <button
-                        type="submit"
-                        className="rounded border border-zinc-600 bg-zinc-800/80 px-2.5 py-1 text-[11px] text-zinc-200 hover:bg-zinc-700"
-                      >
-                        Save
-                      </button>
+                      <div className="flex flex-wrap items-end gap-2">
+                        <label className="block text-[11px] text-zinc-500">
+                          Name
+                          <input
+                            type="text"
+                            name="name"
+                            required
+                            defaultValue={t.name}
+                            className="mt-0.5 block w-36 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100 sm:w-40"
+                          />
+                        </label>
+                        <label className="block text-[11px] text-zinc-500">
+                          Slug
+                          <input
+                            type="text"
+                            name="slug"
+                            defaultValue={t.slug}
+                            className="mt-0.5 block w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-200 sm:w-36"
+                          />
+                        </label>
+                        <label className="block text-[11px] text-zinc-500">
+                          Sort
+                          <input
+                            type="number"
+                            name="sortOrder"
+                            defaultValue={t.sortOrder}
+                            className="mt-0.5 block w-16 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm"
+                          />
+                        </label>
+                        <button
+                          type="submit"
+                          className={
+                            tagSaved === "updated" && savedTagId === t.id
+                              ? "rounded border border-emerald-600/70 bg-emerald-950/45 px-2.5 py-1 text-[11px] font-medium text-emerald-100/95 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.2)]"
+                              : "rounded border border-zinc-600 bg-zinc-800/80 px-2.5 py-1 text-[11px] text-zinc-200 hover:bg-zinc-700"
+                          }
+                          aria-label={
+                            tagSaved === "updated" && savedTagId === t.id
+                              ? "Tag saved"
+                              : "Save tag"
+                          }
+                        >
+                          {tagSaved === "updated" && savedTagId === t.id
+                            ? "Saved"
+                            : "Save"}
+                        </button>
+                      </div>
+                      <div className="flex w-full min-w-0 max-w-full flex-col gap-1.5 sm:max-w-[min(100%,32rem)]">
+                        <span className="text-[11px] text-zinc-500">
+                          Top pick for collection
+                        </span>
+                        <div className="mt-0.5 flex flex-wrap items-end gap-2">
+                          <label className="block min-w-0 text-[11px] text-zinc-500">
+                            Sub collection
+                            <select
+                              name="subCollectionSpotlightProductId"
+                              defaultValue={subSpotlightSelectDefault}
+                              className="mt-0.5 block max-w-[11rem] rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-100 sm:max-w-[13rem]"
+                              title="Products with this tag that appear in the Sub shop (Sub or Both collection assignment)."
+                            >
+                              <option value="__auto__">Auto (first A–Z)</option>
+                              {products
+                                .filter(
+                                  (p) =>
+                                    productHasTag(p, t.id) &&
+                                    (p.audience === Audience.sub ||
+                                      p.audience === Audience.both),
+                                )
+                                .map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name}
+                                  </option>
+                                ))}
+                            </select>
+                          </label>
+                          <label className="block min-w-0 text-[11px] text-zinc-500">
+                            Domme collection
+                            <select
+                              name="dommeCollectionSpotlightProductId"
+                              defaultValue={dommeSpotlightSelectDefault}
+                              className="mt-0.5 block max-w-[11rem] rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-100 sm:max-w-[13rem]"
+                              title="Products with this tag that appear in the Domme shop (Domme or Both collection assignment)."
+                            >
+                              <option value="__auto__">Auto (first A–Z)</option>
+                              {products
+                                .filter(
+                                  (p) =>
+                                    productHasTag(p, t.id) &&
+                                    (p.audience === Audience.domme ||
+                                      p.audience === Audience.both),
+                                )
+                                .map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name}
+                                  </option>
+                                ))}
+                            </select>
+                          </label>
+                        </div>
+                      </div>
                     </form>
                     <div className="flex shrink-0 items-center gap-3 sm:pb-0.5">
                       <ConfirmDeleteForm
@@ -634,7 +915,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                       </ConfirmDeleteForm>
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
               {adminTags.length === 0 ? (
                 <p className="mt-2 text-sm text-zinc-600">No tags — run db seed.</p>
@@ -680,55 +962,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           )}
         </div>
       </div>
-
-      <section>
-        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Recent orders</h2>
-        <ul className="mt-4 space-y-3">
-          {orders.map((o) => (
-            <li
-              key={o.id}
-              className="rounded-lg border border-zinc-800 p-4 text-sm"
-            >
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="font-mono text-xs text-zinc-500">{o.id.slice(0, 12)}…</span>
-                <span
-                  className={
-                    o.status === OrderStatus.paid
-                      ? "text-emerald-400"
-                      : o.status === OrderStatus.pending_payment
-                        ? "text-amber-400"
-                        : "text-zinc-500"
-                  }
-                >
-                  {o.status}
-                </span>
-              </div>
-              <p className="mt-1 text-zinc-300">
-                {formatPrice(o.totalCents)} · tip {formatPrice(o.tipCents)} ·{" "}
-                {o.email ?? "no email"}
-              </p>
-              <ul className="mt-2 text-xs text-zinc-500">
-                {o.lines.map((l) => (
-                  <li key={l.id}>
-                    {l.productName} × {l.quantity} ({l.fulfillmentType})
-                  </li>
-                ))}
-              </ul>
-              {o.fulfillmentJobs.length > 0 && (
-                <ul className="mt-2 border-t border-zinc-800 pt-2 text-xs text-zinc-600">
-                  {o.fulfillmentJobs.map((j) => (
-                    <li key={j.id}>
-                      {j.provider}: {j.status}
-                      {j.externalId ? ` · ${j.externalId}` : ""}
-                      {j.lastError ? ` — ${j.lastError}` : ""}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
 
       <Link href="/" className="text-xs text-zinc-600 hover:underline">
         ← Home

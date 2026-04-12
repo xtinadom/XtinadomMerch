@@ -24,14 +24,20 @@ export function hasPrintifyApiToken(): boolean {
   return Boolean(process.env.PRINTIFY_API_TOKEN?.trim());
 }
 
-async function printifyAuthorizedFetch(path: string): Promise<Response> {
+async function printifyAuthorizedFetch(
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
   const token = process.env.PRINTIFY_API_TOKEN?.trim();
   if (!token) {
     throw new Error("PRINTIFY_API_TOKEN is not set");
   }
   const url = `${PRINTIFY_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+  const headers = new Headers(init?.headers);
+  headers.set("Authorization", `Bearer ${token}`);
   return fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
+    ...init,
+    headers,
     cache: "no-store",
   });
 }
@@ -134,14 +140,22 @@ export async function fetchPrintifyProductDetail(
   return parsePrintifyProductRow(raw);
 }
 
-/** Catalog with per-product detail fetch when list payload lacks images or prices. */
+/**
+ * Catalog with optional per-product detail fetch.
+ *
+ * - Default: fetches detail only when {@link catalogRowNeedsDetail} (missing list images or variant prices).
+ * - `forceProductDetail`: always GET `/products/:id.json` so mockups/images match Printify after mockup
+ *   changes (the shop list payload is often stale for images).
+ */
 export async function fetchPrintifyCatalogEnriched(
   shopId: string,
+  opts?: { forceProductDetail?: boolean },
 ): Promise<PrintifyCatalogProduct[]> {
   const basic = await fetchPrintifyCatalog(shopId);
+  const force = opts?.forceProductDetail === true;
   const out: PrintifyCatalogProduct[] = [];
   for (const p of basic) {
-    if (catalogRowNeedsDetail(p)) {
+    if (force || catalogRowNeedsDetail(p)) {
       const detail = await fetchPrintifyProductDetail(shopId, p.id);
       out.push(detail ?? p);
     } else {
@@ -215,3 +229,136 @@ export async function createPrintifyOrder(params: {
   const id = String(raw.id ?? "");
   return { id, raw };
 }
+
+/** Registered callback in Printify → your site (order events, integration visibility). */
+export type PrintifyWebhookRecord = {
+  id: string;
+  topic: string;
+  url: string;
+};
+
+function parseWebhookRow(row: unknown): PrintifyWebhookRecord | null {
+  if (!row || typeof row !== "object") return null;
+  const r = row as Record<string, unknown>;
+  const id = r.id != null ? String(r.id) : "";
+  const topic = typeof r.topic === "string" ? r.topic : "";
+  const url = typeof r.url === "string" ? r.url : "";
+  if (!id || !topic || !url) return null;
+  return { id, topic, url };
+}
+
+export async function listPrintifyWebhooks(shopId: string): Promise<PrintifyWebhookRecord[]> {
+  const sid = shopId.trim();
+  if (!sid) throw new Error("PRINTIFY_SHOP_ID is empty");
+
+  const res = await printifyAuthorizedFetch(
+    `/shops/${encodeURIComponent(sid)}/webhooks.json`,
+  );
+  const text = await res.text();
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text) as unknown;
+  } catch {
+    raw = { message: text };
+  }
+  if (!res.ok) {
+    const rec = !Array.isArray(raw) && raw && typeof raw === "object" ? raw : {};
+    const o = rec as Record<string, unknown>;
+    const msg =
+      typeof o.message === "string"
+        ? o.message
+        : typeof o.error === "string"
+          ? o.error
+          : JSON.stringify(raw);
+    throw new Error(`Printify webhooks list failed (${res.status}): ${msg}`);
+  }
+
+  const data = Array.isArray(raw) ? raw : (raw as Record<string, unknown>).data;
+  if (!Array.isArray(data)) return [];
+  const out: PrintifyWebhookRecord[] = [];
+  for (const row of data) {
+    const w = parseWebhookRow(row);
+    if (w) out.push(w);
+  }
+  return out;
+}
+
+export type CreatePrintifyWebhookPayload = {
+  topic: string;
+  url: string;
+  secret?: string;
+};
+
+export async function createPrintifyWebhook(
+  shopId: string,
+  payload: CreatePrintifyWebhookPayload,
+): Promise<{ ok: true; raw: unknown } | { ok: false; status: number; body: string }> {
+  const sid = shopId.trim();
+  if (!sid) {
+    return { ok: false, status: 400, body: "PRINTIFY_SHOP_ID is empty" };
+  }
+
+  const res = await printifyAuthorizedFetch(
+    `/shops/${encodeURIComponent(sid)}/webhooks.json`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+  const body = await res.text();
+  if (!res.ok) {
+    return { ok: false, status: res.status, body };
+  }
+  try {
+    return { ok: true, raw: JSON.parse(body) as unknown };
+  } catch {
+    return { ok: true, raw: body };
+  }
+}
+
+/**
+ * API / custom storefront: Printify’s dashboard “Publish” does not apply. Call this when the product is live on your site.
+ * @see https://developers.printify.com/#set-product-publish-status-to-succeeded
+ */
+export async function setPrintifyProductPublishingSucceeded(
+  shopId: string,
+  printifyProductId: string,
+): Promise<{ ok: true } | { ok: false; status: number; body: string }> {
+  return postPrintifyPublishingStatus(shopId, printifyProductId, "publishing_succeeded");
+}
+
+/** Unstick products stuck in the publishing queue (e.g. after clicking Publish in Printify by mistake). */
+export async function setPrintifyProductPublishingFailed(
+  shopId: string,
+  printifyProductId: string,
+): Promise<{ ok: true } | { ok: false; status: number; body: string }> {
+  return postPrintifyPublishingStatus(shopId, printifyProductId, "publishing_failed");
+}
+
+async function postPrintifyPublishingStatus(
+  shopId: string,
+  printifyProductId: string,
+  endpoint: "publishing_succeeded" | "publishing_failed",
+): Promise<{ ok: true } | { ok: false; status: number; body: string }> {
+  const sid = shopId.trim();
+  const pid = printifyProductId.trim();
+  if (!sid || !pid) {
+    return { ok: false, status: 400, body: "Missing shop id or product id" };
+  }
+
+  const res = await printifyAuthorizedFetch(
+    `/shops/${encodeURIComponent(sid)}/products/${encodeURIComponent(pid)}/${endpoint}.json`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    },
+  );
+  const body = await res.text();
+  if (res.ok || res.status === 204) {
+    return { ok: true };
+  }
+  return { ok: false, status: res.status, body };
+}
+
