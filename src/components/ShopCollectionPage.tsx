@@ -48,7 +48,7 @@ export async function ShopCollectionPage({
         activeTag = t;
       } catch (e) {
         console.error("[ShopCollectionPage] resolve tag", e);
-        return <ShopDataLoadError />;
+        return <ShopDataLoadError cause={e} />;
       }
     }
   }
@@ -69,7 +69,7 @@ export async function ShopCollectionPage({
       });
     } catch (e) {
       console.error("[ShopCollectionPage] products (tag)", e);
-      return <ShopDataLoadError />;
+      return <ShopDataLoadError cause={e} />;
     }
 
     return (
@@ -117,7 +117,7 @@ export async function ShopCollectionPage({
     });
   } catch (e) {
     console.error("[ShopCollectionPage] products (collection)", e);
-    return <ShopDataLoadError />;
+    return <ShopDataLoadError cause={e} />;
   }
 
   const byItemSections = buildByItemOnePerTag(allProducts, tags, {

@@ -26,7 +26,7 @@ export async function ShopAllProductsPage() {
     });
   } catch (e) {
     console.error("[ShopAllProductsPage] products", e);
-    return <ShopDataLoadError />;
+    return <ShopDataLoadError cause={e} />;
   }
   const byItemSections = buildByItemOnePerTag(allProducts, tags, {
     catalog: "all",

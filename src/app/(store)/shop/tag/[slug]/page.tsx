@@ -28,7 +28,7 @@ export default async function ShopUniversalTagPage({ params }: Props) {
       activeTag = t;
     } catch (e) {
       console.error("[ShopUniversalTagPage] resolve tag", e);
-      return <ShopDataLoadError />;
+      return <ShopDataLoadError cause={e} />;
     }
   }
 
@@ -44,7 +44,7 @@ export default async function ShopUniversalTagPage({ params }: Props) {
     });
   } catch (e) {
     console.error("[ShopUniversalTagPage] products", e);
-    return <ShopDataLoadError />;
+    return <ShopDataLoadError cause={e} />;
   }
 
   return (
