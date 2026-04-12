@@ -7,14 +7,19 @@ export async function cartBadgeQuantity(
 ): Promise<number> {
   const ids = Object.keys(items).filter((id) => (items[id]?.quantity ?? 0) > 0);
   if (ids.length === 0) return 0;
-  const rows = await prisma.product.findMany({
-    where: { id: { in: ids }, active: true },
-    select: { id: true },
-  });
-  const active = new Set(rows.map((r) => r.id));
-  let n = 0;
-  for (const id of ids) {
-    if (active.has(id)) n += items[id]!.quantity;
+  try {
+    const rows = await prisma.product.findMany({
+      where: { id: { in: ids }, active: true },
+      select: { id: true },
+    });
+    const active = new Set(rows.map((r) => r.id));
+    let n = 0;
+    for (const id of ids) {
+      if (active.has(id)) n += items[id]!.quantity;
+    }
+    return n;
+  } catch (e) {
+    console.error("[cartBadgeQuantity]", e);
+    return 0;
   }
-  return n;
 }

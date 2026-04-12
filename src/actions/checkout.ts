@@ -6,7 +6,7 @@ import {
   isMockCheckoutEnabled,
   MOCK_SESSION_PREFIX,
 } from "@/lib/checkout-mock";
-import { getCartSession } from "@/lib/session";
+import { getCartSessionReadonly } from "@/lib/session";
 import { cartHasTipEligibleProduct } from "@/lib/tip-eligibility";
 import { resolvePrintifyCheckoutLine } from "@/lib/printify-variants";
 import { FulfillmentType, OrderStatus } from "@/generated/prisma/enums";
@@ -34,7 +34,7 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
   const base = appUrl();
   if (!base.ok) return base;
 
-  const session = await getCartSession();
+  const session = await getCartSessionReadonly();
   const ids = Object.keys(session.items).filter(
     (id) => (session.items[id]?.quantity ?? 0) > 0,
   );

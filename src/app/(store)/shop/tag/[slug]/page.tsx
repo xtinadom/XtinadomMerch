@@ -5,6 +5,7 @@ import { getStoreTags } from "@/lib/store-tags";
 import { FeaturedProductsCarousel } from "@/components/FeaturedProductsCarousel";
 import { ProductCard } from "@/components/ProductCard";
 import { SHOP_ALL_ROUTE } from "@/lib/constants";
+import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 
 export const dynamic = "force-dynamic";
@@ -19,17 +20,32 @@ const productInclude = {
 export default async function ShopUniversalTagPage({ params }: Props) {
   const { slug } = await params;
   const tags = await getStoreTags();
-  const activeTag = tags.find((t) => t.slug === slug) ?? null;
-  if (!activeTag) notFound();
+  let activeTag = tags.find((t) => t.slug === slug) ?? null;
+  if (!activeTag) {
+    try {
+      const t = await prisma.tag.findUnique({ where: { slug } });
+      if (!t) notFound();
+      activeTag = t;
+    } catch (e) {
+      console.error("[ShopUniversalTagPage] resolve tag", e);
+      return <ShopDataLoadError />;
+    }
+  }
 
-  const products = await prisma.product.findMany({
-    where: {
-      active: true,
-      tags: { some: { tagId: activeTag.id } },
-    },
-    orderBy: { name: "asc" },
-    include: productInclude,
-  });
+  let products;
+  try {
+    products = await prisma.product.findMany({
+      where: {
+        active: true,
+        tags: { some: { tagId: activeTag.id } },
+      },
+      orderBy: { name: "asc" },
+      include: productInclude,
+    });
+  } catch (e) {
+    console.error("[ShopUniversalTagPage] products", e);
+    return <ShopDataLoadError />;
+  }
 
   return (
     <div>

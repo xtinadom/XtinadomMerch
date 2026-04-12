@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getStoreTags } from "@/lib/store-tags";
+import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 import { FeaturedProductsCarousel } from "@/components/FeaturedProductsCarousel";
 import { ShopByItemAndDesignBrowse } from "@/components/ShopByItemAndDesignBrowse";
 import {
@@ -15,14 +16,18 @@ const productInclude = {
 } as const;
 
 export async function ShopAllProductsPage() {
-  const [tags, allProducts] = await Promise.all([
-    getStoreTags(),
-    prisma.product.findMany({
+  const tags = await getStoreTags();
+  let allProducts;
+  try {
+    allProducts = await prisma.product.findMany({
       where: { active: true },
       orderBy: { name: "asc" },
       include: productInclude,
-    }),
-  ]);
+    });
+  } catch (e) {
+    console.error("[ShopAllProductsPage] products", e);
+    return <ShopDataLoadError />;
+  }
   const byItemSections = buildByItemOnePerTag(allProducts, tags, {
     catalog: "all",
   });

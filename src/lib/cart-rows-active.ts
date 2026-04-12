@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { Product, Tag } from "@/generated/prisma/client";
-import { getCartSession } from "@/lib/session";
+import { getCartSessionReadonly } from "@/lib/session";
 import {
   cartLineUnitPriceCents,
   cartLineVariantSubtitle,
@@ -20,7 +20,7 @@ export async function loadActiveCartRows(): Promise<{
   rows: ActiveCartRow[];
   subtotal: number;
 }> {
-  const session = await getCartSession();
+  const session = await getCartSessionReadonly();
   const ids = Object.keys(session.items).filter(
     (id) => (session.items[id]?.quantity ?? 0) > 0,
   );

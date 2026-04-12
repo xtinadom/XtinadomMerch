@@ -13,6 +13,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { ShopByItemAndDesignBrowse } from "@/components/ShopByItemAndDesignBrowse";
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { DommeMerchWebsitePromo } from "@/components/DommeMerchWebsitePromo";
+import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 import {
   SHOP_ALL_ROUTE,
   SHOP_DOMME_ROUTE,
@@ -40,21 +41,36 @@ export async function ShopCollectionPage({
   let activeTag: (typeof tags)[0] | null = null;
   if (tagSlug) {
     activeTag = tags.find((t) => t.slug === tagSlug) ?? null;
-    if (!activeTag) notFound();
+    if (!activeTag) {
+      try {
+        const t = await prisma.tag.findUnique({ where: { slug: tagSlug } });
+        if (!t) notFound();
+        activeTag = t;
+      } catch (e) {
+        console.error("[ShopCollectionPage] resolve tag", e);
+        return <ShopDataLoadError />;
+      }
+    }
   }
 
   const audience = audienceWhereForCollection(collection);
 
   if (activeTag) {
-    const products = await prisma.product.findMany({
-      where: {
-        active: true,
-        audience,
-        tags: { some: { tagId: activeTag.id } },
-      },
-      orderBy: { name: "asc" },
-      include: productInclude,
-    });
+    let products;
+    try {
+      products = await prisma.product.findMany({
+        where: {
+          active: true,
+          audience,
+          tags: { some: { tagId: activeTag.id } },
+        },
+        orderBy: { name: "asc" },
+        include: productInclude,
+      });
+    } catch (e) {
+      console.error("[ShopCollectionPage] products (tag)", e);
+      return <ShopDataLoadError />;
+    }
 
     return (
       <div>
@@ -92,11 +108,17 @@ export async function ShopCollectionPage({
     );
   }
 
-  const allProducts = await prisma.product.findMany({
-    where: { active: true, audience },
-    orderBy: { name: "asc" },
-    include: productInclude,
-  });
+  let allProducts;
+  try {
+    allProducts = await prisma.product.findMany({
+      where: { active: true, audience },
+      orderBy: { name: "asc" },
+      include: productInclude,
+    });
+  } catch (e) {
+    console.error("[ShopCollectionPage] products (collection)", e);
+    return <ShopDataLoadError />;
+  }
 
   const byItemSections = buildByItemOnePerTag(allProducts, tags, {
     catalog: collection === CatalogGroup.sub ? "sub" : "domme",

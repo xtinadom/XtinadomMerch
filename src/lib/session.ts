@@ -31,6 +31,16 @@ function normalizeCartValue(v: unknown): CartLine | undefined {
   return undefined;
 }
 
+function normalizeCartItems(raw: unknown): Record<string, CartLine> {
+  if (raw == null || typeof raw !== "object") return {};
+  const out: Record<string, CartLine> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    const line = normalizeCartValue(v);
+    if (line) out[k] = line;
+  }
+  return out;
+}
+
 export type AdminSession = {
   isAdmin?: boolean;
 };
@@ -84,20 +94,34 @@ const adminBase: Omit<SessionOptions, "password"> = {
   },
 };
 
+/**
+ * Full iron-session (mutate `items` then `save()`). Used by cart server actions.
+ * Do not wrap in try/catch here — callers that only read `items` should use `getCartSessionReadonly`.
+ */
 export async function getCartSession() {
   const session = await getIronSession<CartSession>(await cookies(), {
     ...cartBase,
     password: cartSessionPassword(),
   });
-  if (!session.items) session.items = {};
-  const normalized: Record<string, CartLine> = {};
-  const raw = session.items as unknown as Record<string, unknown>;
-  for (const [k, v] of Object.entries(raw)) {
-    const line = normalizeCartValue(v);
-    if (line) normalized[k] = line;
-  }
-  session.items = normalized;
+  session.items = normalizeCartItems(session.items);
   return session;
+}
+
+/**
+ * Plain cart payload for storefront layout and checkout reads. Never throws: bad/missing cookies or
+ * crypto failures yield an empty cart so shop pages still render.
+ */
+export async function getCartSessionReadonly(): Promise<CartSession> {
+  try {
+    const session = await getIronSession<CartSession>(await cookies(), {
+      ...cartBase,
+      password: cartSessionPassword(),
+    });
+    return { items: normalizeCartItems(session.items) };
+  } catch (e) {
+    console.error("[getCartSessionReadonly]", e);
+    return { items: {} };
+  }
 }
 
 export async function getAdminSession() {
