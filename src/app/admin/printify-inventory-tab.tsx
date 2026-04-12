@@ -1,11 +1,5 @@
 import Link from "next/link";
-import {
-  adminPruneOrphanListingImagesR2,
-  notifyPrintifyPublishingSucceeded,
-  resyncPrintifyCatalogProduct,
-  syncPrintifyFromCatalog,
-  updateProductDetails,
-} from "@/actions/admin";
+import { adminPruneOrphanListingImagesR2, updateProductDetails } from "@/actions/admin";
 import type { Prisma, Product, Tag } from "@/generated/prisma/client";
 import { FulfillmentType } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
@@ -26,6 +20,10 @@ import { productTagIds } from "@/lib/product-tags";
 import { AdminProductPreviewButton } from "@/components/admin/AdminProductPreviewButton";
 import { ListingGalleryEditor } from "@/components/admin/ListingGalleryEditor";
 import { SaveListingForm } from "@/components/admin/SaveListingForm";
+import {
+  PrintifyCatalogPublishToggleForm,
+  PrintifyCatalogResyncForm,
+} from "@/components/admin/PrintifyInventoryCatalogActionForms";
 import { PrintifyCatalogSyncButtons } from "@/components/admin/PrintifyCatalogSyncButtons";
 
 export type PrintifyInventoryTabProps = {
@@ -117,35 +115,6 @@ function PrintifyListingPriceFields({
         ))}
       </ul>
     </div>
-  );
-}
-
-function CatalogTableAngleGlyph() {
-  return (
-    <span className="font-mono text-[12px] font-semibold leading-none tracking-tight" aria-hidden>
-      {"<>"}
-    </span>
-  );
-}
-
-function CatalogResyncIcon() {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="size-[15px] shrink-0"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-      <path d="M21 3v5h-5" />
-      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-      <path d="M8 16H3v5" />
-    </svg>
   );
 }
 
@@ -344,7 +313,6 @@ export async function PrintifyInventoryTab({
                   Catalog sync
                 </h3>
                 <PrintifyCatalogSyncButtons
-                  action={syncPrintifyFromCatalog}
                   lastOkMode={
                     sync === "ok" && (syncMode === "new" || syncMode === "full")
                       ? syncMode
@@ -525,36 +493,10 @@ export async function PrintifyInventoryTab({
                           )}
                         </td>
                         <td className="p-2 text-center align-middle whitespace-nowrap">
-                          <form
-                            className="inline-block"
-                            action={resyncPrintifyCatalogProduct}
-                          >
-                            <input type="hidden" name="printifyProductId" value={p.id} />
-                            <button
-                              type="submit"
-                              aria-label="Resync"
-                              title="Resync"
-                              className="inline-flex h-8 w-8 items-center justify-center rounded border border-emerald-900/60 bg-emerald-950/35 text-emerald-200/90 hover:bg-emerald-950/55"
-                            >
-                              <CatalogResyncIcon />
-                            </button>
-                          </form>
+                          <PrintifyCatalogResyncForm printifyProductId={p.id} />
                         </td>
                         <td className="p-2 text-center align-middle whitespace-nowrap">
-                          <form
-                            className="inline-block"
-                            action={notifyPrintifyPublishingSucceeded}
-                          >
-                            <input type="hidden" name="printifyProductId" value={p.id} />
-                            <button
-                              type="submit"
-                              aria-label="Toggle published"
-                              title="Toggle published"
-                              className="inline-flex h-8 w-8 items-center justify-center rounded border border-zinc-600 bg-zinc-800/60 text-zinc-200 hover:bg-zinc-700/60"
-                            >
-                              <CatalogTableAngleGlyph />
-                            </button>
-                          </form>
+                          <PrintifyCatalogPublishToggleForm printifyProductId={p.id} />
                         </td>
                       </tr>
                     );

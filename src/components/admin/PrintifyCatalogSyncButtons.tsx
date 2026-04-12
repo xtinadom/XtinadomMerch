@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { syncPrintifyFromCatalog } from "@/actions/admin";
 
 const LAST_FULL_SYNC_STORAGE_KEY = "xtinadom.printify.lastFullSyncAt";
-
-type SyncCatalogAction = (formData: FormData) => void | Promise<void>;
 
 function isValidIsoTimestamp(iso: string): boolean {
   const t = Date.parse(iso.trim());
@@ -80,11 +79,9 @@ function SyncSubmitButton({
 type LastOkMode = "new" | "full";
 
 export function PrintifyCatalogSyncButtons({
-  action,
   lastOkMode,
   fullSyncAtIso,
 }: {
-  action: SyncCatalogAction;
   /** Set when URL has `sync=ok&syncMode=…` after redirect */
   lastOkMode?: LastOkMode;
   /** ISO time from server redirect after full sync; persisted in localStorage */
@@ -116,7 +113,7 @@ export function PrintifyCatalogSyncButtons({
 
   return (
     <div className="mt-2 flex flex-wrap items-start gap-x-4 gap-y-2">
-      <form action={action}>
+      <form action={syncPrintifyFromCatalog}>
         <input type="hidden" name="syncMode" value="new" />
         <SyncSubmitButton
           label="Sync new"
@@ -127,7 +124,7 @@ export function PrintifyCatalogSyncButtons({
         />
       </form>
       <div className="flex flex-col gap-1">
-        <form action={action}>
+        <form action={syncPrintifyFromCatalog}>
           <input type="hidden" name="syncMode" value="full" />
           <SyncSubmitButton
             label="Full sync"
