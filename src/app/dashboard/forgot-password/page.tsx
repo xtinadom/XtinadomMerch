@@ -2,25 +2,32 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { loginShopOwner } from "@/actions/shop-auth";
+import { requestShopPasswordReset } from "@/actions/shop-password-reset";
 
-export default function DashboardLoginPage() {
+export default function DashboardForgotPasswordPage() {
+  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col px-4 py-16">
-      <h1 className="text-xl font-semibold text-zinc-50">Shop dashboard login</h1>
+      <h1 className="text-xl font-semibold text-zinc-50">Reset dashboard password</h1>
+      <p className="mt-2 text-sm text-zinc-500">
+        Enter the email you used when you created your shop. We will send a one-time link if that
+        account exists.
+      </p>
       <form
         className="mt-8 space-y-4"
         onSubmit={async (e) => {
           e.preventDefault();
           setError(null);
+          setMessage(null);
           setPending(true);
           try {
             const fd = new FormData(e.currentTarget);
-            const r = await loginShopOwner(undefined, fd);
-            if (r?.error) setError(r.error);
+            const r = await requestShopPasswordReset(undefined, fd);
+            if (r?.ok) setMessage(r.message);
+            else if (r && !r.ok) setError(r.error);
           } finally {
             setPending(false);
           }
@@ -36,19 +43,14 @@ export default function DashboardLoginPage() {
             className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100"
           />
         </label>
-        <label className="block text-sm text-zinc-400">
-          Password
-          <input
-            type="password"
-            name="password"
-            required
-            autoComplete="current-password"
-            className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100"
-          />
-        </label>
         {error ? (
           <p className="text-sm text-amber-400" role="alert">
             {error}
+          </p>
+        ) : null}
+        {message ? (
+          <p className="text-sm text-emerald-400/90" role="status">
+            {message}
           </p>
         ) : null}
         <button
@@ -56,21 +58,15 @@ export default function DashboardLoginPage() {
           disabled={pending}
           className="w-full rounded-lg bg-zinc-100 py-2 text-sm font-medium text-zinc-900 disabled:opacity-50"
         >
-          {pending ? "…" : "Sign in"}
+          {pending ? "…" : "Send reset link"}
         </button>
-        <p className="text-center text-sm">
-          <Link href="/dashboard/forgot-password" className="text-blue-400 hover:underline">
-            Forgot password?
-          </Link>
-        </p>
       </form>
       <p className="mt-6 text-center text-sm text-zinc-500">
-        New here?{" "}
-        <Link href="/create-shop" className="text-blue-400 hover:underline">
-          Create Shop
+        <Link href="/dashboard/login" className="text-blue-400 hover:underline">
+          Back to sign in
         </Link>
       </p>
-      <Link href="/" className="mt-8 text-center text-xs text-zinc-600 hover:underline">
+      <Link href="/" className="mt-6 text-center text-xs text-zinc-600 hover:underline">
         ← Home
       </Link>
     </main>

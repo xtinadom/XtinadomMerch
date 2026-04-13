@@ -74,3 +74,12 @@ export function webhookPublicBaseUrl(): string | undefined {
   }
   return undefined;
 }
+
+/** Base URL for password-reset links in email (no trailing slash). */
+export function emailLinkOrigin(): string {
+  const base = publicAppBaseUrl()?.replace(/\/$/, "");
+  if (base) return base;
+  const w = webhookPublicBaseUrl();
+  if (w) return w.replace(/\/$/, "");
+  return "http://localhost:3000";
+}

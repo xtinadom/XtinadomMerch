@@ -43,6 +43,11 @@ export type Shop = Prisma.ShopModel
  */
 export type ShopUser = Prisma.ShopUserModel
 /**
+ * Model ShopPasswordResetToken
+ * 
+ */
+export type ShopPasswordResetToken = Prisma.ShopPasswordResetTokenModel
+/**
  * Model ShopListing
  * 
  */

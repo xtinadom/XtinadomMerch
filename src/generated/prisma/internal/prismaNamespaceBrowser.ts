@@ -56,6 +56,7 @@ export const ModelName = {
   Product: 'Product',
   Shop: 'Shop',
   ShopUser: 'ShopUser',
+  ShopPasswordResetToken: 'ShopPasswordResetToken',
   ShopListing: 'ShopListing',
   Order: 'Order',
   OrderLine: 'OrderLine',
@@ -166,6 +167,18 @@ export const ShopUserScalarFieldEnum = {
 } as const
 
 export type ShopUserScalarFieldEnum = (typeof ShopUserScalarFieldEnum)[keyof typeof ShopUserScalarFieldEnum]
+
+
+export const ShopPasswordResetTokenScalarFieldEnum = {
+  id: 'id',
+  shopUserId: 'shopUserId',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ShopPasswordResetTokenScalarFieldEnum = (typeof ShopPasswordResetTokenScalarFieldEnum)[keyof typeof ShopPasswordResetTokenScalarFieldEnum]
 
 
 export const ShopListingScalarFieldEnum = {

@@ -74,6 +74,9 @@ export async function proxy(request: NextRequest) {
 
   if (
     pathname.startsWith("/gate") ||
+    pathname.startsWith("/dashboard/login") ||
+    pathname.startsWith("/dashboard/forgot-password") ||
+    pathname.startsWith("/dashboard/reset-password") ||
     pathname.startsWith("/api/site-access") ||
     pathname.startsWith("/api/health") ||
     pathname.startsWith("/api/webhooks/") ||

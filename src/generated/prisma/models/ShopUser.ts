@@ -199,6 +199,7 @@ export type ShopUserWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"ShopUser"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ShopUser"> | Date | string
   shop?: Prisma.XOR<Prisma.ShopScalarRelationFilter, Prisma.ShopWhereInput>
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenListRelationFilter
 }
 
 export type ShopUserOrderByWithRelationInput = {
@@ -210,6 +211,7 @@ export type ShopUserOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   shop?: Prisma.ShopOrderByWithRelationInput
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenOrderByRelationAggregateInput
 }
 
 export type ShopUserWhereUniqueInput = Prisma.AtLeast<{
@@ -224,6 +226,7 @@ export type ShopUserWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"ShopUser"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ShopUser"> | Date | string
   shop?: Prisma.XOR<Prisma.ShopScalarRelationFilter, Prisma.ShopWhereInput>
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenListRelationFilter
 }, "id" | "email">
 
 export type ShopUserOrderByWithAggregationInput = {
@@ -260,6 +263,7 @@ export type ShopUserCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   shop: Prisma.ShopCreateNestedOneWithoutUsersInput
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenCreateNestedManyWithoutShopUserInput
 }
 
 export type ShopUserUncheckedCreateInput = {
@@ -270,6 +274,7 @@ export type ShopUserUncheckedCreateInput = {
   role?: $Enums.ShopUserRole
   createdAt?: Date | string
   updatedAt?: Date | string
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenUncheckedCreateNestedManyWithoutShopUserInput
 }
 
 export type ShopUserUpdateInput = {
@@ -280,6 +285,7 @@ export type ShopUserUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shop?: Prisma.ShopUpdateOneRequiredWithoutUsersNestedInput
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenUpdateManyWithoutShopUserNestedInput
 }
 
 export type ShopUserUncheckedUpdateInput = {
@@ -290,6 +296,7 @@ export type ShopUserUncheckedUpdateInput = {
   role?: Prisma.EnumShopUserRoleFieldUpdateOperationsInput | $Enums.ShopUserRole
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenUncheckedUpdateManyWithoutShopUserNestedInput
 }
 
 export type ShopUserCreateManyInput = {
@@ -361,6 +368,11 @@ export type ShopUserMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type ShopUserScalarRelationFilter = {
+  is?: Prisma.ShopUserWhereInput
+  isNot?: Prisma.ShopUserWhereInput
+}
+
 export type ShopUserCreateNestedManyWithoutShopInput = {
   create?: Prisma.XOR<Prisma.ShopUserCreateWithoutShopInput, Prisma.ShopUserUncheckedCreateWithoutShopInput> | Prisma.ShopUserCreateWithoutShopInput[] | Prisma.ShopUserUncheckedCreateWithoutShopInput[]
   connectOrCreate?: Prisma.ShopUserCreateOrConnectWithoutShopInput | Prisma.ShopUserCreateOrConnectWithoutShopInput[]
@@ -407,6 +419,20 @@ export type EnumShopUserRoleFieldUpdateOperationsInput = {
   set?: $Enums.ShopUserRole
 }
 
+export type ShopUserCreateNestedOneWithoutPasswordResetTokensInput = {
+  create?: Prisma.XOR<Prisma.ShopUserCreateWithoutPasswordResetTokensInput, Prisma.ShopUserUncheckedCreateWithoutPasswordResetTokensInput>
+  connectOrCreate?: Prisma.ShopUserCreateOrConnectWithoutPasswordResetTokensInput
+  connect?: Prisma.ShopUserWhereUniqueInput
+}
+
+export type ShopUserUpdateOneRequiredWithoutPasswordResetTokensNestedInput = {
+  create?: Prisma.XOR<Prisma.ShopUserCreateWithoutPasswordResetTokensInput, Prisma.ShopUserUncheckedCreateWithoutPasswordResetTokensInput>
+  connectOrCreate?: Prisma.ShopUserCreateOrConnectWithoutPasswordResetTokensInput
+  upsert?: Prisma.ShopUserUpsertWithoutPasswordResetTokensInput
+  connect?: Prisma.ShopUserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ShopUserUpdateToOneWithWhereWithoutPasswordResetTokensInput, Prisma.ShopUserUpdateWithoutPasswordResetTokensInput>, Prisma.ShopUserUncheckedUpdateWithoutPasswordResetTokensInput>
+}
+
 export type ShopUserCreateWithoutShopInput = {
   id?: string
   email: string
@@ -414,6 +440,7 @@ export type ShopUserCreateWithoutShopInput = {
   role?: $Enums.ShopUserRole
   createdAt?: Date | string
   updatedAt?: Date | string
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenCreateNestedManyWithoutShopUserInput
 }
 
 export type ShopUserUncheckedCreateWithoutShopInput = {
@@ -423,6 +450,7 @@ export type ShopUserUncheckedCreateWithoutShopInput = {
   role?: $Enums.ShopUserRole
   createdAt?: Date | string
   updatedAt?: Date | string
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenUncheckedCreateNestedManyWithoutShopUserInput
 }
 
 export type ShopUserCreateOrConnectWithoutShopInput = {
@@ -464,6 +492,62 @@ export type ShopUserScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"ShopUser"> | Date | string
 }
 
+export type ShopUserCreateWithoutPasswordResetTokensInput = {
+  id?: string
+  email: string
+  passwordHash: string
+  role?: $Enums.ShopUserRole
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  shop: Prisma.ShopCreateNestedOneWithoutUsersInput
+}
+
+export type ShopUserUncheckedCreateWithoutPasswordResetTokensInput = {
+  id?: string
+  email: string
+  passwordHash: string
+  shopId: string
+  role?: $Enums.ShopUserRole
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type ShopUserCreateOrConnectWithoutPasswordResetTokensInput = {
+  where: Prisma.ShopUserWhereUniqueInput
+  create: Prisma.XOR<Prisma.ShopUserCreateWithoutPasswordResetTokensInput, Prisma.ShopUserUncheckedCreateWithoutPasswordResetTokensInput>
+}
+
+export type ShopUserUpsertWithoutPasswordResetTokensInput = {
+  update: Prisma.XOR<Prisma.ShopUserUpdateWithoutPasswordResetTokensInput, Prisma.ShopUserUncheckedUpdateWithoutPasswordResetTokensInput>
+  create: Prisma.XOR<Prisma.ShopUserCreateWithoutPasswordResetTokensInput, Prisma.ShopUserUncheckedCreateWithoutPasswordResetTokensInput>
+  where?: Prisma.ShopUserWhereInput
+}
+
+export type ShopUserUpdateToOneWithWhereWithoutPasswordResetTokensInput = {
+  where?: Prisma.ShopUserWhereInput
+  data: Prisma.XOR<Prisma.ShopUserUpdateWithoutPasswordResetTokensInput, Prisma.ShopUserUncheckedUpdateWithoutPasswordResetTokensInput>
+}
+
+export type ShopUserUpdateWithoutPasswordResetTokensInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumShopUserRoleFieldUpdateOperationsInput | $Enums.ShopUserRole
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  shop?: Prisma.ShopUpdateOneRequiredWithoutUsersNestedInput
+}
+
+export type ShopUserUncheckedUpdateWithoutPasswordResetTokensInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumShopUserRoleFieldUpdateOperationsInput | $Enums.ShopUserRole
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type ShopUserCreateManyShopInput = {
   id?: string
   email: string
@@ -480,6 +564,7 @@ export type ShopUserUpdateWithoutShopInput = {
   role?: Prisma.EnumShopUserRoleFieldUpdateOperationsInput | $Enums.ShopUserRole
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenUpdateManyWithoutShopUserNestedInput
 }
 
 export type ShopUserUncheckedUpdateWithoutShopInput = {
@@ -489,6 +574,7 @@ export type ShopUserUncheckedUpdateWithoutShopInput = {
   role?: Prisma.EnumShopUserRoleFieldUpdateOperationsInput | $Enums.ShopUserRole
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenUncheckedUpdateManyWithoutShopUserNestedInput
 }
 
 export type ShopUserUncheckedUpdateManyWithoutShopInput = {
@@ -501,6 +587,35 @@ export type ShopUserUncheckedUpdateManyWithoutShopInput = {
 }
 
 
+/**
+ * Count Type ShopUserCountOutputType
+ */
+
+export type ShopUserCountOutputType = {
+  passwordResetTokens: number
+}
+
+export type ShopUserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  passwordResetTokens?: boolean | ShopUserCountOutputTypeCountPasswordResetTokensArgs
+}
+
+/**
+ * ShopUserCountOutputType without action
+ */
+export type ShopUserCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ShopUserCountOutputType
+   */
+  select?: Prisma.ShopUserCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * ShopUserCountOutputType without action
+ */
+export type ShopUserCountOutputTypeCountPasswordResetTokensArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ShopPasswordResetTokenWhereInput
+}
+
 
 export type ShopUserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -511,6 +626,8 @@ export type ShopUserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   createdAt?: boolean
   updatedAt?: boolean
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
+  passwordResetTokens?: boolean | Prisma.ShopUser$passwordResetTokensArgs<ExtArgs>
+  _count?: boolean | Prisma.ShopUserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["shopUser"]>
 
 export type ShopUserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -548,6 +665,8 @@ export type ShopUserSelectScalar = {
 export type ShopUserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "shopId" | "role" | "createdAt" | "updatedAt", ExtArgs["result"]["shopUser"]>
 export type ShopUserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
+  passwordResetTokens?: boolean | Prisma.ShopUser$passwordResetTokensArgs<ExtArgs>
+  _count?: boolean | Prisma.ShopUserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ShopUserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
@@ -560,6 +679,7 @@ export type $ShopUserPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   name: "ShopUser"
   objects: {
     shop: Prisma.$ShopPayload<ExtArgs>
+    passwordResetTokens: Prisma.$ShopPasswordResetTokenPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -964,6 +1084,7 @@ readonly fields: ShopUserFieldRefs;
 export interface Prisma__ShopUserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   shop<T extends Prisma.ShopDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ShopDefaultArgs<ExtArgs>>): Prisma.Prisma__ShopClient<runtime.Types.Result.GetResult<Prisma.$ShopPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  passwordResetTokens<T extends Prisma.ShopUser$passwordResetTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ShopUser$passwordResetTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ShopPasswordResetTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1398,6 +1519,30 @@ export type ShopUserDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Limit how many ShopUsers to delete.
    */
   limit?: number
+}
+
+/**
+ * ShopUser.passwordResetTokens
+ */
+export type ShopUser$passwordResetTokensArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ShopPasswordResetToken
+   */
+  select?: Prisma.ShopPasswordResetTokenSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ShopPasswordResetToken
+   */
+  omit?: Prisma.ShopPasswordResetTokenOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ShopPasswordResetTokenInclude<ExtArgs> | null
+  where?: Prisma.ShopPasswordResetTokenWhereInput
+  orderBy?: Prisma.ShopPasswordResetTokenOrderByWithRelationInput | Prisma.ShopPasswordResetTokenOrderByWithRelationInput[]
+  cursor?: Prisma.ShopPasswordResetTokenWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ShopPasswordResetTokenScalarFieldEnum | Prisma.ShopPasswordResetTokenScalarFieldEnum[]
 }
 
 /**

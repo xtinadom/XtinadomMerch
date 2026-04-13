@@ -33,7 +33,7 @@ export function StoreNav({
   shopSlug?: string;
   /** Tag dropdown (“Browse”); set false on marketing home. */
   showBrowseMenu?: boolean;
-  /** Shop owner session email; when set, replaces “Log In / Create Shop” on platform. */
+  /** Shop owner session email; when set, replaces “Log In” on platform. */
   shopOwnerEmail?: string;
   /** Shop display name for the dashboard link (preferred over email local-part). */
   shopOwnerDisplayName?: string;
@@ -67,23 +67,12 @@ export function StoreNav({
                 {shopOwnerDisplayName ?? dashboardLinkFallbackFromEmail(shopOwnerEmail)}
               </Link>
             ) : !tenant ? (
-              <span className="flex shrink-0 items-center gap-x-1.5 text-xs font-medium tracking-wide text-zinc-500 sm:gap-x-2">
-                <Link
-                  href="/dashboard/login"
-                  className="text-zinc-400 transition hover:text-white"
-                >
-                  Log In
-                </Link>
-                <span className="text-zinc-600" aria-hidden>
-                  /
-                </span>
-                <Link
-                  href="/create-shop"
-                  className="text-zinc-400 transition hover:text-white"
-                >
-                  Create Shop
-                </Link>
-              </span>
+              <Link
+                href="/dashboard/login"
+                className="shrink-0 text-xs font-medium tracking-wide text-zinc-400 transition hover:text-white"
+              >
+                Log In
+              </Link>
             ) : null}
           </div>
           <nav className="flex flex-1 flex-wrap items-center justify-end gap-x-5 gap-y-2 sm:gap-x-7">

@@ -389,6 +389,7 @@ export const ModelName = {
   Product: 'Product',
   Shop: 'Shop',
   ShopUser: 'ShopUser',
+  ShopPasswordResetToken: 'ShopPasswordResetToken',
   ShopListing: 'ShopListing',
   Order: 'Order',
   OrderLine: 'OrderLine',
@@ -411,7 +412,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tag" | "productTag" | "product" | "shop" | "shopUser" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "comment"
+    modelProps: "tag" | "productTag" | "product" | "shop" | "shopUser" | "shopPasswordResetToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "comment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -782,6 +783,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.ShopUserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.ShopUserCountAggregateOutputType> | number
+        }
+      }
+    }
+    ShopPasswordResetToken: {
+      payload: Prisma.$ShopPasswordResetTokenPayload<ExtArgs>
+      fields: Prisma.ShopPasswordResetTokenFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ShopPasswordResetTokenFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopPasswordResetTokenPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ShopPasswordResetTokenFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopPasswordResetTokenPayload>
+        }
+        findFirst: {
+          args: Prisma.ShopPasswordResetTokenFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopPasswordResetTokenPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ShopPasswordResetTokenFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopPasswordResetTokenPayload>
+        }
+        findMany: {
+          args: Prisma.ShopPasswordResetTokenFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopPasswordResetTokenPayload>[]
+        }
+        create: {
+          args: Prisma.ShopPasswordResetTokenCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopPasswordResetTokenPayload>
+        }
+        createMany: {
+          args: Prisma.ShopPasswordResetTokenCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ShopPasswordResetTokenCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopPasswordResetTokenPayload>[]
+        }
+        delete: {
+          args: Prisma.ShopPasswordResetTokenDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopPasswordResetTokenPayload>
+        }
+        update: {
+          args: Prisma.ShopPasswordResetTokenUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopPasswordResetTokenPayload>
+        }
+        deleteMany: {
+          args: Prisma.ShopPasswordResetTokenDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ShopPasswordResetTokenUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ShopPasswordResetTokenUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopPasswordResetTokenPayload>[]
+        }
+        upsert: {
+          args: Prisma.ShopPasswordResetTokenUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopPasswordResetTokenPayload>
+        }
+        aggregate: {
+          args: Prisma.ShopPasswordResetTokenAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateShopPasswordResetToken>
+        }
+        groupBy: {
+          args: Prisma.ShopPasswordResetTokenGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ShopPasswordResetTokenGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ShopPasswordResetTokenCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ShopPasswordResetTokenCountAggregateOutputType> | number
         }
       }
     }
@@ -1429,6 +1504,18 @@ export const ShopUserScalarFieldEnum = {
 export type ShopUserScalarFieldEnum = (typeof ShopUserScalarFieldEnum)[keyof typeof ShopUserScalarFieldEnum]
 
 
+export const ShopPasswordResetTokenScalarFieldEnum = {
+  id: 'id',
+  shopUserId: 'shopUserId',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ShopPasswordResetTokenScalarFieldEnum = (typeof ShopPasswordResetTokenScalarFieldEnum)[keyof typeof ShopPasswordResetTokenScalarFieldEnum]
+
+
 export const ShopListingScalarFieldEnum = {
   id: 'id',
   shopId: 'shopId',
@@ -1856,6 +1943,7 @@ export type GlobalOmitConfig = {
   product?: Prisma.ProductOmit
   shop?: Prisma.ShopOmit
   shopUser?: Prisma.ShopUserOmit
+  shopPasswordResetToken?: Prisma.ShopPasswordResetTokenOmit
   shopListing?: Prisma.ShopListingOmit
   order?: Prisma.OrderOmit
   orderLine?: Prisma.OrderLineOmit
