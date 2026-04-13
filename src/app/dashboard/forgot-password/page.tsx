@@ -4,6 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { requestShopPasswordReset } from "@/actions/shop-password-reset";
 
+const SUCCESS_FALLBACK =
+  "If an account exists with that email, a reset link will be sent. Check your inbox and spam folder.";
+
 export default function DashboardForgotPasswordPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,15 +29,26 @@ export default function DashboardForgotPasswordPage() {
           try {
             const fd = new FormData(e.currentTarget);
             const r = await requestShopPasswordReset(undefined, fd);
-            if (r?.ok === true && r.message) {
-              setMessage(r.message);
-            } else if (r && r.ok === false) {
+            if (r && typeof r === "object" && r.ok === true) {
+              setMessage(
+                typeof r.message === "string" && r.message.trim() ? r.message : SUCCESS_FALLBACK,
+              );
+            } else if (r && typeof r === "object" && r.ok === false && typeof r.error === "string") {
               setError(r.error);
             } else {
-              setError("Something went wrong. Please try again.");
+              console.error("[forgot-password] unexpected action return:", r);
+              setError(
+                "Unexpected response from the server. Open the browser console (F12) and check Vercel logs for [shop-password-reset].",
+              );
             }
-          } catch {
-            setError("Something went wrong. Please try again.");
+          } catch (err) {
+            console.error("[forgot-password] action threw:", err);
+            const msg = err instanceof Error ? err.message : String(err);
+            setError(
+              msg
+                ? `Request failed: ${msg.slice(0, 400)}`
+                : "Something went wrong. Check the browser console and Vercel logs.",
+            );
           } finally {
             setPending(false);
           }

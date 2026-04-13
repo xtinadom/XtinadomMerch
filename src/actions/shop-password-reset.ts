@@ -22,40 +22,52 @@ export async function requestShopPasswordReset(
   _prev: ShopPasswordResetMessage | undefined,
   formData: FormData,
 ): Promise<ShopPasswordResetMessage> {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  if (!email || !email.includes("@")) {
-    return { ok: false, error: "Enter a valid email address." };
-  }
+  try {
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      return { ok: false, error: "Enter a valid email address." };
+    }
 
-  const user = await prisma.shopUser.findUnique({ where: { email } });
-  if (!user) {
+    const user = await prisma.shopUser.findUnique({ where: { email } });
+    if (!user) {
+      console.info(
+        "[shop-password-reset] No ShopUser for submitted email — returning generic success (no email sent).",
+      );
+      return { ok: true, message: REQUEST_OK_MESSAGE };
+    }
+
+    await prisma.shopPasswordResetToken.deleteMany({
+      where: { shopUserId: user.id, usedAt: null },
+    });
+
+    const raw = newPasswordResetRawToken();
+    const tokenHash = hashPasswordResetToken(raw);
+    const expiresAt = new Date(Date.now() + RESET_TTL_MS);
+
+    await prisma.shopPasswordResetToken.create({
+      data: { shopUserId: user.id, tokenHash, expiresAt },
+    });
+
+    const sent = await sendShopPasswordResetEmail(email, raw);
+    if (!sent.ok) {
+      await prisma.shopPasswordResetToken.deleteMany({ where: { tokenHash } });
+      console.error("[shop-password-reset] sendShopPasswordResetEmail failed:", sent.error);
+      return { ok: false, error: sent.error };
+    }
+
     console.info(
-      "[shop-password-reset] No ShopUser for submitted email — returning generic success (no email sent).",
+      "[shop-password-reset] Token created and Resend send completed for ShopUser id=",
+      user.id,
     );
     return { ok: true, message: REQUEST_OK_MESSAGE };
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error("[shop-password-reset] requestShopPasswordReset error:", detail);
+    return {
+      ok: false,
+      error: `Reset request failed: ${detail.slice(0, 500)}`,
+    };
   }
-
-  await prisma.shopPasswordResetToken.deleteMany({
-    where: { shopUserId: user.id, usedAt: null },
-  });
-
-  const raw = newPasswordResetRawToken();
-  const tokenHash = hashPasswordResetToken(raw);
-  const expiresAt = new Date(Date.now() + RESET_TTL_MS);
-
-  await prisma.shopPasswordResetToken.create({
-    data: { shopUserId: user.id, tokenHash, expiresAt },
-  });
-
-  const sent = await sendShopPasswordResetEmail(email, raw);
-  if (!sent.ok) {
-    await prisma.shopPasswordResetToken.deleteMany({ where: { tokenHash } });
-    console.error("[shop-password-reset] sendShopPasswordResetEmail failed:", sent.error);
-    return { ok: false, error: sent.error };
-  }
-
-  console.info("[shop-password-reset] Token created and Resend send completed for ShopUser id=", user.id);
-  return { ok: true, message: REQUEST_OK_MESSAGE };
 }
 
 export async function resetShopPasswordWithToken(
