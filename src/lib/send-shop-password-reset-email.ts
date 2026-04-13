@@ -1,4 +1,8 @@
 import { emailLinkOrigin } from "@/lib/public-app-url";
+import {
+  SHOP_PASSWORD_RESET_EMAIL_SUBJECT,
+  buildShopPasswordResetEmailHtml,
+} from "@/lib/shop-password-reset-email-html";
 
 type SendResult = { ok: true } | { ok: false; error: string };
 
@@ -59,10 +63,8 @@ export async function sendShopPasswordResetEmail(
     body: JSON.stringify({
       from,
       to: [toEmail],
-      subject: "Reset your shop dashboard password",
-      html: `<p>You asked to reset your shop dashboard password.</p>
-<p><a href="${url}">Set a new password</a> (link expires in 2 hours).</p>
-<p>If you did not request this, you can ignore this email.</p>`,
+      subject: SHOP_PASSWORD_RESET_EMAIL_SUBJECT,
+      html: buildShopPasswordResetEmailHtml(url),
     }),
   });
 

@@ -92,6 +92,13 @@ export default function DashboardForgotPasswordPage() {
         ) : null}
       </div>
 
+      {process.env.NODE_ENV === "development" ? (
+        <p className="mt-4 text-center text-sm">
+          <Link href="/dashboard/preview-reset-email" className="text-zinc-400 underline hover:text-zinc-200">
+            Preview how the email looks
+          </Link>
+        </p>
+      ) : null}
       <p className="mt-6 text-center text-sm text-zinc-500">
         <Link href="/dashboard/login" className="text-blue-400 hover:underline">
           Back to sign in
