@@ -26,7 +26,7 @@ export async function sendShopPasswordResetEmail(
     return {
       ok: false,
       error:
-        "Email is not configured (set RESEND_API_KEY and SHOP_PASSWORD_RESET_EMAIL_FROM on the server).",
+        "Email is not configured: set RESEND_API_KEY in the server environment (e.g. Vercel → Settings → Environment Variables), then redeploy.",
     };
   }
 
