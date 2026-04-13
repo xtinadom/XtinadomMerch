@@ -49,7 +49,7 @@ export default function DashboardForgotPasswordPage() {
           </p>
         ) : null}
         {message ? (
-          <p className="text-sm text-emerald-400/90" role="status">
+          <p className="text-sm text-white" role="status">
             {message}
           </p>
         ) : null}

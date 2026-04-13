@@ -1,8 +1,5 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { SHOP_ALL_ROUTE } from "@/lib/constants";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteHeaderFallback } from "@/components/SiteHeaderFallback";
 import { FeaturedProductsCarousel } from "@/components/FeaturedProductsCarousel";
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { ProductCard } from "@/components/ProductCard";
@@ -43,11 +40,7 @@ export default async function HomePage() {
     .filter((x): x is NonNullable<typeof x> => x != null);
 
   return (
-    <>
-      <Suspense fallback={<SiteHeaderFallback />}>
-        <SiteHeader browseMenu={false} />
-      </Suspense>
-      <main className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 py-10 sm:py-14">
+    <main className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 py-10 sm:py-14">
       <header className="text-center">
         <h1 className="store-dimension-page-title text-3xl text-zinc-50 sm:text-4xl">
           Domme Shops
@@ -125,6 +118,5 @@ export default async function HomePage() {
 
       <SiteLegalFooter />
     </main>
-    </>
   );
 }

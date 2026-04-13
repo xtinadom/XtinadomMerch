@@ -4,11 +4,8 @@ import { SiteHeaderFallback } from "@/components/SiteHeaderFallback";
 
 export const dynamic = "force-dynamic";
 
-export default function CreateShopLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+/** Platform marketing + browse pages: same top nav as the storefront (Shops, All products, Browse, Cart). */
+export default function SiteNavLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Suspense fallback={<SiteHeaderFallback />}>

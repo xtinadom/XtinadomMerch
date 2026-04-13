@@ -4,11 +4,7 @@ import { SiteHeaderFallback } from "@/components/SiteHeaderFallback";
 
 export const dynamic = "force-dynamic";
 
-export default function CreateShopLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function GateLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Suspense fallback={<SiteHeaderFallback />}>

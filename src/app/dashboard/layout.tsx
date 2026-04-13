@@ -12,7 +12,7 @@ export default function DashboardSectionLayout({
   return (
     <>
       <Suspense fallback={<SiteHeaderFallback />}>
-        <SiteHeader browseMenu={false} />
+        <SiteHeader browseMenu />
       </Suspense>
       {children}
     </>
