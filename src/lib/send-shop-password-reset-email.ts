@@ -2,6 +2,22 @@ import { emailLinkOrigin } from "@/lib/public-app-url";
 
 type SendResult = { ok: true } | { ok: false; error: string };
 
+function resendUserFacingError(status: number, body: string): string {
+  let msg = "";
+  try {
+    const j = JSON.parse(body) as { message?: string; name?: string };
+    if (typeof j?.message === "string" && j.message.trim()) {
+      msg = j.message.trim().slice(0, 280);
+    }
+  } catch {
+    if (body.trim()) msg = body.trim().slice(0, 280);
+  }
+  if (msg) {
+    return `Email could not be sent (${status}): ${msg}`;
+  }
+  return `Email could not be sent (HTTP ${status}). Check Vercel logs for [shop-password-reset].`;
+}
+
 /**
  * Sends dashboard password-reset email via Resend when `RESEND_API_KEY` is set.
  * In development without Resend, logs the link to the server console.
@@ -30,6 +46,10 @@ export async function sendShopPasswordResetEmail(
     };
   }
 
+  console.info(
+    `[shop-password-reset] Resend POST from=${JSON.stringify(from)} origin=${JSON.stringify(origin)} toDomain=${JSON.stringify(toEmail.includes("@") ? toEmail.split("@")[1] : "?")}`,
+  );
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -46,11 +66,26 @@ export async function sendShopPasswordResetEmail(
     }),
   });
 
+  const text = await res.text().catch(() => "");
+
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    console.error("[shop-password-reset] Resend error", res.status, text);
-    return { ok: false, error: "Could not send email. Try again later." };
+    console.error("[shop-password-reset] Resend HTTP error", {
+      status: res.status,
+      body: text.slice(0, 2000),
+    });
+    return { ok: false, error: resendUserFacingError(res.status, text) };
   }
+
+  let emailId = "";
+  try {
+    const j = JSON.parse(text) as { id?: string };
+    if (typeof j?.id === "string") emailId = j.id;
+  } catch {
+    /* ignore */
+  }
+  console.info(
+    `[shop-password-reset] Resend accepted email${emailId ? ` id=${emailId}` : ""} (track delivery in Resend → Emails / Logs)`,
+  );
 
   return { ok: true };
 }

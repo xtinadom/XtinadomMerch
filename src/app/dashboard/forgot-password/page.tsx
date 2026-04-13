@@ -26,8 +26,15 @@ export default function DashboardForgotPasswordPage() {
           try {
             const fd = new FormData(e.currentTarget);
             const r = await requestShopPasswordReset(undefined, fd);
-            if (r?.ok) setMessage(r.message);
-            else if (r && !r.ok) setError(r.error);
+            if (r?.ok === true && r.message) {
+              setMessage(r.message);
+            } else if (r && r.ok === false) {
+              setError(r.error);
+            } else {
+              setError("Something went wrong. Please try again.");
+            }
+          } catch {
+            setError("Something went wrong. Please try again.");
           } finally {
             setPending(false);
           }
@@ -43,24 +50,34 @@ export default function DashboardForgotPasswordPage() {
             className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100"
           />
         </label>
-        {error ? (
-          <p className="text-sm text-amber-400" role="alert">
-            {error}
-          </p>
-        ) : null}
-        {message ? (
-          <p className="text-sm text-white" role="status">
-            {message}
-          </p>
-        ) : null}
         <button
           type="submit"
           disabled={pending}
           className="w-full rounded-lg bg-zinc-100 py-2 text-sm font-medium text-zinc-900 disabled:opacity-50"
         >
-          {pending ? "…" : "Send reset link"}
+          {pending ? "Sending…" : "Send reset link"}
         </button>
       </form>
+
+      <div className="mt-4 min-h-[3.5rem]" aria-live="polite" aria-atomic="true">
+        {error ? (
+          <p
+            className="rounded-lg border border-amber-900/50 bg-amber-950/25 px-3 py-3 text-sm text-amber-100"
+            role="alert"
+          >
+            {error}
+          </p>
+        ) : null}
+        {message ? (
+          <p
+            className="rounded-lg border border-zinc-600 bg-zinc-900/80 px-3 py-3 text-sm leading-relaxed text-zinc-100"
+            role="status"
+          >
+            {message}
+          </p>
+        ) : null}
+      </div>
+
       <p className="mt-6 text-center text-sm text-zinc-500">
         <Link href="/dashboard/login" className="text-blue-400 hover:underline">
           Back to sign in

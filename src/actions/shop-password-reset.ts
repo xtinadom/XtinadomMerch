@@ -16,7 +16,7 @@ const RESET_TTL_MS = 2 * 60 * 60 * 1000;
 
 /** Same copy whether or not the email exists (avoid account enumeration). */
 const REQUEST_OK_MESSAGE =
-  "If an account exists for that email, you will receive a link to reset your password shortly.";
+  "If an account exists with that email, a reset link will be sent. Check your inbox and spam folder.";
 
 export async function requestShopPasswordReset(
   _prev: ShopPasswordResetMessage | undefined,
@@ -29,6 +29,9 @@ export async function requestShopPasswordReset(
 
   const user = await prisma.shopUser.findUnique({ where: { email } });
   if (!user) {
+    console.info(
+      "[shop-password-reset] No ShopUser for submitted email — returning generic success (no email sent).",
+    );
     return { ok: true, message: REQUEST_OK_MESSAGE };
   }
 
@@ -47,9 +50,11 @@ export async function requestShopPasswordReset(
   const sent = await sendShopPasswordResetEmail(email, raw);
   if (!sent.ok) {
     await prisma.shopPasswordResetToken.deleteMany({ where: { tokenHash } });
+    console.error("[shop-password-reset] sendShopPasswordResetEmail failed:", sent.error);
     return { ok: false, error: sent.error };
   }
 
+  console.info("[shop-password-reset] Token created and Resend send completed for ShopUser id=", user.id);
   return { ok: true, message: REQUEST_OK_MESSAGE };
 }
 
