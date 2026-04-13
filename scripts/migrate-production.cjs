@@ -57,13 +57,26 @@ if (!url || isLocalHostUrl(url)) {
   process.exit(1);
 }
 
-console.log("[migrate:prod] Using Neon direct URL for prisma migrate deploy");
-
 const env = { ...process.env, PRISMA_MIGRATE_DATABASE_URL: url };
 delete env.DIRECT_URL;
 delete env.DATABASE_URL;
 
 const prismaBin = path.join(root, "node_modules", "prisma", "build", "index.js");
+
+const argv = process.argv.slice(2);
+if (argv[0] === "resolve-rolled-back" && argv[1]) {
+  const name = argv[1];
+  console.log(`[migrate:prod] prisma migrate resolve --rolled-back ${name} (Neon direct URL)`);
+  const r = spawnSync(
+    process.execPath,
+    [prismaBin, "migrate", "resolve", "--rolled-back", name, "--schema", "prisma/schema.prisma"],
+    { stdio: "inherit", cwd: root, env },
+  );
+  process.exit(r.status ?? 1);
+}
+
+console.log("[migrate:prod] Using Neon direct URL for prisma migrate deploy");
+
 const r = spawnSync(process.execPath, [prismaBin, "migrate", "deploy", "--schema", "prisma/schema.prisma"], {
   stdio: "inherit",
   cwd: root,
