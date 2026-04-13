@@ -19,7 +19,13 @@ import {
 } from "@/lib/shop-setup-image";
 import { shopSocialLinksFromFormData } from "@/lib/shop-social-links";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
-import { minListPriceCentsForProductFromAdminCatalog } from "@/lib/shop-setup-catalog-options";
+import {
+  encodeBaselinePickVariant,
+  parseBaselinePick,
+} from "@/lib/shop-baseline-catalog";
+import { parseAdminCatalogVariantsJson } from "@/lib/admin-catalog-item";
+import { getOrCreateBaselineStubProduct } from "@/lib/shop-baseline-stub-product";
+import { syncFreeListingFeeWaivers } from "@/lib/listing-fee";
 
 const WELCOME_MAX = 280;
 
@@ -142,28 +148,180 @@ export async function submitFirstListingSetup(
     };
   }
 
-  const productId = String(formData.get("productId") ?? "").trim();
+  const pickRaw = String(formData.get("productId") ?? "").trim();
   const dollars = String(formData.get("listingPriceDollars") ?? "").trim();
-  if (!productId) {
-    return { ok: false, error: "Select a product from the catalog." };
+  if (!pickRaw) {
+    return { ok: false, error: "Select an allowed item from the list." };
   }
 
-  const product = await prisma.product.findFirst({
-    where: {
-      id: productId,
-      active: true,
-      fulfillmentType: FulfillmentType.printify,
-    },
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-      minPriceCents: true,
-      priceCents: true,
-    },
-  });
-  if (!product) {
-    return { ok: false, error: "That catalog item is not available." };
+  const baselinePick = parseBaselinePick(pickRaw);
+
+  if (baselinePick?.mode === "allVariants") {
+    const row = await prisma.adminCatalogItem.findUnique({
+      where: { id: baselinePick.itemId },
+    });
+    if (!row) {
+      return { ok: false, error: "That catalog item is not available." };
+    }
+    const variants = parseAdminCatalogVariantsJson(row.variants);
+    if (variants.length === 0) {
+      return { ok: false, error: "That catalog item has no variants to list." };
+    }
+
+    const variantPricesJson = String(formData.get("listingVariantPricesJson") ?? "").trim();
+    let pricesPayload: Record<string, unknown>;
+    try {
+      pricesPayload = JSON.parse(variantPricesJson) as Record<string, unknown>;
+      if (!pricesPayload || typeof pricesPayload !== "object" || Array.isArray(pricesPayload)) {
+        return { ok: false, error: "Provide a list price for every variant." };
+      }
+    } catch {
+      return { ok: false, error: "Provide a list price for every variant." };
+    }
+
+    const expectedKeys = new Set(
+      variants.map((v) => encodeBaselinePickVariant(baselinePick.itemId, v.id)),
+    );
+    const keysFromClient = new Set(Object.keys(pricesPayload));
+    if (expectedKeys.size !== keysFromClient.size) {
+      return { ok: false, error: "Provide a list price for every variant." };
+    }
+    for (const k of expectedKeys) {
+      if (!keysFromClient.has(k)) {
+        return { ok: false, error: "Provide a list price for every variant." };
+      }
+    }
+
+    type Plan = { productId: string; priceCents: number; variantLabel: string };
+    const plans: Plan[] = [];
+
+    for (const v of variants) {
+      const key = encodeBaselinePickVariant(baselinePick.itemId, v.id);
+      const d = String(pricesPayload[key] ?? "").trim();
+      const parsed = parseFloat(d.replace(/[^0-9.]/g, ""));
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        return { ok: false, error: "Enter a valid list price for each variant." };
+      }
+      const priceCents = Math.round(parsed * 100);
+      const minCents = Math.max(0, v.minPriceCents);
+      if (priceCents < minCents) {
+        return {
+          ok: false,
+          error: `Price must be at least ${(minCents / 100).toFixed(2)} USD for ${v.label}.`,
+        };
+      }
+      const stub = await getOrCreateBaselineStubProduct(shop.id, {
+        mode: "variant",
+        itemId: baselinePick.itemId,
+        variantId: v.id,
+      });
+      if (!stub) {
+        return { ok: false, error: "That catalog item is not available." };
+      }
+      plans.push({ productId: stub.productId, priceCents, variantLabel: v.label });
+    }
+
+    const file = formData.get("listingArtwork");
+    if (!file || !(file instanceof Blob) || file.size === 0) {
+      return { ok: false, error: "Upload a print-ready artwork file." };
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      return { ok: false, error: "Artwork file is too large (max 20 MB before processing)." };
+    }
+
+    const rawBuf = Buffer.from(await file.arrayBuffer());
+    const webp = await compressShopListingArtworkWebp(rawBuf);
+    if (!webp) {
+      return {
+        ok: false,
+        error: "Could not process that artwork. Use a PNG or JPEG under 20 MB.",
+      };
+    }
+
+    for (const p of plans) {
+      const existing = await prisma.shopListing.findUnique({
+        where: { shopId_productId: { shopId: shop.id, productId: p.productId } },
+      });
+      if (existing) {
+        if (existing.active || existing.requestStatus === ListingRequestStatus.approved) {
+          return {
+            ok: false,
+            error: `${p.variantLabel} is already live on your shop.`,
+          };
+        }
+        if (existing.requestStatus === ListingRequestStatus.submitted) {
+          return {
+            ok: false,
+            error: `${p.variantLabel} is already waiting for admin review. Pick another product or wait for a decision.`,
+          };
+        }
+      }
+    }
+
+    const key = `shops/${shop.id}/listing-request/${randomUUID()}.webp`;
+    const url = await putPublicR2Object({
+      key,
+      body: webp,
+      contentType: "image/webp",
+    });
+
+    await prisma.$transaction(
+      plans.map((p) =>
+        prisma.shopListing.upsert({
+          where: { shopId_productId: { shopId: shop.id, productId: p.productId } },
+          create: {
+            shopId: shop.id,
+            productId: p.productId,
+            priceCents: p.priceCents,
+            requestImages: [url],
+            requestStatus: ListingRequestStatus.submitted,
+            active: false,
+          },
+          update: {
+            priceCents: p.priceCents,
+            requestImages: [url],
+            requestStatus: ListingRequestStatus.submitted,
+            active: false,
+          },
+        }),
+      ),
+    );
+
+    await syncFreeListingFeeWaivers(shop.id);
+    revalidatePath("/dashboard");
+    revalidatePath(`/s/${shop.slug}`);
+    revalidatePath("/admin");
+    return { ok: true };
+  }
+
+  let productId: string;
+  let minCents: number;
+
+  if (baselinePick) {
+    const stub = await getOrCreateBaselineStubProduct(shop.id, baselinePick);
+    if (!stub) {
+      return { ok: false, error: "That catalog item is not available." };
+    }
+    productId = stub.productId;
+    minCents = stub.minPriceCents;
+  } else {
+    const product = await prisma.product.findFirst({
+      where: {
+        id: pickRaw,
+        active: true,
+        fulfillmentType: FulfillmentType.printify,
+      },
+      select: {
+        id: true,
+        minPriceCents: true,
+        priceCents: true,
+      },
+    });
+    if (!product) {
+      return { ok: false, error: "That catalog item is not available." };
+    }
+    productId = product.id;
+    minCents = product.minPriceCents > 0 ? product.minPriceCents : product.priceCents;
   }
 
   const parsed = parseFloat(dollars.replace(/[^0-9.]/g, ""));
@@ -171,33 +329,6 @@ export async function submitFirstListingSetup(
     return { ok: false, error: "Enter a valid list price." };
   }
   const priceCents = Math.round(parsed * 100);
-  const [adminRows, allPrintifyCatalog] = await Promise.all([
-    prisma.adminCatalogItem.findMany({
-      select: {
-        name: true,
-        variants: true,
-        itemPlatformProductId: true,
-        itemExampleListingUrl: true,
-        itemMinPriceCents: true,
-      },
-    }),
-    prisma.product.findMany({
-      where: { active: true, fulfillmentType: FulfillmentType.printify },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        minPriceCents: true,
-        priceCents: true,
-      },
-    }),
-  ]);
-  const minCents = minListPriceCentsForProductFromAdminCatalog(
-    product.id,
-    adminRows,
-    product,
-    allPrintifyCatalog,
-  );
   if (priceCents < minCents) {
     return {
       ok: false,
@@ -262,6 +393,7 @@ export async function submitFirstListingSetup(
     },
   });
 
+  await syncFreeListingFeeWaivers(shop.id);
   revalidatePath("/dashboard");
   revalidatePath(`/s/${shop.slug}`);
   revalidatePath("/admin");

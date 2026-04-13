@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
-import { FulfillmentType } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/session";
 import { normalizeNewVariants, validateItemLevelWhenNoVariants } from "@/lib/admin-catalog-item";
@@ -12,7 +11,6 @@ function variantsJsonToStored(rawJson: string):
   | {
       variants: Prisma.InputJsonValue;
       variantCount: number;
-      variantPlatformProductIds: string[];
     }
   | null {
   let parsed: unknown;
@@ -23,12 +21,10 @@ function variantsJsonToStored(rawJson: string):
   }
   if (!Array.isArray(parsed)) return null;
 
-  const variantPlatformProductIds: string[] = [];
   const candidates: {
     label: string;
     minPriceCents: number;
     exampleListingUrl: string;
-    platformProductId?: string;
   }[] = [];
   for (const row of parsed) {
     if (!row || typeof row !== "object") continue;
@@ -37,13 +33,10 @@ function variantsJsonToStored(rawJson: string):
     const minRaw = String(o.minPriceDollars ?? "").trim();
     const dollars = parseFloat(minRaw.replace(/[^0-9.]/g, ""));
     if (!label || !Number.isFinite(dollars) || dollars < 0) continue;
-    const platformProductId = String(o.platformProductId ?? "").trim();
-    if (platformProductId) variantPlatformProductIds.push(platformProductId);
     candidates.push({
       label,
       minPriceCents: Math.round(dollars * 100),
       exampleListingUrl: String(o.exampleListingUrl ?? "").trim(),
-      ...(platformProductId ? { platformProductId } : {}),
     });
   }
   const variants =
@@ -51,28 +44,7 @@ function variantsJsonToStored(rawJson: string):
   return {
     variants: variants as unknown as Prisma.InputJsonValue,
     variantCount: variants.length,
-    variantPlatformProductIds,
   };
-}
-
-function itemPlatformProductIdFromForm(formData: FormData): string | null {
-  const v = String(formData.get("itemPlatformProductId") ?? "").trim();
-  return v || null;
-}
-
-async function assertAllPrintifyProductIdsValid(
-  ids: (string | null | undefined)[],
-): Promise<boolean> {
-  const uniq = [...new Set(ids.map((x) => String(x ?? "").trim()).filter(Boolean))];
-  if (uniq.length === 0) return true;
-  const n = await prisma.product.count({
-    where: {
-      id: { in: uniq },
-      active: true,
-      fulfillmentType: FulfillmentType.printify,
-    },
-  });
-  return n === uniq.length;
 }
 
 function itemLevelFromFormWhenNoVariants(formData: FormData):
@@ -105,20 +77,12 @@ export async function adminAddCatalogItem(formData: FormData) {
 
   let itemExampleListingUrl: string | null = null;
   let itemMinPriceCents = 0;
-  let itemPlatformProductId: string | null = null;
   if (parsed.variantCount === 0) {
     const itemLevel = itemLevelFromFormWhenNoVariants(formData);
     if (!itemLevel.ok) return;
     itemExampleListingUrl = itemLevel.itemExampleListingUrl;
     itemMinPriceCents = itemLevel.itemMinPriceCents;
-    itemPlatformProductId = itemPlatformProductIdFromForm(formData);
   }
-
-  const okIds = await assertAllPrintifyProductIdsValid([
-    itemPlatformProductId,
-    ...parsed.variantPlatformProductIds,
-  ]);
-  if (!okIds) return;
 
   const maxSort = await prisma.adminCatalogItem.aggregate({ _max: { sortOrder: true } });
   const sortOrder = (maxSort._max.sortOrder ?? 0) + 1;
@@ -128,7 +92,7 @@ export async function adminAddCatalogItem(formData: FormData) {
       name: name.slice(0, 300),
       sortOrder,
       variants: parsed.variants,
-      itemPlatformProductId,
+      itemPlatformProductId: null,
       itemExampleListingUrl,
       itemMinPriceCents,
     },
@@ -148,27 +112,19 @@ export async function adminUpdateCatalogItem(formData: FormData) {
 
   let itemExampleListingUrl: string | null = null;
   let itemMinPriceCents = 0;
-  let itemPlatformProductId: string | null = null;
   if (parsed.variantCount === 0) {
     const itemLevel = itemLevelFromFormWhenNoVariants(formData);
     if (!itemLevel.ok) return;
     itemExampleListingUrl = itemLevel.itemExampleListingUrl;
     itemMinPriceCents = itemLevel.itemMinPriceCents;
-    itemPlatformProductId = itemPlatformProductIdFromForm(formData);
   }
-
-  const okIds = await assertAllPrintifyProductIdsValid([
-    itemPlatformProductId,
-    ...parsed.variantPlatformProductIds,
-  ]);
-  if (!okIds) return;
 
   const n = await prisma.adminCatalogItem.updateMany({
     where: { id },
     data: {
       name: name.slice(0, 300),
       variants: parsed.variants,
-      itemPlatformProductId,
+      itemPlatformProductId: null,
       itemExampleListingUrl,
       itemMinPriceCents,
     },

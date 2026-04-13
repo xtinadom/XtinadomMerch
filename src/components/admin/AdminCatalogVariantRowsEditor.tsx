@@ -1,19 +1,13 @@
 "use client";
 
 import type { AdminCatalogVariantFormRow } from "@/lib/admin-catalog-item";
-import {
-  AdminPrintifyProductSelect,
-  type AdminPrintifyProductOption,
-} from "@/components/admin/AdminPrintifyProductSelect";
 
 export function AdminCatalogVariantRowsEditor({
-  printifyProducts,
   variants,
   onAddRow,
   onRemoveRow,
   onChangeRow,
 }: {
-  printifyProducts: AdminPrintifyProductOption[];
   variants: AdminCatalogVariantFormRow[];
   onAddRow: () => void;
   onRemoveRow: (index: number) => void;
@@ -64,13 +58,13 @@ export function AdminCatalogVariantRowsEditor({
             />
           </label>
           <label className="block min-w-0 text-[11px] text-zinc-500 sm:col-span-1">
-            Example product listing (optional)
+            Example listing (optional)
             <input
               type="text"
               value={row.exampleListingUrl}
               onChange={(e) => onChangeRow(index, { exampleListingUrl: e.target.value })}
               className="mt-0.5 block w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-[11px] text-zinc-200"
-              placeholder="https://… or /product/…"
+              placeholder="https://… or /path…"
             />
           </label>
           <div className="flex items-end">
@@ -81,15 +75,6 @@ export function AdminCatalogVariantRowsEditor({
             >
               Remove
             </button>
-          </div>
-          <div className="col-span-full">
-            <AdminPrintifyProductSelect
-              products={printifyProducts}
-              value={row.platformProductId}
-              onChange={(v) => onChangeRow(index, { platformProductId: v })}
-              label="Linked Printify product (optional)"
-              hint="Shop catalog can use this when the example URL is empty."
-            />
           </div>
         </div>
       ))}

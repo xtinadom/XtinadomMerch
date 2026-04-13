@@ -9,8 +9,10 @@ import { publicAppBaseUrl } from "@/lib/public-app-url";
 import { isMockCheckoutEnabled } from "@/lib/checkout-mock";
 import {
   LISTING_FEE_CENTS,
+  listingFeeCentsForOrdinal,
   PLATFORM_SHOP_SLUG,
 } from "@/lib/marketplace-constants";
+import { getListingOrdinal } from "@/lib/listing-fee";
 import { ListingRequestStatus } from "@/generated/prisma/enums";
 
 async function requireShopOwner() {
@@ -108,6 +110,18 @@ export async function dashboardPayListingFee(formData: FormData) {
   });
   if (!listing || listing.listingFeePaidAt) return;
 
+  const ordinal = await getListingOrdinal(listingId, shop.id);
+  if (ordinal === null) return;
+  const feeCents = listingFeeCentsForOrdinal(ordinal);
+  if (feeCents === 0) {
+    await prisma.shopListing.update({
+      where: { id: listingId },
+      data: { listingFeePaidAt: new Date() },
+    });
+    revalidatePath("/dashboard");
+    redirect("/dashboard?fee=ok");
+  }
+
   if (isMockCheckoutEnabled()) {
     await prisma.shopListing.update({
       where: { id: listingId },
@@ -129,7 +143,7 @@ export async function dashboardPayListingFee(formData: FormData) {
         quantity: 1,
         price_data: {
           currency: "usd",
-          unit_amount: LISTING_FEE_CENTS,
+          unit_amount: feeCents,
           product_data: {
             name: "Listing publication fee",
             description: `Shop “${shop.displayName}” — one listing`,

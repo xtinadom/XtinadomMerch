@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/session";
 import { ListingRequestStatus } from "@/generated/prisma/enums";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
+import { syncFreeListingFeeWaivers } from "@/lib/listing-fee";
 
 async function requireAdmin() {
   const session = await getAdminSession();
@@ -136,6 +137,7 @@ export async function adminAssignShopListing(formData: FormData) {
       ...(waiveFee ? { listingFeePaidAt: new Date() } : {}),
     },
   });
+  await syncFreeListingFeeWaivers(shopId);
   revalidatePath("/admin");
   revalidatePath("/shops");
 }

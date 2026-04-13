@@ -20,13 +20,84 @@ function normalizeSocialUrl(raw: string): string | null {
   return `https://${t}`;
 }
 
-/** Parse form keys `social_reddit`, … into a JSON-ready object (only non-empty). */
+function parseHttpsUrl(raw: string): URL | null {
+  const normalized = normalizeSocialUrl(raw);
+  if (!normalized) return null;
+  try {
+    const u = new URL(normalized);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    if (!u.hostname) return null;
+    return u;
+  } catch {
+    return null;
+  }
+}
+
+const PLATFORM_HOST_RULES: Record<ShopSocialKey, (host: string) => boolean> = {
+  reddit: (h) => h === "reddit.com" || h.endsWith(".reddit.com"),
+  x: (h) =>
+    h === "x.com" ||
+    h.endsWith(".x.com") ||
+    h === "twitter.com" ||
+    h.endsWith(".twitter.com"),
+  bluesky: (h) =>
+    h === "bsky.app" ||
+    h.endsWith(".bsky.app") ||
+    h === "bsky.social" ||
+    h.endsWith(".bsky.social"),
+  twitch: (h) => h === "twitch.tv" || h.endsWith(".twitch.tv"),
+  loyalfans: (h) => h === "loyalfans.com" || h.endsWith(".loyalfans.com"),
+  onlyfans: (h) => h === "onlyfans.com" || h.endsWith(".onlyfans.com"),
+  instagram: (h) => h === "instagram.com" || h.endsWith(".instagram.com"),
+};
+
+const PLATFORM_URL_HINT: Record<ShopSocialKey, string> = {
+  reddit: "reddit.com",
+  x: "x.com or twitter.com",
+  bluesky: "bsky.app or *.bsky.social",
+  twitch: "twitch.tv",
+  loyalfans: "loyalfans.com",
+  onlyfans: "onlyfans.com",
+  instagram: "instagram.com",
+};
+
+/** True when the URL’s host is that network (e.g. reddit.com), not another site. */
+export function socialUrlMatchesPlatform(key: ShopSocialKey, raw: string): boolean {
+  const url = parseHttpsUrl(raw);
+  if (!url) return false;
+  const host = url.hostname.toLowerCase();
+  return PLATFORM_HOST_RULES[key](host);
+}
+
+/** If the URL is invalid or the host does not match the chosen network, return a user-facing message. */
+export function socialLinkAddValidationMessage(
+  key: ShopSocialKey,
+  raw: string,
+): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (!parseHttpsUrl(trimmed)) {
+    return "Enter a valid http(s) URL.";
+  }
+  if (!socialUrlMatchesPlatform(key, trimmed)) {
+    return `That link must be on ${PLATFORM_URL_HINT[key]} — it doesn’t match ${key}.`;
+  }
+  return null;
+}
+
+/** Canonical stored URL (https, parsed) or null if invalid. */
+export function normalizedShopSocialUrl(raw: string): string | null {
+  const url = parseHttpsUrl(raw);
+  return url ? url.href : null;
+}
+
+/** Parse form keys `social_reddit`, … into a JSON-ready object (only non-empty, valid hosts). */
 export function shopSocialLinksFromFormData(formData: FormData): ShopSocialLinksRecord {
   const out: ShopSocialLinksRecord = {};
   for (const key of SHOP_SOCIAL_KEYS) {
     const v = String(formData.get(`social_${key}`) ?? "").trim();
-    const u = normalizeSocialUrl(v);
-    if (u) out[key] = u;
+    const u = normalizedShopSocialUrl(v);
+    if (u && socialUrlMatchesPlatform(key, v)) out[key] = u;
   }
   return out;
 }

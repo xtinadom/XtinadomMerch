@@ -1,8 +1,20 @@
 /** Canonical slug for the legacy / single-catalog shop (migration seed). */
 export const PLATFORM_SHOP_SLUG = "platform" as const;
 
-/** Listing publication fee charged to shops (USD cents). */
+/** First N listings per shop have no publication fee (ordered by creation time). */
+export const LISTING_FEE_FREE_SLOT_COUNT = 3;
+
+/**
+ * Listing publication fee (USD cents) for each listing after the free slots.
+ * First {@link LISTING_FEE_FREE_SLOT_COUNT} listings are free.
+ */
 export const LISTING_FEE_CENTS = 25;
+
+/** Fee in cents for the Nth listing in a shop (1 = oldest), after free slots. */
+export function listingFeeCentsForOrdinal(ordinal1Based: number): number {
+  if (ordinal1Based <= 0) return LISTING_FEE_CENTS;
+  return ordinal1Based <= LISTING_FEE_FREE_SLOT_COUNT ? 0 : LISTING_FEE_CENTS;
+}
 
 /** Listing id prefix used in SQL migration (`sl_` || productId). */
 export const LISTING_ID_PREFIX = "sl_" as const;

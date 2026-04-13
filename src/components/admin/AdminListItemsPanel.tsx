@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { adminDeleteCatalogItem, adminUpdateCatalogItem } from "@/actions/admin-catalog-items";
 import type { AdminCatalogVariant, AdminCatalogVariantFormRow } from "@/lib/admin-catalog-item";
 import {
@@ -13,7 +13,6 @@ import {
 } from "@/lib/admin-catalog-item";
 import { AdminCatalogVariantRowsEditor } from "@/components/admin/AdminCatalogVariantRowsEditor";
 import { AdminCatalogItemLevelFields } from "@/components/admin/AdminCatalogItemLevelFields";
-import type { AdminPrintifyProductOption } from "@/components/admin/AdminPrintifyProductSelect";
 
 export type AdminListItemSerializable = {
   id: string;
@@ -55,23 +54,12 @@ function exampleLink(url: string) {
   );
 }
 
-export function AdminListItemsPanel({
-  items,
-  printifyProducts,
-}: {
-  items: AdminListItemSerializable[];
-  printifyProducts: AdminPrintifyProductOption[];
-}) {
-  const productNameById = useMemo(
-    () => new Map(printifyProducts.map((p) => [p.id, p.name] as const)),
-    [printifyProducts],
-  );
+export function AdminListItemsPanel({ items }: { items: AdminListItemSerializable[] }) {
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editVariants, setEditVariants] = useState<AdminCatalogVariantFormRow[]>([]);
   const [editItemExampleListingUrl, setEditItemExampleListingUrl] = useState("");
-  const [editItemPlatformProductId, setEditItemPlatformProductId] = useState("");
   const [editItemMinPriceDollars, setEditItemMinPriceDollars] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -81,7 +69,6 @@ export function AdminListItemsPanel({
       setEditName("");
       setEditVariants([]);
       setEditItemExampleListingUrl("");
-      setEditItemPlatformProductId("");
       setEditItemMinPriceDollars("");
       setEditError(null);
       return;
@@ -94,7 +81,6 @@ export function AdminListItemsPanel({
     setEditName(item.name);
     setEditVariants(variantsToFormRows(item.variants));
     setEditItemExampleListingUrl(item.itemExampleListingUrl ?? "");
-    setEditItemPlatformProductId(item.itemPlatformProductId ?? "");
     setEditItemMinPriceDollars(dollarsStringFromCents(item.itemMinPriceCents));
     setEditError(null);
   }, [editingId, items]);
@@ -143,7 +129,6 @@ export function AdminListItemsPanel({
     fd.set("itemName", name);
     fd.set("variantsJson", JSON.stringify(checked.payload));
     fd.set("itemExampleListingUrl", editItemExampleListingUrl);
-    fd.set("itemPlatformProductId", editItemPlatformProductId);
     fd.set("itemMinPriceDollars", editItemMinPriceDollars);
     startTransition(async () => {
       await adminUpdateCatalogItem(fd);
@@ -158,16 +143,9 @@ export function AdminListItemsPanel({
     variantLabel: string;
     minPriceCents: number;
     exampleUrl: string;
-    linkedProductLabel: string;
     rowSpan: number;
     variantIndex: number;
   }[] = [];
-
-  function labelForProductId(id: string | null | undefined): string {
-    const t = String(id ?? "").trim();
-    if (!t) return "—";
-    return productNameById.get(t) ?? t;
-  }
 
   for (const item of items) {
     const variants = item.variants;
@@ -178,7 +156,6 @@ export function AdminListItemsPanel({
         variantLabel: "—",
         minPriceCents: item.itemMinPriceCents,
         exampleUrl: item.itemExampleListingUrl ?? "",
-        linkedProductLabel: labelForProductId(item.itemPlatformProductId),
         rowSpan: 1,
         variantIndex: 0,
       });
@@ -191,7 +168,6 @@ export function AdminListItemsPanel({
         variantLabel: v.label,
         minPriceCents: v.minPriceCents,
         exampleUrl: v.exampleListingUrl,
-        linkedProductLabel: labelForProductId(v.platformProductId),
         rowSpan: i === 0 ? variants.length : 0,
         variantIndex: i,
       });
@@ -221,7 +197,6 @@ export function AdminListItemsPanel({
               />
             </label>
             <AdminCatalogVariantRowsEditor
-              printifyProducts={printifyProducts}
               variants={editVariants}
               onAddRow={addEditVariantRow}
               onRemoveRow={removeEditVariantRow}
@@ -229,11 +204,8 @@ export function AdminListItemsPanel({
             />
             {editVariants.length === 0 ? (
               <AdminCatalogItemLevelFields
-                printifyProducts={printifyProducts}
-                platformProductId={editItemPlatformProductId}
                 exampleListingUrl={editItemExampleListingUrl}
                 minPriceDollars={editItemMinPriceDollars}
-                onChangePlatformProductId={setEditItemPlatformProductId}
                 onChangeExampleListingUrl={setEditItemExampleListingUrl}
                 onChangeMinPriceDollars={setEditItemMinPriceDollars}
               />
@@ -265,12 +237,11 @@ export function AdminListItemsPanel({
       ) : null}
 
       <div className="overflow-x-auto rounded-lg border border-zinc-800">
-        <table className="w-full min-w-[44rem] text-left text-xs">
+        <table className="w-full min-w-[36rem] text-left text-xs">
           <thead className="border-b border-zinc-800 bg-zinc-900/80 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
             <tr>
               <th className="p-3 font-medium">Item name</th>
               <th className="p-3 font-medium">Variant</th>
-              <th className="p-3 font-medium">Printify product</th>
               <th className="p-3 font-medium">Example listing</th>
               <th className="p-3 font-medium whitespace-nowrap">Min price</th>
             </tr>
@@ -303,7 +274,6 @@ export function AdminListItemsPanel({
                   </td>
                 ) : null}
                 <td className="p-3 text-zinc-400">{r.variantLabel}</td>
-                <td className="p-3 text-zinc-400">{r.linkedProductLabel}</td>
                 <td className="p-3 text-zinc-400">
                   {r.exampleUrl ? exampleLink(r.exampleUrl) : <span className="text-zinc-600">—</span>}
                 </td>

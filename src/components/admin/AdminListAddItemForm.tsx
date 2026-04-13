@@ -10,19 +10,13 @@ import {
 } from "@/lib/admin-catalog-item";
 import { AdminCatalogVariantRowsEditor } from "@/components/admin/AdminCatalogVariantRowsEditor";
 import { AdminCatalogItemLevelFields } from "@/components/admin/AdminCatalogItemLevelFields";
-import type { AdminPrintifyProductOption } from "@/components/admin/AdminPrintifyProductSelect";
 
-export function AdminListAddItemForm({
-  printifyProducts,
-}: {
-  printifyProducts: AdminPrintifyProductOption[];
-}) {
+export function AdminListAddItemForm() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [itemName, setItemName] = useState("");
   const [variants, setVariants] = useState<AdminCatalogVariantFormRow[]>([]);
   const [itemExampleListingUrl, setItemExampleListingUrl] = useState("");
-  const [itemPlatformProductId, setItemPlatformProductId] = useState("");
   const [itemMinPriceDollars, setItemMinPriceDollars] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +60,6 @@ export function AdminListAddItemForm({
     fd.set("itemName", name);
     fd.set("variantsJson", JSON.stringify(checked.payload));
     fd.set("itemExampleListingUrl", itemExampleListingUrl);
-    fd.set("itemPlatformProductId", itemPlatformProductId);
     fd.set("itemMinPriceDollars", itemMinPriceDollars);
 
     startTransition(async () => {
@@ -74,7 +67,6 @@ export function AdminListAddItemForm({
       setItemName("");
       setVariants([]);
       setItemExampleListingUrl("");
-      setItemPlatformProductId("");
       setItemMinPriceDollars("");
       router.refresh();
     });
@@ -102,7 +94,6 @@ export function AdminListAddItemForm({
         </label>
 
         <AdminCatalogVariantRowsEditor
-          printifyProducts={printifyProducts}
           variants={variants}
           onAddRow={addVariantRow}
           onRemoveRow={removeVariantRow}
@@ -111,11 +102,8 @@ export function AdminListAddItemForm({
 
         {variants.length === 0 ? (
           <AdminCatalogItemLevelFields
-            printifyProducts={printifyProducts}
-            platformProductId={itemPlatformProductId}
             exampleListingUrl={itemExampleListingUrl}
             minPriceDollars={itemMinPriceDollars}
-            onChangePlatformProductId={setItemPlatformProductId}
             onChangeExampleListingUrl={setItemExampleListingUrl}
             onChangeMinPriceDollars={setItemMinPriceDollars}
           />

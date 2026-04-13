@@ -2,26 +2,20 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getShopOwnerSessionReadonly } from "@/lib/session";
-import {
-  OrderStatus,
-  ListingRequestStatus,
-  FulfillmentType,
-} from "@/generated/prisma/enums";
+import { OrderStatus } from "@/generated/prisma/enums";
 import {
   LISTING_FEE_CENTS,
+  LISTING_FEE_FREE_SLOT_COUNT,
   PLATFORM_SHOP_SLUG,
 } from "@/lib/marketplace-constants";
+import { syncFreeListingFeeWaivers } from "@/lib/listing-fee";
 import { getStripe } from "@/lib/stripe";
 import { logoutShopOwner } from "@/actions/shop-auth";
-import { dashboardPayListingFee } from "@/actions/dashboard-marketplace";
 import { SiteLegalFooter } from "@/components/SiteLegalFooter";
 import { ShopSetupTabs } from "@/components/dashboard/ShopSetupTabs";
-import {
-  DashboardListingPriceForm,
-  DashboardSubmitListingRequestForm,
-} from "@/components/dashboard/DashboardListingForms";
+import { DashboardMainTabs } from "@/components/dashboard/DashboardMainTabs";
 import { isR2UploadConfigured } from "@/lib/r2-upload";
-import { buildShopSetupCatalogOptions } from "@/lib/shop-setup-catalog-options";
+import { buildShopBaselineCatalogGroups } from "@/lib/shop-baseline-catalog";
 import { parseShopSocialLinksJson } from "@/lib/shop-social-links";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +38,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const connect = typeof sp.connect === "string" ? sp.connect : undefined;
   const fee = typeof sp.fee === "string" ? sp.fee : undefined;
+  const dashTab =
+    typeof sp.dash === "string" && sp.dash === "orders" ? ("orders" as const) : ("listings" as const);
 
   const user = await prisma.shopUser.findUnique({
     where: { id: owner.shopUserId },
@@ -86,6 +82,17 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     }
   }
 
+  await syncFreeListingFeeWaivers(shop.id);
+  shop = await prisma.shop.findUniqueOrThrow({
+    where: { id: shop.id },
+    include: {
+      listings: {
+        orderBy: { updatedAt: "desc" },
+        include: { product: true },
+      },
+    },
+  });
+
   const paidOrders = await prisma.order.findMany({
     where: { shopId: shop.id, status: OrderStatus.paid },
     orderBy: { createdAt: "desc" },
@@ -107,38 +114,31 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   });
 
   const isPlatform = shop.slug === PLATFORM_SHOP_SLUG;
-  const listingFeeLabel = formatMoney(LISTING_FEE_CENTS);
+  const listingFeePolicySummary = `Your first ${LISTING_FEE_FREE_SLOT_COUNT} listings are free. Each additional listing costs ${formatMoney(LISTING_FEE_CENTS)} to publish.`;
+  const paidListingFeeLabel = formatMoney(LISTING_FEE_CENTS);
 
-  const printifyProducts = !isPlatform
-    ? await prisma.product.findMany({
-        where: { active: true, fulfillmentType: FulfillmentType.printify },
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          minPriceCents: true,
-          priceCents: true,
-        },
-        orderBy: { name: "asc" },
-      })
-    : [];
+  const listingOrdinalById = (() => {
+    const ordered = [...shop.listings].sort(
+      (a, b) =>
+        a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id),
+    );
+    return new Map(ordered.map((l, i) => [l.id, i + 1]));
+  })();
 
   const adminCatalogRows = !isPlatform
     ? await prisma.adminCatalogItem.findMany({
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
         select: {
+          id: true,
           name: true,
           variants: true,
-          itemPlatformProductId: true,
           itemExampleListingUrl: true,
           itemMinPriceCents: true,
         },
       })
     : [];
 
-  const catalogOptions = !isPlatform
-    ? buildShopSetupCatalogOptions(adminCatalogRows, printifyProducts)
-    : [];
+  const catalogGroups = !isPlatform ? buildShopBaselineCatalogGroups(adminCatalogRows) : [];
 
   const socialParsed = parseShopSocialLinksJson(shop.socialLinks);
   const setupSteps = !isPlatform
@@ -151,8 +151,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         ),
         listing: shop.listings.some(
           (l) =>
-            l.requestStatus === ListingRequestStatus.submitted ||
-            l.requestStatus === ListingRequestStatus.approved ||
+            l.requestStatus === "submitted" ||
+            l.requestStatus === "approved" ||
             l.active,
         ),
       }
@@ -211,10 +211,13 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             connectChargesEnabled: shop.connectChargesEnabled,
             payoutsEnabled: shop.payoutsEnabled,
           }}
-          catalogOptions={catalogOptions}
+          catalogGroups={catalogGroups}
           steps={setupSteps}
-          listingFeeLabel={listingFeeLabel}
+          listingFeePolicySummary={listingFeePolicySummary}
           r2Configured={isR2UploadConfigured()}
+          listingPickerDiagnostics={{
+            adminCatalogItemCount: adminCatalogRows.length,
+          }}
         />
       ) : (
         <p className="mt-8 rounded-lg border border-zinc-800 bg-zinc-900/30 px-4 py-3 text-sm text-zinc-500">
@@ -223,109 +226,33 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </p>
       )}
 
-      <section className="mt-10">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Listings</h2>
-        <p className="mt-1 text-xs text-zinc-600">
-          Set your public price (at least the catalog minimum). Pay the {listingFeeLabel} listing fee
-          before an admin can approve a submitted request. Platform catalog shop skips the fee.
-        </p>
-        <ul className="mt-4 space-y-6">
-          {shop.listings.map((listing) => {
-            const minCents =
-              listing.product.minPriceCents > 0
-                ? listing.product.minPriceCents
-                : listing.product.priceCents;
-            const minLabel = formatMoney(minCents);
-            const canSubmit =
-              listing.requestStatus === ListingRequestStatus.draft ||
-              listing.requestStatus === ListingRequestStatus.rejected;
-            const imagesDefault = Array.isArray(listing.requestImages)
-              ? (listing.requestImages as string[]).join("\n")
-              : "";
-
-            return (
-              <li
-                key={listing.id}
-                className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 text-sm"
-              >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="font-medium text-zinc-200">{listing.product.name}</span>
-                  <span className="text-xs text-zinc-500">
-                    {listing.active ? "active" : "inactive"} · {listing.requestStatus}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-zinc-600">
-                  Catalog: {listing.product.slug} · min {minLabel}
-                </p>
-
-                <DashboardListingPriceForm
-                  listingId={listing.id}
-                  priceDollarsFormatted={(listing.priceCents / 100).toFixed(2)}
-                />
-
-                {!isPlatform && !listing.listingFeePaidAt ? (
-                  <form action={dashboardPayListingFee} className="mt-3">
-                    <input type="hidden" name="listingId" value={listing.id} />
-                    <button
-                      type="submit"
-                      className="rounded border border-blue-900/60 bg-blue-950/30 px-3 py-1.5 text-xs text-blue-200 hover:border-blue-700/60"
-                    >
-                      Pay {listingFeeLabel} listing fee (Stripe)
-                    </button>
-                  </form>
-                ) : !isPlatform && listing.listingFeePaidAt ? (
-                  <p className="mt-2 text-xs text-emerald-600/90">
-                    Listing fee paid{" "}
-                    {listing.listingFeePaidAt.toISOString().slice(0, 10)}
-                  </p>
-                ) : null}
-
-                {canSubmit ? (
-                  <DashboardSubmitListingRequestForm
-                    listingId={listing.id}
-                    defaultImageUrlsText={imagesDefault}
-                  />
-                ) : (
-                  <p className="mt-3 text-xs text-zinc-600">
-                    Request status: {listing.requestStatus} — contact support if you need changes.
-                  </p>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        {shop.listings.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-600">
-            No listings yet. Ask the platform admin to assign catalog products to your shop.
-          </p>
-        ) : null}
-      </section>
-
-      <section className="mt-12">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Recent paid orders</h2>
-        <p className="mt-1 text-xs text-zinc-600">Newest first (up to 20). Line splits are totals for that line.</p>
-        <ul className="mt-4 space-y-3">
-          {paidOrders.map((o) => (
-            <li key={o.id} className="rounded-lg border border-zinc-800 p-3 text-xs text-zinc-400">
-              <div className="flex justify-between gap-2 text-zinc-300">
-                <span>{o.createdAt.toISOString().slice(0, 19)}Z</span>
-                <span>{formatMoney(o.totalCents)}</span>
-              </div>
-              <ul className="mt-2 space-y-1">
-                {o.lines.map((l, i) => (
-                  <li key={i}>
-                    {l.productName} × {l.quantity} ({formatMoney(l.unitPriceCents * l.quantity)} merch) — shop{" "}
-                    {formatMoney(l.shopCutCents)} · platform {formatMoney(l.platformCutCents)}
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ul>
-        {paidOrders.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-600">No paid orders for this shop yet.</p>
-        ) : null}
-      </section>
+      <DashboardMainTabs
+        initialTab={dashTab}
+        listingFeePolicySummary={listingFeePolicySummary}
+        paidListingFeeLabel={paidListingFeeLabel}
+        isPlatform={isPlatform}
+        listings={shop.listings.map((listing) => ({
+          id: listing.id,
+          active: listing.active,
+          requestStatus: listing.requestStatus,
+          priceCents: listing.priceCents,
+          requestImages: listing.requestImages,
+          listingFeePaidAt: listing.listingFeePaidAt?.toISOString() ?? null,
+          listingOrdinal: listingOrdinalById.get(listing.id) ?? 1,
+          product: {
+            name: listing.product.name,
+            slug: listing.product.slug,
+            minPriceCents: listing.product.minPriceCents,
+            priceCents: listing.product.priceCents,
+          },
+        }))}
+        paidOrders={paidOrders.map((o) => ({
+          id: o.id,
+          createdAt: o.createdAt.toISOString(),
+          totalCents: o.totalCents,
+          lines: o.lines,
+        }))}
+      />
 
       <p className="mt-10 text-center">
         <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-300">

@@ -33,6 +33,11 @@ async function fulfillListingFeeCheckout(session: Stripe.Checkout.Session): Prom
   return true;
 }
 
+/** Voluntary platform tip — no Order row; acknowledge so we don’t treat it as a merch checkout. */
+async function fulfillSupportTipCheckout(session: Stripe.Checkout.Session): Promise<boolean> {
+  return session.metadata?.kind === "support_tip";
+}
+
 async function fulfillOrder(session: Stripe.Checkout.Session) {
   const orderId = session.metadata?.orderId;
   if (!orderId) return;
@@ -263,9 +268,14 @@ export async function POST(req: Request) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const listingFee = await fulfillListingFeeCheckout(session);
-    if (!listingFee) {
-      await fulfillOrder(session);
+    if (listingFee) {
+      return NextResponse.json({ received: true });
     }
+    const supportTip = await fulfillSupportTipCheckout(session);
+    if (supportTip) {
+      return NextResponse.json({ received: true });
+    }
+    await fulfillOrder(session);
   }
 
   return NextResponse.json({ received: true });
