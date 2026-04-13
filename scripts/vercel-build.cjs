@@ -48,8 +48,6 @@ function runOptionalSchemaSync() {
 run("npx prisma generate --schema prisma/schema.prisma");
 runOptionalSchemaSync();
 
-const nextCmd =
-  process.env.VERCEL === "1"
-    ? "npx next build --webpack"
-    : "npx next build";
-run(nextCmd);
+// Next 16 default production build (Turbopack) — avoid `next build --webpack`, which treats
+// `node:*` imports as unhandled schemes when they appear in modules reachable from Client Components.
+run("npx next build");

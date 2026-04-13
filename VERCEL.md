@@ -6,7 +6,7 @@ This app uses **PostgreSQL** (SQLite is not supported on Vercel serverless). **N
 
 Running `prisma migrate deploy` or `prisma db push` **during** the Vercel build breaks constantly (connection poolers, SSL, cold starts, Prisma engine vs serverless).  
 
-**Default build:** `prisma generate` → `next build --webpack` only. **No DB connection during build.**
+**Default build:** `prisma generate` → `next build` only (Next 16 default bundler). **No DB connection during build.**
 
 You apply the schema **once** (or after schema changes) from your computer using the **same** connection string as production. That is the reliable pattern.
 
@@ -81,7 +81,7 @@ npx prisma db push
 
 1. `npx prisma generate`
 2. Schema sync **only if** `RUN_PRISMA_SCHEMA_ON_BUILD=1`
-3. `npx next build --webpack` on Vercel, else `next build`
+3. `npx next build`
 
 ## 4. Seed data (once)
 

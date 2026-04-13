@@ -1,4 +1,6 @@
-import { randomUUID } from "node:crypto";
+function newRandomUuid(): string {
+  return globalThis.crypto.randomUUID();
+}
 
 export type AdminCatalogVariant = {
   id: string;
@@ -55,7 +57,7 @@ export function parseAdminCatalogVariantsJson(raw: unknown): AdminCatalogVariant
     const label = typeof o.label === "string" ? o.label.trim() : "";
     if (!label) continue;
     let id = typeof o.id === "string" && o.id.trim() ? o.id.trim() : "";
-    if (!id) id = randomUUID();
+    if (!id) id = newRandomUuid();
     const pcRaw = o.minPriceCents;
     let minPriceCents = 0;
     if (typeof pcRaw === "number" && Number.isFinite(pcRaw)) {
@@ -92,7 +94,7 @@ export function normalizeNewVariants(
     .map((v) => {
       const pid = v.platformProductId?.trim();
       return {
-        id: randomUUID(),
+        id: newRandomUuid(),
         label: v.label.trim(),
         minPriceCents: Math.max(0, Math.round(v.minPriceCents)),
         exampleListingUrl: v.exampleListingUrl.trim(),
