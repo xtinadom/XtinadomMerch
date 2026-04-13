@@ -12,13 +12,21 @@ import {
   getHotListingProductsForHome,
 } from "@/lib/marketplace-home";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
+import { ShopDataLoadError } from "@/components/ShopDataLoadError";
+
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [featuredShops, hotProducts] = await Promise.all([
-    getFeaturedDommeShopsForHome(),
-    getHotListingProductsForHome(10),
-  ]);
+  let featuredShops: Awaited<ReturnType<typeof getFeaturedDommeShopsForHome>>;
+  let hotProducts: Awaited<ReturnType<typeof getHotListingProductsForHome>>;
+  try {
+    [featuredShops, hotProducts] = await Promise.all([
+      getFeaturedDommeShopsForHome(),
+      getHotListingProductsForHome(10),
+    ]);
+  } catch (e) {
+    return <ShopDataLoadError cause={e} />;
+  }
 
   const featuredShopCards = featuredShops
     .map((s) => {

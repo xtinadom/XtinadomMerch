@@ -9,6 +9,11 @@ function redirectHttpToHttps(request: NextRequest): NextResponse | null {
   if (process.env.NODE_ENV !== "production") {
     return null;
   }
+  // Vercel already terminates TLS; repeating HTTP→HTTPS here can loop if an upstream proxy
+  // (e.g. Cloudflare “Flexible” SSL) sets `x-forwarded-proto: http` while the browser URL is https.
+  if (process.env.VERCEL === "1") {
+    return null;
+  }
   const host = request.nextUrl.hostname;
   if (host === "localhost" || host === "127.0.0.1" || host === "[::1]") {
     return null;
@@ -70,6 +75,7 @@ export async function proxy(request: NextRequest) {
   if (
     pathname.startsWith("/gate") ||
     pathname.startsWith("/api/site-access") ||
+    pathname.startsWith("/api/health") ||
     pathname.startsWith("/api/webhooks/") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico"

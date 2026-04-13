@@ -6,6 +6,7 @@ import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
 import { shopAllProductsHref, shopDommeHref, shopSubHref } from "@/lib/marketplace-constants";
 import { ShopSocialLinksRow } from "@/components/ShopSocialLinksRow";
+import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 
 export const dynamic = "force-dynamic";
 
@@ -13,21 +14,26 @@ type Props = { params: Promise<{ shopSlug: string }> };
 
 export default async function ShopTenantHomePage({ params }: Props) {
   const { shopSlug } = await params;
-  const shop = await prisma.shop.findFirst({
-    where: { slug: shopSlug, active: true },
-    include: {
-      homeFeaturedListing: {
-        include: {
-          product: {
-            include: {
-              primaryTag: true,
-              tags: { include: { tag: true } },
+  let shop;
+  try {
+    shop = await prisma.shop.findFirst({
+      where: { slug: shopSlug, active: true },
+      include: {
+        homeFeaturedListing: {
+          include: {
+            product: {
+              include: {
+                primaryTag: true,
+                tags: { include: { tag: true } },
+              },
             },
           },
         },
       },
-    },
-  });
+    });
+  } catch (e) {
+    return <ShopDataLoadError cause={e} />;
+  }
   if (!shop) notFound();
 
   const featuredList =
@@ -42,16 +48,21 @@ export default async function ShopTenantHomePage({ params }: Props) {
         ]
       : [];
 
-  const listings = await prisma.shopListing.findMany({
-    where: { shopId: shop.id, active: true, featuredOnShop: true },
-    take: 12,
-    orderBy: { updatedAt: "desc" },
-    include: {
-      product: {
-        include: { primaryTag: true, tags: { include: { tag: true } } },
+  let listings;
+  try {
+    listings = await prisma.shopListing.findMany({
+      where: { shopId: shop.id, active: true, featuredOnShop: true },
+      take: 12,
+      orderBy: { updatedAt: "desc" },
+      include: {
+        product: {
+          include: { primaryTag: true, tags: { include: { tag: true } } },
+        },
       },
-    },
-  });
+    });
+  } catch (e) {
+    return <ShopDataLoadError cause={e} />;
+  }
   const carouselProducts = listings.map((l) => productCardProductFromListing(l));
 
   return (

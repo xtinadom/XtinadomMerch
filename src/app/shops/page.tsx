@@ -6,6 +6,7 @@ import {
   sortShopsForBrowse,
 } from "@/lib/shops-browse";
 import { SiteLegalFooter } from "@/components/SiteLegalFooter";
+import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 
 export const dynamic = "force-dynamic";
 
@@ -19,20 +20,25 @@ export default async function ShopsBrowsePage({ searchParams }: PageProps) {
     typeof sp.sort === "string" ? sp.sort : undefined,
   );
 
-  const raw = await prisma.shop.findMany({
-    where: { active: true, slug: { not: PLATFORM_SHOP_SLUG } },
-    select: {
-      id: true,
-      slug: true,
-      displayName: true,
-      profileImageUrl: true,
-      bio: true,
-      totalSalesCents: true,
-      editorialPriority: true,
-      editorialPinnedUntil: true,
-      createdAt: true,
-    },
-  });
+  let raw;
+  try {
+    raw = await prisma.shop.findMany({
+      where: { active: true, slug: { not: PLATFORM_SHOP_SLUG } },
+      select: {
+        id: true,
+        slug: true,
+        displayName: true,
+        profileImageUrl: true,
+        bio: true,
+        totalSalesCents: true,
+        editorialPriority: true,
+        editorialPinnedUntil: true,
+        createdAt: true,
+      },
+    });
+  } catch (e) {
+    return <ShopDataLoadError cause={e} />;
+  }
 
   const shops = sortShopsForBrowse(raw, sort);
 

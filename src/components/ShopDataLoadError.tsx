@@ -29,7 +29,7 @@ export function ShopDataLoadError({ cause }: Props) {
         This page couldn&apos;t load
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-        The shop could not read product data from Postgres. Builds on Vercel do{" "}
+        This page could not load data from Postgres. Builds on Vercel do{" "}
         <span className="text-zinc-300">not</span> apply migrations by default — you must run{" "}
         <code className="rounded bg-zinc-900 px-1.5 py-0.5 text-xs text-zinc-200">
           prisma migrate deploy
