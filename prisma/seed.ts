@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { prisma } from "../src/lib/prisma";
+import { createBaselineAdminCatalogFromProducts } from "../src/lib/seed-baseline-admin-catalog";
 
 const TYPE_TAGS: { slug: string; name: string; sortOrder: number }[] = [
   { slug: "mug", name: "Mug", sortOrder: 1 },
@@ -16,6 +17,7 @@ async function main() {
   await prisma.fulfillmentJob.deleteMany();
   await prisma.processedStripeEvent.deleteMany();
   await prisma.order.deleteMany();
+  await prisma.adminCatalogItem.deleteMany();
   await prisma.productTag.deleteMany();
   await prisma.product.deleteMany();
   await prisma.tag.deleteMany();
@@ -133,7 +135,10 @@ async function main() {
     },
   });
 
-  console.log("Seed complete: tags + sample products.");
+  const adminCatalogCreated = await createBaselineAdminCatalogFromProducts(prisma);
+  console.log(
+    `Seed complete: tags + sample products + ${adminCatalogCreated} admin catalog list row(s) (creator listing requests).`,
+  );
 }
 
 main()

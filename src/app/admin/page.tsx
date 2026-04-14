@@ -77,12 +77,14 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
   const sp = await searchParams;
   const tabParam = typeof sp.tab === "string" ? sp.tab : undefined;
+  if (tabParam === "admin-list") {
+    redirect("/admin");
+  }
   const supportShopParam =
     typeof sp.supportShop === "string" && sp.supportShop.trim() ? sp.supportShop.trim() : undefined;
   const inventoryTabLiterals = [
     "manual",
     "printify",
-    "admin-list",
     "orders",
     "sales",
     "requests",
@@ -715,6 +717,9 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       ) : null}
 
       <div className="rounded-xl border border-zinc-800 bg-zinc-950/40">
+        <div className="border-b border-zinc-800 px-4 pb-2 pt-6 sm:px-6">
+          <AdminListTab />
+        </div>
         <nav
           className="flex flex-wrap gap-1 border-b border-zinc-800 px-2 pt-2"
           aria-label="Admin sections"
@@ -744,18 +749,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           >
             Printify items
             <span className="ml-1.5 tabular-nums text-zinc-500">({printifyProducts.length})</span>
-          </Link>
-          <Link
-            href="/admin?tab=admin-list"
-            role="tab"
-            aria-selected={inventoryTab === "admin-list"}
-            className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
-              inventoryTab === "admin-list"
-                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
-                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
-            }`}
-          >
-            Admin list
           </Link>
           <Link
             href="/admin?tab=orders"
@@ -1273,8 +1266,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             />
           ) : inventoryTab === "printify-api" ? (
             <PrintifyApiTab hookBanner={printifyHookBanner} />
-          ) : inventoryTab === "admin-list" ? (
-            <AdminListTab />
           ) : (
             <section id="tags" aria-label="Shop tags">
               <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">

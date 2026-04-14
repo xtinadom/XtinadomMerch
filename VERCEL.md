@@ -90,6 +90,22 @@ npx prisma db push
 npx prisma db seed
 ```
 
+**Do not** run `prisma db seed` against production — it deletes orders and products.
+
+### Admin catalog list (creator “Request a catalog listing”)
+
+Creators see allowed listing types from **`AdminCatalogItem`** (`Admin` → **List**). If that table is empty, the dashboard shows “No items to add yet.”
+
+- **Manual:** Add rows under **Admin → List** on production (names, variants, minimum prices).
+- **If production already has the sample products from `prisma/seed.ts`** (same slugs: `ceramic-mug-photo`, `canvas-print-12`, etc.), you can insert matching admin rows **once** when the list is still empty:
+
+```bash
+npx vercel env pull .env.production.local --environment=production
+npm run db:seed:admin-catalog-if-empty
+```
+
+The script **no-ops** when any admin catalog row already exists. Slugs live in `src/lib/seed-baseline-admin-catalog.ts`.
+
 ## 5. Environment variables (Vercel)
 
 **Project → Settings → Environment Variables** → Production (and Preview if needed) → **Redeploy** after edits.
@@ -137,5 +153,7 @@ npx prisma migrate deploy
 npm run db:seed
 npm run dev
 ```
+
+`npm run db:seed` also fills **Admin → List** baseline rows for the sample products when you reset locally.
 
 `npm run build` locally matches Vercel: **no DB** unless `RUN_PRISMA_SCHEMA_ON_BUILD=1`.
