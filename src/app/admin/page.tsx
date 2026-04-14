@@ -231,6 +231,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     platformSalesLines,
     listingRequestRows,
     removedListingRows,
+    adminCatalogItemCount,
   ] = await Promise.all([
     prisma.product.findMany({
       orderBy: [{ name: "asc" }],
@@ -298,6 +299,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         },
       },
     }),
+    prisma.adminCatalogItem.count(),
   ]);
 
   const listingRequestShopIds = [...new Set(listingRequestRows.map((r) => r.shopId))];
@@ -750,6 +752,13 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             Printify items
             <span className="ml-1.5 tabular-nums text-zinc-500">({printifyProducts.length})</span>
           </Link>
+          <a
+            href="#admin-baseline-list"
+            className="rounded-t-lg px-4 py-2.5 text-sm font-medium text-zinc-500 transition hover:bg-zinc-900/60 hover:text-zinc-300"
+          >
+            Admin list
+            <span className="ml-1.5 tabular-nums text-zinc-500">({adminCatalogItemCount})</span>
+          </a>
           <Link
             href="/admin?tab=orders"
             role="tab"
