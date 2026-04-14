@@ -46,7 +46,7 @@ export default async function ShopsBrowsePage({ searchParams }: PageProps) {
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 py-12">
       <header className="text-center">
         <p className="text-xs uppercase tracking-[0.2em] text-blue-400/80">
-          Domme Shops
+          Creator Shops
         </p>
         <h1 className="mt-2 text-3xl font-semibold text-zinc-50">Browse shops</h1>
         <p className="mx-auto mt-3 max-w-lg text-sm text-zinc-500">

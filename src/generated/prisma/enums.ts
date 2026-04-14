@@ -37,6 +37,7 @@ export type CatalogGroup = (typeof CatalogGroup)[keyof typeof CatalogGroup]
 export const ListingRequestStatus = {
   draft: 'draft',
   submitted: 'submitted',
+  printify_item_created: 'printify_item_created',
   approved: 'approved',
   rejected: 'rejected'
 } as const
@@ -49,6 +50,14 @@ export const ShopUserRole = {
 } as const
 
 export type ShopUserRole = (typeof ShopUserRole)[keyof typeof ShopUserRole]
+
+
+export const SupportMessageAuthor = {
+  creator: 'creator',
+  admin: 'admin'
+} as const
+
+export type SupportMessageAuthor = (typeof SupportMessageAuthor)[keyof typeof SupportMessageAuthor]
 
 
 export const OrderStatus = {

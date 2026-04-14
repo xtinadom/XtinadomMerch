@@ -4,9 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { FeaturedProductsCarousel } from "@/components/FeaturedProductsCarousel";
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
-import { shopAllProductsHref, shopDommeHref, shopSubHref } from "@/lib/marketplace-constants";
+import { shopAllProductsHref } from "@/lib/marketplace-constants";
 import { ShopSocialLinksRow } from "@/components/ShopSocialLinksRow";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
+import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -39,21 +40,28 @@ export default async function ShopTenantHomePage({ params }: Props) {
   const featuredList =
     shop.homeFeaturedListing?.product &&
     shop.homeFeaturedListing.active &&
+    shop.homeFeaturedListing.creatorRemovedFromShopAt == null &&
     shop.homeFeaturedListing.product.active
       ? [
           productCardProductFromListing({
             priceCents: shop.homeFeaturedListing.priceCents,
             product: shop.homeFeaturedListing.product,
+            requestItemName: shop.homeFeaturedListing.requestItemName,
           }),
         ]
       : [];
 
   let listings;
   try {
+    /** Same visibility as “All products”: live listings with an active product (not only `featuredOnShop`). */
     listings = await prisma.shopListing.findMany({
-      where: { shopId: shop.id, active: true, featuredOnShop: true },
+      where: {
+        shopId: shop.id,
+        ...storefrontShopListingWhere,
+        product: { active: true },
+      },
       take: 12,
-      orderBy: { updatedAt: "desc" },
+      orderBy: [{ featuredOnShop: "desc" }, { updatedAt: "desc" }],
       include: {
         product: {
           include: { primaryTag: true, tags: { include: { tag: true } } },
@@ -98,18 +106,6 @@ export default async function ShopTenantHomePage({ params }: Props) {
             className="rounded-lg border border-blue-900/50 bg-blue-950/30 px-4 py-2 text-blue-100 hover:bg-blue-950/50"
           >
             All products
-          </Link>
-          <Link
-            href={shopSubHref(shopSlug)}
-            className="rounded-lg border border-zinc-700 px-4 py-2 text-zinc-200 hover:bg-zinc-900"
-          >
-            Sub collection
-          </Link>
-          <Link
-            href={shopDommeHref(shopSlug)}
-            className="rounded-lg border border-zinc-700 px-4 py-2 text-zinc-200 hover:bg-zinc-900"
-          >
-            Domme collection
           </Link>
         </div>
       </div>

@@ -9,12 +9,20 @@ type P = Pick<
 >;
 
 export function listingStripeProductName(
-  listing: { priceCents: number; product: P },
+  listing: {
+    priceCents: number;
+    listingPrintifyVariantId?: string | null;
+    product: P;
+  },
   cartLine: CartLine | undefined,
 ): { name: string; printifyVariantId: string | null } {
   const p = listing.product;
   if (p.fulfillmentType !== FulfillmentType.printify) {
     return { name: p.name, printifyVariantId: null };
+  }
+  const listingVid = listing.listingPrintifyVariantId?.trim();
+  if (listingVid) {
+    return { name: p.name, printifyVariantId: listingVid };
   }
   const r = resolvePrintifyCheckoutLine(p, cartLine);
   if (!r) return { name: p.name, printifyVariantId: p.printifyVariantId };

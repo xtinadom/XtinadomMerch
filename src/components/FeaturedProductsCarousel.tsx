@@ -31,7 +31,7 @@ function slotCenterDeltaX(): number {
 
 type Props = {
   items: FeaturedCarouselItem[];
-  /** Screen-reader label, e.g. "Featured in Sub collection". */
+  /** Screen-reader label for the carousel heading. */
   label?: string;
 };
 

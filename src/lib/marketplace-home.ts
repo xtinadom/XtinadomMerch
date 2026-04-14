@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
 import { OrderStatus } from "@/generated/prisma/enums";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
 import type { ProductCardProduct } from "@/components/ProductCard";
@@ -7,12 +8,18 @@ import { productCardProductFromListing } from "@/lib/shop-listing-product";
 const HOT_WINDOW_DAYS = 30;
 
 /** Shops with a home featured listing + profile, for the platform home carousel. */
-export async function getFeaturedDommeShopsForHome() {
+export async function getFeaturedCreatorShopsForHome() {
   return prisma.shop.findMany({
     where: {
       active: true,
       slug: { not: PLATFORM_SHOP_SLUG },
-      homeFeaturedListingId: { not: null },
+      homeFeaturedListing: {
+        is: {
+          active: true,
+          creatorRemovedFromShopAt: null,
+          product: { active: true },
+        },
+      },
     },
     include: {
       homeFeaturedListing: {
@@ -57,7 +64,7 @@ export async function getHotListingProductsForHome(
   const listings = await prisma.shopListing.findMany({
     where: {
       shopId: platform.id,
-      active: true,
+      ...storefrontShopListingWhere,
       productId: { in: ids },
       product: { active: true },
     },

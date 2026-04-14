@@ -14,6 +14,13 @@ import {
 } from "@/lib/marketplace-constants";
 import { getListingOrdinal } from "@/lib/listing-fee";
 import { ListingRequestStatus } from "@/generated/prisma/enums";
+import {
+  deleteShopListingRequestImagesFromR2,
+  shopListingRequestImageUrlStrings,
+} from "@/lib/r2-upload";
+import { activateProductWhenShopListingGoesLive } from "@/lib/shop-listing-publish";
+
+const REQUEST_ITEM_NAME_MAX = 120;
 
 async function requireShopOwner() {
   const session = await getShopOwnerSession();
@@ -42,6 +49,18 @@ export async function dashboardUpdateListingPrice(
     include: { product: true },
   });
   if (!listing) return { ok: false };
+  if (
+    listing.requestStatus === ListingRequestStatus.rejected ||
+    listing.creatorRemovedFromShopAt != null
+  ) {
+    return { ok: false };
+  }
+  if (
+    listing.requestStatus !== ListingRequestStatus.draft &&
+    listing.requestStatus !== ListingRequestStatus.approved
+  ) {
+    return { ok: false };
+  }
 
   const parsed = parseFloat(dollars.replace(/[^0-9.]/g, ""));
   if (!Number.isFinite(parsed) || parsed < 0) return { ok: false };
@@ -61,6 +80,104 @@ export async function dashboardUpdateListingPrice(
   return { ok: true };
 }
 
+export async function dashboardUpdateListingItemName(
+  formData: FormData,
+): Promise<{ ok: boolean }> {
+  const user = await requireShopOwner();
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  const raw = String(formData.get("requestItemName") ?? "");
+  if (!listingId) return { ok: false };
+
+  const listing = await prisma.shopListing.findFirst({
+    where: { id: listingId, shopId: user.shopId },
+    include: { product: true },
+  });
+  if (!listing) return { ok: false };
+  if (
+    listing.requestStatus === ListingRequestStatus.rejected ||
+    listing.creatorRemovedFromShopAt != null
+  ) {
+    return { ok: false };
+  }
+  if (
+    listing.requestStatus !== ListingRequestStatus.draft &&
+    listing.requestStatus !== ListingRequestStatus.approved
+  ) {
+    return { ok: false };
+  }
+
+  const trimmed = raw.trim();
+  const catalog = listing.product.name.trim();
+  let requestItemName: string | null;
+  if (!trimmed || trimmed === catalog) {
+    requestItemName = null;
+  } else if (trimmed.length > REQUEST_ITEM_NAME_MAX) {
+    return { ok: false };
+  } else {
+    requestItemName = trimmed;
+  }
+
+  await prisma.shopListing.update({
+    where: { id: listingId },
+    data: { requestItemName },
+  });
+  revalidatePath("/dashboard");
+  revalidatePath(`/s/${user.shop.slug}`);
+  return { ok: true };
+}
+
+/** Takes an approved, live listing off the creator storefront (distinct from admin freeze). */
+export async function dashboardCreatorRemoveListingFromShop(formData: FormData): Promise<void> {
+  const user = await requireShopOwner();
+  const shop = user.shop;
+  if (shop.slug === PLATFORM_SHOP_SLUG) return;
+
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  if (!listingId) return;
+
+  const listing = await prisma.shopListing.findFirst({
+    where: { id: listingId, shopId: shop.id },
+    select: {
+      id: true,
+      requestStatus: true,
+      active: true,
+      adminRemovedFromShopAt: true,
+      creatorRemovedFromShopAt: true,
+      requestImages: true,
+    },
+  });
+  if (!listing) return;
+  if (listing.requestStatus !== ListingRequestStatus.approved) return;
+  if (!listing.active) return;
+  if (listing.adminRemovedFromShopAt != null) return;
+  if (listing.creatorRemovedFromShopAt != null) return;
+
+  const requestImageUrls = shopListingRequestImageUrlStrings(listing.requestImages);
+  await deleteShopListingRequestImagesFromR2(shop.id, requestImageUrls);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.shopListing.update({
+      where: { id: listingId },
+      data: {
+        active: false,
+        featuredOnShop: false,
+        featuredForHome: false,
+        creatorRemovedFromShopAt: new Date(),
+        requestImages: [],
+      },
+    });
+    if (shop.homeFeaturedListingId === listingId) {
+      await tx.shop.update({
+        where: { id: shop.id },
+        data: { homeFeaturedListingId: null },
+      });
+    }
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/s/${shop.slug}`);
+}
+
 export async function dashboardSubmitListingRequest(
   formData: FormData,
 ): Promise<{ ok: boolean }> {
@@ -73,10 +190,10 @@ export async function dashboardSubmitListingRequest(
     where: { id: listingId, shopId: user.shopId },
   });
   if (!listing) return { ok: false };
-  if (
-    listing.requestStatus !== ListingRequestStatus.draft &&
-    listing.requestStatus !== ListingRequestStatus.rejected
-  ) {
+  if (listing.requestStatus !== ListingRequestStatus.draft) {
+    return { ok: false };
+  }
+  if (listing.creatorRemovedFromShopAt != null) {
     return { ok: false };
   }
 
@@ -107,17 +224,48 @@ export async function dashboardPayListingFee(formData: FormData) {
 
   const listing = await prisma.shopListing.findFirst({
     where: { id: listingId, shopId: shop.id },
+    select: {
+      id: true,
+      productId: true,
+      listingFeePaidAt: true,
+      requestStatus: true,
+      active: true,
+      creatorRemovedFromShopAt: true,
+      adminRemovedFromShopAt: true,
+    },
   });
   if (!listing || listing.listingFeePaidAt) return;
+  if (listing.requestStatus !== ListingRequestStatus.approved) return;
+  if (listing.creatorRemovedFromShopAt != null) return;
 
   const ordinal = await getListingOrdinal(listingId, shop.id);
   if (ordinal === null) return;
-  const feeCents = listingFeeCentsForOrdinal(ordinal);
+  const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug);
+  const publishAfterFee =
+    listing.requestStatus === ListingRequestStatus.approved &&
+    !listing.active &&
+    listing.adminRemovedFromShopAt == null &&
+    listing.creatorRemovedFromShopAt == null;
+
   if (feeCents === 0) {
     await prisma.shopListing.update({
       where: { id: listingId },
-      data: { listingFeePaidAt: new Date() },
+      data: {
+        listingFeePaidAt: new Date(),
+        ...(publishAfterFee ? { active: true } : {}),
+      },
     });
+    if (publishAfterFee) {
+      await activateProductWhenShopListingGoesLive(listing.productId, shop.slug);
+      await prisma.shopOwnerNotice.create({
+        data: {
+          shopId: shop.id,
+          kind: "listing_fee_paid",
+          body:
+            "Your listing publication fee was received. That listing is now live in your shop.",
+        },
+      });
+    }
     revalidatePath("/dashboard");
     redirect("/dashboard?fee=ok");
   }
@@ -125,8 +273,22 @@ export async function dashboardPayListingFee(formData: FormData) {
   if (isMockCheckoutEnabled()) {
     await prisma.shopListing.update({
       where: { id: listingId },
-      data: { listingFeePaidAt: new Date() },
+      data: {
+        listingFeePaidAt: new Date(),
+        ...(publishAfterFee ? { active: true } : {}),
+      },
     });
+    if (publishAfterFee) {
+      await activateProductWhenShopListingGoesLive(listing.productId, shop.slug);
+      await prisma.shopOwnerNotice.create({
+        data: {
+          shopId: shop.id,
+          kind: "listing_fee_paid",
+          body:
+            "Your listing publication fee was received. That listing is now live in your shop.",
+        },
+      });
+    }
     revalidatePath("/dashboard");
     redirect("/dashboard?fee=ok");
   }

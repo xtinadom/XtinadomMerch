@@ -55,6 +55,9 @@ export const ModelName = {
   ProductTag: 'ProductTag',
   Product: 'Product',
   Shop: 'Shop',
+  SupportThread: 'SupportThread',
+  SupportMessage: 'SupportMessage',
+  ShopOwnerNotice: 'ShopOwnerNotice',
   ShopUser: 'ShopUser',
   ShopPasswordResetToken: 'ShopPasswordResetToken',
   ShopListing: 'ShopListing',
@@ -156,6 +159,39 @@ export const ShopScalarFieldEnum = {
 export type ShopScalarFieldEnum = (typeof ShopScalarFieldEnum)[keyof typeof ShopScalarFieldEnum]
 
 
+export const SupportThreadScalarFieldEnum = {
+  id: 'id',
+  shopId: 'shopId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SupportThreadScalarFieldEnum = (typeof SupportThreadScalarFieldEnum)[keyof typeof SupportThreadScalarFieldEnum]
+
+
+export const SupportMessageScalarFieldEnum = {
+  id: 'id',
+  threadId: 'threadId',
+  authorRole: 'authorRole',
+  body: 'body',
+  createdAt: 'createdAt'
+} as const
+
+export type SupportMessageScalarFieldEnum = (typeof SupportMessageScalarFieldEnum)[keyof typeof SupportMessageScalarFieldEnum]
+
+
+export const ShopOwnerNoticeScalarFieldEnum = {
+  id: 'id',
+  shopId: 'shopId',
+  body: 'body',
+  kind: 'kind',
+  readAt: 'readAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ShopOwnerNoticeScalarFieldEnum = (typeof ShopOwnerNoticeScalarFieldEnum)[keyof typeof ShopOwnerNoticeScalarFieldEnum]
+
+
 export const ShopUserScalarFieldEnum = {
   id: 'id',
   email: 'email',
@@ -190,8 +226,15 @@ export const ShopListingScalarFieldEnum = {
   featuredOnShop: 'featuredOnShop',
   featuredForHome: 'featuredForHome',
   listingFeePaidAt: 'listingFeePaidAt',
+  listingPrintifyProductId: 'listingPrintifyProductId',
+  listingPrintifyVariantId: 'listingPrintifyVariantId',
   requestImages: 'requestImages',
+  requestItemName: 'requestItemName',
   requestStatus: 'requestStatus',
+  adminRemovedFromShopAt: 'adminRemovedFromShopAt',
+  creatorRemovedFromShopAt: 'creatorRemovedFromShopAt',
+  removedFromListingRequestsAt: 'removedFromListingRequestsAt',
+  adminListingRemovalNotes: 'adminListingRemovalNotes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

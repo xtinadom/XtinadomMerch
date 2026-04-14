@@ -14,6 +14,7 @@ import { listingCartUnitCents } from "@/lib/listing-cart-price";
 import { listingStripeProductName } from "@/lib/listing-cart-stripe-name";
 import { splitLineRevenueMerchandiseCents } from "@/lib/marketplace-fee";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
+import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
 export type CheckoutResult =
   | { ok: true; url: string }
@@ -46,8 +47,11 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
   }
 
   const listings = await prisma.shopListing.findMany({
-    where: { id: { in: listingIds }, active: true },
-    include: { product: true, shop: { select: { id: true, slug: true } } },
+    where: { id: { in: listingIds }, ...storefrontShopListingWhere },
+    include: {
+      product: true,
+      shop: { select: { id: true, slug: true } },
+    },
   });
 
   if (listings.length === 0) {
@@ -202,7 +206,7 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
               productName: stripeProductName,
               fulfillmentType: p.fulfillmentType,
               productId: p.id,
-              printifyProductId: p.printifyProductId,
+              printifyProductId: listing.listingPrintifyProductId ?? p.printifyProductId,
               printifyVariantId: orderPrintifyVariantId,
               shopId,
               shopListingId: listing.id,

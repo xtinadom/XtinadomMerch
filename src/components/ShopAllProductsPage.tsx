@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getStoreTags, getStoreTagsForShop } from "@/lib/store-tags";
@@ -11,12 +10,9 @@ import {
 } from "@/lib/shop-by-item-and-design";
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
-import {
-  PLATFORM_SHOP_SLUG,
-  shopDommeHref,
-  shopSubHref,
-  shopUniversalTagHref,
-} from "@/lib/marketplace-constants";
+import { CreatorMerchWebsitePromo } from "@/components/CreatorMerchWebsitePromo";
+import { PLATFORM_SHOP_SLUG, shopUniversalTagHref } from "@/lib/marketplace-constants";
+import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
 const productInclude = {
   primaryTag: true,
@@ -41,7 +37,7 @@ export async function ShopAllProductsPage({
   let listings;
   try {
     listings = await prisma.shopListing.findMany({
-      where: { shopId: shop.id, active: true, product: { active: true } },
+      where: { shopId: shop.id, ...storefrontShopListingWhere, product: { active: true } },
       orderBy: { product: { name: "asc" } },
       include: { product: { include: productInclude } },
     });
@@ -52,13 +48,8 @@ export async function ShopAllProductsPage({
 
   const allProducts = listings.map((l) => productCardProductFromListing(l));
 
-  const byItemSections = buildByItemOnePerTag(allProducts, tags, {
-    catalog: "all",
-  });
+  const byItemSections = buildByItemOnePerTag(allProducts, tags);
   const byDesignSections = buildByDesignOnePerName(allProducts);
-
-  const subHref = shopSubHref(shopSlug);
-  const dommeHref = shopDommeHref(shopSlug);
 
   return (
     <div>
@@ -69,15 +60,7 @@ export async function ShopAllProductsPage({
           </h1>
           <p className="mt-1 max-w-xl text-sm text-zinc-500">
             One shop and one cart. Below: one product per tag (By Item) and per design name (By
-            Design). Use{" "}
-            <Link href={subHref} className="text-blue-400/90 hover:underline">
-              Sub collection
-            </Link>{" "}
-            or{" "}
-            <Link href={dommeHref} className="text-blue-400/90 hover:underline">
-              Domme collection
-            </Link>{" "}
-            to narrow by audience, or the tag menu for full tag pages.
+            Design). Use the tag menu for full tag pages.
           </p>
         </div>
       </div>
@@ -94,6 +77,10 @@ export async function ShopAllProductsPage({
         viewAllHrefForTag={(slug) => shopUniversalTagHref(shopSlug, slug)}
         emptyMessage="No products yet. Add items in admin, assign tags, or sync from Printify. If you expected data already, the database for this deployment may be empty or not migrated (local data does not sync to production automatically)."
       />
+
+      <div className="mt-10 border-t border-zinc-800 pt-8">
+        <CreatorMerchWebsitePromo />
+      </div>
     </div>
   );
 }

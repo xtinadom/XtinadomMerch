@@ -7,6 +7,7 @@ import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { getCartSession } from "@/lib/session";
 import { maxCartLineQty } from "@/lib/cart-limits";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
+import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
 async function resolveActiveListing(
   productOrListingId: string,
@@ -14,7 +15,7 @@ async function resolveActiveListing(
 ) {
   if (productOrListingId.startsWith("sl_")) {
     return prisma.shopListing.findFirst({
-      where: { id: productOrListingId, active: true },
+      where: { id: productOrListingId, ...storefrontShopListingWhere },
       include: { product: true, shop: { select: { id: true, slug: true } } },
     });
   }
@@ -23,7 +24,7 @@ async function resolveActiveListing(
     where: {
       productId: productOrListingId,
       shop: { slug },
-      active: true,
+      ...storefrontShopListingWhere,
     },
     include: { product: true, shop: { select: { id: true, slug: true } } },
   });

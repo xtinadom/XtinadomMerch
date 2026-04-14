@@ -3,13 +3,13 @@
 import { redirect } from "next/navigation";
 import { createPrintifyWebhook, listPrintifyWebhooks } from "@/lib/printify";
 import { webhookPublicBaseUrl } from "@/lib/public-app-url";
-import { getAdminSession } from "@/lib/session";
+import { getAdminSessionReadonly } from "@/lib/session";
 
 const WEBHOOK_TOPIC = "order:created";
 
 /** Registers this site’s HTTPS URL with Printify so they can POST order events (standard API integration). */
 export async function registerPrintifyStorefrontWebhook(): Promise<void> {
-  const session = await getAdminSession();
+  const session = await getAdminSessionReadonly();
   if (!session.isAdmin) {
     redirect("/admin/login");
   }

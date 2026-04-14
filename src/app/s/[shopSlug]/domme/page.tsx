@@ -1,11 +1,8 @@
-import { CatalogGroup } from "@/generated/prisma/enums";
-import { ShopCollectionPage } from "@/components/ShopCollectionPage";
-
-export const dynamic = "force-dynamic";
+import { redirect } from "next/navigation";
 
 type Props = { params: Promise<{ shopSlug: string }> };
 
-export default async function ShopTenantDommePage({ params }: Props) {
+export default async function ShopTenantDommeRedirectPage({ params }: Props) {
   const { shopSlug } = await params;
-  return <ShopCollectionPage collection={CatalogGroup.domme} shopSlug={shopSlug} />;
+  redirect(`/s/${shopSlug}/all`);
 }

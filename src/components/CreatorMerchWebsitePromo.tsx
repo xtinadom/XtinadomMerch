@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export function DommeMerchWebsitePromo() {
+export function CreatorMerchWebsitePromo() {
   return (
     <aside className="rounded-xl border border-blue-900/40 bg-gradient-to-br from-blue-950/50 to-zinc-900/80 p-5 sm:p-6">
       <p className="text-xs font-medium uppercase tracking-wide text-blue-400/90">

@@ -388,6 +388,9 @@ export const ModelName = {
   ProductTag: 'ProductTag',
   Product: 'Product',
   Shop: 'Shop',
+  SupportThread: 'SupportThread',
+  SupportMessage: 'SupportMessage',
+  ShopOwnerNotice: 'ShopOwnerNotice',
   ShopUser: 'ShopUser',
   ShopPasswordResetToken: 'ShopPasswordResetToken',
   ShopListing: 'ShopListing',
@@ -412,7 +415,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tag" | "productTag" | "product" | "shop" | "shopUser" | "shopPasswordResetToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "comment"
+    modelProps: "tag" | "productTag" | "product" | "shop" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopPasswordResetToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "comment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -709,6 +712,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.ShopCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.ShopCountAggregateOutputType> | number
+        }
+      }
+    }
+    SupportThread: {
+      payload: Prisma.$SupportThreadPayload<ExtArgs>
+      fields: Prisma.SupportThreadFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SupportThreadFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportThreadPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SupportThreadFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportThreadPayload>
+        }
+        findFirst: {
+          args: Prisma.SupportThreadFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportThreadPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SupportThreadFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportThreadPayload>
+        }
+        findMany: {
+          args: Prisma.SupportThreadFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportThreadPayload>[]
+        }
+        create: {
+          args: Prisma.SupportThreadCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportThreadPayload>
+        }
+        createMany: {
+          args: Prisma.SupportThreadCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SupportThreadCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportThreadPayload>[]
+        }
+        delete: {
+          args: Prisma.SupportThreadDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportThreadPayload>
+        }
+        update: {
+          args: Prisma.SupportThreadUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportThreadPayload>
+        }
+        deleteMany: {
+          args: Prisma.SupportThreadDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SupportThreadUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SupportThreadUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportThreadPayload>[]
+        }
+        upsert: {
+          args: Prisma.SupportThreadUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportThreadPayload>
+        }
+        aggregate: {
+          args: Prisma.SupportThreadAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSupportThread>
+        }
+        groupBy: {
+          args: Prisma.SupportThreadGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SupportThreadGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SupportThreadCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SupportThreadCountAggregateOutputType> | number
+        }
+      }
+    }
+    SupportMessage: {
+      payload: Prisma.$SupportMessagePayload<ExtArgs>
+      fields: Prisma.SupportMessageFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SupportMessageFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportMessagePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SupportMessageFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportMessagePayload>
+        }
+        findFirst: {
+          args: Prisma.SupportMessageFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportMessagePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SupportMessageFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportMessagePayload>
+        }
+        findMany: {
+          args: Prisma.SupportMessageFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportMessagePayload>[]
+        }
+        create: {
+          args: Prisma.SupportMessageCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportMessagePayload>
+        }
+        createMany: {
+          args: Prisma.SupportMessageCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SupportMessageCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportMessagePayload>[]
+        }
+        delete: {
+          args: Prisma.SupportMessageDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportMessagePayload>
+        }
+        update: {
+          args: Prisma.SupportMessageUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportMessagePayload>
+        }
+        deleteMany: {
+          args: Prisma.SupportMessageDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SupportMessageUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SupportMessageUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportMessagePayload>[]
+        }
+        upsert: {
+          args: Prisma.SupportMessageUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportMessagePayload>
+        }
+        aggregate: {
+          args: Prisma.SupportMessageAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSupportMessage>
+        }
+        groupBy: {
+          args: Prisma.SupportMessageGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SupportMessageGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SupportMessageCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SupportMessageCountAggregateOutputType> | number
+        }
+      }
+    }
+    ShopOwnerNotice: {
+      payload: Prisma.$ShopOwnerNoticePayload<ExtArgs>
+      fields: Prisma.ShopOwnerNoticeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ShopOwnerNoticeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopOwnerNoticePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ShopOwnerNoticeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopOwnerNoticePayload>
+        }
+        findFirst: {
+          args: Prisma.ShopOwnerNoticeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopOwnerNoticePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ShopOwnerNoticeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopOwnerNoticePayload>
+        }
+        findMany: {
+          args: Prisma.ShopOwnerNoticeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopOwnerNoticePayload>[]
+        }
+        create: {
+          args: Prisma.ShopOwnerNoticeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopOwnerNoticePayload>
+        }
+        createMany: {
+          args: Prisma.ShopOwnerNoticeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ShopOwnerNoticeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopOwnerNoticePayload>[]
+        }
+        delete: {
+          args: Prisma.ShopOwnerNoticeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopOwnerNoticePayload>
+        }
+        update: {
+          args: Prisma.ShopOwnerNoticeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopOwnerNoticePayload>
+        }
+        deleteMany: {
+          args: Prisma.ShopOwnerNoticeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ShopOwnerNoticeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ShopOwnerNoticeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopOwnerNoticePayload>[]
+        }
+        upsert: {
+          args: Prisma.ShopOwnerNoticeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopOwnerNoticePayload>
+        }
+        aggregate: {
+          args: Prisma.ShopOwnerNoticeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateShopOwnerNotice>
+        }
+        groupBy: {
+          args: Prisma.ShopOwnerNoticeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ShopOwnerNoticeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ShopOwnerNoticeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ShopOwnerNoticeCountAggregateOutputType> | number
         }
       }
     }
@@ -1491,6 +1716,39 @@ export const ShopScalarFieldEnum = {
 export type ShopScalarFieldEnum = (typeof ShopScalarFieldEnum)[keyof typeof ShopScalarFieldEnum]
 
 
+export const SupportThreadScalarFieldEnum = {
+  id: 'id',
+  shopId: 'shopId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SupportThreadScalarFieldEnum = (typeof SupportThreadScalarFieldEnum)[keyof typeof SupportThreadScalarFieldEnum]
+
+
+export const SupportMessageScalarFieldEnum = {
+  id: 'id',
+  threadId: 'threadId',
+  authorRole: 'authorRole',
+  body: 'body',
+  createdAt: 'createdAt'
+} as const
+
+export type SupportMessageScalarFieldEnum = (typeof SupportMessageScalarFieldEnum)[keyof typeof SupportMessageScalarFieldEnum]
+
+
+export const ShopOwnerNoticeScalarFieldEnum = {
+  id: 'id',
+  shopId: 'shopId',
+  body: 'body',
+  kind: 'kind',
+  readAt: 'readAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ShopOwnerNoticeScalarFieldEnum = (typeof ShopOwnerNoticeScalarFieldEnum)[keyof typeof ShopOwnerNoticeScalarFieldEnum]
+
+
 export const ShopUserScalarFieldEnum = {
   id: 'id',
   email: 'email',
@@ -1525,8 +1783,15 @@ export const ShopListingScalarFieldEnum = {
   featuredOnShop: 'featuredOnShop',
   featuredForHome: 'featuredForHome',
   listingFeePaidAt: 'listingFeePaidAt',
+  listingPrintifyProductId: 'listingPrintifyProductId',
+  listingPrintifyVariantId: 'listingPrintifyVariantId',
   requestImages: 'requestImages',
+  requestItemName: 'requestItemName',
   requestStatus: 'requestStatus',
+  adminRemovedFromShopAt: 'adminRemovedFromShopAt',
+  creatorRemovedFromShopAt: 'creatorRemovedFromShopAt',
+  removedFromListingRequestsAt: 'removedFromListingRequestsAt',
+  adminListingRemovalNotes: 'adminListingRemovalNotes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1775,6 +2040,20 @@ export type ListEnumFulfillmentTypeFieldRefInput<$PrismaModel> = FieldRefInputTy
 
 
 /**
+ * Reference to a field of type 'SupportMessageAuthor'
+ */
+export type EnumSupportMessageAuthorFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SupportMessageAuthor'>
+    
+
+
+/**
+ * Reference to a field of type 'SupportMessageAuthor[]'
+ */
+export type ListEnumSupportMessageAuthorFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SupportMessageAuthor[]'>
+    
+
+
+/**
  * Reference to a field of type 'ShopUserRole'
  */
 export type EnumShopUserRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ShopUserRole'>
@@ -1942,6 +2221,9 @@ export type GlobalOmitConfig = {
   productTag?: Prisma.ProductTagOmit
   product?: Prisma.ProductOmit
   shop?: Prisma.ShopOmit
+  supportThread?: Prisma.SupportThreadOmit
+  supportMessage?: Prisma.SupportMessageOmit
+  shopOwnerNotice?: Prisma.ShopOwnerNoticeOmit
   shopUser?: Prisma.ShopUserOmit
   shopPasswordResetToken?: Prisma.ShopPasswordResetTokenOmit
   shopListing?: Prisma.ShopListingOmit

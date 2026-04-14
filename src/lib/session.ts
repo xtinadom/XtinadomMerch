@@ -174,11 +174,31 @@ export async function getCartSessionReadonly(): Promise<CartSession> {
   }
 }
 
+/**
+ * Full iron-session for admin login/logout only (`save` / `destroy`). Throws if `SESSION_SECRET` is invalid.
+ */
 export async function getAdminSession() {
   return getIronSession<AdminSession>(await cookies(), {
     ...adminBase,
     password: requireSessionSecret(),
   });
+}
+
+/**
+ * Read admin cookie for guards and server actions. Never throws: missing/short `SESSION_SECRET` or a
+ * corrupt `xtina_admin` cookie yields `{ isAdmin: false }` so `/admin` can redirect instead of 500.
+ */
+export async function getAdminSessionReadonly(): Promise<AdminSession> {
+  try {
+    const session = await getIronSession<AdminSession>(await cookies(), {
+      ...adminBase,
+      password: requireSessionSecret(),
+    });
+    return { isAdmin: session.isAdmin === true };
+  } catch (e) {
+    console.error("[getAdminSessionReadonly]", e);
+    return { isAdmin: false };
+  }
 }
 
 /** Shop owner session for server actions that mutate the cookie (login / logout). */

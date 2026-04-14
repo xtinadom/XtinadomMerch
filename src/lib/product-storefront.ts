@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
 const include = {
   primaryTag: true,
@@ -23,7 +24,7 @@ export async function loadStorefrontListingByShopAndProductSlug(
 ) {
   return prisma.shopListing.findFirst({
     where: {
-      active: true,
+      ...storefrontShopListingWhere,
       shop: { slug: shopSlug, active: true },
       product: { slug: productSlug, active: true },
     },

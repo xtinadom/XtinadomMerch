@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
-import { getAdminSession } from "@/lib/session";
+import { getAdminSession, getAdminSessionReadonly } from "@/lib/session";
 import { Audience, FulfillmentType } from "@/generated/prisma/enums";
 import {
   fetchPrintifyCatalogEnriched,
@@ -43,10 +43,6 @@ import {
 import { parseDesignNamesFromForm } from "@/lib/product-design-name-form";
 import { parseProductTagIdsFromForm } from "@/lib/product-tag-form";
 import { toDesignNamesJson } from "@/lib/product-design-names";
-import {
-  audienceFromCollectionAssignment,
-  parseCollectionAssignmentFromForm,
-} from "@/lib/collection-assignment";
 import { assertTagsValidForAudience } from "@/actions/admin-tags";
 import {
   normalizeProductTagIds,
@@ -56,8 +52,6 @@ import {
 function revalidateShopSurface() {
   revalidatePath("/");
   revalidatePath("/shop/all");
-  revalidatePath("/shop/sub");
-  revalidatePath("/shop/domme");
   revalidatePath("/cart", "layout");
 }
 
@@ -89,7 +83,7 @@ export async function updateProductDetails(
   productId: string,
   formData: FormData,
 ): Promise<void> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) return;
 
   const product = await prisma.product.findUnique({
@@ -154,11 +148,6 @@ export async function updateProductDetails(
   }
   const removedImageUrls = previousUrls.filter((u) => !stillReferenced.has(u.trim()));
 
-  const { sub: colSub, domme: colDomme } =
-    parseCollectionAssignmentFromForm(formData);
-  const audienceNext = audienceFromCollectionAssignment(colSub, colDomme);
-  if (!audienceNext) return;
-
   const designNameList = parseDesignNamesFromForm(formData);
 
   const data: Prisma.ProductUpdateInput = {
@@ -170,7 +159,7 @@ export async function updateProductDetails(
     designNames: toDesignNamesJson(designNameList),
     active: formData.get("active") === "on",
     checkoutTipEligible: formData.get("checkoutTipEligible") === "on",
-    audience: audienceNext,
+    audience: Audience.both,
     ...(printifyVariantsNext !== undefined
       ? { printifyVariants: printifyVariantsNext }
       : {}),
@@ -196,7 +185,7 @@ export async function updateProductDetails(
     parseProductTagIdsFromForm(formData),
     noTagId,
   );
-  const valid = await assertTagsValidForAudience(audienceNext, tagIds);
+  const valid = await assertTagsValidForAudience(Audience.both, tagIds);
   if (!valid.ok) return;
   const primary = tagIds[0]!;
   data.primaryTag = { connect: { id: primary } };
@@ -236,7 +225,7 @@ export async function submitManualStockForm(
   productId: string,
   formData: FormData,
 ): Promise<void> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) return;
   const raw = String(formData.get("stock") ?? "");
   const q = parseInt(raw, 10);
@@ -251,7 +240,7 @@ export async function submitManualStockForm(
 }
 
 export async function updateManualStock(productId: string, stockQuantity: number) {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) {
     return { ok: false as const, error: "Unauthorized." };
   }
@@ -271,7 +260,7 @@ export async function updateManualStock(productId: string, stockQuantity: number
 }
 
 export async function createManualUsedProduct(formData: FormData): Promise<void> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) return;
 
   const name = String(formData.get("name") ?? "").trim().slice(0, MAX_NAME_LEN);
@@ -306,14 +295,7 @@ export async function createManualUsedProduct(formData: FormData): Promise<void>
     noTagId,
   );
 
-  const { sub: colSub, domme: colDomme } =
-    parseCollectionAssignmentFromForm(formData);
-  const audienceNew = audienceFromCollectionAssignment(colSub, colDomme);
-  if (!audienceNew) {
-    redirect("/admin?create=err&reason=collection&tab=manual");
-  }
-
-  const valid = await assertTagsValidForAudience(audienceNew, tagIds);
+  const valid = await assertTagsValidForAudience(Audience.both, tagIds);
   if (!valid.ok) {
     redirect("/admin?create=err&reason=category&tab=manual");
   }
@@ -333,7 +315,7 @@ export async function createManualUsedProduct(formData: FormData): Promise<void>
       designNames: toDesignNamesJson(designNameList),
       payCard,
       payCashApp,
-      audience: audienceNew,
+      audience: Audience.both,
       fulfillmentType: FulfillmentType.manual,
       primaryTagId: primary,
       checkoutTipEligible: formData.get("checkoutTipEligible") === "on",
@@ -350,7 +332,7 @@ export async function createManualUsedProduct(formData: FormData): Promise<void>
 }
 
 export async function deleteManualUsedProduct(productId: string): Promise<void> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) return;
 
   const product = await prisma.product.findUnique({ where: { id: productId } });
@@ -381,7 +363,7 @@ export async function updateProductPrintifyIds(
   productId: string,
   formData: FormData,
 ): Promise<void> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) return;
 
   const printifyProductId = String(formData.get("printifyProductId") ?? "").trim();
@@ -706,8 +688,6 @@ async function revalidatePrintifyDependentPaths(): Promise<void> {
   revalidateShopSurface();
   const allTags = await prisma.tag.findMany({ select: { slug: true } });
   for (const t of allTags) {
-    revalidatePath(`/shop/sub/tag/${t.slug}`);
-    revalidatePath(`/shop/domme/tag/${t.slug}`);
     revalidatePath(`/shop/tag/${t.slug}`);
   }
   const allSlugs = await prisma.product.findMany({ select: { slug: true } });
@@ -717,7 +697,7 @@ async function revalidatePrintifyDependentPaths(): Promise<void> {
 }
 
 export async function syncPrintifyFromCatalog(formData: FormData): Promise<void> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) {
     redirect("/admin/login");
   }
@@ -789,7 +769,7 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
 }
 
 export async function resyncPrintifyCatalogProduct(formData: FormData): Promise<void> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) {
     redirect("/admin/login");
   }
@@ -821,7 +801,7 @@ export async function resyncPrintifyCatalogProduct(formData: FormData): Promise<
 }
 
 export async function adminPruneOrphanListingImagesR2(formData: FormData): Promise<void> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) {
     redirect("/admin/login");
   }
@@ -858,7 +838,7 @@ export async function adminPruneOrphanListingImagesR2(formData: FormData): Promi
 }
 
 export async function notifyPrintifyPublishingSucceeded(formData: FormData): Promise<void> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) {
     redirect("/admin/login");
   }
@@ -885,7 +865,7 @@ export async function notifyPrintifyPublishingSucceeded(formData: FormData): Pro
 }
 
 export async function notifyPrintifyPublishingFailed(formData: FormData): Promise<void> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) {
     redirect("/admin/login");
   }
@@ -922,7 +902,7 @@ const LISTING_UPLOAD_MIME = new Set([
 export async function uploadListingImage(
   formData: FormData,
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) return { ok: false, error: "Unauthorized." };
   if (!isR2UploadConfigured()) {
     return {

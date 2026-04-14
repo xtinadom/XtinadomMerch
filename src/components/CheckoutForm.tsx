@@ -66,7 +66,7 @@ export function CheckoutForm({
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
           <h2 className="text-sm font-medium text-zinc-200">Add a tip (optional)</h2>
           <p className="mt-1 text-xs text-zinc-500">
-            Tips are available for photo-printed and used sub catalog items.
+            Tips are available for photo-printed and used fans catalog items.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <button

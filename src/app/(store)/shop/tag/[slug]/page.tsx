@@ -9,6 +9,7 @@ import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
+import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,7 @@ export default async function ShopUniversalTagPage({ params }: Props) {
     listings = await prisma.shopListing.findMany({
       where: {
         shopId: shop.id,
-        active: true,
+        ...storefrontShopListingWhere,
         product: {
           active: true,
           tags: { some: { tagId: activeTag.id } },
@@ -70,9 +71,7 @@ export default async function ShopUniversalTagPage({ params }: Props) {
       <h1 className="store-dimension-page-title mt-2 text-2xl !uppercase !tracking-[0.12em] text-zinc-50">
         {activeTag.name}
       </h1>
-      <p className="mt-1 text-sm text-zinc-500">
-        All items with this tag (Sub collection, Domme collection, or both).
-      </p>
+      <p className="mt-1 text-sm text-zinc-500">All items in this shop with this tag.</p>
 
       <FeaturedProductsCarousel
         items={productsToFeaturedCarouselItems(products)}

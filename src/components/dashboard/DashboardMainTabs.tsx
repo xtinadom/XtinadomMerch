@@ -1,16 +1,41 @@
 "use client";
 
-import { useId, useState } from "react";
+import type { ReactNode } from "react";
+import { useId, useRef, useState } from "react";
 import { ListingRequestStatus } from "@/generated/prisma/enums";
-import { dashboardPayListingFee } from "@/actions/dashboard-marketplace";
+import {
+  dashboardCreatorRemoveListingFromShop,
+  dashboardPayListingFee,
+} from "@/actions/dashboard-marketplace";
 import {
   LISTING_FEE_FREE_SLOT_COUNT,
+  isFounderUnlimitedFreeListingsShop,
   listingFeeCentsForOrdinal,
 } from "@/lib/marketplace-constants";
 import {
+  DashboardListingItemNameForm,
   DashboardListingPriceForm,
   DashboardSubmitListingRequestForm,
 } from "@/components/dashboard/DashboardListingForms";
+import {
+  ShopSetupTabs,
+  type ShopSetupShopPayload,
+  type ShopSetupSteps,
+} from "@/components/dashboard/ShopSetupTabs";
+import { ShopFirstListingRequestPanel } from "@/components/dashboard/ShopFirstListingRequestPanel";
+import type { ShopSetupCatalogGroup } from "@/lib/shop-baseline-catalog";
+import { dashboardMarkOwnerNoticeRead } from "@/actions/shop-dashboard-notices";
+import { DashboardNoticeMarkReadButton } from "@/components/dashboard/DashboardNoticeMarkReadButton";
+
+export type DashboardSetupPanelProps = {
+  setupTabsKey: string;
+  shop: ShopSetupShopPayload;
+  catalogGroups: ShopSetupCatalogGroup[];
+  steps: ShopSetupSteps;
+  listingFeePolicySummary: string;
+  r2Configured: boolean;
+  listingPickerDiagnostics?: { adminCatalogItemCount: number };
+};
 
 export type DashboardListingRow = {
   id: string;
@@ -18,7 +43,11 @@ export type DashboardListingRow = {
   requestStatus: ListingRequestStatus;
   priceCents: number;
   requestImages: unknown;
+  /** Shop label for this listing request (optional). */
+  requestItemName: string | null;
   listingFeePaidAt: string | null;
+  adminRemovedFromShopAt: string | null;
+  creatorRemovedFromShopAt: string | null;
   /** 1-based order by shop creation time (oldest = 1). */
   listingOrdinal: number;
   product: {
@@ -42,6 +71,22 @@ export type DashboardPaidOrderRow = {
   }>;
 };
 
+export type DashboardNoticeRow = {
+  id: string;
+  body: string;
+  kind: string;
+  createdAt: string;
+  readAt: string | null;
+};
+
+function formatNoticeWhen(iso: string) {
+  try {
+    return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  } catch {
+    return iso;
+  }
+}
+
 function formatMoney(cents: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -54,11 +99,13 @@ function requestStatusDescription(status: ListingRequestStatus): string {
     case ListingRequestStatus.draft:
       return "Draft — finish artwork / URLs and submit when ready.";
     case ListingRequestStatus.submitted:
-      return "Submitted — waiting for admin review.";
+      return "Submitted — waiting for admin to link the Printify product.";
+    case ListingRequestStatus.printify_item_created:
+      return "Printify item created — waiting for admin approval.";
     case ListingRequestStatus.approved:
-      return "Approved — visible on the shop once active and fee paid if required.";
+      return "Approved — goes live when the publication fee is settled (if required for this slot).";
     case ListingRequestStatus.rejected:
-      return "Rejected — update and resubmit, or contact support.";
+      return "Rejected — this listing cannot be edited. Contact support if you need help.";
     default:
       return String(status);
   }
@@ -69,6 +116,8 @@ function statusBadgeClass(status: ListingRequestStatus, active: boolean): string
   switch (status) {
     case ListingRequestStatus.submitted:
       return "bg-amber-950/40 text-amber-200/90 ring-amber-800/50";
+    case ListingRequestStatus.printify_item_created:
+      return "bg-violet-950/40 text-violet-200/90 ring-violet-800/50";
     case ListingRequestStatus.approved:
       return "bg-sky-950/40 text-sky-200/90 ring-sky-800/50";
     case ListingRequestStatus.rejected:
@@ -82,50 +131,137 @@ function ListingCard({
   listing,
   isPlatform,
   paidListingFeeLabel,
+  shopSlug,
 }: {
   listing: DashboardListingRow;
   isPlatform: boolean;
   paidListingFeeLabel: string;
+  shopSlug: string;
 }) {
   const minCents =
     listing.product.minPriceCents > 0
       ? listing.product.minPriceCents
       : listing.product.priceCents;
   const minLabel = formatMoney(minCents);
+  const listingLocked =
+    listing.requestStatus === ListingRequestStatus.rejected ||
+    listing.creatorRemovedFromShopAt != null;
+  /** Submitted / awaiting admin Printify step — no edits until approved. */
+  const awaitingAdminReview =
+    listing.requestStatus === ListingRequestStatus.submitted ||
+    listing.requestStatus === ListingRequestStatus.printify_item_created;
+  const fieldsReadOnly = listingLocked || awaitingAdminReview;
   const canSubmit =
-    listing.requestStatus === ListingRequestStatus.draft ||
-    listing.requestStatus === ListingRequestStatus.rejected;
+    !listingLocked && listing.requestStatus === ListingRequestStatus.draft;
   const imagesDefault = Array.isArray(listing.requestImages)
     ? (listing.requestImages as string[]).join("\n")
     : "";
-  const feeCents = listingFeeCentsForOrdinal(listing.listingOrdinal);
+  const feeCents = listingFeeCentsForOrdinal(listing.listingOrdinal, shopSlug);
   const isFreeListingSlot = feeCents === 0;
+  const founderFreeShop = isFounderUnlimitedFreeListingsShop(shopSlug);
+  const dashboardBadge = listing.creatorRemovedFromShopAt
+    ? {
+        label: "Creator removed",
+        ringClass: "bg-fuchsia-950/45 text-fuchsia-200/90 ring-fuchsia-800/50",
+      }
+    : listing.adminRemovedFromShopAt
+      ? {
+          label: "Frozen",
+          ringClass: "bg-sky-950/50 text-sky-200/90 ring-sky-800/50",
+        }
+      : listing.requestStatus === ListingRequestStatus.rejected
+        ? {
+            label: "Rejected",
+            ringClass: "bg-red-950/40 text-red-200/90 ring-red-900/50",
+          }
+        : listing.active
+          ? {
+              label: "Live",
+              ringClass: statusBadgeClass(listing.requestStatus, true),
+            }
+          : {
+              label: String(listing.requestStatus),
+              ringClass: statusBadgeClass(listing.requestStatus, false),
+            };
+  const canRemoveFromShop =
+    !isPlatform &&
+    listing.requestStatus === ListingRequestStatus.approved &&
+    listing.active &&
+    !listing.creatorRemovedFromShopAt &&
+    !listing.adminRemovedFromShopAt;
+  const removeFromShopFormRef = useRef<HTMLFormElement>(null);
 
   return (
     <li className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 text-sm">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="font-medium text-zinc-200">{listing.product.name}</span>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <DashboardListingItemNameForm
+          listingId={listing.id}
+          catalogProductName={listing.product.name}
+          requestItemName={listing.requestItemName}
+          readOnly={fieldsReadOnly}
+        />
         <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ${statusBadgeClass(listing.requestStatus, listing.active)}`}
+          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ${dashboardBadge.ringClass}`}
         >
-          {listing.active ? "Live" : listing.requestStatus}
+          {dashboardBadge.label}
         </span>
       </div>
       <p className="mt-1 text-xs text-zinc-500">{requestStatusDescription(listing.requestStatus)}</p>
+      {listing.creatorRemovedFromShopAt ? (
+        <p className="mt-1 text-xs text-fuchsia-200/80">
+          You removed this listing from your shop on {listing.creatorRemovedFromShopAt.slice(0, 10)}. It no longer
+          appears on your public storefront. Contact support if you need it restored.
+        </p>
+      ) : listing.adminRemovedFromShopAt ? (
+        <p className="mt-1 text-xs text-sky-200/75">
+          This listing was frozen by the platform and is hidden from your storefront until support clears it.
+        </p>
+      ) : null}
       <p className="mt-1 text-xs text-zinc-600">
         Catalog: {listing.product.slug} · min {minLabel}
+        {listing.requestItemName?.trim() ? (
+          <>
+            {" "}
+            · baseline name: <span className="text-zinc-500">{listing.product.name}</span>
+          </>
+        ) : null}
       </p>
 
       <DashboardListingPriceForm
         listingId={listing.id}
         priceDollarsFormatted={(listing.priceCents / 100).toFixed(2)}
+        readOnly={fieldsReadOnly}
       />
+
+      {canRemoveFromShop ? (
+        <form ref={removeFromShopFormRef} action={dashboardCreatorRemoveListingFromShop} className="mt-3">
+          <input type="hidden" name="listingId" value={listing.id} />
+          <button
+            type="button"
+            className="rounded border border-red-900/55 bg-red-950/35 px-3 py-1.5 text-xs font-medium text-red-200/95 hover:border-red-700/60 hover:bg-red-950/50"
+            onClick={() => {
+              const ok = window.confirm(
+                `Are you sure you want to remove this listing from your shop? You cannot undo this action, and all listings after your first ${LISTING_FEE_FREE_SLOT_COUNT} will cost ${paidListingFeeLabel}.`,
+              );
+              if (ok) removeFromShopFormRef.current?.requestSubmit();
+            }}
+          >
+            Remove from shop
+          </button>
+        </form>
+      ) : null}
 
       {!isPlatform && isFreeListingSlot ? (
         <p className="mt-2 text-xs text-emerald-600/90">
-          No publication fee — free listing ({listing.listingOrdinal} of {LISTING_FEE_FREE_SLOT_COUNT}).
+          {founderFreeShop
+            ? "No publication fee — founder shop (unlimited free listings)."
+            : `No publication fee — free listing (${listing.listingOrdinal} of ${LISTING_FEE_FREE_SLOT_COUNT}).`}
         </p>
-      ) : !isPlatform && !listing.listingFeePaidAt ? (
+      ) : !isPlatform &&
+        !fieldsReadOnly &&
+        !listing.listingFeePaidAt &&
+        feeCents > 0 &&
+        listing.requestStatus === ListingRequestStatus.approved ? (
         <form action={dashboardPayListingFee} className="mt-3">
           <input type="hidden" name="listingId" value={listing.id} />
           <button
@@ -135,6 +271,11 @@ function ListingCard({
             Pay {paidListingFeeLabel} listing fee (Stripe)
           </button>
         </form>
+      ) : !isPlatform && !listing.listingFeePaidAt && feeCents > 0 ? (
+        <p className="mt-2 text-xs text-zinc-500">
+          Publication fee is due after admin approves this listing. You will be able to pay here once it is
+          approved.
+        </p>
       ) : !isPlatform && listing.listingFeePaidAt ? (
         <p className="mt-2 text-xs text-emerald-600/90">
           Listing fee paid {listing.listingFeePaidAt.slice(0, 10)}
@@ -146,6 +287,14 @@ function ListingCard({
           listingId={listing.id}
           defaultImageUrlsText={imagesDefault}
         />
+      ) : listingLocked ? (
+        <p className="mt-3 text-xs text-zinc-600">
+          This listing can&apos;t be edited. Contact support if you need help.
+        </p>
+      ) : awaitingAdminReview ? (
+        <p className="mt-3 text-xs text-zinc-600">
+          This request is with admin — name and price cannot be changed until the listing is approved.
+        </p>
       ) : (
         <p className="mt-3 text-xs text-zinc-600">
           Request status: {listing.requestStatus} — contact support if you need changes.
@@ -155,10 +304,21 @@ function ListingCard({
   );
 }
 
-type TabId = "listings" | "orders";
+type TabId = "setup" | "requestListing" | "listings" | "notifications" | "support" | "orders";
 
 export function DashboardMainTabs(props: {
   initialTab?: TabId;
+  /** Creator shop slug — listing fee tiers (e.g. founder unlimited). */
+  shopSlug: string;
+  /** Creator onboarding; when set, “Shop setup” is the first tab. */
+  setup?: DashboardSetupPanelProps | null;
+  /** Full notice history (creators); drives Notifications tab. */
+  notifications?: {
+    rows: DashboardNoticeRow[];
+    unreadCount: number;
+  } | null;
+  /** Server-rendered support chat (creator shops only). */
+  supportChat?: ReactNode | null;
   listingFeePolicySummary: string;
   paidListingFeeLabel: string;
   isPlatform: boolean;
@@ -166,24 +326,74 @@ export function DashboardMainTabs(props: {
   paidOrders: DashboardPaidOrderRow[];
 }) {
   const {
-    initialTab = "listings",
+    initialTab: initialTabProp,
+    shopSlug,
+    setup,
+    notifications,
+    supportChat,
     listingFeePolicySummary,
     paidListingFeeLabel,
     isPlatform,
     listings,
     paidOrders,
   } = props;
-  const [tab, setTab] = useState<TabId>(initialTab);
+
+  const hasSetup = setup != null;
+  const hasNotifications = Boolean(notifications);
+  const canSupport = Boolean(supportChat);
+  const [tab, setTab] = useState<TabId>(() => {
+    const i = initialTabProp;
+    if (hasSetup) {
+      if (
+        i === "listings" ||
+        i === "orders" ||
+        i === "setup" ||
+        i === "notifications" ||
+        i === "requestListing" ||
+        (i === "support" && canSupport)
+      ) {
+        if (i === "notifications" && !hasNotifications) return "setup";
+        if (i === "support" && !canSupport) return "setup";
+        return i;
+      }
+      return "setup";
+    }
+    if (i === "orders") return "orders";
+    if (i === "support" && canSupport) return "support";
+    return "listings";
+  });
+
   const baseId = useId();
+  const setupTabId = `${baseId}-tab-setup`;
+  const setupPanelId = `${baseId}-panel-setup`;
+  const requestListingTabId = `${baseId}-tab-request-listing`;
+  const requestListingPanelId = `${baseId}-panel-request-listing`;
   const listingsTabId = `${baseId}-tab-listings`;
+  const notificationsTabId = `${baseId}-tab-notifications`;
+  const notificationsPanelId = `${baseId}-panel-notifications`;
   const ordersTabId = `${baseId}-tab-orders`;
+  const supportTabId = `${baseId}-tab-support`;
   const listingsPanelId = `${baseId}-panel-listings`;
   const ordersPanelId = `${baseId}-panel-orders`;
+  const supportPanelId = `${baseId}-panel-support`;
 
-  const liveListings = listings.filter((l) => l.active);
-  const requestListings = listings.filter((l) => !l.active);
+  /** On the public storefront (`active` is false for creator-removed, frozen, and pipeline rows). */
+  const liveListings = listings.filter(
+    (l) => l.active && l.requestStatus !== ListingRequestStatus.rejected,
+  );
+  const removedListings = listings.filter(
+    (l) =>
+      l.creatorRemovedFromShopAt != null || l.requestStatus === ListingRequestStatus.rejected,
+  );
+  /** Drafts, submitted, frozen, fee-pending, etc. — not creator-removed or rejected. */
+  const requestListings = listings.filter(
+    (l) =>
+      !l.active &&
+      l.creatorRemovedFromShopAt == null &&
+      l.requestStatus !== ListingRequestStatus.rejected,
+  );
 
-  const tabBtn = (id: TabId, label: string, tabId: string, panelId: string) => (
+  const tabBtn = (id: TabId, label: ReactNode, tabId: string, panelId: string) => (
     <button
       type="button"
       role="tab"
@@ -202,16 +412,74 @@ export function DashboardMainTabs(props: {
     </button>
   );
 
+  const unreadN = notifications?.unreadCount ?? 0;
+
   return (
-    <section className="mt-10">
+    <section className="mt-8">
       <div
         className="flex flex-wrap gap-1 rounded-xl border border-zinc-800 bg-zinc-950/40 p-1"
         role="tablist"
-        aria-label="Dashboard"
+        aria-label="Shop dashboard"
       >
+        {hasSetup ? tabBtn("setup", "Shop setup", setupTabId, setupPanelId) : null}
+        {hasSetup && setup
+          ? tabBtn("requestListing", "Request listing", requestListingTabId, requestListingPanelId)
+          : null}
         {tabBtn("listings", "Listings", listingsTabId, listingsPanelId)}
+        {hasNotifications && notifications
+          ? tabBtn(
+              "notifications",
+              <span className="inline-flex items-center gap-2">
+                Notifications
+                {unreadN > 0 ? (
+                  <span className="rounded-full bg-sky-900/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-sky-100">
+                    {unreadN}
+                  </span>
+                ) : null}
+              </span>,
+              notificationsTabId,
+              notificationsPanelId,
+            )
+          : null}
+        {canSupport ? tabBtn("support", "Support", supportTabId, supportPanelId) : null}
         {tabBtn("orders", "Recent paid orders", ordersTabId, ordersPanelId)}
       </div>
+
+      {hasSetup && setup ? (
+        <div
+          id={setupPanelId}
+          role="tabpanel"
+          aria-labelledby={setupTabId}
+          hidden={tab !== "setup"}
+          className="pt-6"
+        >
+          <ShopSetupTabs
+            key={setup.setupTabsKey}
+            shop={setup.shop}
+            steps={setup.steps}
+            r2Configured={setup.r2Configured}
+            embedded
+          />
+        </div>
+      ) : null}
+
+      {hasSetup && setup ? (
+        <div
+          id={requestListingPanelId}
+          role="tabpanel"
+          aria-labelledby={requestListingTabId}
+          hidden={tab !== "requestListing"}
+          className="pt-6"
+        >
+          <ShopFirstListingRequestPanel
+            catalogGroups={setup.catalogGroups}
+            listingFeePolicySummary={setup.listingFeePolicySummary}
+            r2Configured={setup.r2Configured}
+            listingPickerDiagnostics={setup.listingPickerDiagnostics}
+            embedded
+          />
+        </div>
+      ) : null}
 
       <div
         id={listingsPanelId}
@@ -221,17 +489,16 @@ export function DashboardMainTabs(props: {
         className="pt-6"
       >
         <p className="text-xs text-zinc-600">
-          Set your public price (at least the catalog minimum). {listingFeePolicySummary} Paid slots must
-          be settled before an admin can approve a submitted request. Platform catalog shop skips the fee.
+          Set your public price (at least the catalog minimum). {listingFeePolicySummary} After admin links
+          Printify and approves, pay the publication fee here if required for your slot — then the listing
+          goes live. Platform catalog shop skips the fee.
         </p>
 
         {liveListings.length > 0 ? (
           <div className="mt-6">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-500/90">
-              Live on your shop
-            </h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-500/90">Live</h3>
             <p className="mt-1 text-[11px] text-zinc-600">
-              These listings are active on your storefront.
+              Active on your public storefront right now.
             </p>
             <ul className="mt-3 space-y-6">
               {liveListings.map((listing) => (
@@ -240,6 +507,7 @@ export function DashboardMainTabs(props: {
                   listing={listing}
                   isPlatform={isPlatform}
                   paidListingFeeLabel={paidListingFeeLabel}
+                  shopSlug={shopSlug}
                 />
               ))}
             </ul>
@@ -247,7 +515,9 @@ export function DashboardMainTabs(props: {
         ) : null}
 
         {requestListings.length > 0 ? (
-          <div className={liveListings.length > 0 ? "mt-10" : "mt-6"}>
+          <div
+            className={liveListings.length > 0 || removedListings.length > 0 ? "mt-10" : "mt-6"}
+          >
             <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
               Listing requests & setup
             </h3>
@@ -262,6 +532,32 @@ export function DashboardMainTabs(props: {
                   listing={listing}
                   isPlatform={isPlatform}
                   paidListingFeeLabel={paidListingFeeLabel}
+                  shopSlug={shopSlug}
+                />
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {removedListings.length > 0 ? (
+          <div
+            className={
+              liveListings.length > 0 || requestListings.length > 0 ? "mt-10" : "mt-6"
+            }
+          >
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-fuchsia-500/90">Removed</h3>
+            <p className="mt-1 text-[11px] text-zinc-600">
+              You took these off your storefront, or the listing request was rejected. These rows aren&apos;t editable —
+              contact support to restore a removed listing or to discuss a rejected request.
+            </p>
+            <ul className="mt-3 space-y-6">
+              {removedListings.map((listing) => (
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  isPlatform={isPlatform}
+                  paidListingFeeLabel={paidListingFeeLabel}
+                  shopSlug={shopSlug}
                 />
               ))}
             </ul>
@@ -270,11 +566,78 @@ export function DashboardMainTabs(props: {
 
         {listings.length === 0 ? (
           <p className="mt-6 text-sm text-zinc-600">
-            No listings yet. Use <strong className="text-zinc-400">Request first listing</strong> above to
-            submit your first listing for review.
+            No listings yet. Open the <strong className="text-zinc-400">Request listing</strong> tab to choose a
+            catalog item, set your price, and upload artwork for admin review.
           </p>
         ) : null}
       </div>
+
+      {hasNotifications && notifications ? (
+        <div
+          id={notificationsPanelId}
+          role="tabpanel"
+          aria-labelledby={notificationsTabId}
+          hidden={tab !== "notifications"}
+          className="pt-6"
+        >
+          <p className="text-xs text-zinc-600">
+            Newest first. Mark as read clears your unread state; messages stay here for your records.
+          </p>
+          <ul className="mt-4 space-y-3">
+            {notifications.rows.map((n) => {
+              const isUnread = n.readAt == null;
+              return (
+                <li
+                  key={n.id}
+                  className={`rounded-lg border px-4 py-3 text-sm ${
+                    isUnread
+                      ? "border-sky-900/50 bg-sky-950/15 text-sky-100/90"
+                      : "border-zinc-800 bg-zinc-950/30 text-zinc-400"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2 gap-y-1">
+                    <p className="min-w-0 flex-1 leading-snug">{n.body}</p>
+                    {isUnread ? (
+                      <form action={dashboardMarkOwnerNoticeRead} className="shrink-0">
+                        <input type="hidden" name="noticeId" value={n.id} />
+                        <DashboardNoticeMarkReadButton />
+                      </form>
+                    ) : (
+                      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-zinc-600">
+                        Read
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-600">
+                    <time dateTime={n.createdAt}>{formatNoticeWhen(n.createdAt)}</time>
+                    {n.readAt ? (
+                      <span className="text-zinc-600">
+                        Read {formatNoticeWhen(n.readAt)}
+                      </span>
+                    ) : null}
+                    <span className="font-mono text-[10px] text-zinc-600">{n.kind}</span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {notifications.rows.length === 0 ? (
+            <p className="mt-4 text-sm text-zinc-600">No notifications yet.</p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {canSupport && supportChat ? (
+        <div
+          id={supportPanelId}
+          role="tabpanel"
+          aria-labelledby={supportTabId}
+          hidden={tab !== "support"}
+          className="pt-6"
+        >
+          {supportChat}
+        </div>
+      ) : null}
 
       <div
         id={ordersPanelId}

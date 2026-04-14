@@ -1,11 +1,23 @@
 import { prisma } from "@/lib/prisma";
-import { LISTING_FEE_FREE_SLOT_COUNT } from "@/lib/marketplace-constants";
+import {
+  LISTING_FEE_FREE_SLOT_COUNT,
+  isFounderUnlimitedFreeListingsShop,
+} from "@/lib/marketplace-constants";
 
 /**
- * Sets `listingFeePaidAt` for the first {@link LISTING_FEE_FREE_SLOT_COUNT} listings (by createdAt, then id)
- * when it is still null, so admin approval does not require payment for free slots.
+ * Sets `listingFeePaidAt` for free-slot listings (by createdAt, then id) when still null, so admin approval
+ * does not require payment. Founder shop gets all listings waived.
  */
 export async function syncFreeListingFeeWaivers(shopId: string): Promise<void> {
+  const shop = await prisma.shop.findUnique({
+    where: { id: shopId },
+    select: { slug: true },
+  });
+  const maxFreeOrdinals =
+    shop && isFounderUnlimitedFreeListingsShop(shop.slug)
+      ? Number.POSITIVE_INFINITY
+      : LISTING_FEE_FREE_SLOT_COUNT;
+
   const rows = await prisma.shopListing.findMany({
     where: { shopId },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -13,7 +25,7 @@ export async function syncFreeListingFeeWaivers(shopId: string): Promise<void> {
   });
   const now = new Date();
   for (let i = 0; i < rows.length; i++) {
-    if (i + 1 <= LISTING_FEE_FREE_SLOT_COUNT && !rows[i].listingFeePaidAt) {
+    if (i + 1 <= maxFreeOrdinals && !rows[i].listingFeePaidAt) {
       await prisma.shopListing.update({
         where: { id: rows[i].id },
         data: { listingFeePaidAt: now },

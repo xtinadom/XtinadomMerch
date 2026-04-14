@@ -7,7 +7,7 @@ export default function AboutPage() {
       <h1 className="text-2xl font-semibold text-zinc-50">About</h1>
       <div className="mt-6 space-y-4 text-sm leading-relaxed text-zinc-400">
         <p>
-          Domme Shops is a multi-vendor marketplace built on a shared catalog and unified fulfillment.
+          Creator Shops is a multi-vendor marketplace built on a shared catalog and unified fulfillment.
           Independent creators operate their own storefronts while checkout and operations stay consistent
           for buyers.
         </p>

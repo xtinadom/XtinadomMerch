@@ -3,8 +3,6 @@ export const SHOP_SOCIAL_KEYS = [
   "x",
   "bluesky",
   "twitch",
-  "loyalfans",
-  "onlyfans",
   "instagram",
 ] as const;
 
@@ -46,8 +44,6 @@ const PLATFORM_HOST_RULES: Record<ShopSocialKey, (host: string) => boolean> = {
     h === "bsky.social" ||
     h.endsWith(".bsky.social"),
   twitch: (h) => h === "twitch.tv" || h.endsWith(".twitch.tv"),
-  loyalfans: (h) => h === "loyalfans.com" || h.endsWith(".loyalfans.com"),
-  onlyfans: (h) => h === "onlyfans.com" || h.endsWith(".onlyfans.com"),
   instagram: (h) => h === "instagram.com" || h.endsWith(".instagram.com"),
 };
 
@@ -56,8 +52,6 @@ const PLATFORM_URL_HINT: Record<ShopSocialKey, string> = {
   x: "x.com or twitter.com",
   bluesky: "bsky.app or *.bsky.social",
   twitch: "twitch.tv",
-  loyalfans: "loyalfans.com",
-  onlyfans: "onlyfans.com",
   instagram: "instagram.com",
 };
 

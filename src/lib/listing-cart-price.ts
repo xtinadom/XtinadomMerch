@@ -8,6 +8,7 @@ import {
 
 type ListingWithProduct = {
   priceCents: number;
+  listingPrintifyVariantId?: string | null;
   product: Pick<
     Product,
     | "fulfillmentType"
@@ -25,6 +26,9 @@ export function listingCartUnitCents(
 ): number {
   const p = listing.product;
   if (p.fulfillmentType !== FulfillmentType.printify) {
+    return listing.priceCents;
+  }
+  if (listing.listingPrintifyVariantId?.trim()) {
     return listing.priceCents;
   }
   const variants = getPrintifyVariantsForProduct(p);

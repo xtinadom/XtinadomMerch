@@ -196,7 +196,7 @@ h6 {
   height: 0 !important;
 }
 
-/* Sub collection splash — image shimmer only */
+/* Fans collection splash — image shimmer only */
 @keyframes featured-spotlight-shimmer {
   0% {
     transform: translateX(-120%) skewX(-12deg);

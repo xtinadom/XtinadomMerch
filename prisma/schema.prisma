@@ -18,7 +18,7 @@ enum FulfillmentType {
   manual
 }
 
-/** Storefront “collection” routes: sub shop vs domme shop (product audience), not tag ownership. */
+/** Storefront “collection” routes: fans shop vs creator shop (product audience), not tag ownership. */
 enum CatalogGroup {
   sub
   domme
@@ -27,6 +27,8 @@ enum CatalogGroup {
 enum ListingRequestStatus {
   draft
   submitted
+  /** Admin recorded Printify product/variant IDs for this shop listing. */
+  printify_item_created
   approved
   rejected
 }
@@ -40,10 +42,10 @@ model Tag {
   slug                              String    @unique
   name                              String
   sortOrder                         Int       @default(0)
-  /** Optional: “By Item” pick for Sub collection; product must have this tag and Sub or Both audience. */
+  /** Optional: “By Item” pick for Fans collection; product must have this tag and Sub or Both audience. */
   subCollectionSpotlightProductId   String?
   subCollectionSpotlightProduct     Product?  @relation("TagSubCollectionSpotlight", fields: [subCollectionSpotlightProductId], references: [id], onDelete: SetNull)
-  /** Optional: “By Item” pick for Domme collection; product must have this tag and Domme or Both audience. */
+  /** Optional: “By Item” pick for Creator collection; product must have this tag and Domme or Both audience. */
   dommeCollectionSpotlightProductId String?
   dommeCollectionSpotlightProduct   Product?  @relation("TagDommeCollectionSpotlight", fields: [dommeCollectionSpotlightProductId], references: [id], onDelete: SetNull)
   productTags                       ProductTag[]
@@ -104,7 +106,7 @@ model Shop {
   bio                      String?        @db.Text
   /** Short welcome shown on storefront (max 280 chars, tweet length). */
   welcomeMessage           String?        @db.VarChar(280)
-  /** Optional social URLs: reddit, x, bluesky, twitch, loyalfans, onlyfans, instagram. */
+  /** Optional social URLs: reddit, x, bluesky, twitch, instagram. */
   socialLinks              Json?
   active                   Boolean        @default(true)
   stripeConnectAccountId   String?        @unique
@@ -119,10 +121,49 @@ model Shop {
   homeFeaturedListing      ShopListing?   @relation("ShopHomeFeatured", fields: [homeFeaturedListingId], references: [id], onDelete: SetNull)
   users                    ShopUser[]
   listings                 ShopListing[]  @relation("ShopListings")
+  ownerNotices             ShopOwnerNotice[]
   orders                   Order[]
   orderLines               OrderLine[]
+  supportThread            SupportThread?
   createdAt                DateTime       @default(now())
   updatedAt                DateTime       @updatedAt
+}
+
+enum SupportMessageAuthor {
+  creator
+  admin
+}
+
+model SupportThread {
+  id        String            @id @default(cuid())
+  shopId    String            @unique
+  shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  messages  SupportMessage[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model SupportMessage {
+  id         String                @id @default(cuid())
+  threadId   String
+  thread     SupportThread         @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorRole SupportMessageAuthor
+  body       String                @db.Text
+  createdAt  DateTime              @default(now())
+
+  @@index([threadId, createdAt])
+}
+
+model ShopOwnerNotice {
+  id        String    @id @default(cuid())
+  shopId    String
+  shop      Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  body      String    @db.Text
+  kind      String    @default("listing_approved")
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([shopId, readAt])
 }
 
 model ShopUser {
@@ -161,8 +202,22 @@ model ShopListing {
   featuredOnShop     Boolean                @default(false)
   featuredForHome    Boolean                @default(false)
   listingFeePaidAt   DateTime?
+  /** Shop-specific Printify product id (admin); used for fulfillment instead of Product.printifyProductId when set. */
+  listingPrintifyProductId  String?
+  /** Shop-specific Printify variant id for default checkout line when set. */
+  listingPrintifyVariantId    String?
   requestImages      Json?
+  /** Shop-provided display name for this listing request (review / fulfillment context). */
+  requestItemName    String?
   requestStatus      ListingRequestStatus   @default(draft)
+  /** Set when an admin hides an approved listing from the shop (distinct from awaiting publication fee). */
+  adminRemovedFromShopAt DateTime?
+  /** Set when the shop owner hides this listing from their storefront. */
+  creatorRemovedFromShopAt DateTime?
+  /** Admin cleared this row from the Listing requests queue; see Removed items tab. */
+  removedFromListingRequestsAt DateTime?
+  /** Internal notes on a removed queue row (editable in admin). */
+  adminListingRemovalNotes       String?    @db.Text
   shopHomeFeatured   Shop?                  @relation("ShopHomeFeatured")
   orderLines         OrderLine[]
   createdAt          DateTime               @default(now())
@@ -171,6 +226,7 @@ model ShopListing {
   @@unique([shopId, productId])
   @@index([shopId, active])
   @@index([requestStatus])
+  @@index([removedFromListingRequestsAt])
 }
 
 enum OrderStatus {

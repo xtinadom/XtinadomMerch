@@ -38,6 +38,21 @@ export type Product = Prisma.ProductModel
  */
 export type Shop = Prisma.ShopModel
 /**
+ * Model SupportThread
+ * 
+ */
+export type SupportThread = Prisma.SupportThreadModel
+/**
+ * Model SupportMessage
+ * 
+ */
+export type SupportMessage = Prisma.SupportMessageModel
+/**
+ * Model ShopOwnerNotice
+ * 
+ */
+export type ShopOwnerNotice = Prisma.ShopOwnerNoticeModel
+/**
  * Model ShopUser
  * 
  */

@@ -96,7 +96,7 @@ async function main() {
   await prisma.product.create({
     data: {
       slug: "domme-tee",
-      name: "Domme graphic tee",
+      name: "Creator graphic tee",
       description: "Soft cotton tee, printed to order.",
       priceCents: 2999,
       imageUrl: null,
@@ -116,7 +116,7 @@ async function main() {
   await prisma.product.create({
     data: {
       slug: "domme-mug",
-      name: "Domme statement mug",
+      name: "Creator statement mug",
       description: "Bold design on premium ceramic.",
       priceCents: 1999,
       imageUrl: null,

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/session";
+import { getAdminSessionReadonly } from "@/lib/session";
 import { Audience } from "@/generated/prisma/enums";
 import { slugify } from "@/lib/slugify";
 
@@ -31,7 +31,7 @@ async function tagDuplicate(
 export async function adminCreateTag(
   formData: FormData,
 ): Promise<AdminTagActionResult> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) return { ok: false, error: "Unauthorized." };
 
   const name = String(formData.get("name") ?? "").trim();
@@ -56,15 +56,13 @@ export async function adminCreateTag(
 
   revalidatePath("/admin");
   revalidatePath("/shop/all");
-  revalidatePath("/shop/sub");
-  revalidatePath("/shop/domme");
   return { ok: true };
 }
 
 export async function adminUpdateTag(
   formData: FormData,
 ): Promise<AdminTagActionResult> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) return { ok: false, error: "Unauthorized." };
 
   const id = String(formData.get("tagId") ?? "").trim();
@@ -89,9 +87,8 @@ export async function adminUpdateTag(
     ? parseInt(sortRaw, 10)
     : existing.sortOrder;
 
-  async function parseCollectionSpotlight(
+  async function parseByItemSpotlight(
     raw: string,
-    collection: "sub" | "domme",
   ): Promise<{ ok: true; id: string | null } | { ok: false; error: string }> {
     const trimmed = raw.trim();
     if (trimmed === "" || trimmed === "__auto__") {
@@ -108,46 +105,20 @@ export async function adminUpdateTag(
     }
     const product = await prisma.product.findUnique({
       where: { id: trimmed },
-      select: { audience: true },
+      select: { id: true },
     });
     if (!product) {
       return { ok: false, error: "Product not found." };
     }
-    if (collection === "sub") {
-      if (
-        product.audience !== Audience.sub &&
-        product.audience !== Audience.both
-      ) {
-        return {
-          ok: false,
-          error:
-            "Sub collection top pick must appear in the Sub shop (collection assignment Sub or Both).",
-        };
-      }
-    } else if (
-      product.audience !== Audience.domme &&
-      product.audience !== Audience.both
-    ) {
-      return {
-        ok: false,
-        error:
-          "Domme collection top pick must appear in the Domme shop (collection assignment Domme or Both).",
-      };
-    }
     return { ok: true, id: trimmed };
   }
 
-  const rawSub = String(
-    formData.get("subCollectionSpotlightProductId") ?? "",
-  ).trim();
-  const rawDomme = String(
-    formData.get("dommeCollectionSpotlightProductId") ?? "",
+  const rawSpotlight = String(
+    formData.get("byItemSpotlightProductId") ?? "",
   ).trim();
 
-  const subPick = await parseCollectionSpotlight(rawSub, "sub");
-  if (!subPick.ok) return { ok: false, error: subPick.error };
-  const dommePick = await parseCollectionSpotlight(rawDomme, "domme");
-  if (!dommePick.ok) return { ok: false, error: dommePick.error };
+  const pick = await parseByItemSpotlight(rawSpotlight);
+  if (!pick.ok) return { ok: false, error: pick.error };
 
   await prisma.tag.update({
     where: { id },
@@ -155,18 +126,14 @@ export async function adminUpdateTag(
       name,
       slug,
       sortOrder,
-      subCollectionSpotlightProductId: subPick.id,
-      dommeCollectionSpotlightProductId: dommePick.id,
+      subCollectionSpotlightProductId: pick.id,
+      dommeCollectionSpotlightProductId: pick.id,
     },
   });
 
   revalidatePath("/admin");
   revalidatePath("/shop/all");
-  revalidatePath("/shop/sub");
-  revalidatePath("/shop/domme");
   for (const slugPart of [existing.slug, slug]) {
-    revalidatePath(`/shop/sub/tag/${slugPart}`);
-    revalidatePath(`/shop/domme/tag/${slugPart}`);
     revalidatePath(`/shop/tag/${slugPart}`);
   }
   return { ok: true };
@@ -175,7 +142,7 @@ export async function adminUpdateTag(
 export async function adminDeleteTag(
   formData: FormData,
 ): Promise<AdminTagActionResult> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) return { ok: false, error: "Unauthorized." };
 
   const id = String(formData.get("tagId") ?? "").trim();
@@ -196,10 +163,6 @@ export async function adminDeleteTag(
 
   revalidatePath("/admin");
   revalidatePath("/shop/all");
-  revalidatePath("/shop/sub");
-  revalidatePath("/shop/domme");
-  revalidatePath(`/shop/sub/tag/${existing.slug}`);
-  revalidatePath(`/shop/domme/tag/${existing.slug}`);
   revalidatePath(`/shop/tag/${existing.slug}`);
   return { ok: true };
 }
@@ -249,7 +212,7 @@ export type AdminEnsureTagByNameResult =
 export async function adminEnsureTagByName(
   rawName: string,
 ): Promise<AdminEnsureTagByNameResult> {
-  const admin = await getAdminSession();
+  const admin = await getAdminSessionReadonly();
   if (!admin.isAdmin) return { ok: false, error: "Unauthorized." };
 
   const name = rawName.trim();
@@ -288,8 +251,6 @@ export async function adminEnsureTagByName(
 
   revalidatePath("/admin");
   revalidatePath("/shop/all");
-  revalidatePath("/shop/sub");
-  revalidatePath("/shop/domme");
 
   return {
     ok: true,

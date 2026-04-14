@@ -11,32 +11,39 @@ export async function SiteHeader({
   browseMenu = true,
 }: { shopSlug?: string; browseMenu?: boolean } = {}) {
   const platform = !shopSlug || shopSlug === PLATFORM_SHOP_SLUG;
-  const shop =
-    !platform &&
-    (await prisma.shop.findFirst({
-      where: { slug: shopSlug, active: true },
-      select: { id: true },
-    }));
-  const tags = browseMenu
-    ? platform
-      ? await getStoreTags()
-      : shop
-        ? await getStoreTagsForShop(shop.id)
-        : await getStoreTags()
-    : [];
-  const cart = await getCartSessionReadonly();
-  const cartQty = await cartBadgeQuantity(cart.items);
-
-  const ownerSession = await getShopOwnerSessionReadonly();
+  let tags: Awaited<ReturnType<typeof getStoreTags>> = [];
+  let cartQty = 0;
   let shopOwnerEmail: string | undefined;
   let shopOwnerDisplayName: string | undefined;
-  if (ownerSession.shopUserId) {
-    const su = await prisma.shopUser.findUnique({
-      where: { id: ownerSession.shopUserId },
-      select: { email: true, shop: { select: { displayName: true } } },
-    });
-    shopOwnerEmail = su?.email;
-    shopOwnerDisplayName = su?.shop.displayName?.trim() || undefined;
+
+  try {
+    const shop =
+      !platform &&
+      (await prisma.shop.findFirst({
+        where: { slug: shopSlug, active: true },
+        select: { id: true },
+      }));
+    tags = browseMenu
+      ? platform
+        ? await getStoreTags()
+        : shop
+          ? await getStoreTagsForShop(shop.id)
+          : await getStoreTags()
+      : [];
+    const cart = await getCartSessionReadonly();
+    cartQty = await cartBadgeQuantity(cart.items);
+
+    const ownerSession = await getShopOwnerSessionReadonly();
+    if (ownerSession.shopUserId) {
+      const su = await prisma.shopUser.findUnique({
+        where: { id: ownerSession.shopUserId },
+        select: { email: true, shop: { select: { displayName: true } } },
+      });
+      shopOwnerEmail = su?.email;
+      shopOwnerDisplayName = su?.shop.displayName?.trim() || undefined;
+    }
+  } catch (e) {
+    console.error("[SiteHeader]", e);
   }
 
   return (

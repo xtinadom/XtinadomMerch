@@ -1,8 +1,5 @@
-import { ShopCollectionPage } from "@/components/ShopCollectionPage";
-import { CatalogGroup } from "@/generated/prisma/enums";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default async function DommeShopPage() {
-  return <ShopCollectionPage collection={CatalogGroup.domme} />;
+export default function ShopDommeRedirectPage() {
+  redirect("/shop/all");
 }

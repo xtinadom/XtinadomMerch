@@ -7,8 +7,11 @@ import { Prisma } from "@/generated/prisma/client";
 import {
   FulfillmentType,
   FulfillmentJobStatus,
+  ListingRequestStatus,
   OrderStatus,
 } from "@/generated/prisma/enums";
+import { revalidatePath } from "next/cache";
+import { activateProductWhenShopListingGoesLive } from "@/lib/shop-listing-publish";
 
 export const runtime = "nodejs";
 
@@ -26,10 +29,41 @@ async function fulfillListingFeeCheckout(session: Stripe.Checkout.Session): Prom
   if (session.metadata?.kind !== "listing_fee") return false;
   const listingId = session.metadata.shopListingId;
   if (!listingId || typeof listingId !== "string") return true;
-  await prisma.shopListing.updateMany({
+  const row = await prisma.shopListing.findUnique({
     where: { id: listingId },
-    data: { listingFeePaidAt: new Date() },
+    select: {
+      requestStatus: true,
+      active: true,
+      shopId: true,
+      productId: true,
+      adminRemovedFromShopAt: true,
+      shop: { select: { slug: true } },
+    },
   });
+  if (!row) return true;
+  const publishAfterFee =
+    row.requestStatus === ListingRequestStatus.approved &&
+    !row.active &&
+    row.adminRemovedFromShopAt == null;
+  await prisma.shopListing.update({
+    where: { id: listingId },
+    data: {
+      listingFeePaidAt: new Date(),
+      ...(publishAfterFee ? { active: true } : {}),
+    },
+  });
+  if (publishAfterFee) {
+    await activateProductWhenShopListingGoesLive(row.productId, row.shop.slug);
+    await prisma.shopOwnerNotice.create({
+      data: {
+        shopId: row.shopId,
+        kind: "listing_fee_paid",
+        body:
+          "Your listing publication fee was received. That listing is now live in your shop.",
+      },
+    });
+    revalidatePath("/dashboard");
+  }
   return true;
 }
 
@@ -84,7 +118,7 @@ async function fulfillOrder(session: Stripe.Checkout.Session) {
       },
     });
 
-    if (updated.count === 0) return;
+    if ((updated?.count ?? 0) === 0) return;
 
     const merchandiseCents = order.lines.reduce(
       (s, l) => s + l.unitPriceCents * l.quantity,
@@ -109,7 +143,7 @@ async function fulfillOrder(session: Stripe.Checkout.Session) {
           },
           data: { stockQuantity: { decrement: line.quantity } },
         });
-        if (r.count === 0) {
+        if ((r?.count ?? 0) === 0) {
           console.error(
             `[webhook] Stock race for product ${line.productId} order ${orderId}`,
           );

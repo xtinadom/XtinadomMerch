@@ -287,6 +287,23 @@ export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedDateTimeNullableFilter<$PrismaModel>
 }
 
+export type EnumSupportMessageAuthorFilter<$PrismaModel = never> = {
+  equals?: $Enums.SupportMessageAuthor | Prisma.EnumSupportMessageAuthorFieldRefInput<$PrismaModel>
+  in?: $Enums.SupportMessageAuthor[] | Prisma.ListEnumSupportMessageAuthorFieldRefInput<$PrismaModel>
+  notIn?: $Enums.SupportMessageAuthor[] | Prisma.ListEnumSupportMessageAuthorFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumSupportMessageAuthorFilter<$PrismaModel> | $Enums.SupportMessageAuthor
+}
+
+export type EnumSupportMessageAuthorWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.SupportMessageAuthor | Prisma.EnumSupportMessageAuthorFieldRefInput<$PrismaModel>
+  in?: $Enums.SupportMessageAuthor[] | Prisma.ListEnumSupportMessageAuthorFieldRefInput<$PrismaModel>
+  notIn?: $Enums.SupportMessageAuthor[] | Prisma.ListEnumSupportMessageAuthorFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumSupportMessageAuthorWithAggregatesFilter<$PrismaModel> | $Enums.SupportMessageAuthor
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumSupportMessageAuthorFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumSupportMessageAuthorFilter<$PrismaModel>
+}
+
 export type EnumShopUserRoleFilter<$PrismaModel = never> = {
   equals?: $Enums.ShopUserRole | Prisma.EnumShopUserRoleFieldRefInput<$PrismaModel>
   in?: $Enums.ShopUserRole[] | Prisma.ListEnumShopUserRoleFieldRefInput<$PrismaModel>
@@ -663,6 +680,23 @@ export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedDateTimeNullableFilter<$PrismaModel>
   _max?: Prisma.NestedDateTimeNullableFilter<$PrismaModel>
+}
+
+export type NestedEnumSupportMessageAuthorFilter<$PrismaModel = never> = {
+  equals?: $Enums.SupportMessageAuthor | Prisma.EnumSupportMessageAuthorFieldRefInput<$PrismaModel>
+  in?: $Enums.SupportMessageAuthor[] | Prisma.ListEnumSupportMessageAuthorFieldRefInput<$PrismaModel>
+  notIn?: $Enums.SupportMessageAuthor[] | Prisma.ListEnumSupportMessageAuthorFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumSupportMessageAuthorFilter<$PrismaModel> | $Enums.SupportMessageAuthor
+}
+
+export type NestedEnumSupportMessageAuthorWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.SupportMessageAuthor | Prisma.EnumSupportMessageAuthorFieldRefInput<$PrismaModel>
+  in?: $Enums.SupportMessageAuthor[] | Prisma.ListEnumSupportMessageAuthorFieldRefInput<$PrismaModel>
+  notIn?: $Enums.SupportMessageAuthor[] | Prisma.ListEnumSupportMessageAuthorFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumSupportMessageAuthorWithAggregatesFilter<$PrismaModel> | $Enums.SupportMessageAuthor
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumSupportMessageAuthorFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumSupportMessageAuthorFilter<$PrismaModel>
 }
 
 export type NestedEnumShopUserRoleFilter<$PrismaModel = never> = {

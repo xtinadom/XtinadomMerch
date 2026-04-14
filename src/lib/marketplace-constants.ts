@@ -1,8 +1,24 @@
 /** Canonical slug for the legacy / single-catalog shop (migration seed). */
 export const PLATFORM_SHOP_SLUG = "platform" as const;
 
+/**
+ * Founder’s creator shop — unlimited free publication slots (same fee logic as infinitely many free ordinals).
+ */
+export const FOUNDER_UNLIMITED_FREE_LISTINGS_SHOP_SLUG = "goddess-xtina" as const;
+
+export function isFounderUnlimitedFreeListingsShop(shopSlug: string): boolean {
+  return shopSlug === FOUNDER_UNLIMITED_FREE_LISTINGS_SHOP_SLUG;
+}
+
 /** First N listings per shop have no publication fee (ordered by creation time). */
 export const LISTING_FEE_FREE_SLOT_COUNT = 3;
+
+/**
+ * Shop listing ids that were published at no fee outside the normal first-N free slots
+ * (comps, one-off promos). Admin Shop watch shows these with ":)" instead of "--".
+ * Founder unlimited-free shop does not need ids listed here.
+ */
+export const SPECIAL_PROMOTION_FREE_LISTING_IDS = new Set<string>([]);
 
 /**
  * Listing publication fee (USD cents) for each listing after the free slots.
@@ -11,7 +27,10 @@ export const LISTING_FEE_FREE_SLOT_COUNT = 3;
 export const LISTING_FEE_CENTS = 25;
 
 /** Fee in cents for the Nth listing in a shop (1 = oldest), after free slots. */
-export function listingFeeCentsForOrdinal(ordinal1Based: number): number {
+export function listingFeeCentsForOrdinal(ordinal1Based: number, shopSlug?: string): number {
+  if (shopSlug && isFounderUnlimitedFreeListingsShop(shopSlug)) {
+    return 0;
+  }
   if (ordinal1Based <= 0) return LISTING_FEE_CENTS;
   return ordinal1Based <= LISTING_FEE_FREE_SLOT_COUNT ? 0 : LISTING_FEE_CENTS;
 }
@@ -45,28 +64,7 @@ export function shopAllProductsHref(shopSlug: string): string {
   return `/s/${shopSlug}/all`;
 }
 
-export function shopSubHref(shopSlug: string): string {
-  if (shopSlug === PLATFORM_SHOP_SLUG) return "/shop/sub";
-  return `/s/${shopSlug}/sub`;
-}
-
-export function shopDommeHref(shopSlug: string): string {
-  if (shopSlug === PLATFORM_SHOP_SLUG) return "/shop/domme";
-  return `/s/${shopSlug}/domme`;
-}
-
 export function shopUniversalTagHref(shopSlug: string, tagSlug: string): string {
   if (shopSlug === PLATFORM_SHOP_SLUG) return `/shop/tag/${tagSlug}`;
   return `/s/${shopSlug}/tag/${tagSlug}`;
-}
-
-export function shopCollectionTagHref(
-  shopSlug: string,
-  collection: "sub" | "domme",
-  tagSlug: string,
-): string {
-  if (shopSlug === PLATFORM_SHOP_SLUG) {
-    return `/shop/${collection}/tag/${tagSlug}`;
-  }
-  return `/s/${shopSlug}/${collection}/tag/${tagSlug}`;
 }

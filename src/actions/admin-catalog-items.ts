@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/session";
+import { getAdminSessionReadonly } from "@/lib/session";
 import { normalizeNewVariants, validateItemLevelWhenNoVariants } from "@/lib/admin-catalog-item";
 
 function variantsJsonToStored(rawJson: string):
@@ -62,7 +62,7 @@ function itemLevelFromFormWhenNoVariants(formData: FormData):
 }
 
 async function requireAdmin() {
-  const session = await getAdminSession();
+  const session = await getAdminSessionReadonly();
   if (!session.isAdmin) redirect("/admin/login");
 }
 
@@ -129,7 +129,7 @@ export async function adminUpdateCatalogItem(formData: FormData) {
       itemMinPriceCents,
     },
   });
-  if (n.count === 0) return;
+  if ((n?.count ?? 0) === 0) return;
   revalidatePath("/admin");
 }
 

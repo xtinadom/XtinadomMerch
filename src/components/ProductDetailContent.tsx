@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FulfillmentType, Audience } from "@/generated/prisma/enums";
+import { FulfillmentType } from "@/generated/prisma/enums";
 import { ProductAddToCartForm } from "@/components/ProductAddToCartForm";
 import { getShippingFlatCents } from "@/lib/shipping";
 import { productImageUrls } from "@/lib/product-media";
@@ -7,19 +7,9 @@ import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { PrintifyVariantAddToCart } from "@/components/PrintifyVariantAddToCart";
 import { ProductImageGallery } from "@/components/ProductImageGallery";
 import { StoreDocumentPanel } from "@/components/StoreDocumentPanel";
-import {
-  SHOP_ALL_ROUTE,
-  SHOP_DOMME_ROUTE,
-  SHOP_SUB_ROUTE,
-} from "@/lib/constants";
+import { SHOP_ALL_ROUTE } from "@/lib/constants";
 import type { StorefrontProduct } from "@/lib/product-storefront";
-import {
-  PLATFORM_SHOP_SLUG,
-  shopAllProductsHref,
-  shopDommeHref,
-  shopSubHref,
-  shopUniversalTagHref,
-} from "@/lib/marketplace-constants";
+import { PLATFORM_SHOP_SLUG, shopAllProductsHref, shopUniversalTagHref } from "@/lib/marketplace-constants";
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -37,25 +27,6 @@ function stockLabel(
   if (fulfillment !== FulfillmentType.manual || !track) return "Available";
   if (qty <= 0) return "Sold out";
   return "In stock";
-}
-
-function shopHomeForAudience(audience: Audience): string {
-  if (audience === Audience.both) return SHOP_ALL_ROUTE;
-  if (audience === Audience.domme) return SHOP_DOMME_ROUTE;
-  return SHOP_SUB_ROUTE;
-}
-
-function shopHomeForAudienceTenant(audience: Audience, shopSlug: string): string {
-  if (shopSlug === PLATFORM_SHOP_SLUG) return shopHomeForAudience(audience);
-  if (audience === Audience.both) return shopAllProductsHref(shopSlug);
-  if (audience === Audience.domme) return shopDommeHref(shopSlug);
-  return shopSubHref(shopSlug);
-}
-
-function backLabelForAudience(audience: Audience): string {
-  if (audience === Audience.both) return "All products";
-  if (audience === Audience.domme) return "Domme collection";
-  return "Sub collection";
 }
 
 export function ProductDetailContent({
@@ -83,28 +54,17 @@ export function ProductDetailContent({
     product.fulfillmentType === FulfillmentType.printify &&
     printifyVariants.length > 1;
 
-  const shopHref = shopHomeForAudienceTenant(product.audience, shopSlug);
   const primary = product.primaryTag;
   const allProductsHref =
     shopSlug === PLATFORM_SHOP_SLUG ? SHOP_ALL_ROUTE : shopAllProductsHref(shopSlug);
   const tagHref =
-    primary != null ? shopUniversalTagHref(shopSlug, primary.slug) : shopHref;
+    primary != null ? shopUniversalTagHref(shopSlug, primary.slug) : allProductsHref;
 
   const breadcrumb = (
     <p className="store-kicker mb-8 text-zinc-500">
       <Link href={allProductsHref} className="hover:text-blue-400/90">
         All products
       </Link>
-      {product.audience !== Audience.both ? (
-        <>
-          <span className="mx-2 text-zinc-700">·</span>
-          <Link href={shopHref} className="hover:text-blue-400/90">
-            {product.audience === Audience.domme
-              ? "Domme collection"
-              : "Sub collection"}
-          </Link>
-        </>
-      ) : null}
       {primary ? (
         <>
           <span className="mx-2 text-zinc-700">·</span>
@@ -172,8 +132,8 @@ export function ProductDetailContent({
   if (variant === "page") {
     return (
       <StoreDocumentPanel
-        backHref={shopHref}
-        backLabel={backLabelForAudience(product.audience)}
+        backHref={allProductsHref}
+        backLabel="All products"
         title={product.name}
       >
         <div className="-mt-2">{breadcrumb}</div>

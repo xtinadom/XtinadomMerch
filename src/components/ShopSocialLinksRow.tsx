@@ -9,8 +9,6 @@ const LABELS: Record<ShopSocialKey, string> = {
   x: "X",
   bluesky: "Bluesky",
   twitch: "Twitch",
-  loyalfans: "Loyalfans",
-  onlyfans: "OnlyFans",
   instagram: "Instagram",
 };
 
@@ -19,8 +17,6 @@ const GLYPHS: Record<ShopSocialKey, string> = {
   x: "𝕏",
   bluesky: "bs",
   twitch: "Tw",
-  loyalfans: "LF",
-  onlyfans: "OF",
   instagram: "IG",
 };
 

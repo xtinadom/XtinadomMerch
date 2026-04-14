@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/session";
+import { getAdminSessionReadonly } from "@/lib/session";
 import {
   createManualUsedProduct,
   deleteManualUsedProduct,
@@ -16,14 +16,12 @@ import {
 } from "@/actions/admin-tags";
 import type { Prisma } from "@/generated/prisma/client";
 import {
-  Audience,
   FulfillmentType,
   ListingRequestStatus,
   OrderStatus,
 } from "@/generated/prisma/enums";
 import { productImageUrls } from "@/lib/product-media";
 import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
-import { CollectionAssignmentFields } from "@/components/admin/CollectionAssignmentFields";
 import { ProductDesignNameFields } from "@/components/admin/ProductDesignNameFields";
 import { ProductTagFields } from "@/components/admin/ProductTagFields";
 import { productHasTag, productTagIds } from "@/lib/product-tags";
@@ -35,11 +33,26 @@ import {
   collectKnownDesignNamesFromProducts,
   designNamesFromJson,
 } from "@/lib/product-design-names";
-import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
 import { AdminPlatformSalesTab } from "@/components/admin/AdminPlatformSalesTab";
-import { AdminShopsMarketplaceTab } from "@/components/admin/AdminShopsMarketplaceTab";
 import { AdminListingRequestsTab } from "@/components/admin/AdminListingRequestsTab";
+import { AdminRemovedListingItemsTab } from "@/components/admin/AdminRemovedListingItemsTab";
+import {
+  AdminShopWatchTab,
+  type ShopWatchDetail,
+  type ShopWatchRow,
+} from "@/components/admin/AdminShopWatchTab";
 import { AdminListTab } from "@/components/admin/AdminListTab";
+import {
+  AdminSupportMessagesTab,
+  type AdminSupportThreadDetail,
+  type AdminSupportThreadListRow,
+} from "@/components/admin/AdminSupportMessagesTab";
+import {
+  isFounderUnlimitedFreeListingsShop,
+  listingFeeCentsForOrdinal,
+  PLATFORM_SHOP_SLUG,
+  SPECIAL_PROMOTION_FREE_LISTING_IDS,
+} from "@/lib/marketplace-constants";
 
 export const dynamic = "force-dynamic";
 
@@ -57,21 +70,25 @@ function priceInputValue(cents: number): string {
 type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function AdminDashboardPage({ searchParams }: PageProps) {
-  const session = await getAdminSession();
+  const session = await getAdminSessionReadonly();
   if (!session.isAdmin) {
     redirect("/admin/login");
   }
 
   const sp = await searchParams;
   const tabParam = typeof sp.tab === "string" ? sp.tab : undefined;
+  const supportShopParam =
+    typeof sp.supportShop === "string" && sp.supportShop.trim() ? sp.supportShop.trim() : undefined;
   const inventoryTabLiterals = [
     "manual",
     "printify",
     "admin-list",
     "orders",
     "sales",
-    "shops",
     "requests",
+    "removed",
+    "shop-watch",
+    "support",
     "printify-api",
     "tags",
   ] as const;
@@ -210,8 +227,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     orders,
     adminTags,
     platformSalesLines,
-    marketplaceShops,
     listingRequestRows,
+    removedListingRows,
   ] = await Promise.all([
     prisma.product.findMany({
       orderBy: [{ name: "asc" }],
@@ -240,29 +257,309 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         shop: { select: { displayName: true, slug: true } },
       },
     }),
-    prisma.shop.findMany({
-      where: { slug: { not: PLATFORM_SHOP_SLUG } },
-      orderBy: { displayName: "asc" },
+    prisma.shopListing.findMany({
+      where: {
+        removedFromListingRequestsAt: null,
+        requestStatus: {
+          in: [
+            ListingRequestStatus.submitted,
+            ListingRequestStatus.printify_item_created,
+            ListingRequestStatus.approved,
+          ],
+        },
+      },
+      orderBy: { updatedAt: "desc" },
       include: {
-        listings: {
-          orderBy: { updatedAt: "desc" },
+        shop: true,
+        product: {
           select: {
             id: true,
-            active: true,
-            product: { select: { name: true } },
+            name: true,
+            slug: true,
+            fulfillmentType: true,
           },
         },
       },
     }),
     prisma.shopListing.findMany({
-      where: { requestStatus: ListingRequestStatus.submitted },
-      orderBy: { updatedAt: "desc" },
+      where: { removedFromListingRequestsAt: { not: null } },
+      orderBy: { removedFromListingRequestsAt: "desc" },
       include: {
         shop: true,
-        product: { select: { id: true, name: true, slug: true } },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            fulfillmentType: true,
+          },
+        },
       },
     }),
   ]);
+
+  const listingRequestShopIds = [...new Set(listingRequestRows.map((r) => r.shopId))];
+  const ordinalListingRows =
+    listingRequestShopIds.length > 0
+      ? await prisma.shopListing.findMany({
+          where: { shopId: { in: listingRequestShopIds } },
+          orderBy: [{ shopId: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+          select: { id: true, shopId: true },
+        })
+      : [];
+  const listingOrdinalById = new Map<string, number>();
+  {
+    let curShop: string | null = null;
+    let idx = 0;
+    for (const row of ordinalListingRows) {
+      if (row.shopId !== curShop) {
+        curShop = row.shopId;
+        idx = 0;
+      }
+      idx++;
+      listingOrdinalById.set(row.id, idx);
+    }
+  }
+
+  /** Drop approved creator listings that are paid or in a free slot (they belong in Shop watch / dashboard only). */
+  const listingRequestTabRows = listingRequestRows
+    .map((r) => ({
+      id: r.id,
+      active: r.active,
+      adminRemovedFromShopAt: r.adminRemovedFromShopAt?.toISOString() ?? null,
+      updatedAt: r.updatedAt.toISOString(),
+      requestStatus: r.requestStatus,
+      requestItemName: r.requestItemName,
+      requestImages: r.requestImages,
+      listingPrintifyProductId: r.listingPrintifyProductId,
+      listingPrintifyVariantId: r.listingPrintifyVariantId,
+      listingFeePaidAt: r.listingFeePaidAt?.toISOString() ?? null,
+      listingOrdinal: listingOrdinalById.get(r.id) ?? 1,
+      shop: { displayName: r.shop.displayName, slug: r.shop.slug },
+      product: r.product,
+    }))
+    .filter((r) => {
+      if (r.requestStatus !== ListingRequestStatus.approved) return true;
+      if (r.shop.slug === PLATFORM_SHOP_SLUG) return false;
+      const fee = listingFeeCentsForOrdinal(r.listingOrdinal, r.shop.slug);
+      if (r.listingFeePaidAt != null || fee === 0) return false;
+      return true;
+    });
+
+  const creatorShops = await prisma.shop.findMany({
+    where: { slug: { not: PLATFORM_SHOP_SLUG }, active: true },
+    select: { id: true, displayName: true, slug: true },
+    orderBy: { displayName: "asc" },
+  });
+  const creatorShopIds = creatorShops.map((s) => s.id);
+
+  let shopWatchRows: ShopWatchRow[] = [];
+  if (creatorShopIds.length > 0) {
+    const [paidOrderRows, allCreatorListings] = await Promise.all([
+      prisma.order.findMany({
+        where: {
+          shopId: { in: creatorShopIds },
+          status: OrderStatus.paid,
+        },
+        select: { shopId: true },
+      }),
+      prisma.shopListing.findMany({
+        where: { shopId: { in: creatorShopIds } },
+        select: {
+          id: true,
+          shopId: true,
+          createdAt: true,
+          listingFeePaidAt: true,
+          active: true,
+          requestStatus: true,
+          adminRemovedFromShopAt: true,
+          creatorRemovedFromShopAt: true,
+          removedFromListingRequestsAt: true,
+          adminListingRemovalNotes: true,
+          product: { select: { name: true, slug: true, active: true } },
+        },
+      }),
+    ]);
+
+    /** Same filters as the former `groupBy` on listings (avoids Prisma 7 aggregate edge cases). */
+    const activeByShop = new Map<string, number>();
+    const frozenByShop = new Map<string, number>();
+    const removedByShop = new Map<string, number>();
+    const salesByShop = new Map<string, number>();
+    for (const id of creatorShopIds) {
+      activeByShop.set(id, 0);
+      frozenByShop.set(id, 0);
+      removedByShop.set(id, 0);
+      salesByShop.set(id, 0);
+    }
+    for (const l of allCreatorListings) {
+      if (l.adminRemovedFromShopAt != null) {
+        frozenByShop.set(l.shopId, (frozenByShop.get(l.shopId) ?? 0) + 1);
+      }
+      if (l.creatorRemovedFromShopAt != null) {
+        removedByShop.set(l.shopId, (removedByShop.get(l.shopId) ?? 0) + 1);
+      }
+      if (
+        l.active &&
+        l.creatorRemovedFromShopAt == null &&
+        l.product.active
+      ) {
+        activeByShop.set(l.shopId, (activeByShop.get(l.shopId) ?? 0) + 1);
+      }
+    }
+    for (const o of paidOrderRows) {
+      const sid = o.shopId;
+      if (sid != null) {
+        salesByShop.set(sid, (salesByShop.get(sid) ?? 0) + 1);
+      }
+    }
+
+    const listingsByShop = new Map<string, typeof allCreatorListings>();
+    for (const l of allCreatorListings) {
+      const arr = listingsByShop.get(l.shopId) ?? [];
+      arr.push(l);
+      listingsByShop.set(l.shopId, arr);
+    }
+
+    const sortDetails = (a: ShopWatchDetail, b: ShopWatchDetail) =>
+      a.productName.localeCompare(b.productName, undefined, { sensitivity: "base" });
+
+    const listingFeeKindForShopWatch = (
+      shopSlug: string,
+      ordinal1Based: number,
+      listingId: string,
+      listingFeePaidAt: Date | null,
+    ): ShopWatchDetail["listingFeeKind"] => {
+      if (SPECIAL_PROMOTION_FREE_LISTING_IDS.has(listingId)) {
+        return "free_promo";
+      }
+      const cents = listingFeeCentsForOrdinal(ordinal1Based, shopSlug);
+      if (cents === 0) {
+        return isFounderUnlimitedFreeListingsShop(shopSlug) ? "free_promo" : "free_slot";
+      }
+      return listingFeePaidAt != null ? "paid" : "unpaid";
+    };
+
+    shopWatchRows = creatorShops.map((shop) => {
+      const listings = listingsByShop.get(shop.id) ?? [];
+      const ordinalByListingId = new Map<string, number>();
+      [...listings]
+        .sort((a, b) => {
+          const t = a.createdAt.getTime() - b.createdAt.getTime();
+          if (t !== 0) return t;
+          return a.id.localeCompare(b.id);
+        })
+        .forEach((row, i) => ordinalByListingId.set(row.id, i + 1));
+
+      const detailsActive: ShopWatchDetail[] = [];
+      const detailsFrozen: ShopWatchDetail[] = [];
+      const detailsRemoved: ShopWatchDetail[] = [];
+      const detailsOtherPipeline: ShopWatchDetail[] = [];
+      const detailsOtherRequested: ShopWatchDetail[] = [];
+      const detailsOtherApproved: ShopWatchDetail[] = [];
+      const detailsOtherRejected: ShopWatchDetail[] = [];
+
+      for (const l of listings) {
+        const ordinal = ordinalByListingId.get(l.id) ?? 1;
+        const listingFeeKind = listingFeeKindForShopWatch(shop.slug, ordinal, l.id, l.listingFeePaidAt);
+        const base: Omit<ShopWatchDetail, "rowKind"> = {
+          listingId: l.id,
+          productName: l.product.name,
+          productSlug: l.product.slug,
+          listingFeeKind,
+          queueRemoved: l.removedFromListingRequestsAt != null,
+          notes: l.adminListingRemovalNotes,
+        };
+        if (l.creatorRemovedFromShopAt != null) {
+          detailsRemoved.push({ ...base, rowKind: "removed" });
+        } else if (l.adminRemovedFromShopAt != null) {
+          detailsFrozen.push({ ...base, rowKind: "frozen" });
+        } else if (l.active && l.creatorRemovedFromShopAt == null && l.product.active) {
+          detailsActive.push({ ...base, rowKind: "active" });
+        } else {
+          const row: ShopWatchDetail = {
+            ...base,
+            rowKind: "other",
+            pipelineStatus: l.requestStatus,
+            listingActive: l.active,
+            productActive: l.product.active,
+          };
+          if (l.requestStatus === ListingRequestStatus.rejected) {
+            detailsOtherRejected.push(row);
+          } else if (l.requestStatus === ListingRequestStatus.approved) {
+            detailsOtherApproved.push(row);
+          } else if (l.requestStatus === ListingRequestStatus.submitted) {
+            detailsOtherRequested.push(row);
+          } else {
+            detailsOtherPipeline.push(row);
+          }
+        }
+      }
+
+      detailsActive.sort(sortDetails);
+      detailsFrozen.sort(sortDetails);
+      detailsRemoved.sort(sortDetails);
+      detailsOtherRequested.sort(sortDetails);
+      detailsOtherPipeline.sort(sortDetails);
+      detailsOtherApproved.sort(sortDetails);
+      detailsOtherRejected.sort(sortDetails);
+
+      const paidListingsCount = listings.reduce((acc, l) => {
+        const ordinal = ordinalByListingId.get(l.id) ?? 1;
+        return listingFeeKindForShopWatch(shop.slug, ordinal, l.id, l.listingFeePaidAt) === "paid"
+          ? acc + 1
+          : acc;
+      }, 0);
+
+      return {
+        shopId: shop.id,
+        displayName: shop.displayName,
+        slug: shop.slug,
+        activeListingsCount:
+          (activeByShop.get(shop.id) ?? 0) + detailsOtherApproved.length,
+        salesCount: salesByShop.get(shop.id) ?? 0,
+        paidListingsCount,
+        frozenCount: frozenByShop.get(shop.id) ?? 0,
+        removedCount:
+          (removedByShop.get(shop.id) ?? 0) + detailsOtherRejected.length,
+        detailsActive,
+        detailsFrozen,
+        detailsRemoved,
+        detailsOtherRequested,
+        detailsOtherPipeline,
+        detailsOtherApproved,
+        detailsOtherRejected,
+      };
+    });
+    shopWatchRows.sort(
+      (a, b) =>
+        b.frozenCount + b.removedCount - (a.frozenCount + a.removedCount) ||
+        a.displayName.localeCompare(b.displayName, undefined, { sensitivity: "base" }),
+    );
+  }
+
+  const shopWatchTabBadgeCount = shopWatchRows.filter(
+    (r) => r.frozenCount + r.removedCount > 0,
+  ).length;
+
+  const [creatorAccountCount, shopsWithListingCount, shopsWithPaidListingCount] =
+    await Promise.all([
+      prisma.shopUser.count({
+        where: { shop: { slug: { not: PLATFORM_SHOP_SLUG } } },
+      }),
+      prisma.shop.count({
+        where: {
+          slug: { not: PLATFORM_SHOP_SLUG },
+          listings: { some: {} },
+        },
+      }),
+      prisma.shop.count({
+        where: {
+          slug: { not: PLATFORM_SHOP_SLUG },
+          listings: { some: { listingFeePaidAt: { not: null } } },
+        },
+      }),
+    ]);
 
   const manualProducts = products.filter((p) => p.fulfillmentType === FulfillmentType.manual);
   const printifyProducts = products.filter(
@@ -272,6 +569,73 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const knownDesignNames = collectKnownDesignNamesFromProducts(products);
 
   const defaultCreateTagIds = adminTags[0] ? [adminTags[0].id] : [];
+
+  const supportThreadCount = await prisma.supportThread.count({
+    where: { shop: { slug: { not: PLATFORM_SHOP_SLUG } } },
+  });
+
+  let adminSupportThreads: AdminSupportThreadListRow[] = [];
+  let adminSupportDetail: AdminSupportThreadDetail | null = null;
+
+  if (inventoryTab === "support") {
+    const threadsRaw = await prisma.supportThread.findMany({
+      where: { shop: { slug: { not: PLATFORM_SHOP_SLUG } } },
+      orderBy: { updatedAt: "desc" },
+      include: {
+        shop: {
+          select: {
+            displayName: true,
+            slug: true,
+            users: { take: 1, orderBy: { createdAt: "asc" }, select: { email: true } },
+          },
+        },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { body: true },
+        },
+      },
+    });
+    adminSupportThreads = threadsRaw.map((t) => ({
+      shopId: t.shopId,
+      shopDisplayName: t.shop.displayName,
+      shopSlug: t.shop.slug,
+      ownerEmail: t.shop.users[0]?.email ?? "—",
+      updatedAt: t.updatedAt.toISOString(),
+      lastPreview: t.messages[0]?.body?.slice(0, 160) ?? "",
+    }));
+
+    if (supportShopParam) {
+      const shopRow = await prisma.shop.findFirst({
+        where: { id: supportShopParam, slug: { not: PLATFORM_SHOP_SLUG } },
+        select: {
+          id: true,
+          displayName: true,
+          slug: true,
+          users: { take: 1, orderBy: { createdAt: "asc" }, select: { email: true } },
+        },
+      });
+      if (shopRow) {
+        const existingThread = await prisma.supportThread.findUnique({
+          where: { shopId: shopRow.id },
+          include: { messages: { orderBy: { createdAt: "asc" } } },
+        });
+        adminSupportDetail = {
+          shopId: shopRow.id,
+          shopDisplayName: shopRow.displayName,
+          shopSlug: shopRow.slug,
+          ownerEmail: shopRow.users[0]?.email ?? "—",
+          messages:
+            existingThread?.messages.map((m) => ({
+              id: m.id,
+              authorRole: m.authorRole as "creator" | "admin",
+              body: m.body,
+              createdAt: m.createdAt.toISOString(),
+            })) ?? [],
+        };
+      }
+    }
+  }
 
   return (
     <div className="space-y-12">
@@ -420,19 +784,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             <span className="ml-1.5 tabular-nums text-zinc-500">({platformSalesLines.length})</span>
           </Link>
           <Link
-            href="/admin?tab=shops"
-            role="tab"
-            aria-selected={inventoryTab === "shops"}
-            className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
-              inventoryTab === "shops"
-                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
-                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
-            }`}
-          >
-            Shops
-            <span className="ml-1.5 tabular-nums text-zinc-500">({marketplaceShops.length})</span>
-          </Link>
-          <Link
             href="/admin?tab=requests"
             role="tab"
             aria-selected={inventoryTab === "requests"}
@@ -443,7 +794,46 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             }`}
           >
             Requests
-            <span className="ml-1.5 tabular-nums text-zinc-500">({listingRequestRows.length})</span>
+            <span className="ml-1.5 tabular-nums text-zinc-500">({listingRequestTabRows.length})</span>
+          </Link>
+          <Link
+            href="/admin?tab=removed"
+            role="tab"
+            aria-selected={inventoryTab === "removed"}
+            className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "removed"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Removed items
+            <span className="ml-1.5 tabular-nums text-zinc-500">({removedListingRows.length})</span>
+          </Link>
+          <Link
+            href="/admin?tab=shop-watch"
+            role="tab"
+            aria-selected={inventoryTab === "shop-watch"}
+            className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "shop-watch"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Shop watch
+            <span className="ml-1.5 tabular-nums text-zinc-500">({shopWatchTabBadgeCount})</span>
+          </Link>
+          <Link
+            href="/admin?tab=support"
+            role="tab"
+            aria-selected={inventoryTab === "support"}
+            className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "support"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Support
+            <span className="ml-1.5 tabular-nums text-zinc-500">({supportThreadCount})</span>
           </Link>
           <Link
             href="/admin?tab=printify-api"
@@ -485,13 +875,11 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                   Could not create item
                   {createReason === "category"
                     ? " — pick at least one tag."
-                    : createReason === "collection"
-                      ? " — choose at least one shop (Sub and/or Domme)."
-                      : createReason === "name"
-                        ? " — title is required."
-                        : createReason === "price"
-                          ? " — invalid price."
-                          : "."}
+                    : createReason === "name"
+                      ? " — title is required."
+                      : createReason === "price"
+                        ? " — invalid price."
+                        : "."}
                 </p>
               )}
               {deleteOk && (
@@ -579,10 +967,9 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                         defaultChecked
                         className="rounded border-zinc-600"
                       />
-                      Allow checkout tip (sub shop)
+                      Allow checkout tip
                     </label>
                   </div>
-                  <CollectionAssignmentFields />
                   {adminTags.length > 0 ? (
                     <ProductTagFields
                       key="create-manual-used"
@@ -681,7 +1068,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                         knownNames={knownDesignNames}
                         defaultNames={designNamesFromJson(p.designNames)}
                       />
-                      <CollectionAssignmentFields audience={p.audience} />
                       <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
                         <input
                           type="checkbox"
@@ -689,7 +1075,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                           defaultChecked={p.checkoutTipEligible}
                           className="rounded border-zinc-600"
                         />
-                        Allow checkout tip (sub shop)
+                        Allow checkout tip
                       </label>
                       <ListingGalleryEditor defaultUrls={productImageUrls(p)} />
                       <div className="flex flex-wrap items-end gap-4">
@@ -866,21 +1252,24 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
               salesFromValue={salesFromRaw}
               salesToValue={salesToRaw}
             />
-          ) : inventoryTab === "shops" ? (
-            <AdminShopsMarketplaceTab
-              shops={marketplaceShops}
-              products={products.map((p) => ({
-                id: p.id,
-                name: p.name,
-                minPriceCents: p.minPriceCents,
-                priceCents: p.priceCents,
-              }))}
-              allProductsForAssign={products.map((p) => ({ id: p.id, name: p.name }))}
-            />
           ) : inventoryTab === "requests" ? (
-            <AdminListingRequestsTab
-              rows={listingRequestRows}
-              productOptions={products.map((p) => ({ id: p.id, name: p.name }))}
+            <AdminListingRequestsTab rows={listingRequestTabRows} />
+          ) : inventoryTab === "removed" ? (
+            <AdminRemovedListingItemsTab rows={removedListingRows} />
+          ) : inventoryTab === "shop-watch" ? (
+            <AdminShopWatchTab
+              rows={shopWatchRows}
+              marketplaceStats={{
+                creatorAccountCount,
+                shopsWithListingCount,
+                shopsWithPaidListingCount,
+              }}
+            />
+          ) : inventoryTab === "support" ? (
+            <AdminSupportMessagesTab
+              threads={adminSupportThreads}
+              detail={adminSupportDetail}
+              selectedShopId={supportShopParam}
             />
           ) : inventoryTab === "printify-api" ? (
             <PrintifyApiTab hookBanner={printifyHookBanner} />
@@ -911,33 +1300,20 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 </p>
               ) : null}
               <p className="mt-1 text-xs text-zinc-600">
-                Tags are shared. Use{" "}
-                <strong className="font-medium text-zinc-500">Collection assignment</strong> on each product
-                to choose Sub collection, Domme collection, or both.
+                Tags are shared across the shop. Optional: set a “By Item” top pick per tag below.
               </p>
               <ul className="mt-4 divide-y divide-zinc-800 border-y border-zinc-800 text-sm">
                 {adminTags.map((t) => {
-                  const subSpotlightSelectDefault =
-                    t.subCollectionSpotlightProductId &&
+                  const effectiveSpotlightId =
+                    t.subCollectionSpotlightProductId ??
+                    t.dommeCollectionSpotlightProductId;
+                  const byItemSpotlightDefault =
+                    effectiveSpotlightId &&
                     products.some(
                       (p) =>
-                        p.id === t.subCollectionSpotlightProductId &&
-                        productHasTag(p, t.id) &&
-                        (p.audience === Audience.sub ||
-                          p.audience === Audience.both),
+                        p.id === effectiveSpotlightId && productHasTag(p, t.id),
                     )
-                      ? t.subCollectionSpotlightProductId
-                      : "__auto__";
-                  const dommeSpotlightSelectDefault =
-                    t.dommeCollectionSpotlightProductId &&
-                    products.some(
-                      (p) =>
-                        p.id === t.dommeCollectionSpotlightProductId &&
-                        productHasTag(p, t.id) &&
-                        (p.audience === Audience.domme ||
-                          p.audience === Audience.both),
-                    )
-                      ? t.dommeCollectionSpotlightProductId
+                      ? effectiveSpotlightId
                       : "__auto__";
                   return (
                   <li
@@ -997,57 +1373,24 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                         </button>
                       </div>
                       <div className="flex w-full min-w-0 max-w-full flex-col gap-1.5 sm:max-w-[min(100%,32rem)]">
-                        <span className="text-[11px] text-zinc-500">
-                          Top pick for collection
-                        </span>
-                        <div className="mt-0.5 flex flex-wrap items-end gap-2">
-                          <label className="block min-w-0 text-[11px] text-zinc-500">
-                            Sub collection
-                            <select
-                              name="subCollectionSpotlightProductId"
-                              defaultValue={subSpotlightSelectDefault}
-                              className="mt-0.5 block max-w-[11rem] rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-100 sm:max-w-[13rem]"
-                              title="Products with this tag that appear in the Sub shop (Sub or Both collection assignment)."
-                            >
-                              <option value="__auto__">Auto (first A–Z)</option>
-                              {products
-                                .filter(
-                                  (p) =>
-                                    productHasTag(p, t.id) &&
-                                    (p.audience === Audience.sub ||
-                                      p.audience === Audience.both),
-                                )
-                                .map((p) => (
-                                  <option key={p.id} value={p.id}>
-                                    {p.name}
-                                  </option>
-                                ))}
-                            </select>
-                          </label>
-                          <label className="block min-w-0 text-[11px] text-zinc-500">
-                            Domme collection
-                            <select
-                              name="dommeCollectionSpotlightProductId"
-                              defaultValue={dommeSpotlightSelectDefault}
-                              className="mt-0.5 block max-w-[11rem] rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-100 sm:max-w-[13rem]"
-                              title="Products with this tag that appear in the Domme shop (Domme or Both collection assignment)."
-                            >
-                              <option value="__auto__">Auto (first A–Z)</option>
-                              {products
-                                .filter(
-                                  (p) =>
-                                    productHasTag(p, t.id) &&
-                                    (p.audience === Audience.domme ||
-                                      p.audience === Audience.both),
-                                )
-                                .map((p) => (
-                                  <option key={p.id} value={p.id}>
-                                    {p.name}
-                                  </option>
-                                ))}
-                            </select>
-                          </label>
-                        </div>
+                        <label className="block text-[11px] text-zinc-500">
+                          By Item top pick
+                          <select
+                            name="byItemSpotlightProductId"
+                            defaultValue={byItemSpotlightDefault}
+                            className="mt-0.5 block max-w-[min(100%,20rem)] rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-100"
+                            title="Which product represents this tag in the By Item browse (must have this tag)."
+                          >
+                            <option value="__auto__">Auto (first A–Z)</option>
+                            {products
+                              .filter((p) => productHasTag(p, t.id))
+                              .map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name}
+                                </option>
+                              ))}
+                          </select>
+                        </label>
                       </div>
                     </form>
                     <div className="flex shrink-0 items-center gap-3 sm:pb-0.5">

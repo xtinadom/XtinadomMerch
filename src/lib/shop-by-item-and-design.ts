@@ -1,18 +1,11 @@
 import type { Tag } from "@/generated/prisma/client";
-import { Audience } from "@/generated/prisma/enums";
 import type { ProductCardProduct } from "@/components/ProductCard";
 import type { ShopSectionRow } from "@/lib/shop-browse-sections";
 import { designNamesFromJson } from "@/lib/product-design-names";
 import { productHasTag } from "@/lib/product-tags";
 
-export type BuildByItemCatalogMode = "sub" | "domme" | "all";
-
-function productInSubCollection(p: ProductCardProduct): boolean {
-  return p.audience === Audience.sub || p.audience === Audience.both;
-}
-
-function productInDommeCollection(p: ProductCardProduct): boolean {
-  return p.audience === Audience.domme || p.audience === Audience.both;
+function spotlightProductIdForTag(tag: Tag): string | null | undefined {
+  return tag.subCollectionSpotlightProductId ?? tag.dommeCollectionSpotlightProductId;
 }
 
 function pickOneForTag(
@@ -29,68 +22,28 @@ function pickOneForTag(
 }
 
 /**
- * One product per store tag for a single collection view, or up to two (Sub + Domme)
- * on the all-products view. Uses admin “top pick” per collection when valid.
+ * One product per store tag for the By Item browse. Uses admin “top pick” when valid.
  */
 export function buildByItemOnePerTag(
   allProducts: ProductCardProduct[],
   tags: Tag[],
-  options: { catalog: BuildByItemCatalogMode },
 ): ShopSectionRow[] {
-  const { catalog } = options;
   const rows: ShopSectionRow[] = [];
 
-  if (catalog === "sub" || catalog === "domme") {
-    for (const tag of tags) {
-      const match = allProducts.filter((p) => productHasTag(p, tag.id));
-      if (match.length === 0) continue;
-      const spotlightId =
-        catalog === "sub"
-          ? tag.subCollectionSpotlightProductId
-          : tag.dommeCollectionSpotlightProductId;
-      const one = pickOneForTag(match, spotlightId);
-      if (!one) continue;
-      rows.push({
-        tag: {
-          id: tag.id,
-          name: tag.name,
-          slug: tag.slug,
-          sortOrder: tag.sortOrder,
-        },
-        products: [one],
-      });
-    }
-  } else {
-    for (const tag of tags) {
-      const subMatch = allProducts.filter(
-        (p) => productHasTag(p, tag.id) && productInSubCollection(p),
-      );
-      const dommeMatch = allProducts.filter(
-        (p) => productHasTag(p, tag.id) && productInDommeCollection(p),
-      );
-      if (subMatch.length === 0 && dommeMatch.length === 0) continue;
-
-      const subOne = pickOneForTag(subMatch, tag.subCollectionSpotlightProductId);
-      const dommeOne = pickOneForTag(
-        dommeMatch,
-        tag.dommeCollectionSpotlightProductId,
-      );
-
-      const products: ProductCardProduct[] = [];
-      if (subOne) products.push(subOne);
-      if (dommeOne && dommeOne.id !== subOne?.id) products.push(dommeOne);
-
-      if (products.length === 0) continue;
-      rows.push({
-        tag: {
-          id: tag.id,
-          name: tag.name,
-          slug: tag.slug,
-          sortOrder: tag.sortOrder,
-        },
-        products,
-      });
-    }
+  for (const tag of tags) {
+    const match = allProducts.filter((p) => productHasTag(p, tag.id));
+    if (match.length === 0) continue;
+    const one = pickOneForTag(match, spotlightProductIdForTag(tag));
+    if (!one) continue;
+    rows.push({
+      tag: {
+        id: tag.id,
+        name: tag.name,
+        slug: tag.slug,
+        sortOrder: tag.sortOrder,
+      },
+      products: [one],
+    });
   }
 
   const untagged = allProducts.filter((p) => p.tags.length === 0);

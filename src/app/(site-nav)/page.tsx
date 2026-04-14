@@ -5,7 +5,7 @@ import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { ProductCard } from "@/components/ProductCard";
 import { SiteLegalFooter } from "@/components/SiteLegalFooter";
 import {
-  getFeaturedDommeShopsForHome,
+  getFeaturedCreatorShopsForHome,
   getHotListingProductsForHome,
 } from "@/lib/marketplace-home";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
@@ -14,11 +14,11 @@ import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  let featuredShops: Awaited<ReturnType<typeof getFeaturedDommeShopsForHome>>;
+  let featuredShops: Awaited<ReturnType<typeof getFeaturedCreatorShopsForHome>>;
   let hotProducts: Awaited<ReturnType<typeof getHotListingProductsForHome>>;
   try {
     [featuredShops, hotProducts] = await Promise.all([
-      getFeaturedDommeShopsForHome(),
+      getFeaturedCreatorShopsForHome(),
       getHotListingProductsForHome(10),
     ]);
   } catch (e) {
@@ -34,6 +34,7 @@ export default async function HomePage() {
         product: productCardProductFromListing({
           priceCents: listing.priceCents,
           product: listing.product,
+          requestItemName: listing.requestItemName,
         }),
       };
     })
@@ -43,7 +44,7 @@ export default async function HomePage() {
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 py-10 sm:py-14">
       <header className="text-center">
         <h1 className="store-dimension-page-title text-3xl text-zinc-50 sm:text-4xl">
-          Domme Shops
+          Creator Shops
         </h1>
         <p className="mx-auto mt-4 max-w-lg text-sm text-zinc-400">
           Browse independent shops or open a shop — platform catalog and fulfillment stay unified.
@@ -53,7 +54,7 @@ export default async function HomePage() {
       {featuredShopCards.length > 0 ? (
         <section className="mt-16">
           <h2 className="text-center text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-            Featured Dommes
+            Featured Creators
           </h2>
           <ul className="mt-6 flex flex-wrap justify-center gap-6">
             {featuredShopCards.map(({ shop, product }) => (
@@ -112,7 +113,7 @@ export default async function HomePage() {
           href="/shops"
           className="rounded-2xl border border-blue-900/50 bg-gradient-to-b from-blue-950/40 to-zinc-950 px-8 py-5 text-center text-sm font-medium text-blue-100 transition hover:border-blue-700/60"
         >
-          Browse Domme shops
+          Browse Creator Shops
         </Link>
       </div>
 

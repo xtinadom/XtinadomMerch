@@ -2,18 +2,19 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getShopOwnerSessionReadonly } from "@/lib/session";
-import { OrderStatus } from "@/generated/prisma/enums";
+import { ListingRequestStatus, OrderStatus } from "@/generated/prisma/enums";
 import {
   LISTING_FEE_CENTS,
   LISTING_FEE_FREE_SLOT_COUNT,
   PLATFORM_SHOP_SLUG,
+  isFounderUnlimitedFreeListingsShop,
 } from "@/lib/marketplace-constants";
 import { syncFreeListingFeeWaivers } from "@/lib/listing-fee";
 import { getStripe } from "@/lib/stripe";
 import { logoutShopOwner } from "@/actions/shop-auth";
 import { SiteLegalFooter } from "@/components/SiteLegalFooter";
-import { ShopSetupTabs } from "@/components/dashboard/ShopSetupTabs";
 import { DashboardMainTabs } from "@/components/dashboard/DashboardMainTabs";
+import { DashboardSupportChatPanel } from "@/components/dashboard/DashboardSupportChatPanel";
 import { isR2UploadConfigured } from "@/lib/r2-upload";
 import { buildShopBaselineCatalogGroups } from "@/lib/shop-baseline-catalog";
 import { parseShopSocialLinksJson } from "@/lib/shop-social-links";
@@ -38,8 +39,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const connect = typeof sp.connect === "string" ? sp.connect : undefined;
   const fee = typeof sp.fee === "string" ? sp.fee : undefined;
-  const dashTab =
-    typeof sp.dash === "string" && sp.dash === "orders" ? ("orders" as const) : ("listings" as const);
+  const dashRaw = sp.dash;
+  const dashStr =
+    typeof dashRaw === "string" ? dashRaw : Array.isArray(dashRaw) ? dashRaw[0] : undefined;
 
   const user = await prisma.shopUser.findUnique({
     where: { id: owner.shopUserId },
@@ -114,7 +116,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   });
 
   const isPlatform = shop.slug === PLATFORM_SHOP_SLUG;
-  const listingFeePolicySummary = `Your first ${LISTING_FEE_FREE_SLOT_COUNT} listings are free. Each additional listing costs ${formatMoney(LISTING_FEE_CENTS)} to publish.`;
+  const listingFeePolicySummary =
+    !isPlatform && isFounderUnlimitedFreeListingsShop(shop.slug)
+      ? "As the founder shop, all your listings publish free (no publication fee)."
+      : `Your first ${LISTING_FEE_FREE_SLOT_COUNT} listings are free. Each additional listing costs ${formatMoney(LISTING_FEE_CENTS)} to publish.`;
   const paidListingFeeLabel = formatMoney(LISTING_FEE_CENTS);
 
   const listingOrdinalById = (() => {
@@ -141,6 +146,18 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const catalogGroups = !isPlatform ? buildShopBaselineCatalogGroups(adminCatalogRows) : [];
 
   const socialParsed = parseShopSocialLinksJson(shop.socialLinks);
+
+  const allOwnerNotices = !isPlatform
+    ? await prisma.shopOwnerNotice.findMany({
+        where: { shopId: shop.id },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+        select: { id: true, body: true, kind: true, createdAt: true, readAt: true },
+      })
+    : [];
+
+  const unreadNoticeCount = allOwnerNotices.filter((n) => n.readAt == null).length;
+
   const setupSteps = !isPlatform
     ? {
         stripe: shop.connectChargesEnabled && shop.payoutsEnabled,
@@ -151,14 +168,54 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         ),
         listing: shop.listings.some(
           (l) =>
-            l.requestStatus === "submitted" ||
-            l.requestStatus === "approved" ||
+            l.requestStatus === ListingRequestStatus.submitted ||
+            l.requestStatus === ListingRequestStatus.printify_item_created ||
+            l.requestStatus === ListingRequestStatus.approved ||
             l.active,
         ),
       }
     : { stripe: true, profile: true, listing: true };
 
   const setupTabsKey = `setup-${setupSteps.stripe}-${setupSteps.profile}-${setupSteps.listing}`;
+
+  const dashTab:
+    | "setup"
+    | "requestListing"
+    | "listings"
+    | "notifications"
+    | "support"
+    | "orders" = isPlatform
+    ? dashStr === "orders"
+      ? "orders"
+      : "listings"
+    : dashStr === "listings" ||
+        dashStr === "orders" ||
+        dashStr === "setup" ||
+        dashStr === "notifications" ||
+        dashStr === "requestListing" ||
+        dashStr === "support"
+      ? dashStr
+      : "setup";
+
+  const supportThreadRow = !isPlatform
+    ? await prisma.supportThread.findUnique({
+        where: { shopId: shop.id },
+        include: { messages: { orderBy: { createdAt: "asc" } } },
+      })
+    : null;
+
+  const supportChatPanel = !isPlatform ? (
+    <DashboardSupportChatPanel
+      messages={
+        supportThreadRow?.messages.map((m) => ({
+          id: m.id,
+          authorRole: m.authorRole as "creator" | "admin",
+          body: m.body,
+          createdAt: m.createdAt.toISOString(),
+        })) ?? []
+      }
+    />
+  ) : null;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-12">
@@ -199,35 +256,40 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </p>
       ) : null}
 
-      {!isPlatform ? (
-        <ShopSetupTabs
-          key={setupTabsKey}
-          shop={{
-            displayName: shop.displayName,
-            profileImageUrl: shop.profileImageUrl,
-            welcomeMessage: shop.welcomeMessage,
-            socialLinks: shop.socialLinks,
-            stripeConnectAccountId: shop.stripeConnectAccountId,
-            connectChargesEnabled: shop.connectChargesEnabled,
-            payoutsEnabled: shop.payoutsEnabled,
-          }}
-          catalogGroups={catalogGroups}
-          steps={setupSteps}
-          listingFeePolicySummary={listingFeePolicySummary}
-          r2Configured={isR2UploadConfigured()}
-          listingPickerDiagnostics={{
-            adminCatalogItemCount: adminCatalogRows.length,
-          }}
-        />
-      ) : (
+      {isPlatform ? (
         <p className="mt-8 rounded-lg border border-zinc-800 bg-zinc-900/30 px-4 py-3 text-sm text-zinc-500">
           You are signed in as the platform catalog shop owner. Marketplace Connect and per-listing
           fees do not apply to this account.
         </p>
-      )}
+      ) : null}
 
       <DashboardMainTabs
         initialTab={dashTab}
+        shopSlug={shop.slug}
+        supportChat={supportChatPanel}
+        setup={
+          !isPlatform
+            ? {
+                setupTabsKey,
+                shop: {
+                  displayName: shop.displayName,
+                  profileImageUrl: shop.profileImageUrl,
+                  welcomeMessage: shop.welcomeMessage,
+                  socialLinks: shop.socialLinks,
+                  stripeConnectAccountId: shop.stripeConnectAccountId,
+                  connectChargesEnabled: shop.connectChargesEnabled,
+                  payoutsEnabled: shop.payoutsEnabled,
+                },
+                catalogGroups: catalogGroups,
+                steps: setupSteps,
+                listingFeePolicySummary: listingFeePolicySummary,
+                r2Configured: isR2UploadConfigured(),
+                listingPickerDiagnostics: {
+                  adminCatalogItemCount: adminCatalogRows.length,
+                },
+              }
+            : null
+        }
         listingFeePolicySummary={listingFeePolicySummary}
         paidListingFeeLabel={paidListingFeeLabel}
         isPlatform={isPlatform}
@@ -237,7 +299,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           requestStatus: listing.requestStatus,
           priceCents: listing.priceCents,
           requestImages: listing.requestImages,
+          requestItemName: listing.requestItemName,
           listingFeePaidAt: listing.listingFeePaidAt?.toISOString() ?? null,
+          adminRemovedFromShopAt: listing.adminRemovedFromShopAt?.toISOString() ?? null,
+          creatorRemovedFromShopAt: listing.creatorRemovedFromShopAt?.toISOString() ?? null,
           listingOrdinal: listingOrdinalById.get(listing.id) ?? 1,
           product: {
             name: listing.product.name,
@@ -252,6 +317,20 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           totalCents: o.totalCents,
           lines: o.lines,
         }))}
+        notifications={
+          !isPlatform
+            ? {
+                rows: allOwnerNotices.map((n) => ({
+                  id: n.id,
+                  body: n.body,
+                  kind: n.kind,
+                  createdAt: n.createdAt.toISOString(),
+                  readAt: n.readAt?.toISOString() ?? null,
+                })),
+                unreadCount: unreadNoticeCount,
+              }
+            : null
+        }
       />
 
       <p className="mt-10 text-center">

@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
 /** One Prisma round-trip per request (layout + shop pages share this). */
 export const getStoreTags = cache(async () => {
@@ -21,7 +22,7 @@ export const getStoreTagsForShop = cache(async (shopId: string) => {
         productTags: {
           some: {
             product: {
-              shopListings: { some: { shopId, active: true } },
+              shopListings: { some: { shopId, ...storefrontShopListingWhere } },
             },
           },
         },

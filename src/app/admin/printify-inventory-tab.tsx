@@ -9,7 +9,6 @@ import { pickImageForVariant } from "@/lib/printify-catalog";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { productImageUrls } from "@/lib/product-media";
 import type { AdminTagRow } from "@/components/admin/ProductTagFields";
-import { CollectionAssignmentFields } from "@/components/admin/CollectionAssignmentFields";
 import { ProductDesignNameFields } from "@/components/admin/ProductDesignNameFields";
 import { ProductTagFields } from "@/components/admin/ProductTagFields";
 import {
@@ -25,6 +24,7 @@ import {
   PrintifyCatalogResyncForm,
 } from "@/components/admin/PrintifyInventoryCatalogActionForms";
 import { PrintifyCatalogSyncButtons } from "@/components/admin/PrintifyCatalogSyncButtons";
+import { CopyablePrintifyId } from "@/components/admin/CopyablePrintifyId";
 
 export type PrintifyInventoryTabProps = {
   products: (Product & {
@@ -477,17 +477,20 @@ export async function PrintifyInventoryTab({
                           )}
                         </td>
                         <td className="p-2 align-middle">
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="min-w-0 text-zinc-300">{p.title}</span>
-                            {productIdByPrintifyId.has(p.id) ? (
-                              <Link
-                                href={`/admin?tab=printify&listing=${encodeURIComponent(productIdByPrintifyId.get(p.id)!)}`}
-                                title="Admin storefront listing details"
-                                className="shrink-0 pt-0.5 text-[10px] font-normal normal-case tracking-normal text-zinc-600 underline-offset-2 hover:text-zinc-400 hover:underline"
-                              >
-                                example
-                              </Link>
-                            ) : null}
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="min-w-0 text-zinc-300">{p.title}</span>
+                              {productIdByPrintifyId.has(p.id) ? (
+                                <Link
+                                  href={`/admin?tab=printify&listing=${encodeURIComponent(productIdByPrintifyId.get(p.id)!)}`}
+                                  title="Admin storefront listing details"
+                                  className="shrink-0 pt-0.5 text-[10px] font-normal normal-case tracking-normal text-zinc-600 underline-offset-2 hover:text-zinc-400 hover:underline"
+                                >
+                                  example
+                                </Link>
+                              ) : null}
+                            </div>
+                            <CopyablePrintifyId id={p.id} />
                           </div>
                         </td>
                         <td className="p-2 text-center align-middle">
@@ -617,7 +620,6 @@ export async function PrintifyInventoryTab({
                   knownNames={knownDesignNames}
                   defaultNames={designNamesFromJson(selectedListing.designNames)}
                 />
-                <CollectionAssignmentFields audience={selectedListing.audience} />
                 <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
                   <input
                     type="checkbox"
@@ -625,7 +627,7 @@ export async function PrintifyInventoryTab({
                     defaultChecked={selectedListing.checkoutTipEligible}
                     className="rounded border-zinc-600"
                   />
-                  Allow checkout tip (sub-eligible items only)
+                  Allow checkout tip
                 </label>
                 <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
                   <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">

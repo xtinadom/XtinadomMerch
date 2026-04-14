@@ -8,6 +8,7 @@ import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
 import { shopAllProductsHref } from "@/lib/marketplace-constants";
+import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export default async function ShopTenantUniversalTagPage({ params }: Props) {
     listings = await prisma.shopListing.findMany({
       where: {
         shopId: shop.id,
-        active: true,
+        ...storefrontShopListingWhere,
         product: {
           active: true,
           tags: { some: { tagId: activeTag.id } },

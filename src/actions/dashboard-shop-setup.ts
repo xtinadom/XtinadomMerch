@@ -28,6 +28,23 @@ import { getOrCreateBaselineStubProduct } from "@/lib/shop-baseline-stub-product
 import { syncFreeListingFeeWaivers } from "@/lib/listing-fee";
 
 const WELCOME_MAX = 280;
+const REQUEST_ITEM_NAME_MAX = 120;
+
+function parseRequestItemNameFromForm(
+  formData: FormData,
+): { ok: true; value: string } | { ok: false; error: string } {
+  const raw = String(formData.get("requestItemName") ?? "").trim();
+  if (!raw) {
+    return { ok: false, error: "Enter a name for this item." };
+  }
+  if (raw.length > REQUEST_ITEM_NAME_MAX) {
+    return {
+      ok: false,
+      error: `Item name must be ${REQUEST_ITEM_NAME_MAX} characters or fewer.`,
+    };
+  }
+  return { ok: true, value: raw };
+}
 
 export type ShopSetupActionResult = { ok: true } | { ok: false; error: string };
 
@@ -148,6 +165,12 @@ export async function submitFirstListingSetup(
     };
   }
 
+  const itemNameParsed = parseRequestItemNameFromForm(formData);
+  if (!itemNameParsed.ok) {
+    return { ok: false, error: itemNameParsed.error };
+  }
+  const requestItemName = itemNameParsed.value;
+
   const pickRaw = String(formData.get("productId") ?? "").trim();
   const dollars = String(formData.get("listingPriceDollars") ?? "").trim();
   if (!pickRaw) {
@@ -249,7 +272,10 @@ export async function submitFirstListingSetup(
             error: `${p.variantLabel} is already live on your shop.`,
           };
         }
-        if (existing.requestStatus === ListingRequestStatus.submitted) {
+        if (
+          existing.requestStatus === ListingRequestStatus.submitted ||
+          existing.requestStatus === ListingRequestStatus.printify_item_created
+        ) {
           return {
             ok: false,
             error: `${p.variantLabel} is already waiting for admin review. Pick another product or wait for a decision.`,
@@ -273,12 +299,14 @@ export async function submitFirstListingSetup(
             shopId: shop.id,
             productId: p.productId,
             priceCents: p.priceCents,
+            requestItemName,
             requestImages: [url],
             requestStatus: ListingRequestStatus.submitted,
             active: false,
           },
           update: {
             priceCents: p.priceCents,
+            requestItemName,
             requestImages: [url],
             requestStatus: ListingRequestStatus.submitted,
             active: false,
@@ -367,7 +395,10 @@ export async function submitFirstListingSetup(
     if (existing.active || existing.requestStatus === ListingRequestStatus.approved) {
       return { ok: false, error: "That item is already live on your shop." };
     }
-    if (existing.requestStatus === ListingRequestStatus.submitted) {
+    if (
+      existing.requestStatus === ListingRequestStatus.submitted ||
+      existing.requestStatus === ListingRequestStatus.printify_item_created
+    ) {
       return {
         ok: false,
         error: "That item is already waiting for admin review. Pick another product or wait for a decision.",
@@ -381,12 +412,14 @@ export async function submitFirstListingSetup(
       shopId: shop.id,
       productId,
       priceCents,
+      requestItemName,
       requestImages: [url],
       requestStatus: ListingRequestStatus.submitted,
       active: false,
     },
     update: {
       priceCents,
+      requestItemName,
       requestImages: [url],
       requestStatus: ListingRequestStatus.submitted,
       active: false,

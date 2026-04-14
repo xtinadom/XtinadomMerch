@@ -48,7 +48,7 @@ export async function completeMockPaidOrder(
         stripePaymentIntentId: mockPi,
       },
     });
-    if (updated.count === 0) return;
+    if ((updated?.count ?? 0) === 0) return;
     transitioned = true;
 
     for (const line of order.lines) {
@@ -63,7 +63,7 @@ export async function completeMockPaidOrder(
           },
           data: { stockQuantity: { decrement: line.quantity } },
         });
-        if (r.count === 0) {
+        if ((r?.count ?? 0) === 0) {
           console.error(
             `[mock checkout] Stock race for product ${line.productId} order ${orderId}`,
           );

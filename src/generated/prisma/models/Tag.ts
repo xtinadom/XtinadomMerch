@@ -1041,11 +1041,11 @@ export type $TagPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     name: string
     sortOrder: number
     /**
-     * * Optional: “By Item” pick for Sub collection; product must have this tag and Sub or Both audience.
+     * * Optional: “By Item” pick for Fans collection; product must have this tag and Sub or Both audience.
      */
     subCollectionSpotlightProductId: string | null
     /**
-     * * Optional: “By Item” pick for Domme collection; product must have this tag and Domme or Both audience.
+     * * Optional: “By Item” pick for Creator collection; product must have this tag and Domme or Both audience.
      */
     dommeCollectionSpotlightProductId: string | null
     createdAt: Date

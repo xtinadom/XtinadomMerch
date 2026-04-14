@@ -117,6 +117,92 @@ export function publicUrlToR2ObjectKey(publicUrl: string): string | null {
 }
 
 /**
+ * Resolve R2 object key for listing-request artwork (`shops/{shopId}/listing-request/...`).
+ * Uses {@link publicUrlToR2ObjectKey} when the URL matches `R2_PUBLIC_BASE_URL`; otherwise
+ * accepts any HTTPS URL whose path is under that prefix (e.g. custom public domain).
+ */
+export function listingRequestArtworkUrlToObjectKey(
+  publicUrl: string,
+  shopId: string,
+): string | null {
+  const expectedPrefix = `shops/${shopId}/listing-request/`;
+
+  const strict = publicUrlToR2ObjectKey(publicUrl);
+  if (strict?.startsWith(expectedPrefix)) return strict;
+
+  let u: URL;
+  try {
+    u = new URL(publicUrl.trim());
+  } catch {
+    return null;
+  }
+
+  let path = u.pathname;
+  const baseRaw = readR2Env("R2_PUBLIC_BASE_URL")?.trim();
+  if (baseRaw) {
+    try {
+      const b = new URL(baseRaw.includes("://") ? baseRaw : `https://${baseRaw}`);
+      if (u.hostname.toLowerCase() === b.hostname.toLowerCase()) {
+        const basePath = b.pathname.replace(/\/$/, "");
+        if (basePath && basePath !== "/" && path.startsWith(basePath)) {
+          path = path.slice(basePath.length);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  path = path.replace(/^\/+/, "");
+  if (!path.startsWith(expectedPrefix)) return null;
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
+}
+
+/** String URLs from `ShopListing.requestImages` JSON (for R2 cleanup). */
+export function shopListingRequestImageUrlStrings(requestImages: unknown): string[] {
+  if (!Array.isArray(requestImages)) return [];
+  const out: string[] = [];
+  for (const x of requestImages) {
+    if (typeof x === "string" && x.trim()) out.push(x.trim());
+  }
+  return out;
+}
+
+/**
+ * Delete listing-request artwork objects under `shops/{shopId}/listing-request/`.
+ * Only URLs that resolve to that prefix for the given shop are removed.
+ */
+export async function deleteShopListingRequestImagesFromR2(
+  shopId: string,
+  publicUrls: readonly string[],
+): Promise<void> {
+  if (!isR2UploadConfigured() || publicUrls.length === 0) return;
+  const bucket = readR2BucketName();
+  if (!bucket) return;
+  const prefix = `shops/${shopId}/listing-request/`;
+  const keys = new Set<string>();
+  for (const raw of publicUrls) {
+    const u = typeof raw === "string" ? raw.trim() : "";
+    if (!u) continue;
+    const key = listingRequestArtworkUrlToObjectKey(u, shopId);
+    if (key?.startsWith(prefix)) keys.add(key);
+  }
+  if (keys.size === 0) return;
+  const client = r2S3Client();
+  for (const Key of keys) {
+    try {
+      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key }));
+    } catch {
+      /* best-effort */
+    }
+  }
+}
+
+/**
  * Delete R2 objects for storefront image URLs that map to keys under `listing/`
  * (manual uploads and Printify-import JPEGs). External URLs are ignored.
  */

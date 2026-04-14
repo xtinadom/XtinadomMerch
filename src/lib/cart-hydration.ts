@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { CartLine } from "@/lib/session";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
+import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
 /**
  * Cart keys are `ShopListing.id`. Legacy sessions used `Product.id`; map those to platform listings.
@@ -19,7 +20,7 @@ export async function hydrateCartListingKeys(
       where: {
         productId: k,
         shop: { slug: PLATFORM_SHOP_SLUG },
-        active: true,
+        ...storefrontShopListingWhere,
       },
       select: { id: true },
     });

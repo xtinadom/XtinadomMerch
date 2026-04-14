@@ -2,20 +2,11 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect, useMemo } from "react";
-import {
-  SHOP_ALL_ROUTE,
-  SHOP_SUB_ROUTE,
-  SHOP_DOMME_ROUTE,
-  SUB_COLLECTION_NAV_LABEL,
-  DOMME_COLLECTION_NAV_LABEL,
-} from "@/lib/constants";
+import { SHOP_ALL_ROUTE } from "@/lib/constants";
 import type { Tag } from "@/generated/prisma/client";
 import {
   PLATFORM_SHOP_SLUG,
   shopAllProductsHref,
-  shopCollectionTagHref,
-  shopDommeHref,
-  shopSubHref,
   shopUniversalTagHref,
 } from "@/lib/marketplace-constants";
 
@@ -32,8 +23,6 @@ export function ShopTagMenu({
   const ref = useRef<HTMLDivElement>(null);
   const tenant = shopSlug && shopSlug !== PLATFORM_SHOP_SLUG;
   const allHref = tenant ? shopAllProductsHref(shopSlug) : SHOP_ALL_ROUTE;
-  const subBase = tenant ? shopSubHref(shopSlug) : SHOP_SUB_ROUTE;
-  const dommeBase = tenant ? shopDommeHref(shopSlug) : SHOP_DOMME_ROUTE;
 
   const sortedTags = useMemo(
     () =>
@@ -80,73 +69,17 @@ export function ShopTagMenu({
               All products
             </Link>
           </li>
-          <li role="none" className="border-b border-zinc-800 pb-1 pt-1">
-            <Link
-              href={subBase}
-              role="menuitem"
-              className="block px-4 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
-              onClick={close}
-            >
-              {SUB_COLLECTION_NAV_LABEL}
-            </Link>
-            <ul className="mt-0.5 space-y-0.5" role="group">
-              {sortedTags.map((t) => (
-                <li key={t.id} role="none">
-                  <Link
-                    role="menuitem"
-                    href={
-                      tenant
-                        ? shopCollectionTagHref(shopSlug, "sub", t.slug)
-                        : `${SHOP_SUB_ROUTE}/tag/${t.slug}`
-                    }
-                    className="block py-1.5 pl-6 pr-4 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white"
-                    onClick={close}
-                  >
-                    {t.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </li>
-          <li role="none" className="border-b border-zinc-800 pb-1 pt-1">
-            <Link
-              href={dommeBase}
-              role="menuitem"
-              className="block px-4 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
-              onClick={close}
-            >
-              {DOMME_COLLECTION_NAV_LABEL}
-            </Link>
-            <ul className="mt-0.5 space-y-0.5" role="group">
-              {sortedTags.map((t) => (
-                <li key={t.id} role="none">
-                  <Link
-                    role="menuitem"
-                    href={
-                      tenant
-                        ? shopCollectionTagHref(shopSlug, "domme", t.slug)
-                        : `${SHOP_DOMME_ROUTE}/tag/${t.slug}`
-                    }
-                    className="block py-1.5 pl-6 pr-4 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white"
-                    onClick={close}
-                  >
-                    {t.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </li>
           <li role="none" className="pt-1">
             <p className="px-4 py-1 text-[10px] font-medium uppercase tracking-wide text-zinc-600">
-              Tags (all items)
+              By tag
             </p>
             <ul className="mt-0.5 space-y-0.5" role="group">
               {sortedTags.map((t) => (
-                <li key={`all-${t.id}`} role="none">
+                <li key={t.id} role="none">
                   <Link
                     role="menuitem"
                     href={shopUniversalTagHref(shopSlug ?? PLATFORM_SHOP_SLUG, t.slug)}
-                    className="block py-1.5 pl-6 pr-4 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                    className="block py-1.5 pl-6 pr-4 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white"
                     onClick={close}
                   >
                     {t.name}

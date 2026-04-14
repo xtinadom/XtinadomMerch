@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
 import type { CartSession } from "@/lib/session";
 
 /** Units for active products only — matches cart view. */
@@ -9,7 +10,7 @@ export async function cartBadgeQuantity(
   if (ids.length === 0) return 0;
   try {
     const rows = await prisma.shopListing.findMany({
-      where: { id: { in: ids }, active: true },
+      where: { id: { in: ids }, ...storefrontShopListingWhere },
       select: { id: true },
     });
     const active = new Set(rows.map((r) => r.id));
