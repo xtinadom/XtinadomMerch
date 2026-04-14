@@ -16,6 +16,7 @@ import { SiteLegalFooter } from "@/components/SiteLegalFooter";
 import { DashboardMainTabs } from "@/components/dashboard/DashboardMainTabs";
 import { DashboardSupportChatPanel } from "@/components/dashboard/DashboardSupportChatPanel";
 import { isR2UploadConfigured } from "@/lib/r2-upload";
+import { ensureBaselineAdminCatalogIfEmpty } from "@/lib/seed-baseline-admin-catalog";
 import { buildShopBaselineCatalogGroups } from "@/lib/shop-baseline-catalog";
 import { parseShopSocialLinksJson } from "@/lib/shop-social-links";
 
@@ -129,6 +130,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     );
     return new Map(ordered.map((l, i) => [l.id, i + 1]));
   })();
+
+  if (!isPlatform) {
+    await ensureBaselineAdminCatalogIfEmpty(prisma);
+  }
 
   const adminCatalogRows = !isPlatform
     ? await prisma.adminCatalogItem.findMany({

@@ -18,11 +18,7 @@ export async function AdminListTab() {
   }));
 
   return (
-    <section
-      id="admin-baseline-list"
-      aria-label="Admin list"
-      className="scroll-mt-6 sm:scroll-mt-8"
-    >
+    <section id="admin-baseline-list" aria-label="Admin list">
       <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Admin list</h2>
       <p className="mt-1 max-w-2xl text-xs text-zinc-600">
         Baseline catalog of what shop owners may request: item name, optional variants, optional example links, and
