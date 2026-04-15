@@ -21,6 +21,7 @@ import {
   OrderStatus,
 } from "@/generated/prisma/enums";
 import { productImageUrls } from "@/lib/product-media";
+import { isR2UploadConfigured } from "@/lib/r2-upload";
 import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
 import { ProductDesignNameFields } from "@/components/admin/ProductDesignNameFields";
 import { ProductTagFields } from "@/components/admin/ProductTagFields";
@@ -41,6 +42,10 @@ import {
   type ShopWatchDetail,
   type ShopWatchRow,
 } from "@/components/admin/AdminShopWatchTab";
+import {
+  listingRejectionReasonTextForCard,
+  resolveListingRejectionNoticeBody,
+} from "@/lib/shop-listing-rejection-notice";
 import { AdminListTab } from "@/components/admin/AdminListTab";
 import {
   AdminSupportMessagesTab,
@@ -54,6 +59,8 @@ import {
   SPECIAL_PROMOTION_FREE_LISTING_IDS,
 } from "@/lib/marketplace-constants";
 import { ensureBaselineAdminCatalogIfEmpty } from "@/lib/seed-baseline-admin-catalog";
+import { fetchPrintifyCatalog, hasPrintifyApiToken } from "@/lib/printify";
+import { defaultPrintifyVariantIdForCatalogProduct } from "@/lib/printify-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -232,7 +239,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     platformSalesLines,
     listingRequestRows,
     removedListingRows,
-    adminCatalogItemCount,
+    adminCatalogRows,
   ] = await Promise.all([
     prisma.product.findMany({
       orderBy: [{ name: "asc" }],
@@ -267,6 +274,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         requestStatus: {
           in: [
             ListingRequestStatus.submitted,
+            ListingRequestStatus.images_ok,
             ListingRequestStatus.printify_item_created,
             ListingRequestStatus.approved,
           ],
@@ -281,6 +289,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             name: true,
             slug: true,
             fulfillmentType: true,
+            imageUrl: true,
+            imageGallery: true,
           },
         },
       },
@@ -296,11 +306,22 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             name: true,
             slug: true,
             fulfillmentType: true,
+            imageUrl: true,
+            imageGallery: true,
           },
         },
       },
     }),
-    prisma.adminCatalogItem.count(),
+    prisma.adminCatalogItem.findMany({
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        variants: true,
+        itemExampleListingUrl: true,
+        itemMinPriceCents: true,
+      },
+    }),
   ]);
 
   const listingRequestShopIds = [...new Set(listingRequestRows.map((r) => r.shopId))];
@@ -330,6 +351,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const listingRequestTabRows = listingRequestRows
     .map((r) => ({
       id: r.id,
+      shopId: r.shopId,
       active: r.active,
       adminRemovedFromShopAt: r.adminRemovedFromShopAt?.toISOString() ?? null,
       updatedAt: r.updatedAt.toISOString(),
@@ -338,8 +360,10 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       requestImages: r.requestImages,
       listingPrintifyProductId: r.listingPrintifyProductId,
       listingPrintifyVariantId: r.listingPrintifyVariantId,
+      listingPrintifyCatalogSyncedAt: r.listingPrintifyCatalogSyncedAt?.toISOString() ?? null,
       listingFeePaidAt: r.listingFeePaidAt?.toISOString() ?? null,
       listingOrdinal: listingOrdinalById.get(r.id) ?? 1,
+      adminListingSecondaryImageUrl: r.adminListingSecondaryImageUrl,
       shop: { displayName: r.shop.displayName, slug: r.shop.slug },
       product: r.product,
     }))
@@ -360,7 +384,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
   let shopWatchRows: ShopWatchRow[] = [];
   if (creatorShopIds.length > 0) {
-    const [paidOrderRows, allCreatorListings] = await Promise.all([
+    const [paidOrderRows, allCreatorListings, listingRejectionNotices] = await Promise.all([
       prisma.order.findMany({
         where: {
           shopId: { in: creatorShopIds },
@@ -384,7 +408,22 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           product: { select: { name: true, slug: true, active: true } },
         },
       }),
+      prisma.shopOwnerNotice.findMany({
+        where: { shopId: { in: creatorShopIds }, kind: "listing_rejected" },
+        orderBy: { createdAt: "desc" },
+        select: { shopId: true, kind: true, relatedListingId: true, body: true },
+      }),
     ]);
+
+    const listingRejectionNoticesByShop = new Map<
+      string,
+      Array<{ kind: string; relatedListingId: string | null; body: string }>
+    >();
+    for (const n of listingRejectionNotices) {
+      const arr = listingRejectionNoticesByShop.get(n.shopId) ?? [];
+      arr.push(n);
+      listingRejectionNoticesByShop.set(n.shopId, arr);
+    }
 
     /** Same filters as the former `groupBy` on listings (avoids Prisma 7 aggregate edge cases). */
     const activeByShop = new Map<string, number>();
@@ -446,6 +485,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     };
 
     shopWatchRows = creatorShops.map((shop) => {
+      const shopRejectionNotices = listingRejectionNoticesByShop.get(shop.id) ?? [];
       const listings = listingsByShop.get(shop.id) ?? [];
       const ordinalByListingId = new Map<string, number>();
       [...listings]
@@ -490,10 +530,21 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             productActive: l.product.active,
           };
           if (l.requestStatus === ListingRequestStatus.rejected) {
-            detailsOtherRejected.push(row);
+            const noticeBody = resolveListingRejectionNoticeBody(
+              shopRejectionNotices,
+              l.id,
+              l.product.name,
+            );
+            detailsOtherRejected.push({
+              ...row,
+              rejectionReasonText: listingRejectionReasonTextForCard(noticeBody),
+            });
           } else if (l.requestStatus === ListingRequestStatus.approved) {
             detailsOtherApproved.push(row);
-          } else if (l.requestStatus === ListingRequestStatus.submitted) {
+          } else if (
+            l.requestStatus === ListingRequestStatus.submitted ||
+            l.requestStatus === ListingRequestStatus.images_ok
+          ) {
             detailsOtherRequested.push(row);
           } else {
             detailsOtherPipeline.push(row);
@@ -570,6 +621,35 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const printifyProducts = products.filter(
     (p) => p.fulfillmentType === FulfillmentType.printify,
   );
+
+  /** Live Printify shop catalog (tab badge + listing-request ID picker). */
+  let printifyCatalogItemCount: number | null = null;
+  let printifyCatalogPickList: {
+    id: string;
+    title: string;
+    defaultVariantId: string | null;
+  }[] = [];
+  const printifyShopIdEnv = process.env.PRINTIFY_SHOP_ID?.trim() ?? "";
+  if (hasPrintifyApiToken() && printifyShopIdEnv) {
+    try {
+      const catalog = await fetchPrintifyCatalog(printifyShopIdEnv);
+      printifyCatalogItemCount = catalog.length;
+      printifyCatalogPickList = [...catalog]
+        .map((p) => ({
+          id: p.id.trim(),
+          title: p.title.trim() || p.id,
+          defaultVariantId: defaultPrintifyVariantIdForCatalogProduct(p),
+        }))
+        .filter((p) => p.id.length > 0)
+        .sort((a, b) =>
+          a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
+        );
+    } catch {
+      printifyCatalogItemCount = null;
+      printifyCatalogPickList = [];
+    }
+  }
+  const printifyTabBadgeCount = printifyCatalogItemCount ?? printifyProducts.length;
 
   const knownDesignNames = collectKnownDesignNamesFromProducts(products);
 
@@ -748,7 +828,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             }`}
           >
             Printify items
-            <span className="ml-1.5 tabular-nums text-zinc-500">({printifyProducts.length})</span>
+            <span className="ml-1.5 tabular-nums text-zinc-500">({printifyTabBadgeCount})</span>
           </Link>
           <Link
             href="/admin?tab=admin-list"
@@ -761,7 +841,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             }`}
           >
             Admin list
-            <span className="ml-1.5 tabular-nums text-zinc-500">({adminCatalogItemCount})</span>
+            <span className="ml-1.5 tabular-nums text-zinc-500">({adminCatalogRows.length})</span>
           </Link>
           <Link
             href="/admin?tab=orders"
@@ -1259,7 +1339,12 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
               salesToValue={salesToRaw}
             />
           ) : inventoryTab === "requests" ? (
-            <AdminListingRequestsTab rows={listingRequestTabRows} />
+            <AdminListingRequestsTab
+              rows={listingRequestTabRows}
+              adminCatalogItems={adminCatalogRows}
+              printifyCatalogPickList={printifyCatalogPickList}
+              r2Configured={isR2UploadConfigured()}
+            />
           ) : inventoryTab === "removed" ? (
             <AdminRemovedListingItemsTab rows={removedListingRows} />
           ) : inventoryTab === "shop-watch" ? (

@@ -180,9 +180,21 @@ export type PrintifyAddress = {
 
 export type PrintifyLineItem = {
   product_id: string;
-  variant_id: number;
+  /** Integer for legacy shop variants; string (e.g. hex) when Printify returns non-numeric ids. */
+  variant_id: number | string;
   quantity: number;
 };
+
+/** JSON body for Printify orders: use a number when the id is a safe integer, else keep the string. */
+export function coercePrintifyOrderVariantId(raw: string): number | string {
+  const t = raw.trim();
+  if (!t) return t;
+  if (/^\d+$/.test(t)) {
+    const n = Number(t);
+    if (Number.isSafeInteger(n)) return n;
+  }
+  return t;
+}
 
 export async function createPrintifyOrder(params: {
   externalId: string;

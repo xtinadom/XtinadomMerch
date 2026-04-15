@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
-import { createPrintifyOrder } from "@/lib/printify";
+import { coercePrintifyOrderVariantId, createPrintifyOrder } from "@/lib/printify";
 import { Prisma } from "@/generated/prisma/client";
 import {
   FulfillmentType,
@@ -189,11 +189,13 @@ async function fulfillOrder(session: Stripe.Checkout.Session) {
 
   const variantItems = printifyLines
     .map((l) => {
-      const vid = parseInt(l.printifyVariantId!, 10);
-      if (Number.isNaN(vid)) return null;
+      const vidRaw = l.printifyVariantId!.trim();
+      if (!vidRaw) return null;
+      const variant_id = coercePrintifyOrderVariantId(vidRaw);
+      if (variant_id === "") return null;
       return {
         product_id: l.printifyProductId!,
-        variant_id: vid,
+        variant_id,
         quantity: l.quantity,
       };
     })

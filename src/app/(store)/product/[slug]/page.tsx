@@ -1,14 +1,29 @@
 import { notFound } from "next/navigation";
 import { ProductDetailContent } from "@/components/ProductDetailContent";
-import { loadStorefrontProductBySlug } from "@/lib/product-storefront";
+import { resolvePublicProductDetail } from "@/lib/storefront-product-detail";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-export default async function ProductPage({ params }: Props) {
+export default async function ProductPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const product = await loadStorefrontProductBySlug(slug);
-  if (!product) notFound();
-  return <ProductDetailContent product={product} variant="page" />;
+  const sp = await searchParams;
+  const shop = typeof sp.shop === "string" ? sp.shop : undefined;
+  const detail = await resolvePublicProductDetail(slug, shop);
+  if (!detail) notFound();
+  return (
+    <ProductDetailContent
+      product={detail.product}
+      variant="page"
+      tenant={detail.tenant}
+      printifyVariantShopPriceCentsById={detail.printifyVariantShopPriceCentsById}
+      adminListingSecondaryImageUrl={detail.adminListingSecondaryImageUrl}
+      ownerSupplementImageUrl={detail.ownerSupplementImageUrl}
+      listingStorefrontCatalogImageUrls={detail.listingStorefrontCatalogImageUrls}
+    />
+  );
 }

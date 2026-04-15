@@ -38,3 +38,25 @@ export async function loadStorefrontListingByShopAndProductSlug(
 export type StorefrontShopListing = NonNullable<
   Awaited<ReturnType<typeof loadStorefrontListingByShopAndProductSlug>>
 >;
+
+/**
+ * When `/product/[slug]` has no `?shop=`, we can still attach listing-driven media (admin image,
+ * catalog selection) if exactly one storefront-visible listing exists for this product. If more
+ * than one shop lists it, callers must use `?shop=` or `/s/[shopSlug]/product/...`.
+ */
+export async function loadStorefrontListingForProductWhenExactlyOne(productSlug: string) {
+  const rows = await prisma.shopListing.findMany({
+    where: {
+      ...storefrontShopListingWhere,
+      shop: { active: true },
+      product: { slug: productSlug, active: true },
+    },
+    take: 2,
+    orderBy: { updatedAt: "desc" },
+    include: {
+      product: { include },
+      shop: { select: { id: true, slug: true, displayName: true } },
+    },
+  });
+  return rows.length === 1 ? rows[0]! : null;
+}

@@ -27,6 +27,8 @@ enum CatalogGroup {
 enum ListingRequestStatus {
   draft
   submitted
+  /** Admin accepted reference images; next step is Printify product / variant ids. */
+  images_ok
   /** Admin recorded Printify product/variant IDs for this shop listing. */
   printify_item_created
   approved
@@ -162,8 +164,12 @@ model ShopOwnerNotice {
   kind      String    @default("listing_approved")
   readAt    DateTime?
   createdAt DateTime  @default(now())
+  /** When set, ties a notice (e.g. listing_rejected) to a specific listing row for dashboard display. */
+  relatedListingId String?
+  relatedListing   ShopListing? @relation("ListingRejectionNotice", fields: [relatedListingId], references: [id], onDelete: SetNull)
 
   @@index([shopId, readAt])
+  @@index([relatedListingId])
 }
 
 model ShopUser {
@@ -206,7 +212,29 @@ model ShopListing {
   listingPrintifyProductId  String?
   /** Shop-specific Printify variant id for default checkout line when set. */
   listingPrintifyVariantId    String?
+  /**
+   * Per Printify variant id → shop price in cents when the listing exposes multiple variants
+   * (no single forced `listingPrintifyVariantId`). Null = use `priceCents` for every variant until set.
+   */
+  listingPrintifyVariantPrices Json?
+  /** Set when an admin saves Printify product/variant IDs (initial or resave); drives “last synced” in admin UI. */
+  listingPrintifyCatalogSyncedAt DateTime?
   requestImages      Json?
+  /**
+   * Optional extra storefront image (one per listing), uploaded by the shop owner after approval.
+   * Stored in R2 as WebP capped at ~100 KiB; shown after catalog/Printify images on cards and PDP.
+   */
+  ownerSupplementImageUrl String? @db.VarChar(2048)
+  /**
+   * Optional second storefront image set by platform admin (WebP on R2, max ~100 KiB).
+   * Shown after Printify/catalog images; shop owners cannot remove it from the dashboard.
+   */
+  adminListingSecondaryImageUrl String? @db.VarChar(2048)
+  /**
+   * When set (JSON string[]), only these catalog/Printify image URLs are shown for this listing
+   * on the public storefront (subset of product hero ∪ gallery). Null = show all catalog images.
+   */
+  listingStorefrontCatalogImageUrls Json?
   /** Shop-provided display name for this listing request (review / fulfillment context). */
   requestItemName    String?
   requestStatus      ListingRequestStatus   @default(draft)
@@ -220,6 +248,7 @@ model ShopListing {
   adminListingRemovalNotes       String?    @db.Text
   shopHomeFeatured   Shop?                  @relation("ShopHomeFeatured")
   orderLines         OrderLine[]
+  rejectionNotices   ShopOwnerNotice[]      @relation("ListingRejectionNotice")
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
 

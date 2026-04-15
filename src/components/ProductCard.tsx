@@ -1,12 +1,17 @@
 import Link from "next/link";
 import type { Product, Tag } from "@/generated/prisma/client";
-import { productPrimaryImage } from "@/lib/product-media";
+import { productPrimaryImageForShopListing } from "@/lib/product-media";
 import { cardLabelTag } from "@/lib/product-tags";
 import { PLATFORM_SHOP_SLUG, productHref } from "@/lib/marketplace-constants";
 
 export type ProductCardProduct = Product & {
   primaryTag: Tag | null;
   tags: { tagId: string; tag: Tag }[];
+  /** Admin-set optional second listing image (platform R2); owners cannot remove via dashboard. */
+  adminListingSecondaryImageUrl?: string | null;
+  ownerSupplementImageUrl?: string | null;
+  /** Subset of catalog/Printify image URLs for this listing; undefined = show all. */
+  listingStorefrontCatalogImageUrls?: string[];
 };
 
 function formatPrice(cents: number) {
@@ -23,7 +28,11 @@ export function ProductCard({
   product: ProductCardProduct;
   shopSlug?: string;
 }) {
-  const img = productPrimaryImage(product);
+  const img = productPrimaryImageForShopListing(product, {
+    adminListingSecondaryImageUrl: product.adminListingSecondaryImageUrl,
+    ownerSupplementImageUrl: product.ownerSupplementImageUrl,
+    listingStorefrontCatalogImageUrls: product.listingStorefrontCatalogImageUrls,
+  });
   const label = cardLabelTag({
     primaryTagId: product.primaryTagId,
     primaryTag: product.primaryTag,

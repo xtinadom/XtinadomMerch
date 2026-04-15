@@ -2,7 +2,7 @@ import Link from "next/link";
 import { FulfillmentType } from "@/generated/prisma/enums";
 import { ProductAddToCartForm } from "@/components/ProductAddToCartForm";
 import { getShippingFlatCents } from "@/lib/shipping";
-import { productImageUrls } from "@/lib/product-media";
+import { productImageUrlsForShopListing } from "@/lib/product-media";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { PrintifyVariantAddToCart } from "@/components/PrintifyVariantAddToCart";
 import { ProductImageGallery } from "@/components/ProductImageGallery";
@@ -33,11 +33,23 @@ export function ProductDetailContent({
   product,
   variant,
   tenant,
+  adminListingSecondaryImageUrl,
+  ownerSupplementImageUrl,
+  listingStorefrontCatalogImageUrls,
+  printifyVariantShopPriceCentsById,
 }: {
   product: StorefrontProduct;
   variant: "page" | "modal";
   /** When set, cart + breadcrumbs target this shop slug (`/s/...`). */
   tenant?: { shopSlug: string; listingPriceCents: number };
+  /** Per-variant shop unit prices (cents) for multi-variant Printify picker; from listing row. */
+  printifyVariantShopPriceCentsById?: Record<string, number>;
+  /** Optional admin-set listing image (tenant PDP only). */
+  adminListingSecondaryImageUrl?: string | null;
+  /** Extra listing image from the shop owner (tenant PDP only). */
+  ownerSupplementImageUrl?: string | null;
+  /** Catalog image subset for this shop listing; undefined = all catalog images. */
+  listingStorefrontCatalogImageUrls?: string[];
 }) {
   const shopSlug = tenant?.shopSlug ?? PLATFORM_SHOP_SLUG;
   const displayPriceCents = tenant?.listingPriceCents ?? product.priceCents;
@@ -48,7 +60,11 @@ export function ProductDetailContent({
     product.stockQuantity,
   );
   const shippingCents = getShippingFlatCents();
-  const images = productImageUrls(product);
+  const images = productImageUrlsForShopListing(product, {
+    adminListingSecondaryImageUrl,
+    ownerSupplementImageUrl,
+    listingStorefrontCatalogImageUrls,
+  });
   const printifyVariants = getPrintifyVariantsForProduct(product);
   const multiPrintify =
     product.fulfillmentType === FulfillmentType.printify &&
@@ -85,7 +101,9 @@ export function ProductDetailContent({
           variants={printifyVariants.map((v) => ({
             id: v.id,
             title: v.title,
-            priceCents: v.priceCents,
+            priceCents:
+              printifyVariantShopPriceCentsById?.[v.id] ??
+              (tenant != null ? tenant.listingPriceCents : v.priceCents),
             imageUrl: v.imageUrl ?? null,
           }))}
           galleryExtras={images}

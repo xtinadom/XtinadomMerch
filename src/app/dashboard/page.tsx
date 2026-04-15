@@ -15,10 +15,23 @@ import { logoutShopOwner } from "@/actions/shop-auth";
 import { SiteLegalFooter } from "@/components/SiteLegalFooter";
 import { DashboardMainTabs } from "@/components/dashboard/DashboardMainTabs";
 import { DashboardSupportChatPanel } from "@/components/dashboard/DashboardSupportChatPanel";
-import { isR2UploadConfigured } from "@/lib/r2-upload";
+import {
+  isR2UploadConfigured,
+  sanitizeShopListingAdminSecondaryImageUrlForDisplay,
+  sanitizeShopListingOwnerSupplementImageUrlForDisplay,
+} from "@/lib/r2-upload";
 import { ensureBaselineAdminCatalogIfEmpty } from "@/lib/seed-baseline-admin-catalog";
 import { buildShopBaselineCatalogGroups } from "@/lib/shop-baseline-catalog";
 import { parseShopSocialLinksJson } from "@/lib/shop-social-links";
+import {
+  listingRejectionReasonTextForCard,
+  resolveListingRejectionNoticeBody,
+} from "@/lib/shop-listing-rejection-notice";
+import {
+  resolveCatalogPrefillFromStubProductSlug,
+  type DraftListingRequestPrefillPayload,
+} from "@/lib/shop-baseline-draft-prefill";
+import { buildGroupedListingSectionsForDashboard } from "@/lib/dashboard-legacy-baseline-listing-groups";
 
 export const dynamic = "force-dynamic";
 
@@ -152,12 +165,47 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const socialParsed = parseShopSocialLinksJson(shop.socialLinks);
 
+  const draftListingForRequestPrefill = !isPlatform
+    ? shop.listings.find(
+        (l) =>
+          l.requestStatus === ListingRequestStatus.draft &&
+          !l.active &&
+          l.creatorRemovedFromShopAt == null &&
+          l.adminRemovedFromShopAt == null,
+      )
+    : null;
+
+  let draftListingRequestPrefill: DraftListingRequestPrefillPayload | null = null;
+  if (draftListingForRequestPrefill && adminCatalogRows.length > 0) {
+    const resolved = resolveCatalogPrefillFromStubProductSlug(
+      shop.id,
+      draftListingForRequestPrefill.product.slug,
+      draftListingForRequestPrefill.priceCents,
+      draftListingForRequestPrefill.requestItemName,
+      adminCatalogRows,
+      draftListingForRequestPrefill.listingPrintifyVariantPrices,
+    );
+    if (resolved) {
+      draftListingRequestPrefill = {
+        listingId: draftListingForRequestPrefill.id,
+        ...resolved,
+      };
+    }
+  }
+
   const allOwnerNotices = !isPlatform
     ? await prisma.shopOwnerNotice.findMany({
         where: { shopId: shop.id },
         orderBy: { createdAt: "desc" },
         take: 200,
-        select: { id: true, body: true, kind: true, createdAt: true, readAt: true },
+        select: {
+          id: true,
+          body: true,
+          kind: true,
+          createdAt: true,
+          readAt: true,
+          relatedListingId: true,
+        },
       })
     : [];
 
@@ -174,6 +222,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         listing: shop.listings.some(
           (l) =>
             l.requestStatus === ListingRequestStatus.submitted ||
+            l.requestStatus === ListingRequestStatus.images_ok ||
             l.requestStatus === ListingRequestStatus.printify_item_created ||
             l.requestStatus === ListingRequestStatus.approved ||
             l.active,
@@ -221,6 +270,61 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       }
     />
   ) : null;
+
+  const listingRows = shop.listings.map((listing) => {
+    const rejectionNoticeBody =
+      listing.requestStatus === ListingRequestStatus.rejected && !isPlatform
+        ? resolveListingRejectionNoticeBody(
+            allOwnerNotices,
+            listing.id,
+            listing.product.name,
+          )
+        : null;
+    const rejectionReasonText = listingRejectionReasonTextForCard(rejectionNoticeBody);
+    return {
+      id: listing.id,
+      active: listing.active,
+      requestStatus: listing.requestStatus,
+      priceCents: listing.priceCents,
+      requestImages: listing.requestImages,
+      adminListingSecondaryImageUrl: sanitizeShopListingAdminSecondaryImageUrlForDisplay(
+        listing.adminListingSecondaryImageUrl,
+        shop.id,
+        listing.id,
+      ),
+      ownerSupplementImageUrl: sanitizeShopListingOwnerSupplementImageUrlForDisplay(
+        listing.ownerSupplementImageUrl,
+        shop.id,
+        listing.id,
+      ),
+      listingStorefrontCatalogImageUrls: listing.listingStorefrontCatalogImageUrls,
+      listingPrintifyVariantId: listing.listingPrintifyVariantId,
+      listingPrintifyVariantPrices: listing.listingPrintifyVariantPrices,
+      requestItemName: listing.requestItemName,
+      listingFeePaidAt: listing.listingFeePaidAt?.toISOString() ?? null,
+      adminRemovedFromShopAt: listing.adminRemovedFromShopAt?.toISOString() ?? null,
+      creatorRemovedFromShopAt: listing.creatorRemovedFromShopAt?.toISOString() ?? null,
+      listingOrdinal: listingOrdinalById.get(listing.id) ?? 1,
+      rejectionReasonText,
+      product: {
+        name: listing.product.name,
+        slug: listing.product.slug,
+        minPriceCents: listing.product.minPriceCents,
+        priceCents: listing.product.priceCents,
+        imageUrl: listing.product.imageUrl,
+        imageGallery: listing.product.imageGallery,
+        fulfillmentType: listing.product.fulfillmentType,
+        printifyVariantId: listing.product.printifyVariantId,
+        printifyVariants: listing.product.printifyVariants,
+      },
+    };
+  });
+
+  const groupedListingSections = buildGroupedListingSectionsForDashboard(
+    shop.id,
+    listingRows,
+    adminCatalogRows,
+  );
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-12">
@@ -272,6 +376,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         initialTab={dashTab}
         shopSlug={shop.slug}
         supportChat={supportChatPanel}
+        draftListingRequestPrefill={draftListingRequestPrefill}
+        groupedListingSections={groupedListingSections}
         setup={
           !isPlatform
             ? {
@@ -298,24 +404,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         listingFeePolicySummary={listingFeePolicySummary}
         paidListingFeeLabel={paidListingFeeLabel}
         isPlatform={isPlatform}
-        listings={shop.listings.map((listing) => ({
-          id: listing.id,
-          active: listing.active,
-          requestStatus: listing.requestStatus,
-          priceCents: listing.priceCents,
-          requestImages: listing.requestImages,
-          requestItemName: listing.requestItemName,
-          listingFeePaidAt: listing.listingFeePaidAt?.toISOString() ?? null,
-          adminRemovedFromShopAt: listing.adminRemovedFromShopAt?.toISOString() ?? null,
-          creatorRemovedFromShopAt: listing.creatorRemovedFromShopAt?.toISOString() ?? null,
-          listingOrdinal: listingOrdinalById.get(listing.id) ?? 1,
-          product: {
-            name: listing.product.name,
-            slug: listing.product.slug,
-            minPriceCents: listing.product.minPriceCents,
-            priceCents: listing.product.priceCents,
-          },
-        }))}
+        r2Configured={isR2UploadConfigured()}
+        listings={listingRows}
         paidOrders={paidOrders.map((o) => ({
           id: o.id,
           createdAt: o.createdAt.toISOString(),

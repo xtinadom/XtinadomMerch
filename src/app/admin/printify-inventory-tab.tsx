@@ -19,12 +19,8 @@ import { productTagIds } from "@/lib/product-tags";
 import { AdminProductPreviewButton } from "@/components/admin/AdminProductPreviewButton";
 import { ListingGalleryEditor } from "@/components/admin/ListingGalleryEditor";
 import { SaveListingForm } from "@/components/admin/SaveListingForm";
-import {
-  PrintifyCatalogPublishToggleForm,
-  PrintifyCatalogResyncForm,
-} from "@/components/admin/PrintifyInventoryCatalogActionForms";
 import { PrintifyCatalogSyncButtons } from "@/components/admin/PrintifyCatalogSyncButtons";
-import { CopyablePrintifyId } from "@/components/admin/CopyablePrintifyId";
+import { PrintifyCatalogSortableTable } from "@/components/admin/PrintifyCatalogSortableTable";
 
 export type PrintifyInventoryTabProps = {
   products: (Product & {
@@ -118,18 +114,6 @@ function PrintifyListingPriceFields({
   );
 }
 
-/** Local date `MM/DD` and time `h:mm am|pm` for a two-line table cell. */
-function formatListingUpdatedParts(d: Date): { date: string; time: string } {
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const h24 = d.getHours();
-  const mins = String(d.getMinutes()).padStart(2, "0");
-  const isAm = h24 < 12;
-  const h12 = h24 % 12 || 12;
-  const ap = isAm ? "am" : "pm";
-  return { date: `${mm}/${dd}`, time: `${h12}:${mins} ${ap}` };
-}
-
 export async function PrintifyInventoryTab({
   products,
   allTags,
@@ -193,6 +177,30 @@ export async function PrintifyInventoryTab({
     : null;
 
   const knownDesignNames = collectKnownDesignNamesFromProducts(products);
+
+  const catalogTableRows =
+    !catalogError && catalog.length > 0
+      ? catalog.map((p) => {
+          const enabledVariants = p.variants.filter((v) => v.enabled);
+          const catalogHero =
+            enabledVariants.length > 0
+              ? pickImageForVariant(p.images, enabledVariants[0]!.id)
+              : (p.images[0]?.src ?? null);
+          const listingRow = listingProductByPrintifyId.get(p.id);
+          const heroSrc = listingRow
+            ? (productImageUrls(listingRow)[0] ?? catalogHero)
+            : catalogHero;
+          const listingUpdated = updatedAtByPrintifyId.get(p.id);
+          const updatedAtSource = listingUpdated ?? p.updatedAt;
+          return {
+            printifyId: p.id,
+            title: p.title,
+            updatedAtIso: updatedAtSource ? updatedAtSource.toISOString() : null,
+            heroSrc,
+            listingProductId: productIdByPrintifyId.get(p.id) ?? null,
+          };
+        })
+      : [];
 
   return (
     <div className="space-y-10" aria-label="Printify inventory">
@@ -413,113 +421,7 @@ export async function PrintifyInventoryTab({
           ) : catalog.length === 0 ? (
             <p className="mt-2 text-sm text-zinc-500">No products in this Printify shop yet.</p>
           ) : (
-            <div className="mt-4 max-h-[min(420px,50vh)] overflow-auto rounded-lg border border-zinc-800">
-              <table className="w-full text-left text-xs">
-                <thead className="sticky top-0 bg-zinc-900 text-zinc-500">
-                  <tr>
-                    <th className="w-14 p-2 text-[10px] font-medium uppercase tracking-wide text-zinc-600">
-                      Img
-                    </th>
-                    <th className="p-2 font-medium">Title</th>
-                    <th className="p-2 text-center font-medium whitespace-nowrap">Updated</th>
-                    <th className="p-2 text-center font-medium whitespace-nowrap">Edit</th>
-                    <th className="p-2 text-center font-medium whitespace-nowrap">Resync</th>
-                    <th className="p-2 text-center font-medium whitespace-nowrap">
-                      Toggle published
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="text-zinc-400">
-                  {catalog.map((p) => {
-                    const enabledVariants = p.variants.filter((v) => v.enabled);
-                    const catalogHero =
-                      enabledVariants.length > 0
-                        ? pickImageForVariant(p.images, enabledVariants[0]!.id)
-                        : (p.images[0]?.src ?? null);
-                    const listingRow = listingProductByPrintifyId.get(p.id);
-                    const heroSrc = listingRow
-                      ? (productImageUrls(listingRow)[0] ?? catalogHero)
-                      : catalogHero;
-                    const listingUpdated = updatedAtByPrintifyId.get(p.id);
-                    const updatedAtSource = listingUpdated ?? p.updatedAt;
-                    const updatedParts = updatedAtSource
-                      ? formatListingUpdatedParts(updatedAtSource)
-                      : null;
-                    const updatedCell =
-                      updatedParts && updatedAtSource ? (
-                      <span
-                        className="inline-flex flex-col items-center gap-0.5 leading-tight text-zinc-400"
-                        title={updatedAtSource.toISOString()}
-                      >
-                        <span>{updatedParts.date}</span>
-                        <span>{updatedParts.time}</span>
-                      </span>
-                    ) : (
-                      <span className="text-zinc-600">—</span>
-                    );
-                    return (
-                      <tr key={p.id} className="border-t border-zinc-800/80">
-                        <td className="p-2 align-middle">
-                          {heroSrc ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={heroSrc}
-                              alt=""
-                              className="h-10 w-10 rounded border border-zinc-700 object-cover"
-                            />
-                          ) : (
-                            <div
-                              className="flex h-10 w-10 items-center justify-center rounded border border-zinc-800 bg-zinc-900/80 text-[10px] text-zinc-600"
-                              aria-hidden
-                            >
-                              —
-                            </div>
-                          )}
-                        </td>
-                        <td className="p-2 align-middle">
-                          <div className="flex flex-col gap-0.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <span className="min-w-0 text-zinc-300">{p.title}</span>
-                              {productIdByPrintifyId.has(p.id) ? (
-                                <Link
-                                  href={`/admin?tab=printify&listing=${encodeURIComponent(productIdByPrintifyId.get(p.id)!)}`}
-                                  title="Admin storefront listing details"
-                                  className="shrink-0 pt-0.5 text-[10px] font-normal normal-case tracking-normal text-zinc-600 underline-offset-2 hover:text-zinc-400 hover:underline"
-                                >
-                                  example
-                                </Link>
-                              ) : null}
-                            </div>
-                            <CopyablePrintifyId id={p.id} />
-                          </div>
-                        </td>
-                        <td className="p-2 text-center align-middle">
-                          {updatedCell}
-                        </td>
-                        <td className="p-2 text-center align-middle whitespace-nowrap">
-                          {productIdByPrintifyId.has(p.id) ? (
-                            <Link
-                              href={`/admin?tab=printify&listing=${encodeURIComponent(productIdByPrintifyId.get(p.id)!)}`}
-                              className="inline-flex rounded border border-blue-900/50 bg-blue-950/30 px-2 py-1.5 text-[11px] font-medium text-blue-200/90 hover:bg-blue-950/50"
-                            >
-                              Edit
-                            </Link>
-                          ) : (
-                            <span className="text-zinc-600">—</span>
-                          )}
-                        </td>
-                        <td className="p-2 text-center align-middle whitespace-nowrap">
-                          <PrintifyCatalogResyncForm printifyProductId={p.id} />
-                        </td>
-                        <td className="p-2 text-center align-middle whitespace-nowrap">
-                          <PrintifyCatalogPublishToggleForm printifyProductId={p.id} />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <PrintifyCatalogSortableTable rows={catalogTableRows} />
           )}
         </section>
       )}

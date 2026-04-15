@@ -31,6 +31,7 @@ export type ShopOwnerNoticeMinAggregateOutputType = {
   kind: string | null
   readAt: Date | null
   createdAt: Date | null
+  relatedListingId: string | null
 }
 
 export type ShopOwnerNoticeMaxAggregateOutputType = {
@@ -40,6 +41,7 @@ export type ShopOwnerNoticeMaxAggregateOutputType = {
   kind: string | null
   readAt: Date | null
   createdAt: Date | null
+  relatedListingId: string | null
 }
 
 export type ShopOwnerNoticeCountAggregateOutputType = {
@@ -49,6 +51,7 @@ export type ShopOwnerNoticeCountAggregateOutputType = {
   kind: number
   readAt: number
   createdAt: number
+  relatedListingId: number
   _all: number
 }
 
@@ -60,6 +63,7 @@ export type ShopOwnerNoticeMinAggregateInputType = {
   kind?: true
   readAt?: true
   createdAt?: true
+  relatedListingId?: true
 }
 
 export type ShopOwnerNoticeMaxAggregateInputType = {
@@ -69,6 +73,7 @@ export type ShopOwnerNoticeMaxAggregateInputType = {
   kind?: true
   readAt?: true
   createdAt?: true
+  relatedListingId?: true
 }
 
 export type ShopOwnerNoticeCountAggregateInputType = {
@@ -78,6 +83,7 @@ export type ShopOwnerNoticeCountAggregateInputType = {
   kind?: true
   readAt?: true
   createdAt?: true
+  relatedListingId?: true
   _all?: true
 }
 
@@ -160,6 +166,7 @@ export type ShopOwnerNoticeGroupByOutputType = {
   kind: string
   readAt: Date | null
   createdAt: Date
+  relatedListingId: string | null
   _count: ShopOwnerNoticeCountAggregateOutputType | null
   _min: ShopOwnerNoticeMinAggregateOutputType | null
   _max: ShopOwnerNoticeMaxAggregateOutputType | null
@@ -190,7 +197,9 @@ export type ShopOwnerNoticeWhereInput = {
   kind?: Prisma.StringFilter<"ShopOwnerNotice"> | string
   readAt?: Prisma.DateTimeNullableFilter<"ShopOwnerNotice"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"ShopOwnerNotice"> | Date | string
+  relatedListingId?: Prisma.StringNullableFilter<"ShopOwnerNotice"> | string | null
   shop?: Prisma.XOR<Prisma.ShopScalarRelationFilter, Prisma.ShopWhereInput>
+  relatedListing?: Prisma.XOR<Prisma.ShopListingNullableScalarRelationFilter, Prisma.ShopListingWhereInput> | null
 }
 
 export type ShopOwnerNoticeOrderByWithRelationInput = {
@@ -200,7 +209,9 @@ export type ShopOwnerNoticeOrderByWithRelationInput = {
   kind?: Prisma.SortOrder
   readAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  relatedListingId?: Prisma.SortOrderInput | Prisma.SortOrder
   shop?: Prisma.ShopOrderByWithRelationInput
+  relatedListing?: Prisma.ShopListingOrderByWithRelationInput
 }
 
 export type ShopOwnerNoticeWhereUniqueInput = Prisma.AtLeast<{
@@ -213,7 +224,9 @@ export type ShopOwnerNoticeWhereUniqueInput = Prisma.AtLeast<{
   kind?: Prisma.StringFilter<"ShopOwnerNotice"> | string
   readAt?: Prisma.DateTimeNullableFilter<"ShopOwnerNotice"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"ShopOwnerNotice"> | Date | string
+  relatedListingId?: Prisma.StringNullableFilter<"ShopOwnerNotice"> | string | null
   shop?: Prisma.XOR<Prisma.ShopScalarRelationFilter, Prisma.ShopWhereInput>
+  relatedListing?: Prisma.XOR<Prisma.ShopListingNullableScalarRelationFilter, Prisma.ShopListingWhereInput> | null
 }, "id">
 
 export type ShopOwnerNoticeOrderByWithAggregationInput = {
@@ -223,6 +236,7 @@ export type ShopOwnerNoticeOrderByWithAggregationInput = {
   kind?: Prisma.SortOrder
   readAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  relatedListingId?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.ShopOwnerNoticeCountOrderByAggregateInput
   _max?: Prisma.ShopOwnerNoticeMaxOrderByAggregateInput
   _min?: Prisma.ShopOwnerNoticeMinOrderByAggregateInput
@@ -238,6 +252,7 @@ export type ShopOwnerNoticeScalarWhereWithAggregatesInput = {
   kind?: Prisma.StringWithAggregatesFilter<"ShopOwnerNotice"> | string
   readAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ShopOwnerNotice"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"ShopOwnerNotice"> | Date | string
+  relatedListingId?: Prisma.StringNullableWithAggregatesFilter<"ShopOwnerNotice"> | string | null
 }
 
 export type ShopOwnerNoticeCreateInput = {
@@ -247,6 +262,7 @@ export type ShopOwnerNoticeCreateInput = {
   readAt?: Date | string | null
   createdAt?: Date | string
   shop: Prisma.ShopCreateNestedOneWithoutOwnerNoticesInput
+  relatedListing?: Prisma.ShopListingCreateNestedOneWithoutRejectionNoticesInput
 }
 
 export type ShopOwnerNoticeUncheckedCreateInput = {
@@ -256,6 +272,7 @@ export type ShopOwnerNoticeUncheckedCreateInput = {
   kind?: string
   readAt?: Date | string | null
   createdAt?: Date | string
+  relatedListingId?: string | null
 }
 
 export type ShopOwnerNoticeUpdateInput = {
@@ -265,6 +282,7 @@ export type ShopOwnerNoticeUpdateInput = {
   readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shop?: Prisma.ShopUpdateOneRequiredWithoutOwnerNoticesNestedInput
+  relatedListing?: Prisma.ShopListingUpdateOneWithoutRejectionNoticesNestedInput
 }
 
 export type ShopOwnerNoticeUncheckedUpdateInput = {
@@ -274,6 +292,7 @@ export type ShopOwnerNoticeUncheckedUpdateInput = {
   kind?: Prisma.StringFieldUpdateOperationsInput | string
   readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  relatedListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type ShopOwnerNoticeCreateManyInput = {
@@ -283,6 +302,7 @@ export type ShopOwnerNoticeCreateManyInput = {
   kind?: string
   readAt?: Date | string | null
   createdAt?: Date | string
+  relatedListingId?: string | null
 }
 
 export type ShopOwnerNoticeUpdateManyMutationInput = {
@@ -300,6 +320,7 @@ export type ShopOwnerNoticeUncheckedUpdateManyInput = {
   kind?: Prisma.StringFieldUpdateOperationsInput | string
   readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  relatedListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type ShopOwnerNoticeListRelationFilter = {
@@ -319,6 +340,7 @@ export type ShopOwnerNoticeCountOrderByAggregateInput = {
   kind?: Prisma.SortOrder
   readAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  relatedListingId?: Prisma.SortOrder
 }
 
 export type ShopOwnerNoticeMaxOrderByAggregateInput = {
@@ -328,6 +350,7 @@ export type ShopOwnerNoticeMaxOrderByAggregateInput = {
   kind?: Prisma.SortOrder
   readAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  relatedListingId?: Prisma.SortOrder
 }
 
 export type ShopOwnerNoticeMinOrderByAggregateInput = {
@@ -337,6 +360,7 @@ export type ShopOwnerNoticeMinOrderByAggregateInput = {
   kind?: Prisma.SortOrder
   readAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  relatedListingId?: Prisma.SortOrder
 }
 
 export type ShopOwnerNoticeCreateNestedManyWithoutShopInput = {
@@ -381,12 +405,55 @@ export type ShopOwnerNoticeUncheckedUpdateManyWithoutShopNestedInput = {
   deleteMany?: Prisma.ShopOwnerNoticeScalarWhereInput | Prisma.ShopOwnerNoticeScalarWhereInput[]
 }
 
+export type ShopOwnerNoticeCreateNestedManyWithoutRelatedListingInput = {
+  create?: Prisma.XOR<Prisma.ShopOwnerNoticeCreateWithoutRelatedListingInput, Prisma.ShopOwnerNoticeUncheckedCreateWithoutRelatedListingInput> | Prisma.ShopOwnerNoticeCreateWithoutRelatedListingInput[] | Prisma.ShopOwnerNoticeUncheckedCreateWithoutRelatedListingInput[]
+  connectOrCreate?: Prisma.ShopOwnerNoticeCreateOrConnectWithoutRelatedListingInput | Prisma.ShopOwnerNoticeCreateOrConnectWithoutRelatedListingInput[]
+  createMany?: Prisma.ShopOwnerNoticeCreateManyRelatedListingInputEnvelope
+  connect?: Prisma.ShopOwnerNoticeWhereUniqueInput | Prisma.ShopOwnerNoticeWhereUniqueInput[]
+}
+
+export type ShopOwnerNoticeUncheckedCreateNestedManyWithoutRelatedListingInput = {
+  create?: Prisma.XOR<Prisma.ShopOwnerNoticeCreateWithoutRelatedListingInput, Prisma.ShopOwnerNoticeUncheckedCreateWithoutRelatedListingInput> | Prisma.ShopOwnerNoticeCreateWithoutRelatedListingInput[] | Prisma.ShopOwnerNoticeUncheckedCreateWithoutRelatedListingInput[]
+  connectOrCreate?: Prisma.ShopOwnerNoticeCreateOrConnectWithoutRelatedListingInput | Prisma.ShopOwnerNoticeCreateOrConnectWithoutRelatedListingInput[]
+  createMany?: Prisma.ShopOwnerNoticeCreateManyRelatedListingInputEnvelope
+  connect?: Prisma.ShopOwnerNoticeWhereUniqueInput | Prisma.ShopOwnerNoticeWhereUniqueInput[]
+}
+
+export type ShopOwnerNoticeUpdateManyWithoutRelatedListingNestedInput = {
+  create?: Prisma.XOR<Prisma.ShopOwnerNoticeCreateWithoutRelatedListingInput, Prisma.ShopOwnerNoticeUncheckedCreateWithoutRelatedListingInput> | Prisma.ShopOwnerNoticeCreateWithoutRelatedListingInput[] | Prisma.ShopOwnerNoticeUncheckedCreateWithoutRelatedListingInput[]
+  connectOrCreate?: Prisma.ShopOwnerNoticeCreateOrConnectWithoutRelatedListingInput | Prisma.ShopOwnerNoticeCreateOrConnectWithoutRelatedListingInput[]
+  upsert?: Prisma.ShopOwnerNoticeUpsertWithWhereUniqueWithoutRelatedListingInput | Prisma.ShopOwnerNoticeUpsertWithWhereUniqueWithoutRelatedListingInput[]
+  createMany?: Prisma.ShopOwnerNoticeCreateManyRelatedListingInputEnvelope
+  set?: Prisma.ShopOwnerNoticeWhereUniqueInput | Prisma.ShopOwnerNoticeWhereUniqueInput[]
+  disconnect?: Prisma.ShopOwnerNoticeWhereUniqueInput | Prisma.ShopOwnerNoticeWhereUniqueInput[]
+  delete?: Prisma.ShopOwnerNoticeWhereUniqueInput | Prisma.ShopOwnerNoticeWhereUniqueInput[]
+  connect?: Prisma.ShopOwnerNoticeWhereUniqueInput | Prisma.ShopOwnerNoticeWhereUniqueInput[]
+  update?: Prisma.ShopOwnerNoticeUpdateWithWhereUniqueWithoutRelatedListingInput | Prisma.ShopOwnerNoticeUpdateWithWhereUniqueWithoutRelatedListingInput[]
+  updateMany?: Prisma.ShopOwnerNoticeUpdateManyWithWhereWithoutRelatedListingInput | Prisma.ShopOwnerNoticeUpdateManyWithWhereWithoutRelatedListingInput[]
+  deleteMany?: Prisma.ShopOwnerNoticeScalarWhereInput | Prisma.ShopOwnerNoticeScalarWhereInput[]
+}
+
+export type ShopOwnerNoticeUncheckedUpdateManyWithoutRelatedListingNestedInput = {
+  create?: Prisma.XOR<Prisma.ShopOwnerNoticeCreateWithoutRelatedListingInput, Prisma.ShopOwnerNoticeUncheckedCreateWithoutRelatedListingInput> | Prisma.ShopOwnerNoticeCreateWithoutRelatedListingInput[] | Prisma.ShopOwnerNoticeUncheckedCreateWithoutRelatedListingInput[]
+  connectOrCreate?: Prisma.ShopOwnerNoticeCreateOrConnectWithoutRelatedListingInput | Prisma.ShopOwnerNoticeCreateOrConnectWithoutRelatedListingInput[]
+  upsert?: Prisma.ShopOwnerNoticeUpsertWithWhereUniqueWithoutRelatedListingInput | Prisma.ShopOwnerNoticeUpsertWithWhereUniqueWithoutRelatedListingInput[]
+  createMany?: Prisma.ShopOwnerNoticeCreateManyRelatedListingInputEnvelope
+  set?: Prisma.ShopOwnerNoticeWhereUniqueInput | Prisma.ShopOwnerNoticeWhereUniqueInput[]
+  disconnect?: Prisma.ShopOwnerNoticeWhereUniqueInput | Prisma.ShopOwnerNoticeWhereUniqueInput[]
+  delete?: Prisma.ShopOwnerNoticeWhereUniqueInput | Prisma.ShopOwnerNoticeWhereUniqueInput[]
+  connect?: Prisma.ShopOwnerNoticeWhereUniqueInput | Prisma.ShopOwnerNoticeWhereUniqueInput[]
+  update?: Prisma.ShopOwnerNoticeUpdateWithWhereUniqueWithoutRelatedListingInput | Prisma.ShopOwnerNoticeUpdateWithWhereUniqueWithoutRelatedListingInput[]
+  updateMany?: Prisma.ShopOwnerNoticeUpdateManyWithWhereWithoutRelatedListingInput | Prisma.ShopOwnerNoticeUpdateManyWithWhereWithoutRelatedListingInput[]
+  deleteMany?: Prisma.ShopOwnerNoticeScalarWhereInput | Prisma.ShopOwnerNoticeScalarWhereInput[]
+}
+
 export type ShopOwnerNoticeCreateWithoutShopInput = {
   id?: string
   body: string
   kind?: string
   readAt?: Date | string | null
   createdAt?: Date | string
+  relatedListing?: Prisma.ShopListingCreateNestedOneWithoutRejectionNoticesInput
 }
 
 export type ShopOwnerNoticeUncheckedCreateWithoutShopInput = {
@@ -395,6 +462,7 @@ export type ShopOwnerNoticeUncheckedCreateWithoutShopInput = {
   kind?: string
   readAt?: Date | string | null
   createdAt?: Date | string
+  relatedListingId?: string | null
 }
 
 export type ShopOwnerNoticeCreateOrConnectWithoutShopInput = {
@@ -433,6 +501,51 @@ export type ShopOwnerNoticeScalarWhereInput = {
   kind?: Prisma.StringFilter<"ShopOwnerNotice"> | string
   readAt?: Prisma.DateTimeNullableFilter<"ShopOwnerNotice"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"ShopOwnerNotice"> | Date | string
+  relatedListingId?: Prisma.StringNullableFilter<"ShopOwnerNotice"> | string | null
+}
+
+export type ShopOwnerNoticeCreateWithoutRelatedListingInput = {
+  id?: string
+  body: string
+  kind?: string
+  readAt?: Date | string | null
+  createdAt?: Date | string
+  shop: Prisma.ShopCreateNestedOneWithoutOwnerNoticesInput
+}
+
+export type ShopOwnerNoticeUncheckedCreateWithoutRelatedListingInput = {
+  id?: string
+  shopId: string
+  body: string
+  kind?: string
+  readAt?: Date | string | null
+  createdAt?: Date | string
+}
+
+export type ShopOwnerNoticeCreateOrConnectWithoutRelatedListingInput = {
+  where: Prisma.ShopOwnerNoticeWhereUniqueInput
+  create: Prisma.XOR<Prisma.ShopOwnerNoticeCreateWithoutRelatedListingInput, Prisma.ShopOwnerNoticeUncheckedCreateWithoutRelatedListingInput>
+}
+
+export type ShopOwnerNoticeCreateManyRelatedListingInputEnvelope = {
+  data: Prisma.ShopOwnerNoticeCreateManyRelatedListingInput | Prisma.ShopOwnerNoticeCreateManyRelatedListingInput[]
+  skipDuplicates?: boolean
+}
+
+export type ShopOwnerNoticeUpsertWithWhereUniqueWithoutRelatedListingInput = {
+  where: Prisma.ShopOwnerNoticeWhereUniqueInput
+  update: Prisma.XOR<Prisma.ShopOwnerNoticeUpdateWithoutRelatedListingInput, Prisma.ShopOwnerNoticeUncheckedUpdateWithoutRelatedListingInput>
+  create: Prisma.XOR<Prisma.ShopOwnerNoticeCreateWithoutRelatedListingInput, Prisma.ShopOwnerNoticeUncheckedCreateWithoutRelatedListingInput>
+}
+
+export type ShopOwnerNoticeUpdateWithWhereUniqueWithoutRelatedListingInput = {
+  where: Prisma.ShopOwnerNoticeWhereUniqueInput
+  data: Prisma.XOR<Prisma.ShopOwnerNoticeUpdateWithoutRelatedListingInput, Prisma.ShopOwnerNoticeUncheckedUpdateWithoutRelatedListingInput>
+}
+
+export type ShopOwnerNoticeUpdateManyWithWhereWithoutRelatedListingInput = {
+  where: Prisma.ShopOwnerNoticeScalarWhereInput
+  data: Prisma.XOR<Prisma.ShopOwnerNoticeUpdateManyMutationInput, Prisma.ShopOwnerNoticeUncheckedUpdateManyWithoutRelatedListingInput>
 }
 
 export type ShopOwnerNoticeCreateManyShopInput = {
@@ -441,6 +554,7 @@ export type ShopOwnerNoticeCreateManyShopInput = {
   kind?: string
   readAt?: Date | string | null
   createdAt?: Date | string
+  relatedListingId?: string | null
 }
 
 export type ShopOwnerNoticeUpdateWithoutShopInput = {
@@ -449,6 +563,7 @@ export type ShopOwnerNoticeUpdateWithoutShopInput = {
   kind?: Prisma.StringFieldUpdateOperationsInput | string
   readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  relatedListing?: Prisma.ShopListingUpdateOneWithoutRejectionNoticesNestedInput
 }
 
 export type ShopOwnerNoticeUncheckedUpdateWithoutShopInput = {
@@ -457,10 +572,48 @@ export type ShopOwnerNoticeUncheckedUpdateWithoutShopInput = {
   kind?: Prisma.StringFieldUpdateOperationsInput | string
   readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  relatedListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type ShopOwnerNoticeUncheckedUpdateManyWithoutShopInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  body?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.StringFieldUpdateOperationsInput | string
+  readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  relatedListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
+export type ShopOwnerNoticeCreateManyRelatedListingInput = {
+  id?: string
+  shopId: string
+  body: string
+  kind?: string
+  readAt?: Date | string | null
+  createdAt?: Date | string
+}
+
+export type ShopOwnerNoticeUpdateWithoutRelatedListingInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  body?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.StringFieldUpdateOperationsInput | string
+  readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  shop?: Prisma.ShopUpdateOneRequiredWithoutOwnerNoticesNestedInput
+}
+
+export type ShopOwnerNoticeUncheckedUpdateWithoutRelatedListingInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.StringFieldUpdateOperationsInput | string
+  body?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.StringFieldUpdateOperationsInput | string
+  readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type ShopOwnerNoticeUncheckedUpdateManyWithoutRelatedListingInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   kind?: Prisma.StringFieldUpdateOperationsInput | string
   readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -476,7 +629,9 @@ export type ShopOwnerNoticeSelect<ExtArgs extends runtime.Types.Extensions.Inter
   kind?: boolean
   readAt?: boolean
   createdAt?: boolean
+  relatedListingId?: boolean
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
+  relatedListing?: boolean | Prisma.ShopOwnerNotice$relatedListingArgs<ExtArgs>
 }, ExtArgs["result"]["shopOwnerNotice"]>
 
 export type ShopOwnerNoticeSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -486,7 +641,9 @@ export type ShopOwnerNoticeSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   kind?: boolean
   readAt?: boolean
   createdAt?: boolean
+  relatedListingId?: boolean
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
+  relatedListing?: boolean | Prisma.ShopOwnerNotice$relatedListingArgs<ExtArgs>
 }, ExtArgs["result"]["shopOwnerNotice"]>
 
 export type ShopOwnerNoticeSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -496,7 +653,9 @@ export type ShopOwnerNoticeSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   kind?: boolean
   readAt?: boolean
   createdAt?: boolean
+  relatedListingId?: boolean
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
+  relatedListing?: boolean | Prisma.ShopOwnerNotice$relatedListingArgs<ExtArgs>
 }, ExtArgs["result"]["shopOwnerNotice"]>
 
 export type ShopOwnerNoticeSelectScalar = {
@@ -506,23 +665,28 @@ export type ShopOwnerNoticeSelectScalar = {
   kind?: boolean
   readAt?: boolean
   createdAt?: boolean
+  relatedListingId?: boolean
 }
 
-export type ShopOwnerNoticeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "shopId" | "body" | "kind" | "readAt" | "createdAt", ExtArgs["result"]["shopOwnerNotice"]>
+export type ShopOwnerNoticeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "shopId" | "body" | "kind" | "readAt" | "createdAt" | "relatedListingId", ExtArgs["result"]["shopOwnerNotice"]>
 export type ShopOwnerNoticeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
+  relatedListing?: boolean | Prisma.ShopOwnerNotice$relatedListingArgs<ExtArgs>
 }
 export type ShopOwnerNoticeIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
+  relatedListing?: boolean | Prisma.ShopOwnerNotice$relatedListingArgs<ExtArgs>
 }
 export type ShopOwnerNoticeIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
+  relatedListing?: boolean | Prisma.ShopOwnerNotice$relatedListingArgs<ExtArgs>
 }
 
 export type $ShopOwnerNoticePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "ShopOwnerNotice"
   objects: {
     shop: Prisma.$ShopPayload<ExtArgs>
+    relatedListing: Prisma.$ShopListingPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -531,6 +695,10 @@ export type $ShopOwnerNoticePayload<ExtArgs extends runtime.Types.Extensions.Int
     kind: string
     readAt: Date | null
     createdAt: Date
+    /**
+     * * When set, ties a notice (e.g. listing_rejected) to a specific listing row for dashboard display.
+     */
+    relatedListingId: string | null
   }, ExtArgs["result"]["shopOwnerNotice"]>
   composites: {}
 }
@@ -926,6 +1094,7 @@ readonly fields: ShopOwnerNoticeFieldRefs;
 export interface Prisma__ShopOwnerNoticeClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   shop<T extends Prisma.ShopDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ShopDefaultArgs<ExtArgs>>): Prisma.Prisma__ShopClient<runtime.Types.Result.GetResult<Prisma.$ShopPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  relatedListing<T extends Prisma.ShopOwnerNotice$relatedListingArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ShopOwnerNotice$relatedListingArgs<ExtArgs>>): Prisma.Prisma__ShopListingClient<runtime.Types.Result.GetResult<Prisma.$ShopListingPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -961,6 +1130,7 @@ export interface ShopOwnerNoticeFieldRefs {
   readonly kind: Prisma.FieldRef<"ShopOwnerNotice", 'String'>
   readonly readAt: Prisma.FieldRef<"ShopOwnerNotice", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"ShopOwnerNotice", 'DateTime'>
+  readonly relatedListingId: Prisma.FieldRef<"ShopOwnerNotice", 'String'>
 }
     
 
@@ -1359,6 +1529,25 @@ export type ShopOwnerNoticeDeleteManyArgs<ExtArgs extends runtime.Types.Extensio
    * Limit how many ShopOwnerNotices to delete.
    */
   limit?: number
+}
+
+/**
+ * ShopOwnerNotice.relatedListing
+ */
+export type ShopOwnerNotice$relatedListingArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ShopListing
+   */
+  select?: Prisma.ShopListingSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ShopListing
+   */
+  omit?: Prisma.ShopListingOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ShopListingInclude<ExtArgs> | null
+  where?: Prisma.ShopListingWhereInput
 }
 
 /**

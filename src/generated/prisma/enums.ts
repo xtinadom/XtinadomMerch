@@ -37,6 +37,7 @@ export type CatalogGroup = (typeof CatalogGroup)[keyof typeof CatalogGroup]
 export const ListingRequestStatus = {
   draft: 'draft',
   submitted: 'submitted',
+  images_ok: 'images_ok',
   printify_item_created: 'printify_item_created',
   approved: 'approved',
   rejected: 'rejected'

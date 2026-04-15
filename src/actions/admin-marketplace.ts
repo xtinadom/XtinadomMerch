@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { getAdminSessionReadonly } from "@/lib/session";
 import { FulfillmentType, ListingRequestStatus } from "@/generated/prisma/enums";
 
@@ -10,17 +11,233 @@ const ADMIN_LISTING_REMOVAL_NOTES_MAX = 4000;
 import { PLATFORM_SHOP_SLUG, listingFeeCentsForOrdinal } from "@/lib/marketplace-constants";
 import { getListingOrdinal, syncFreeListingFeeWaivers } from "@/lib/listing-fee";
 import {
+  deleteShopListingAdminSecondaryObject,
   deleteShopListingRequestImagesFromR2,
+  deleteShopListingSupplementObject,
+  isR2UploadConfigured,
+  listingAdminSecondaryImageUrlToObjectKey,
+  putPublicR2Object,
+  shopListingAdminSecondaryImageObjectKey,
   shopListingRequestImageUrlStrings,
 } from "@/lib/r2-upload";
+import { compressShopListingSupplementPhotoWebp } from "@/lib/shop-setup-image";
+import { fetchPublicHttpsImage, parseSafePublicHttpsImageUrl } from "@/lib/fetch-public-https-image";
+import { productImageUrlsUnionHero } from "@/lib/product-media";
 import { activateProductWhenShopListingGoesLive } from "@/lib/shop-listing-publish";
+import { syncListingProductWithPrintifyCatalog } from "@/lib/shop-listing-printify-product-sync";
+import {
+  listingRejectionNoticeDetail,
+  parseListingRejectReason,
+} from "@/lib/listing-request-reject-reasons";
+import { emailLinkOrigin, publicAppBaseUrl } from "@/lib/public-app-url";
 
 async function requireAdmin() {
   const session = await getAdminSessionReadonly();
   if (!session.isAdmin) redirect("/admin/login");
 }
 
-/** Step 1: record Printify product (and variant for printify catalog items). Moves submitted → printify_item_created. */
+async function loadListingForAdminSecondaryImage(listingId: string) {
+  return prisma.shopListing.findUnique({
+    where: { id: listingId },
+    select: {
+      id: true,
+      shopId: true,
+      requestStatus: true,
+      adminListingSecondaryImageUrl: true,
+      shop: { select: { slug: true } },
+    },
+  });
+}
+
+function listingAllowsAdminSecondaryImage(status: ListingRequestStatus): boolean {
+  return (
+    status === ListingRequestStatus.printify_item_created || status === ListingRequestStatus.approved
+  );
+}
+
+export type AdminSecondaryImageFormState = {
+  ok: boolean;
+  error: string | null;
+};
+
+const initialSecondaryImageFormState: AdminSecondaryImageFormState = {
+  ok: false,
+  error: null,
+};
+
+/**
+ * Optional admin second storefront image (~100 KiB WebP on R2) or import from HTTPS URL.
+ * For use with `useActionState` on the listing-requests admin form.
+ */
+export async function adminUpsertShopListingSecondaryImageForm(
+  _prev: AdminSecondaryImageFormState,
+  formData: FormData,
+): Promise<AdminSecondaryImageFormState> {
+  await requireAdmin();
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  if (!listingId) {
+    return { ok: false, error: "Missing listing." };
+  }
+
+  const listing = await loadListingForAdminSecondaryImage(listingId);
+  if (!listing || !listingAllowsAdminSecondaryImage(listing.requestStatus)) {
+    return { ok: false, error: "This listing cannot be updated from this screen." };
+  }
+
+  if (!isR2UploadConfigured()) {
+    return {
+      ok: false,
+      error: "Image uploads are not configured (R2 env vars missing on the server).",
+    };
+  }
+
+  const fileRaw = formData.get("adminListingSecondaryImageFile");
+  const urlRaw = String(formData.get("adminListingSecondaryImageUrl") ?? "").trim();
+
+  let buf: Buffer | null = null;
+  if (fileRaw instanceof Blob && fileRaw.size > 0) {
+    if (fileRaw.size > 20 * 1024 * 1024) {
+      return { ok: false, error: "File is too large before processing (max 20 MB)." };
+    }
+    buf = Buffer.from(await fileRaw.arrayBuffer());
+  } else if (urlRaw) {
+    const u = parseSafePublicHttpsImageUrl(urlRaw);
+    if (!u) {
+      return {
+        ok: false,
+        error: "Use a public https:// image URL (private networks and non-HTTPS links are blocked).",
+      };
+    }
+    buf = await fetchPublicHttpsImage(u);
+  } else {
+    return { ok: false, error: "Choose an image file or paste an HTTPS image URL." };
+  }
+
+  if (!buf) {
+    return {
+      ok: false,
+      error: "Could not load that image from the URL. Check the link or try a file upload instead.",
+    };
+  }
+  const webp = await compressShopListingSupplementPhotoWebp(buf);
+  if (!webp) {
+    return {
+      ok: false,
+      error: "Could not compress to under 100 KiB. Try a smaller or simpler image.",
+    };
+  }
+
+  try {
+    const key = shopListingAdminSecondaryImageObjectKey(listing.shopId, listingId);
+    const publicUrl = await putPublicR2Object({
+      key,
+      body: webp,
+      contentType: "image/webp",
+    });
+    if (!listingAdminSecondaryImageUrlToObjectKey(publicUrl, listing.shopId, listingId)) {
+      return { ok: false, error: "Upload succeeded but URL validation failed. Try again or contact support." };
+    }
+
+    await prisma.shopListing.update({
+      where: { id: listingId },
+      data: { adminListingSecondaryImageUrl: publicUrl },
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: `Upload failed: ${msg}` };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath(`/s/${listing.shop.slug}`);
+
+  return { ok: true, error: null };
+}
+
+/** @deprecated Use {@link adminUpsertShopListingSecondaryImageForm} with useActionState */
+export async function adminUpsertShopListingSecondaryImage(formData: FormData): Promise<void> {
+  await adminUpsertShopListingSecondaryImageForm(initialSecondaryImageFormState, formData);
+}
+
+export async function adminClearShopListingSecondaryImage(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  if (!listingId) return;
+
+  const listing = await loadListingForAdminSecondaryImage(listingId);
+  if (!listing || !listingAllowsAdminSecondaryImage(listing.requestStatus)) return;
+
+  await deleteShopListingAdminSecondaryObject(listing.shopId, listingId);
+  await prisma.shopListing.update({
+    where: { id: listingId },
+    data: { adminListingSecondaryImageUrl: null },
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath(`/s/${listing.shop.slug}`);
+}
+
+/** After reference images are accepted: submitted → images_ok. */
+export async function adminMarkListingImagesOk(formData: FormData) {
+  await requireAdmin();
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  if (!listingId) return;
+
+  const listing = await prisma.shopListing.findUnique({
+    where: { id: listingId },
+    select: { requestStatus: true },
+  });
+  if (!listing || listing.requestStatus !== ListingRequestStatus.submitted) return;
+
+  const row = await prisma.shopListing.update({
+    where: { id: listingId },
+    data: { requestStatus: ListingRequestStatus.images_ok },
+    select: { shop: { select: { slug: true } } },
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath(`/s/${row.shop.slug}`);
+}
+
+/** Same as {@link adminMarkListingImagesOk} for every legacy multi-size stub in one POST (all must be `submitted`). */
+export async function adminMarkLegacyVariantListingGroupImagesOk(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const listingIds = parseLegacyGroupListingIdsJson(formData.get("legacyGroupListingIdsJson"));
+  if (!listingIds) return;
+
+  const rows = await prisma.shopListing.findMany({
+    where: { id: { in: listingIds } },
+    select: { id: true, shopId: true, requestStatus: true },
+    orderBy: { createdAt: "asc" },
+  });
+  if (rows.length !== listingIds.length) return;
+
+  const shopId = rows[0]!.shopId;
+  if (rows.some((r) => r.shopId !== shopId)) return;
+  if (rows.some((r) => r.requestStatus !== ListingRequestStatus.submitted)) return;
+
+  await prisma.$transaction(
+    rows.map((r) =>
+      prisma.shopListing.update({
+        where: { id: r.id },
+        data: { requestStatus: ListingRequestStatus.images_ok },
+      }),
+    ),
+  );
+
+  const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } });
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  if (shop?.slug) revalidatePath(`/s/${shop.slug}`);
+}
+
+/**
+ * Record or update Printify product (and variant for printify catalog items).
+ * From `images_ok` → `printify_item_created`. From `printify_item_created` or `approved`, updates IDs and re-syncs
+ * without changing status (resave / fix mapping before or after approval).
+ */
 export async function adminMarkPrintifyListingReady(formData: FormData) {
   await requireAdmin();
   const listingId = String(formData.get("listingId") ?? "").trim();
@@ -30,52 +247,96 @@ export async function adminMarkPrintifyListingReady(formData: FormData) {
 
   const listing = await prisma.shopListing.findUnique({
     where: { id: listingId },
-    include: { product: true },
+    include: { product: true, shop: { select: { slug: true } } },
   });
-  if (!listing || listing.requestStatus !== ListingRequestStatus.submitted) return;
+  const st = listing?.requestStatus;
+  const allowed =
+    st === ListingRequestStatus.images_ok ||
+    st === ListingRequestStatus.printify_item_created ||
+    st === ListingRequestStatus.approved;
+  if (!listing || !allowed) return;
 
   if (listing.product.fulfillmentType === FulfillmentType.printify && !printifyVariantId) {
     return;
   }
 
+  const nextStatus =
+    st === ListingRequestStatus.images_ok
+      ? ListingRequestStatus.printify_item_created
+      : st;
+
+  const syncedAt = new Date();
   await prisma.shopListing.update({
     where: { id: listingId },
     data: {
       listingPrintifyProductId: printifyProductId,
       listingPrintifyVariantId: printifyVariantId || null,
-      requestStatus: ListingRequestStatus.printify_item_created,
+      requestStatus: nextStatus,
+      listingPrintifyCatalogSyncedAt: syncedAt,
     },
   });
+
+  await syncListingProductWithPrintifyCatalog(listing.productId, {
+    listingPrintifyProductId: printifyProductId,
+    listingPrintifyVariantId: printifyVariantId || null,
+  });
+
   revalidatePath("/admin");
   revalidatePath("/shops");
+  revalidatePath(`/s/${listing.shop.slug}`);
 }
 
-/**
- * Step 2: approve listing (requires Printify IDs). Applies free-slot waivers, charges listing fee policy,
- * and either goes live or asks the shop to pay the publication fee.
- */
-export async function adminApproveListingRequest(formData: FormData) {
-  await requireAdmin();
-  const listingId = String(formData.get("listingId") ?? "").trim();
-  const productId = String(formData.get("productId") ?? "").trim();
-  if (!listingId || !productId) return;
+function parseLegacyGroupListingIdsJson(raw: unknown): string[] | null {
+  if (typeof raw !== "string") return null;
+  try {
+    const parsed = JSON.parse(raw.trim() || "null") as unknown;
+    if (!Array.isArray(parsed)) return null;
+    const ids = [...new Set(parsed.map((x) => String(x ?? "").trim()).filter(Boolean))];
+    return ids.length ? ids : null;
+  } catch {
+    return null;
+  }
+}
 
+type AdminApproveListingExecOk = { ok: true; shopSlug: string; shopId: string };
+type AdminApproveListingExecResult = AdminApproveListingExecOk | { ok: false };
+
+/**
+ * Core approve path (no `revalidatePath`). Used by single approve and legacy multi-size batch approve.
+ */
+async function tryExecuteAdminApproveListingRequest(
+  listingId: string,
+): Promise<AdminApproveListingExecResult> {
   const listing = await prisma.shopListing.findUnique({
     where: { id: listingId },
     include: { shop: true },
   });
+  if (!listing) return { ok: false };
+  const productId = listing.productId;
   const product = await prisma.product.findUnique({ where: { id: productId } });
-  if (!listing || !product || listing.productId !== product.id) return;
+  if (!product) return { ok: false };
 
-  if (listing.requestStatus !== ListingRequestStatus.printify_item_created) return;
-  if (!listing.listingPrintifyProductId?.trim()) return;
+  if (listing.requestStatus !== ListingRequestStatus.printify_item_created) return { ok: false };
+  if (!listing.listingPrintifyProductId?.trim()) return { ok: false };
   if (product.fulfillmentType === FulfillmentType.printify && !listing.listingPrintifyVariantId?.trim()) {
-    return;
+    return { ok: false };
   }
+
+  await syncListingProductWithPrintifyCatalog(productId, {
+    listingPrintifyProductId: listing.listingPrintifyProductId,
+    listingPrintifyVariantId: listing.listingPrintifyVariantId,
+  });
+
+  const productForImages = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { imageUrl: true, imageGallery: true },
+  });
+  if (!productForImages) return { ok: false };
+  if (productImageUrlsUnionHero(productForImages).length === 0) return { ok: false };
 
   const isPlatform = listing.shop.slug === PLATFORM_SHOP_SLUG;
   const ordinal = await getListingOrdinal(listingId, listing.shopId);
-  if (ordinal === null) return;
+  if (ordinal === null) return { ok: false };
 
   const feeCents = isPlatform ? 0 : listingFeeCentsForOrdinal(ordinal, listing.shop.slug);
   const alreadyPaid = listing.listingFeePaidAt != null;
@@ -95,10 +356,7 @@ export async function adminApproveListingRequest(formData: FormData) {
     });
     await activateProductWhenShopListingGoesLive(productId, listing.shop.slug);
     await syncFreeListingFeeWaivers(listing.shopId);
-    revalidatePath("/admin");
-    revalidatePath("/shops");
-    revalidatePath("/dashboard");
-    return;
+    return { ok: true, shopSlug: listing.shop.slug, shopId: listing.shopId };
   }
 
   if (feeCents === 0) {
@@ -158,6 +416,60 @@ export async function adminApproveListingRequest(formData: FormData) {
     });
   }
 
+  return { ok: true, shopSlug: listing.shop.slug, shopId: listing.shopId };
+}
+
+/**
+ * Step 2: approve listing (requires Printify IDs). Applies free-slot waivers, charges listing fee policy,
+ * and either goes live or asks the shop to pay the publication fee.
+ */
+export async function adminApproveListingRequest(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  const productId = String(formData.get("productId") ?? "").trim();
+  if (!listingId || !productId) return;
+
+  const listing = await prisma.shopListing.findUnique({
+    where: { id: listingId },
+    select: { productId: true },
+  });
+  if (!listing || listing.productId !== productId) return;
+
+  const result = await tryExecuteAdminApproveListingRequest(listingId);
+  if (!result.ok) return;
+
+  revalidatePath("/admin");
+  revalidatePath("/shops");
+  revalidatePath("/dashboard");
+  revalidatePath(`/s/${result.shopSlug}`);
+}
+
+/** Approve every legacy split-catalog stub in one POST (same shop, oldest-first). */
+export async function adminApproveLegacyVariantListingGroup(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const listingIds = parseLegacyGroupListingIdsJson(formData.get("legacyGroupListingIdsJson"));
+  if (!listingIds) return;
+
+  const rows = await prisma.shopListing.findMany({
+    where: { id: { in: listingIds } },
+    include: { shop: true },
+    orderBy: { createdAt: "asc" },
+  });
+  if (rows.length !== listingIds.length) return;
+
+  const shopId = rows[0]!.shopId;
+  if (rows.some((r) => r.shopId !== shopId)) return;
+
+  const shopSlugs = new Set<string>();
+  for (const row of rows) {
+    const result = await tryExecuteAdminApproveListingRequest(row.id);
+    if (!result.ok) return;
+    shopSlugs.add(result.shopSlug);
+  }
+
+  for (const slug of shopSlugs) {
+    revalidatePath(`/s/${slug}`);
+  }
   revalidatePath("/admin");
   revalidatePath("/shops");
   revalidatePath("/dashboard");
@@ -229,13 +541,24 @@ export async function adminRemoveListingFromRequestsQueue(formData: FormData) {
   const productLabel = listing.product.name;
 
   if (listing.requestStatus === ListingRequestStatus.approved) {
+    await deleteShopListingSupplementObject(listing.shopId, listingId);
+    await deleteShopListingAdminSecondaryObject(listing.shopId, listingId);
     const wasLive = listing.active;
     const data: {
       removedFromListingRequestsAt: Date;
       active?: boolean;
       adminRemovedFromShopAt?: Date;
       requestImages: [];
-    } = { ...base, requestImages: [] };
+      ownerSupplementImageUrl: null;
+      adminListingSecondaryImageUrl: null;
+      listingStorefrontCatalogImageUrls: typeof Prisma.DbNull;
+    } = {
+      ...base,
+      requestImages: [],
+      ownerSupplementImageUrl: null,
+      adminListingSecondaryImageUrl: null,
+      listingStorefrontCatalogImageUrls: Prisma.DbNull,
+    };
     if (wasLive) {
       data.active = false;
       data.adminRemovedFromShopAt = now;
@@ -260,8 +583,10 @@ export async function adminRemoveListingFromRequestsQueue(formData: FormData) {
     }
   } else if (
     listing.requestStatus === ListingRequestStatus.submitted ||
+    listing.requestStatus === ListingRequestStatus.images_ok ||
     listing.requestStatus === ListingRequestStatus.printify_item_created
   ) {
+    await deleteShopListingAdminSecondaryObject(listing.shopId, listingId);
     await prisma.shopListing.update({
       where: { id: listingId },
       data: {
@@ -271,12 +596,15 @@ export async function adminRemoveListingFromRequestsQueue(formData: FormData) {
         listingPrintifyProductId: null,
         listingPrintifyVariantId: null,
         requestImages: [],
+        adminListingSecondaryImageUrl: null,
+        listingStorefrontCatalogImageUrls: Prisma.DbNull,
       },
     });
     await prisma.shopOwnerNotice.create({
       data: {
         shopId: listing.shopId,
         kind: "listing_rejected",
+        relatedListingId: listingId,
         body: `The platform removed your listing request for “${productLabel}” from review and marked it rejected. Check the Listings tab or contact support.`,
       },
     });
@@ -316,7 +644,9 @@ export async function adminUpdateListingRemovalNotes(formData: FormData) {
 /**
  * Clears removal audit fields so the listing drops off **Removed items** and **Shop watch** (same action from either tab).
  * Clears admin freeze, creator self-remove, listing-requests queue timestamp, and internal removal notes.
- * Does not delete the listing row or change request status / active flags by itself.
+ * If the listing is **rejected** but has no removal audit (typical after “Reject” on listing requests), sets
+ * `requestStatus` back to **draft** so it leaves Shop watch history and the creator can edit and resubmit.
+ * Does not delete the listing row; does not change `active` except indirectly when combined with other workflows.
  */
 export async function adminDeleteListingRemovalRecord(formData: FormData) {
   await requireAdmin();
@@ -326,19 +656,20 @@ export async function adminDeleteListingRemovalRecord(formData: FormData) {
   const listing = await prisma.shopListing.findUnique({
     where: { id: listingId },
     select: {
+      requestStatus: true,
       adminRemovedFromShopAt: true,
       creatorRemovedFromShopAt: true,
       removedFromListingRequestsAt: true,
     },
   });
-  if (
-    !listing ||
-    (listing.adminRemovedFromShopAt == null &&
-      listing.creatorRemovedFromShopAt == null &&
-      listing.removedFromListingRequestsAt == null)
-  ) {
-    return;
-  }
+  if (!listing) return;
+
+  const hasRemovalAudit =
+    listing.adminRemovedFromShopAt != null ||
+    listing.creatorRemovedFromShopAt != null ||
+    listing.removedFromListingRequestsAt != null;
+  const isRejected = listing.requestStatus === ListingRequestStatus.rejected;
+  if (!hasRemovalAudit && !isRejected) return;
 
   await prisma.shopListing.update({
     where: { id: listingId },
@@ -347,6 +678,7 @@ export async function adminDeleteListingRemovalRecord(formData: FormData) {
       creatorRemovedFromShopAt: null,
       removedFromListingRequestsAt: null,
       adminListingRemovalNotes: null,
+      ...(isRejected ? { requestStatus: ListingRequestStatus.draft } : {}),
     },
   });
   revalidatePath("/admin");
@@ -354,10 +686,12 @@ export async function adminDeleteListingRemovalRecord(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
-export async function adminRejectListingRequest(formData: FormData) {
-  await requireAdmin();
-  const listingId = String(formData.get("listingId") ?? "").trim();
-  if (!listingId) return;
+type AdminRejectListingExecOk = { ok: true; shopId: string; productName: string };
+type AdminRejectListingExecResult = AdminRejectListingExecOk | { ok: false };
+
+async function tryExecuteAdminRejectListingWithoutNotice(
+  listingId: string,
+): Promise<AdminRejectListingExecResult> {
   const listing = await prisma.shopListing.findUnique({
     where: { id: listingId },
     select: {
@@ -370,12 +704,14 @@ export async function adminRejectListingRequest(formData: FormData) {
   if (
     !listing ||
     (listing.requestStatus !== ListingRequestStatus.submitted &&
+      listing.requestStatus !== ListingRequestStatus.images_ok &&
       listing.requestStatus !== ListingRequestStatus.printify_item_created)
   ) {
-    return;
+    return { ok: false };
   }
   const requestImageUrls = shopListingRequestImageUrlStrings(listing.requestImages);
   await deleteShopListingRequestImagesFromR2(listing.shopId, requestImageUrls);
+  await deleteShopListingAdminSecondaryObject(listing.shopId, listingId);
   await prisma.shopListing.update({
     where: { id: listingId },
     data: {
@@ -384,13 +720,72 @@ export async function adminRejectListingRequest(formData: FormData) {
       listingPrintifyProductId: null,
       listingPrintifyVariantId: null,
       requestImages: [],
+      adminListingSecondaryImageUrl: null,
+      listingStorefrontCatalogImageUrls: Prisma.DbNull,
     },
   });
+  return { ok: true, shopId: listing.shopId, productName: listing.product.name };
+}
+
+export async function adminRejectListingRequest(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  const rejectReason = parseListingRejectReason(formData.get("rejectReason"));
+  if (!listingId || !rejectReason) return;
+
+  const result = await tryExecuteAdminRejectListingWithoutNotice(listingId);
+  if (!result.ok) return;
+
+  const base = (publicAppBaseUrl() ?? emailLinkOrigin()).replace(/\/$/, "");
+  const regulationsUrl = `${base}/shop-regulations`;
+  const detail = listingRejectionNoticeDetail(rejectReason, regulationsUrl);
   await prisma.shopOwnerNotice.create({
     data: {
-      shopId: listing.shopId,
+      shopId: result.shopId,
       kind: "listing_rejected",
-      body: `The platform rejected your listing request for “${listing.product.name}”. Open the Listings tab for status or contact support.`,
+      relatedListingId: listingId,
+      body: `The platform rejected your listing request for “${result.productName}”. ${detail} Open the Listings tab for status or contact support.`,
+    },
+  });
+  revalidatePath("/admin");
+  revalidatePath("/shops");
+  revalidatePath("/dashboard");
+}
+
+/** Reject every legacy split-catalog stub in one POST; one shop notice listing all product names. */
+export async function adminRejectLegacyVariantListingGroup(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const listingIds = parseLegacyGroupListingIdsJson(formData.get("legacyGroupListingIdsJson"));
+  const rejectReason = parseListingRejectReason(formData.get("rejectReason"));
+  if (!listingIds || !rejectReason) return;
+
+  const rows = await prisma.shopListing.findMany({
+    where: { id: { in: listingIds } },
+    select: { id: true, shopId: true },
+    orderBy: { createdAt: "asc" },
+  });
+  if (rows.length !== listingIds.length) return;
+
+  const shopId = rows[0]!.shopId;
+  if (rows.some((r) => r.shopId !== shopId)) return;
+
+  const names: string[] = [];
+  for (const row of rows) {
+    const result = await tryExecuteAdminRejectListingWithoutNotice(row.id);
+    if (!result.ok) return;
+    names.push(result.productName);
+  }
+
+  const base = (publicAppBaseUrl() ?? emailLinkOrigin()).replace(/\/$/, "");
+  const regulationsUrl = `${base}/shop-regulations`;
+  const detail = listingRejectionNoticeDetail(rejectReason, regulationsUrl);
+  const namesJoined = names.map((n) => `“${n}”`).join(", ");
+  await prisma.shopOwnerNotice.create({
+    data: {
+      shopId,
+      kind: "listing_rejected",
+      relatedListingId: rows[0]!.id,
+      body: `The platform rejected your multi-size listing request (${namesJoined}). ${detail} Open the Listings tab for status or contact support.`,
     },
   });
   revalidatePath("/admin");

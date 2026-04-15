@@ -256,6 +256,166 @@ export function shopProfileAvatarObjectKey(shopId: string): string {
   return `shops/${shopId}/avatar.webp`;
 }
 
+/** One optional owner storefront photo per listing (WebP, overwritten on each upload). */
+export function shopListingSupplementImageObjectKey(shopId: string, listingId: string): string {
+  return `shops/${shopId}/listing-supplement/${listingId}.webp`;
+}
+
+/**
+ * Resolves a public URL to the supplement object key only when it matches this shop/listing’s
+ * canonical R2 object (same hostname/path rules as listing-request artwork).
+ */
+export function listingSupplementImageUrlToObjectKey(
+  publicUrl: string,
+  shopId: string,
+  listingId: string,
+): string | null {
+  const expectedKey = shopListingSupplementImageObjectKey(shopId, listingId);
+  const strict = publicUrlToR2ObjectKey(publicUrl.trim());
+  if (strict === expectedKey) return strict;
+
+  let u: URL;
+  try {
+    u = new URL(publicUrl.trim());
+  } catch {
+    return null;
+  }
+
+  let path = u.pathname;
+  const baseRaw = readR2Env("R2_PUBLIC_BASE_URL")?.trim();
+  if (baseRaw) {
+    try {
+      const b = new URL(baseRaw.includes("://") ? baseRaw : `https://${baseRaw}`);
+      if (u.hostname.toLowerCase() === b.hostname.toLowerCase()) {
+        const basePath = b.pathname.replace(/\/$/, "");
+        if (basePath && basePath !== "/" && path.startsWith(basePath)) {
+          path = path.slice(basePath.length);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  path = path.replace(/^\/+/, "");
+  try {
+    path = decodeURIComponent(path);
+  } catch {
+    /* keep */
+  }
+  return path === expectedKey ? path : null;
+}
+
+/**
+ * Only pass through URLs that point at this listing’s supplement object — never catalog/Printify/admin URLs.
+ */
+export function sanitizeShopListingOwnerSupplementImageUrlForDisplay(
+  publicUrl: string | null | undefined,
+  shopId: string,
+  listingId: string,
+): string | null {
+  if (!publicUrl?.trim()) return null;
+  return listingSupplementImageUrlToObjectKey(publicUrl, shopId, listingId)
+    ? publicUrl.trim()
+    : null;
+}
+
+/** Best-effort delete {@link shopListingSupplementImageObjectKey} (no-op if R2 unset). */
+export async function deleteShopListingSupplementObject(
+  shopId: string,
+  listingId: string,
+): Promise<void> {
+  if (!isR2UploadConfigured()) return;
+  const bucket = readR2BucketName();
+  if (!bucket) return;
+  const Key = shopListingSupplementImageObjectKey(shopId, listingId);
+  try {
+    await r2S3Client().send(new DeleteObjectCommand({ Bucket: bucket, Key }));
+  } catch {
+    /* best-effort */
+  }
+}
+
+/** Optional admin-set listing image (WebP, overwritten on each save). */
+export function shopListingAdminSecondaryImageObjectKey(shopId: string, listingId: string): string {
+  return `shops/${shopId}/listing-admin-secondary/${listingId}.webp`;
+}
+
+export function listingAdminSecondaryImageUrlToObjectKey(
+  publicUrl: string,
+  shopId: string,
+  listingId: string,
+): string | null {
+  const expectedKey = shopListingAdminSecondaryImageObjectKey(shopId, listingId);
+  const strict = publicUrlToR2ObjectKey(publicUrl.trim());
+  if (strict === expectedKey) return strict;
+
+  let u: URL;
+  try {
+    u = new URL(publicUrl.trim());
+  } catch {
+    return null;
+  }
+
+  let path = u.pathname;
+  const baseRaw = readR2Env("R2_PUBLIC_BASE_URL")?.trim();
+  if (baseRaw) {
+    try {
+      const b = new URL(baseRaw.includes("://") ? baseRaw : `https://${baseRaw}`);
+      if (u.hostname.toLowerCase() === b.hostname.toLowerCase()) {
+        const basePath = b.pathname.replace(/\/$/, "");
+        if (basePath && basePath !== "/" && path.startsWith(basePath)) {
+          path = path.slice(basePath.length);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  path = path.replace(/^\/+/, "");
+  try {
+    path = decodeURIComponent(path);
+  } catch {
+    /* keep */
+  }
+  if (path === expectedKey) return expectedKey;
+  /** CDN / custom domain may add a path prefix; still require canonical key suffix. */
+  if (
+    (u.protocol === "https:" || u.protocol === "http:") &&
+    path.endsWith("/" + expectedKey)
+  ) {
+    return expectedKey;
+  }
+  return null;
+}
+
+export function sanitizeShopListingAdminSecondaryImageUrlForDisplay(
+  publicUrl: string | null | undefined,
+  shopId: string,
+  listingId: string,
+): string | null {
+  if (!publicUrl?.trim()) return null;
+  return listingAdminSecondaryImageUrlToObjectKey(publicUrl, shopId, listingId)
+    ? publicUrl.trim()
+    : null;
+}
+
+export async function deleteShopListingAdminSecondaryObject(
+  shopId: string,
+  listingId: string,
+): Promise<void> {
+  if (!isR2UploadConfigured()) return;
+  const bucket = readR2BucketName();
+  if (!bucket) return;
+  const Key = shopListingAdminSecondaryImageObjectKey(shopId, listingId);
+  try {
+    await r2S3Client().send(new DeleteObjectCommand({ Bucket: bucket, Key }));
+  } catch {
+    /* best-effort */
+  }
+}
+
 /**
  * Remove legacy profile avatars (`avatar-<uuid>.webp`) under `shops/{shopId}/`.
  * Does not touch `listing-request/` or the canonical `avatar.webp`.

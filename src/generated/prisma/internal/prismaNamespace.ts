@@ -1743,7 +1743,8 @@ export const ShopOwnerNoticeScalarFieldEnum = {
   body: 'body',
   kind: 'kind',
   readAt: 'readAt',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  relatedListingId: 'relatedListingId'
 } as const
 
 export type ShopOwnerNoticeScalarFieldEnum = (typeof ShopOwnerNoticeScalarFieldEnum)[keyof typeof ShopOwnerNoticeScalarFieldEnum]
@@ -1785,7 +1786,12 @@ export const ShopListingScalarFieldEnum = {
   listingFeePaidAt: 'listingFeePaidAt',
   listingPrintifyProductId: 'listingPrintifyProductId',
   listingPrintifyVariantId: 'listingPrintifyVariantId',
+  listingPrintifyVariantPrices: 'listingPrintifyVariantPrices',
+  listingPrintifyCatalogSyncedAt: 'listingPrintifyCatalogSyncedAt',
   requestImages: 'requestImages',
+  ownerSupplementImageUrl: 'ownerSupplementImageUrl',
+  adminListingSecondaryImageUrl: 'adminListingSecondaryImageUrl',
+  listingStorefrontCatalogImageUrls: 'listingStorefrontCatalogImageUrls',
   requestItemName: 'requestItemName',
   requestStatus: 'requestStatus',
   adminRemovedFromShopAt: 'adminRemovedFromShopAt',

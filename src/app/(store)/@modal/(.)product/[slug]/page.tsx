@@ -1,19 +1,32 @@
 import { notFound } from "next/navigation";
 import { ProductDetailContent } from "@/components/ProductDetailContent";
 import { ProductModalShell } from "@/components/ProductModalShell";
-import { loadStorefrontProductBySlug } from "@/lib/product-storefront";
+import { resolvePublicProductDetail } from "@/lib/storefront-product-detail";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-export default async function ProductModalInterceptPage({ params }: Props) {
+export default async function ProductModalInterceptPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const product = await loadStorefrontProductBySlug(slug);
-  if (!product) notFound();
+  const sp = await searchParams;
+  const shop = typeof sp.shop === "string" ? sp.shop : undefined;
+  const detail = await resolvePublicProductDetail(slug, shop);
+  if (!detail) notFound();
   return (
     <ProductModalShell>
-      <ProductDetailContent product={product} variant="modal" />
+      <ProductDetailContent
+        product={detail.product}
+        variant="modal"
+        tenant={detail.tenant}
+        printifyVariantShopPriceCentsById={detail.printifyVariantShopPriceCentsById}
+        adminListingSecondaryImageUrl={detail.adminListingSecondaryImageUrl}
+        ownerSupplementImageUrl={detail.ownerSupplementImageUrl}
+        listingStorefrontCatalogImageUrls={detail.listingStorefrontCatalogImageUrls}
+      />
     </ProductModalShell>
   );
 }

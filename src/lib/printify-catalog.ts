@@ -1,9 +1,10 @@
 /** Types + parsing for Printify catalog sync (images, prices, variants). */
 
-export type PrintifyCatalogImage = { src: string; variantIds: number[] };
+export type PrintifyCatalogImage = { src: string; variantIds: string[] };
 
 export type PrintifyCatalogVariant = {
-  id: number;
+  /** Printify may use integer ids or string ids (e.g. Mongo-style) depending on product/version. */
+  id: string;
   title: string;
   priceCents: number;
   enabled: boolean;
@@ -31,16 +32,30 @@ function parseImages(raw: unknown): PrintifyCatalogImage[] {
     const src = typeof srcRaw === "string" && srcRaw.trim() ? srcRaw.trim() : "";
     if (!src) continue;
     const idsRaw = o.variant_ids ?? o.variantIds;
-    const variantIds: number[] = [];
+    const variantIds: string[] = [];
     if (Array.isArray(idsRaw)) {
       for (const x of idsRaw) {
-        const n = typeof x === "number" ? x : Number(x);
-        if (Number.isFinite(n)) variantIds.push(n);
+        if (typeof x === "number" && Number.isFinite(x)) {
+          variantIds.push(String(Math.trunc(x)));
+        } else if (typeof x === "string" && x.trim()) {
+          variantIds.push(x.trim());
+        }
       }
     }
     out.push({ src, variantIds });
   }
   return out;
+}
+
+function parseVariantIdFromApi(vr: Record<string, unknown>): string | null {
+  const raw = vr.id;
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return String(Math.trunc(raw));
+  }
+  if (typeof raw === "string" && raw.trim()) {
+    return raw.trim();
+  }
+  return null;
 }
 
 function parseVariants(raw: unknown): PrintifyCatalogVariant[] {
@@ -49,8 +64,8 @@ function parseVariants(raw: unknown): PrintifyCatalogVariant[] {
   for (const v of raw) {
     if (!v || typeof v !== "object") continue;
     const vr = v as Record<string, unknown>;
-    const vid = typeof vr.id === "number" ? vr.id : Number(vr.id);
-    if (!Number.isFinite(vid)) continue;
+    const vid = parseVariantIdFromApi(vr);
+    if (!vid) continue;
     const title =
       typeof vr.title === "string" && vr.title.trim()
         ? vr.title.trim()
@@ -108,7 +123,7 @@ export function parsePrintifyProductRow(row: unknown): PrintifyCatalogProduct | 
 
 export function pickImageForVariant(
   images: PrintifyCatalogImage[],
-  variantId: number,
+  variantId: string,
 ): string | null {
   if (images.length === 0) return null;
   const direct = images.find((i) => i.variantIds.includes(variantId));
@@ -133,4 +148,14 @@ export function catalogRowNeedsDetail(p: PrintifyCatalogProduct): boolean {
   if (p.images.length === 0) return true;
   if (p.variants.some((v) => v.priceCents <= 0 && v.enabled)) return true;
   return false;
+}
+
+/** Checkout / default line: first enabled variant, else first variant (string id for forms). */
+export function defaultPrintifyVariantIdForCatalogProduct(p: {
+  variants: PrintifyCatalogVariant[];
+}): string | null {
+  if (p.variants.length === 0) return null;
+  const enabled = p.variants.filter((v) => v.enabled);
+  const first = (enabled.length > 0 ? enabled : p.variants)[0];
+  return first?.id ?? null;
 }

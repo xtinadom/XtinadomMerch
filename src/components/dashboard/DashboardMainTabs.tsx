@@ -1,8 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useId, useRef, useState } from "react";
-import { ListingRequestStatus } from "@/generated/prisma/enums";
+import type { Prisma } from "@/generated/prisma/client";
+import { useId, useState } from "react";
+import { FulfillmentType, ListingRequestStatus } from "@/generated/prisma/enums";
 import {
   dashboardCreatorRemoveListingFromShop,
   dashboardPayListingFee,
@@ -15,7 +16,9 @@ import {
 import {
   DashboardListingItemNameForm,
   DashboardListingPriceForm,
+  DashboardListingSupplementPhotoForm,
   DashboardSubmitListingRequestForm,
+  ListingStorefrontCatalogImagesForms,
 } from "@/components/dashboard/DashboardListingForms";
 import {
   ShopSetupTabs,
@@ -23,9 +26,20 @@ import {
   type ShopSetupSteps,
 } from "@/components/dashboard/ShopSetupTabs";
 import { ShopFirstListingRequestPanel } from "@/components/dashboard/ShopFirstListingRequestPanel";
+import type { DraftListingRequestPrefillPayload } from "@/lib/shop-baseline-draft-prefill";
 import type { ShopSetupCatalogGroup } from "@/lib/shop-baseline-catalog";
 import { dashboardMarkOwnerNoticeRead } from "@/actions/shop-dashboard-notices";
 import { DashboardNoticeMarkReadButton } from "@/components/dashboard/DashboardNoticeMarkReadButton";
+import { DashboardNoticeBody } from "@/components/dashboard/DashboardNoticeBody";
+import { dashboardListingMinPriceHintCents } from "@/lib/listing-cart-price";
+import {
+  parseListingStorefrontCatalogImageSelection,
+  productImageUrlsUnionHero,
+} from "@/lib/product-media";
+import type {
+  GroupedDashboardListing,
+  LegacyBaselineListingGroup,
+} from "@/lib/dashboard-legacy-baseline-listing-groups";
 
 export type DashboardSetupPanelProps = {
   setupTabsKey: string;
@@ -43,6 +57,10 @@ export type DashboardListingRow = {
   requestStatus: ListingRequestStatus;
   priceCents: number;
   requestImages: unknown;
+  /** Optional admin-set second storefront image (approved listings). */
+  adminListingSecondaryImageUrl: string | null;
+  /** Optional extra image on the public storefront (approved listings). */
+  ownerSupplementImageUrl: string | null;
   /** Shop label for this listing request (optional). */
   requestItemName: string | null;
   listingFeePaidAt: string | null;
@@ -50,11 +68,22 @@ export type DashboardListingRow = {
   creatorRemovedFromShopAt: string | null;
   /** 1-based order by shop creation time (oldest = 1). */
   listingOrdinal: number;
+  /** Extracted from the newest `listing_rejected` notice when status is rejected. */
+  rejectionReasonText: string | null;
+  /** JSON string[] or null — which catalog URLs show on the public PDP. */
+  listingStorefrontCatalogImageUrls: unknown;
+  listingPrintifyVariantId: string | null;
+  listingPrintifyVariantPrices: unknown;
   product: {
     name: string;
     slug: string;
     minPriceCents: number;
     priceCents: number;
+    imageUrl: string | null;
+    imageGallery: Prisma.JsonValue | null;
+    fulfillmentType: FulfillmentType;
+    printifyVariantId: string | null;
+    printifyVariants: Prisma.JsonValue | null;
   };
 };
 
@@ -99,7 +128,9 @@ function requestStatusDescription(status: ListingRequestStatus): string {
     case ListingRequestStatus.draft:
       return "Draft — finish artwork / URLs and submit when ready.";
     case ListingRequestStatus.submitted:
-      return "Submitted — waiting for admin to link the Printify product.";
+      return "Submitted — waiting for admin to run the image check.";
+    case ListingRequestStatus.images_ok:
+      return "In review — image check passed; admin is linking Printify. Your listing badge stays In review until approval.";
     case ListingRequestStatus.printify_item_created:
       return "Printify item created — waiting for admin approval.";
     case ListingRequestStatus.approved:
@@ -116,6 +147,8 @@ function statusBadgeClass(status: ListingRequestStatus, active: boolean): string
   switch (status) {
     case ListingRequestStatus.submitted:
       return "bg-amber-950/40 text-amber-200/90 ring-amber-800/50";
+    case ListingRequestStatus.images_ok:
+      return "bg-amber-950/40 text-amber-200/90 ring-amber-800/50";
     case ListingRequestStatus.printify_item_created:
       return "bg-violet-950/40 text-violet-200/90 ring-violet-800/50";
     case ListingRequestStatus.approved:
@@ -127,28 +160,19 @@ function statusBadgeClass(status: ListingRequestStatus, active: boolean): string
   }
 }
 
-function ListingCard({
-  listing,
-  isPlatform,
-  paidListingFeeLabel,
-  shopSlug,
-}: {
-  listing: DashboardListingRow;
-  isPlatform: boolean;
-  paidListingFeeLabel: string;
-  shopSlug: string;
-}) {
-  const minCents =
-    listing.product.minPriceCents > 0
-      ? listing.product.minPriceCents
-      : listing.product.priceCents;
+function buildListingDerived(
+  listing: DashboardListingRow,
+  shopSlug: string,
+  isPlatform: boolean,
+) {
+  const minCents = dashboardListingMinPriceHintCents(listing.product);
   const minLabel = formatMoney(minCents);
   const listingLocked =
     listing.requestStatus === ListingRequestStatus.rejected ||
     listing.creatorRemovedFromShopAt != null;
-  /** Submitted / awaiting admin Printify step — no edits until approved. */
   const awaitingAdminReview =
     listing.requestStatus === ListingRequestStatus.submitted ||
+    listing.requestStatus === ListingRequestStatus.images_ok ||
     listing.requestStatus === ListingRequestStatus.printify_item_created;
   const fieldsReadOnly = listingLocked || awaitingAdminReview;
   const canSubmit =
@@ -180,7 +204,17 @@ function ListingCard({
               ringClass: statusBadgeClass(listing.requestStatus, true),
             }
           : {
-              label: String(listing.requestStatus),
+              label: !isPlatform
+                ? listing.requestStatus === ListingRequestStatus.draft
+                  ? "Draft"
+                  : listing.requestStatus === ListingRequestStatus.approved
+                    ? "Fee pending"
+                    : listing.requestStatus === ListingRequestStatus.submitted ||
+                        listing.requestStatus === ListingRequestStatus.images_ok ||
+                        listing.requestStatus === ListingRequestStatus.printify_item_created
+                      ? "In review"
+                      : String(listing.requestStatus)
+                : String(listing.requestStatus),
               ringClass: statusBadgeClass(listing.requestStatus, false),
             };
   const canRemoveFromShop =
@@ -189,62 +223,181 @@ function ListingCard({
     listing.active &&
     !listing.creatorRemovedFromShopAt &&
     !listing.adminRemovedFromShopAt;
-  const removeFromShopFormRef = useRef<HTMLFormElement>(null);
+  const showOwnerSupplementSection =
+    !isPlatform &&
+    listing.requestStatus === ListingRequestStatus.approved &&
+    listing.creatorRemovedFromShopAt == null;
+  const canEditOwnerSupplement =
+    showOwnerSupplementSection && listing.adminRemovedFromShopAt == null;
+  const catalogUrls = productImageUrlsUnionHero({
+    imageUrl: listing.product.imageUrl,
+    imageGallery: listing.product.imageGallery,
+  });
+  const savedCatalogSelection = parseListingStorefrontCatalogImageSelection(
+    listing.listingStorefrontCatalogImageUrls,
+  );
+  const showCatalogImagePicker =
+    showOwnerSupplementSection && canEditOwnerSupplement && catalogUrls.length > 0;
+
+  return {
+    minLabel,
+    listingLocked,
+    awaitingAdminReview,
+    fieldsReadOnly,
+    canSubmit,
+    imagesDefault,
+    feeCents,
+    isFreeListingSlot,
+    founderFreeShop,
+    dashboardBadge,
+    canRemoveFromShop,
+    showOwnerSupplementSection,
+    canEditOwnerSupplement,
+    catalogUrls,
+    savedCatalogSelection,
+    showCatalogImagePicker,
+  };
+}
+
+function ListingOptionPanel({
+  listing,
+  isPlatform,
+  paidListingFeeLabel,
+  shopSlug,
+  r2Configured,
+  variantLabel,
+  stacked,
+}: {
+  listing: DashboardListingRow;
+  isPlatform: boolean;
+  paidListingFeeLabel: string;
+  shopSlug: string;
+  r2Configured: boolean;
+  /** When set (legacy grouped card), show per-option catalog line. */
+  variantLabel?: string;
+  /** Second+ option in a legacy group — add top divider. */
+  stacked?: boolean;
+}) {
+  const d = buildListingDerived(listing, shopSlug, isPlatform);
+  const {
+    minLabel,
+    listingLocked,
+    awaitingAdminReview,
+    fieldsReadOnly,
+    canSubmit,
+    imagesDefault,
+    feeCents,
+    isFreeListingSlot,
+    founderFreeShop,
+    canRemoveFromShop,
+    showOwnerSupplementSection,
+    canEditOwnerSupplement,
+    catalogUrls,
+    savedCatalogSelection,
+    showCatalogImagePicker,
+  } = d;
+  const removeFormId = `creator-remove-listing-${listing.id}`;
 
   return (
-    <li className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 text-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <DashboardListingItemNameForm
-          listingId={listing.id}
-          catalogProductName={listing.product.name}
-          requestItemName={listing.requestItemName}
-          readOnly={fieldsReadOnly}
-        />
-        <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ${dashboardBadge.ringClass}`}
-        >
-          {dashboardBadge.label}
-        </span>
-      </div>
-      <p className="mt-1 text-xs text-zinc-500">{requestStatusDescription(listing.requestStatus)}</p>
-      {listing.creatorRemovedFromShopAt ? (
-        <p className="mt-1 text-xs text-fuchsia-200/80">
-          You removed this listing from your shop on {listing.creatorRemovedFromShopAt.slice(0, 10)}. It no longer
-          appears on your public storefront. Contact support if you need it restored.
-        </p>
-      ) : listing.adminRemovedFromShopAt ? (
-        <p className="mt-1 text-xs text-sky-200/75">
-          This listing was frozen by the platform and is hidden from your storefront until support clears it.
+    <div className={stacked ? "mt-4 border-t border-zinc-800/80 pt-4" : ""}>
+      {variantLabel ? (
+        <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-zinc-500">Option: {variantLabel}</p>
+      ) : null}
+      {variantLabel && listing.rejectionReasonText ? (
+        <p className="mb-2 text-xs leading-snug text-red-200/85">
+          <DashboardNoticeBody body={listing.rejectionReasonText} />
         </p>
       ) : null}
       <p className="mt-1 text-xs text-zinc-600">
-        Catalog: {listing.product.slug} · min {minLabel}
-        {listing.requestItemName?.trim() ? (
+        {variantLabel ? (
           <>
-            {" "}
-            · baseline name: <span className="text-zinc-500">{listing.product.name}</span>
+            Catalog stub {listing.product.slug} · min {minLabel}
+            {listing.requestItemName?.trim() ? (
+              <>
+                {" "}
+                · baseline: <span className="text-zinc-500">{listing.product.name}</span>
+              </>
+            ) : null}
           </>
-        ) : null}
+        ) : (
+          <>
+            Catalog: {listing.product.slug} · min {minLabel}
+            {listing.requestItemName?.trim() ? (
+              <>
+                {" "}
+                · baseline name: <span className="text-zinc-500">{listing.product.name}</span>
+              </>
+            ) : null}
+          </>
+        )}
       </p>
 
       <DashboardListingPriceForm
         listingId={listing.id}
         priceDollarsFormatted={(listing.priceCents / 100).toFixed(2)}
+        listingPriceCents={listing.priceCents}
+        listingPrintifyVariantPrices={listing.listingPrintifyVariantPrices}
+        product={{
+          fulfillmentType: listing.product.fulfillmentType,
+          priceCents: listing.product.priceCents,
+          minPriceCents: listing.product.minPriceCents,
+          printifyVariantId: listing.product.printifyVariantId,
+          printifyVariants: listing.product.printifyVariants,
+        }}
         readOnly={fieldsReadOnly}
       />
 
+      {showOwnerSupplementSection && listing.adminListingSecondaryImageUrl ? (
+        <div className="mt-4 border-t border-zinc-800 pt-4">
+          <p className="text-xs font-medium text-zinc-500">Platform listing photo</p>
+          <p className="mt-1 text-[11px] text-zinc-600">
+            Added by the platform. It shows on your public listing with the main product images — you cannot remove it
+            here.
+          </p>
+          <div className="mt-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={listing.adminListingSecondaryImageUrl}
+              alt=""
+              className="h-24 w-24 rounded border border-zinc-700 object-cover"
+            />
+          </div>
+        </div>
+      ) : null}
+      {showOwnerSupplementSection ? (
+        <DashboardListingSupplementPhotoForm
+          listingId={listing.id}
+          ownerSupplementImageUrl={listing.ownerSupplementImageUrl}
+          r2Configured={r2Configured}
+          canEdit={canEditOwnerSupplement}
+        />
+      ) : null}
+
+      {showCatalogImagePicker ? (
+        <ListingStorefrontCatalogImagesForms
+          key={listing.id}
+          listingId={listing.id}
+          catalogUrls={catalogUrls}
+          savedCatalogSelection={savedCatalogSelection}
+        />
+      ) : null}
+
       {canRemoveFromShop ? (
-        <form ref={removeFromShopFormRef} action={dashboardCreatorRemoveListingFromShop} className="mt-3">
+        <form
+          id={removeFormId}
+          action={dashboardCreatorRemoveListingFromShop}
+          className="mt-3"
+          onSubmit={(e) => {
+            const ok = window.confirm(
+              `Are you sure you want to remove this listing from your shop? You cannot undo this action, and all listings after your first ${LISTING_FEE_FREE_SLOT_COUNT} will cost ${paidListingFeeLabel}.`,
+            );
+            if (!ok) e.preventDefault();
+          }}
+        >
           <input type="hidden" name="listingId" value={listing.id} />
           <button
-            type="button"
+            type="submit"
             className="rounded border border-red-900/55 bg-red-950/35 px-3 py-1.5 text-xs font-medium text-red-200/95 hover:border-red-700/60 hover:bg-red-950/50"
-            onClick={() => {
-              const ok = window.confirm(
-                `Are you sure you want to remove this listing from your shop? You cannot undo this action, and all listings after your first ${LISTING_FEE_FREE_SLOT_COUNT} will cost ${paidListingFeeLabel}.`,
-              );
-              if (ok) removeFromShopFormRef.current?.requestSubmit();
-            }}
           >
             Remove from shop
           </button>
@@ -300,6 +453,148 @@ function ListingCard({
           Request status: {listing.requestStatus} — contact support if you need changes.
         </p>
       )}
+    </div>
+  );
+}
+
+function LegacyVariantGroupCard({
+  group,
+  isPlatform,
+  paidListingFeeLabel,
+  shopSlug,
+  r2Configured,
+}: {
+  group: LegacyBaselineListingGroup<DashboardListingRow>;
+  isPlatform: boolean;
+  paidListingFeeLabel: string;
+  shopSlug: string;
+  r2Configured: boolean;
+}) {
+  const primary = group.members[0]!.row;
+  const statuses = new Set(group.members.map((m) => m.row.requestStatus));
+  const oneStatus = statuses.size === 1 ? primary.requestStatus : null;
+  const d = buildListingDerived(primary, shopSlug, isPlatform);
+  const dashboardBadge =
+    oneStatus != null
+      ? d.dashboardBadge
+      : {
+          label: "Mixed status",
+          ringClass: "bg-zinc-900/80 text-zinc-300 ring-zinc-700/80",
+        };
+
+  return (
+    <li className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 text-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-zinc-500">Item name</p>
+          <p className="mt-0.5 text-sm text-zinc-100">{primary.requestItemName?.trim() || "—"}</p>
+          <p className="mt-1 text-[11px] leading-snug text-zinc-600">
+            Catalog: {group.parentItemName} · one product with multiple size options (shown together).
+          </p>
+        </div>
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ${dashboardBadge.ringClass}`}
+        >
+          {dashboardBadge.label}
+        </span>
+      </div>
+      {oneStatus === ListingRequestStatus.rejected ? (
+        <>
+          <p className="mt-1 text-xs text-zinc-500">
+            Rejected — this listing cannot be edited. Contact support if you need help.
+          </p>
+          {group.members.some((m) => m.row.rejectionReasonText) ? (
+            <p className="mt-1 text-xs leading-snug text-red-200/85">
+              See each option below for any rejection notes.
+            </p>
+          ) : null}
+        </>
+      ) : oneStatus != null ? (
+        <p className="mt-1 text-xs text-zinc-500">{requestStatusDescription(oneStatus)}</p>
+      ) : (
+        <p className="mt-1 text-xs text-zinc-500">
+          Options below may differ slightly in pipeline status; each row is a legacy catalog stub from the same
+          submission.
+        </p>
+      )}
+      {group.members.map(({ row, variantLabel }, idx) => (
+        <ListingOptionPanel
+          key={row.id}
+          listing={row}
+          isPlatform={isPlatform}
+          paidListingFeeLabel={paidListingFeeLabel}
+          shopSlug={shopSlug}
+          r2Configured={r2Configured}
+          variantLabel={variantLabel}
+          stacked={idx > 0}
+        />
+      ))}
+    </li>
+  );
+}
+
+function ListingCard({
+  listing,
+  isPlatform,
+  paidListingFeeLabel,
+  shopSlug,
+  r2Configured,
+}: {
+  listing: DashboardListingRow;
+  isPlatform: boolean;
+  paidListingFeeLabel: string;
+  shopSlug: string;
+  r2Configured: boolean;
+}) {
+  const { dashboardBadge, fieldsReadOnly } = buildListingDerived(listing, shopSlug, isPlatform);
+
+  return (
+    <li className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 text-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <DashboardListingItemNameForm
+          listingId={listing.id}
+          catalogProductName={listing.product.name}
+          requestItemName={listing.requestItemName}
+          readOnly={fieldsReadOnly}
+        />
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ${dashboardBadge.ringClass}`}
+        >
+          {dashboardBadge.label}
+        </span>
+      </div>
+      {listing.requestStatus === ListingRequestStatus.rejected ? (
+        <>
+          <p className="mt-1 text-xs text-zinc-500">
+            Rejected — this listing cannot be edited. Contact support if you need help.
+          </p>
+          {listing.rejectionReasonText ? (
+            <p className="mt-1 text-xs leading-snug text-red-200/85">
+              <DashboardNoticeBody body={listing.rejectionReasonText} />
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <p className="mt-1 text-xs text-zinc-500">{requestStatusDescription(listing.requestStatus)}</p>
+      )}
+      {listing.creatorRemovedFromShopAt ? (
+        <p className="mt-1 text-xs text-fuchsia-200/80">
+          You removed this listing from your shop on {listing.creatorRemovedFromShopAt.slice(0, 10)}. It no longer
+          appears on your public storefront. Contact support if you need it restored.
+        </p>
+      ) : listing.adminRemovedFromShopAt ? (
+        <p className="mt-1 text-xs text-sky-200/75">
+          This listing was frozen by the platform and is hidden from your storefront until support clears it.
+        </p>
+      ) : null}
+
+      <ListingOptionPanel
+        listing={listing}
+        isPlatform={isPlatform}
+        paidListingFeeLabel={paidListingFeeLabel}
+        shopSlug={shopSlug}
+        r2Configured={r2Configured}
+      />
     </li>
   );
 }
@@ -323,7 +618,17 @@ export function DashboardMainTabs(props: {
   paidListingFeeLabel: string;
   isPlatform: boolean;
   listings: DashboardListingRow[];
+  /** Server-built groups (live / request / removed) — legacy variant stubs merged for display. */
+  groupedListingSections: {
+    live: GroupedDashboardListing<DashboardListingRow>[];
+    request: GroupedDashboardListing<DashboardListingRow>[];
+    removed: GroupedDashboardListing<DashboardListingRow>[];
+  };
   paidOrders: DashboardPaidOrderRow[];
+  /** R2 configured for optional listing photo uploads (creator shops). */
+  r2Configured: boolean;
+  /** When set, Request listing tab pre-fills from this draft (baseline stub listings only). */
+  draftListingRequestPrefill?: DraftListingRequestPrefillPayload | null;
 }) {
   const {
     initialTab: initialTabProp,
@@ -335,7 +640,10 @@ export function DashboardMainTabs(props: {
     paidListingFeeLabel,
     isPlatform,
     listings,
+    groupedListingSections,
     paidOrders,
+    r2Configured,
+    draftListingRequestPrefill = null,
   } = props;
 
   const hasSetup = setup != null;
@@ -377,21 +685,7 @@ export function DashboardMainTabs(props: {
   const ordersPanelId = `${baseId}-panel-orders`;
   const supportPanelId = `${baseId}-panel-support`;
 
-  /** On the public storefront (`active` is false for creator-removed, frozen, and pipeline rows). */
-  const liveListings = listings.filter(
-    (l) => l.active && l.requestStatus !== ListingRequestStatus.rejected,
-  );
-  const removedListings = listings.filter(
-    (l) =>
-      l.creatorRemovedFromShopAt != null || l.requestStatus === ListingRequestStatus.rejected,
-  );
-  /** Drafts, submitted, frozen, fee-pending, etc. — not creator-removed or rejected. */
-  const requestListings = listings.filter(
-    (l) =>
-      !l.active &&
-      l.creatorRemovedFromShopAt == null &&
-      l.requestStatus !== ListingRequestStatus.rejected,
-  );
+  const { live: groupedLive, request: groupedRequest, removed: groupedRemoved } = groupedListingSections;
 
   const tabBtn = (id: TabId, label: ReactNode, tabId: string, panelId: string) => (
     <button
@@ -476,6 +770,7 @@ export function DashboardMainTabs(props: {
             listingFeePolicySummary={setup.listingFeePolicySummary}
             r2Configured={setup.r2Configured}
             listingPickerDiagnostics={setup.listingPickerDiagnostics}
+            draftListingRequestPrefill={draftListingRequestPrefill}
             embedded
           />
         </div>
@@ -494,29 +789,41 @@ export function DashboardMainTabs(props: {
           goes live. Platform catalog shop skips the fee.
         </p>
 
-        {liveListings.length > 0 ? (
+        {groupedLive.length > 0 ? (
           <div className="mt-6">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-500/90">Live</h3>
             <p className="mt-1 text-[11px] text-zinc-600">
               Active on your public storefront right now.
             </p>
             <ul className="mt-3 space-y-6">
-              {liveListings.map((listing) => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  isPlatform={isPlatform}
-                  paidListingFeeLabel={paidListingFeeLabel}
-                  shopSlug={shopSlug}
-                />
-              ))}
+              {groupedLive.map((g) =>
+                g.kind === "single" ? (
+                  <ListingCard
+                    key={g.row.id}
+                    listing={g.row}
+                    isPlatform={isPlatform}
+                    paidListingFeeLabel={paidListingFeeLabel}
+                    shopSlug={shopSlug}
+                    r2Configured={r2Configured}
+                  />
+                ) : (
+                  <LegacyVariantGroupCard
+                    key={g.members.map((m) => m.row.id).join("-")}
+                    group={g}
+                    isPlatform={isPlatform}
+                    paidListingFeeLabel={paidListingFeeLabel}
+                    shopSlug={shopSlug}
+                    r2Configured={r2Configured}
+                  />
+                ),
+              )}
             </ul>
           </div>
         ) : null}
 
-        {requestListings.length > 0 ? (
+        {groupedRequest.length > 0 ? (
           <div
-            className={liveListings.length > 0 || removedListings.length > 0 ? "mt-10" : "mt-6"}
+            className={groupedLive.length > 0 || groupedRemoved.length > 0 ? "mt-10" : "mt-6"}
           >
             <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
               Listing requests & setup
@@ -526,40 +833,64 @@ export function DashboardMainTabs(props: {
               here.
             </p>
             <ul className="mt-3 space-y-6">
-              {requestListings.map((listing) => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  isPlatform={isPlatform}
-                  paidListingFeeLabel={paidListingFeeLabel}
-                  shopSlug={shopSlug}
-                />
-              ))}
+              {groupedRequest.map((g) =>
+                g.kind === "single" ? (
+                  <ListingCard
+                    key={g.row.id}
+                    listing={g.row}
+                    isPlatform={isPlatform}
+                    paidListingFeeLabel={paidListingFeeLabel}
+                    shopSlug={shopSlug}
+                    r2Configured={r2Configured}
+                  />
+                ) : (
+                  <LegacyVariantGroupCard
+                    key={g.members.map((m) => m.row.id).join("-")}
+                    group={g}
+                    isPlatform={isPlatform}
+                    paidListingFeeLabel={paidListingFeeLabel}
+                    shopSlug={shopSlug}
+                    r2Configured={r2Configured}
+                  />
+                ),
+              )}
             </ul>
           </div>
         ) : null}
 
-        {removedListings.length > 0 ? (
+        {groupedRemoved.length > 0 ? (
           <div
             className={
-              liveListings.length > 0 || requestListings.length > 0 ? "mt-10" : "mt-6"
+              groupedLive.length > 0 || groupedRequest.length > 0 ? "mt-10" : "mt-6"
             }
           >
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-fuchsia-500/90">Removed</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-red-400/95">Rejected</h3>
             <p className="mt-1 text-[11px] text-zinc-600">
               You took these off your storefront, or the listing request was rejected. These rows aren&apos;t editable —
               contact support to restore a removed listing or to discuss a rejected request.
             </p>
             <ul className="mt-3 space-y-6">
-              {removedListings.map((listing) => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  isPlatform={isPlatform}
-                  paidListingFeeLabel={paidListingFeeLabel}
-                  shopSlug={shopSlug}
-                />
-              ))}
+              {groupedRemoved.map((g) =>
+                g.kind === "single" ? (
+                  <ListingCard
+                    key={g.row.id}
+                    listing={g.row}
+                    isPlatform={isPlatform}
+                    paidListingFeeLabel={paidListingFeeLabel}
+                    shopSlug={shopSlug}
+                    r2Configured={r2Configured}
+                  />
+                ) : (
+                  <LegacyVariantGroupCard
+                    key={g.members.map((m) => m.row.id).join("-")}
+                    group={g}
+                    isPlatform={isPlatform}
+                    paidListingFeeLabel={paidListingFeeLabel}
+                    shopSlug={shopSlug}
+                    r2Configured={r2Configured}
+                  />
+                ),
+              )}
             </ul>
           </div>
         ) : null}
@@ -596,7 +927,9 @@ export function DashboardMainTabs(props: {
                   }`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2 gap-y-1">
-                    <p className="min-w-0 flex-1 leading-snug">{n.body}</p>
+                    <p className="min-w-0 flex-1 leading-snug">
+                      <DashboardNoticeBody body={n.body} />
+                    </p>
                     {isUnread ? (
                       <form action={dashboardMarkOwnerNoticeRead} className="shrink-0">
                         <input type="hidden" name="noticeId" value={n.id} />

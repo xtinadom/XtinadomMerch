@@ -32,9 +32,14 @@ export default async function HomePage() {
       return {
         shop: s,
         product: productCardProductFromListing({
+          id: listing.id,
+          shopId: listing.shopId,
           priceCents: listing.priceCents,
           product: listing.product,
           requestItemName: listing.requestItemName,
+          adminListingSecondaryImageUrl: listing.adminListingSecondaryImageUrl,
+          ownerSupplementImageUrl: listing.ownerSupplementImageUrl,
+          listingStorefrontCatalogImageUrls: listing.listingStorefrontCatalogImageUrls,
         }),
       };
     })

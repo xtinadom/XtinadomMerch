@@ -24,7 +24,10 @@ import {
   parseBaselinePick,
 } from "@/lib/shop-baseline-catalog";
 import { parseAdminCatalogVariantsJson } from "@/lib/admin-catalog-item";
-import { getOrCreateBaselineStubProduct } from "@/lib/shop-baseline-stub-product";
+import {
+  getOrCreateBaselineAllVariantsStubProduct,
+  getOrCreateBaselineStubProduct,
+} from "@/lib/shop-baseline-stub-product";
 import { syncFreeListingFeeWaivers } from "@/lib/listing-fee";
 
 const WELCOME_MAX = 280;
@@ -215,8 +218,8 @@ export async function submitFirstListingSetup(
       }
     }
 
-    type Plan = { productId: string; priceCents: number; variantLabel: string };
-    const plans: Plan[] = [];
+    const catalogVariantCents: Record<string, number> = {};
+    let minSubmitted = Infinity;
 
     for (const v of variants) {
       const key = encodeBaselinePickVariant(baselinePick.itemId, v.id);
@@ -233,16 +236,16 @@ export async function submitFirstListingSetup(
           error: `Price must be at least ${(minCents / 100).toFixed(2)} USD for ${v.label}.`,
         };
       }
-      const stub = await getOrCreateBaselineStubProduct(shop.id, {
-        mode: "variant",
-        itemId: baselinePick.itemId,
-        variantId: v.id,
-      });
-      if (!stub) {
-        return { ok: false, error: "That catalog item is not available." };
-      }
-      plans.push({ productId: stub.productId, priceCents, variantLabel: v.label });
+      catalogVariantCents[v.id] = priceCents;
+      minSubmitted = Math.min(minSubmitted, priceCents);
     }
+
+    const stub = await getOrCreateBaselineAllVariantsStubProduct(shop.id, baselinePick.itemId);
+    if (!stub) {
+      return { ok: false, error: "That catalog item is not available." };
+    }
+    const productId = stub.productId;
+    const listingPriceCents = Number.isFinite(minSubmitted) ? minSubmitted : stub.minPriceCents;
 
     const file = formData.get("listingArtwork");
     if (!file || !(file instanceof Blob) || file.size === 0) {
@@ -261,26 +264,26 @@ export async function submitFirstListingSetup(
       };
     }
 
-    for (const p of plans) {
-      const existing = await prisma.shopListing.findUnique({
-        where: { shopId_productId: { shopId: shop.id, productId: p.productId } },
-      });
-      if (existing) {
-        if (existing.active || existing.requestStatus === ListingRequestStatus.approved) {
-          return {
-            ok: false,
-            error: `${p.variantLabel} is already live on your shop.`,
-          };
-        }
-        if (
-          existing.requestStatus === ListingRequestStatus.submitted ||
-          existing.requestStatus === ListingRequestStatus.printify_item_created
-        ) {
-          return {
-            ok: false,
-            error: `${p.variantLabel} is already waiting for admin review. Pick another product or wait for a decision.`,
-          };
-        }
+    const existing = await prisma.shopListing.findUnique({
+      where: { shopId_productId: { shopId: shop.id, productId } },
+    });
+    if (existing) {
+      if (existing.active || existing.requestStatus === ListingRequestStatus.approved) {
+        return {
+          ok: false,
+          error: "This catalog item is already live on your shop.",
+        };
+      }
+      if (
+        existing.requestStatus === ListingRequestStatus.submitted ||
+        existing.requestStatus === ListingRequestStatus.images_ok ||
+        existing.requestStatus === ListingRequestStatus.printify_item_created
+      ) {
+        return {
+          ok: false,
+          error:
+            "This item is already waiting for admin review. Pick another product or wait for a decision.",
+        };
       }
     }
 
@@ -291,29 +294,27 @@ export async function submitFirstListingSetup(
       contentType: "image/webp",
     });
 
-    await prisma.$transaction(
-      plans.map((p) =>
-        prisma.shopListing.upsert({
-          where: { shopId_productId: { shopId: shop.id, productId: p.productId } },
-          create: {
-            shopId: shop.id,
-            productId: p.productId,
-            priceCents: p.priceCents,
-            requestItemName,
-            requestImages: [url],
-            requestStatus: ListingRequestStatus.submitted,
-            active: false,
-          },
-          update: {
-            priceCents: p.priceCents,
-            requestItemName,
-            requestImages: [url],
-            requestStatus: ListingRequestStatus.submitted,
-            active: false,
-          },
-        }),
-      ),
-    );
+    await prisma.shopListing.upsert({
+      where: { shopId_productId: { shopId: shop.id, productId } },
+      create: {
+        shopId: shop.id,
+        productId,
+        priceCents: listingPriceCents,
+        listingPrintifyVariantPrices: catalogVariantCents as Prisma.InputJsonValue,
+        requestItemName,
+        requestImages: [url],
+        requestStatus: ListingRequestStatus.submitted,
+        active: false,
+      },
+      update: {
+        priceCents: listingPriceCents,
+        listingPrintifyVariantPrices: catalogVariantCents as Prisma.InputJsonValue,
+        requestItemName,
+        requestImages: [url],
+        requestStatus: ListingRequestStatus.submitted,
+        active: false,
+      },
+    });
 
     await syncFreeListingFeeWaivers(shop.id);
     revalidatePath("/dashboard");
@@ -397,6 +398,7 @@ export async function submitFirstListingSetup(
     }
     if (
       existing.requestStatus === ListingRequestStatus.submitted ||
+      existing.requestStatus === ListingRequestStatus.images_ok ||
       existing.requestStatus === ListingRequestStatus.printify_item_created
     ) {
       return {

@@ -10,7 +10,6 @@ import {
 } from "@/lib/shop-by-item-and-design";
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
-import { CreatorMerchWebsitePromo } from "@/components/CreatorMerchWebsitePromo";
 import { PLATFORM_SHOP_SLUG, shopUniversalTagHref } from "@/lib/marketplace-constants";
 import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
@@ -77,10 +76,6 @@ export async function ShopAllProductsPage({
         viewAllHrefForTag={(slug) => shopUniversalTagHref(shopSlug, slug)}
         emptyMessage="No products yet. Add items in admin, assign tags, or sync from Printify. If you expected data already, the database for this deployment may be empty or not migrated (local data does not sync to production automatically)."
       />
-
-      <div className="mt-10 border-t border-zinc-800 pt-8">
-        <CreatorMerchWebsitePromo />
-      </div>
     </div>
   );
 }

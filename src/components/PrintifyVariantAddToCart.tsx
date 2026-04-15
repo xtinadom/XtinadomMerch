@@ -56,18 +56,22 @@ export function PrintifyVariantAddToCart({
     [variants, variantId],
   );
 
+  /** Listing storefront selection is already applied in `galleryExtras`; do not append variant mockups or excluded URLs reappear. */
+  const galleryImages = useMemo(
+    () => uniqueImageUrlsOrdered([...galleryExtras]),
+    [galleryExtras],
+  );
   const heroSrc = selected?.imageUrl?.trim() || null;
-  const allImages = useMemo(() => {
-    const parts = [...galleryExtras];
-    if (heroSrc) parts.push(heroSrc);
-    return uniqueImageUrlsOrdered(parts);
-  }, [galleryExtras, heroSrc]);
 
   if (!selected) return null;
 
   return (
     <div className="mx-auto w-full max-w-[400px]">
-      <ProductImageGallery images={allImages} resetKey={variantId} />
+      <ProductImageGallery
+        images={galleryImages}
+        resetKey={variantId}
+        preferMainSrc={heroSrc}
+      />
 
       <label className="mt-4 block text-xs font-medium text-zinc-400">
         Option

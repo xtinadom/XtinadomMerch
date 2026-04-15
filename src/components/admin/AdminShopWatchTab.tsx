@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Fragment, useCallback, useMemo, useState } from "react";
 import { adminDeleteListingRemovalRecord, adminFreezeShopListing } from "@/actions/admin-marketplace";
+import { DashboardNoticeBody } from "@/components/dashboard/DashboardNoticeBody";
 
 export type ShopWatchDetail = {
   listingId: string;
@@ -18,6 +19,8 @@ export type ShopWatchDetail = {
   /** Listing and product flags for context when not storefront-live. */
   listingActive?: boolean;
   productActive?: boolean;
+  /** From newest `listing_rejected` notice (admin reject / queue removal). */
+  rejectionReasonText?: string | null;
 };
 
 export type ShopWatchRow = {
@@ -177,6 +180,11 @@ function DetailSection(props: {
                   </span>
                 ) : null}
               </p>
+              {d.pipelineStatus === "rejected" && d.rejectionReasonText ? (
+                <p className="mt-1.5 text-[10px] leading-snug text-rose-200/85">
+                  <DashboardNoticeBody body={d.rejectionReasonText} />
+                </p>
+              ) : null}
               {showDelete ? (
                 <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
                   <span className="font-medium text-zinc-600">Notes: </span>
@@ -205,7 +213,7 @@ function DetailSection(props: {
                 <input type="hidden" name="listingId" value={d.listingId} />
                 <button
                   type="submit"
-                  title="Clears this row from Removed items and Shop watch (freeze, creator remove, queue timestamps, notes). Does not delete the listing record or change approval/active by itself."
+                  title="Clears removal audit (freeze, creator remove, queue timestamps, notes). Rejected-only rows also reset to draft so they leave this history. Does not delete the listing record."
                   className="rounded border border-zinc-600 px-2 py-1 text-[11px] text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900"
                 >
                   delete

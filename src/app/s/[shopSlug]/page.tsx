@@ -44,9 +44,14 @@ export default async function ShopTenantHomePage({ params }: Props) {
     shop.homeFeaturedListing.product.active
       ? [
           productCardProductFromListing({
+            id: shop.homeFeaturedListing.id,
+            shopId: shop.homeFeaturedListing.shopId,
             priceCents: shop.homeFeaturedListing.priceCents,
             product: shop.homeFeaturedListing.product,
             requestItemName: shop.homeFeaturedListing.requestItemName,
+            adminListingSecondaryImageUrl: shop.homeFeaturedListing.adminListingSecondaryImageUrl,
+            ownerSupplementImageUrl: shop.homeFeaturedListing.ownerSupplementImageUrl,
+            listingStorefrontCatalogImageUrls: shop.homeFeaturedListing.listingStorefrontCatalogImageUrls,
           }),
         ]
       : [];

@@ -8,12 +8,22 @@ import {
   useRef,
   useState,
   useTransition,
+  type ReactNode,
 } from "react";
+import type { Prisma } from "@/generated/prisma/client";
+import { FulfillmentType } from "@/generated/prisma/enums";
 import {
+  dashboardClearListingSupplementPhoto,
+  dashboardSetListingStorefrontCatalogImagesForm,
   dashboardSubmitListingRequest,
   dashboardUpdateListingItemName,
   dashboardUpdateListingPrice,
+  dashboardUpdateListingVariantPrices,
+  dashboardUploadListingSupplementPhoto,
+  type ListingCatalogImagesFormState,
 } from "@/actions/dashboard-marketplace";
+import { parseListingPrintifyVariantPrices } from "@/lib/listing-printify-variant-prices";
+import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 
 const REQUEST_ITEM_NAME_MAX = 120;
 
@@ -38,7 +48,7 @@ type ItemNameFormProps = {
   listingId: string;
   catalogProductName: string;
   requestItemName: string | null;
-  /** Rejected, creator-removed, or awaiting admin review (submitted / printify step). */
+  /** Rejected, creator-removed, or awaiting admin review (submitted / images ok / printify step). */
   readOnly?: boolean;
 };
 
@@ -59,8 +69,11 @@ export function DashboardListingItemNameForm({
     const next = effectiveItemDisplayName(requestItemName, catalogProductName);
     setName(next);
     baseline.current = next;
-    setSavedFlash(false);
   }, [listingId, catalogProductName, requestItemName]);
+
+  useLayoutEffect(() => {
+    setSavedFlash(false);
+  }, [listingId]);
 
   const dirty = name.trim() !== baseline.current.trim();
 
@@ -128,12 +141,63 @@ export function DashboardListingItemNameForm({
 type PriceFormProps = {
   listingId: string;
   priceDollarsFormatted: string;
+  listingPriceCents: number;
+  listingPrintifyVariantPrices: unknown;
+  product: {
+    fulfillmentType: FulfillmentType;
+    priceCents: number;
+    minPriceCents: number;
+    printifyVariantId: string | null;
+    printifyVariants: Prisma.JsonValue | null;
+  };
   readOnly?: boolean;
 };
+
+/** Stable JSON for comparing variant price maps (key order independent). */
+function variantDollarsStableKey(obj: Record<string, string>): string {
+  const keys = Object.keys(obj).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  const sorted: Record<string, string> = {};
+  for (const k of keys) sorted[k] = obj[k] ?? "";
+  return JSON.stringify(sorted);
+}
+
+function printifyListingIntentHint(
+  product: PriceFormProps["product"],
+  eachOptionSentence: boolean,
+): ReactNode {
+  if (product.fulfillmentType !== FulfillmentType.printify) return null;
+  return (
+    <p className="text-[11px] leading-relaxed text-zinc-600">
+      This is one listing in your shop for this item. Printify options (such as size) are part of this same listing,
+      not separate products.
+      {eachOptionSentence ? " Set your price for each option below." : null}
+    </p>
+  );
+}
+
+function initialVariantDollarsById(
+  listingPriceCents: number,
+  listingPrintifyVariantPrices: unknown,
+  product: PriceFormProps["product"],
+): Record<string, string> | null {
+  if (product.fulfillmentType !== FulfillmentType.printify) return null;
+  const variants = getPrintifyVariantsForProduct(product);
+  if (variants.length <= 1) return null;
+  const map = parseListingPrintifyVariantPrices(listingPrintifyVariantPrices);
+  const out: Record<string, string> = {};
+  for (const v of variants) {
+    const c = map?.[v.id] ?? listingPriceCents;
+    out[v.id] = (c / 100).toFixed(2);
+  }
+  return out;
+}
 
 export function DashboardListingPriceForm({
   listingId,
   priceDollarsFormatted,
+  listingPriceCents,
+  listingPrintifyVariantPrices,
+  product,
   readOnly = false,
 }: PriceFormProps) {
   const router = useRouter();
@@ -141,23 +205,60 @@ export function DashboardListingPriceForm({
   const [price, setPrice] = useState(priceDollarsFormatted);
   const baseline = useRef(priceDollarsFormatted);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const printifyVariants = getPrintifyVariantsForProduct(product);
+  const multiVariantPricing =
+    product.fulfillmentType === FulfillmentType.printify && printifyVariants.length > 1;
+
+  const [variantDollars, setVariantDollars] = useState<Record<string, string>>(() =>
+    initialVariantDollarsById(listingPriceCents, listingPrintifyVariantPrices, product) ?? {},
+  );
+  const variantBaseline = useRef<Record<string, string>>(
+    initialVariantDollarsById(listingPriceCents, listingPrintifyVariantPrices, product) ?? {},
+  );
+
+  const catalogVariantsSyncKey = JSON.stringify(product.printifyVariants ?? null);
+  const savedVariantPricesKey = JSON.stringify(listingPrintifyVariantPrices ?? null);
 
   useLayoutEffect(() => {
     setPrice(priceDollarsFormatted);
     baseline.current = priceDollarsFormatted;
-    setSavedFlash(false);
   }, [listingId, priceDollarsFormatted]);
 
-  const dirty = price.trim() !== baseline.current.trim();
+  useLayoutEffect(() => {
+    const next =
+      initialVariantDollarsById(listingPriceCents, listingPrintifyVariantPrices, product) ?? {};
+    setVariantDollars(next);
+    variantBaseline.current = { ...next };
+  }, [
+    listingId,
+    listingPriceCents,
+    savedVariantPricesKey,
+    catalogVariantsSyncKey,
+    product.fulfillmentType,
+    product.printifyVariantId,
+  ]);
+
+  useLayoutEffect(() => {
+    setSavedFlash(false);
+    setSaveError(null);
+  }, [listingId]);
+
+  const dirtySingle = price.trim() !== baseline.current.trim();
+  const dirtyMulti =
+    multiVariantPricing &&
+    variantDollarsStableKey(variantDollars) !== variantDollarsStableKey(variantBaseline.current);
+  const dirty = multiVariantPricing ? dirtyMulti : dirtySingle;
 
   useEffect(() => {
     if (dirty) setSavedFlash(false);
   }, [dirty]);
 
-  const onSubmit = useCallback(
+  const onSubmitSingle = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      if (!dirty || pending) return;
+      if (!dirtySingle || pending || multiVariantPricing) return;
       const fd = new FormData(e.currentTarget);
       startTransition(async () => {
         const r = await dashboardUpdateListingPrice(fd);
@@ -168,10 +269,32 @@ export function DashboardListingPriceForm({
         }
       });
     },
-    [dirty, pending, router],
+    [dirtySingle, pending, router, multiVariantPricing],
   );
 
-  const label = pending ? "Saving..." : savedFlash && !dirty ? "Saved" : "Save price";
+  const onSubmitMulti = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      if (!dirtyMulti || pending) return;
+      const fd = new FormData();
+      fd.set("listingId", listingId);
+      fd.set("variantPricesJson", JSON.stringify(variantDollars));
+      startTransition(async () => {
+        const r = await dashboardUpdateListingVariantPrices(fd);
+        if (r.ok) {
+          setSaveError(null);
+          router.refresh();
+          setSavedFlash(true);
+          window.setTimeout(() => setSavedFlash(false), 2500);
+        } else {
+          setSaveError(r.error);
+        }
+      });
+    },
+    [dirtyMulti, pending, listingId, variantDollars, router],
+  );
+
+  const label = pending ? "Saving..." : savedFlash && !dirty ? "Saved" : multiVariantPricing ? "Save prices" : "Save price";
   const btnClass = pending
     ? savingSave
     : !dirty
@@ -180,17 +303,77 @@ export function DashboardListingPriceForm({
         : disabledSave
       : activeSave;
 
+  if (readOnly && multiVariantPricing) {
+    return (
+      <div className="mt-3 space-y-2">
+        {printifyListingIntentHint(product, true)}
+        <p className="text-xs text-zinc-500">Your price (USD)</p>
+        {printifyVariants.map((v) => {
+          const cents =
+            parseListingPrintifyVariantPrices(listingPrintifyVariantPrices)?.[v.id] ??
+            listingPriceCents;
+          return (
+            <p key={v.id} className="text-sm text-zinc-200">
+              <span className="text-zinc-500">{v.title}: </span>
+              <span className="font-mono">{(cents / 100).toFixed(2)}</span>
+            </p>
+          );
+        })}
+      </div>
+    );
+  }
+
   if (readOnly) {
     return (
       <div className="mt-3">
+        {printifyListingIntentHint(product, false)}
         <p className="text-xs text-zinc-500">Your price (USD)</p>
         <p className="mt-1 font-mono text-sm text-zinc-200">{price}</p>
       </div>
     );
   }
 
+  if (multiVariantPricing) {
+    return (
+      <form onSubmit={onSubmitMulti} className="mt-3 space-y-3">
+        <input type="hidden" name="listingId" value={listingId} />
+        {printifyListingIntentHint(product, true)}
+        <p className="text-xs text-zinc-500">Your price (USD) — each option</p>
+        <ul className="space-y-2">
+          {printifyVariants.map((v) => (
+            <li key={v.id} className="flex flex-wrap items-end gap-2">
+              <label className="min-w-0 flex-1 text-xs text-zinc-500">
+                <span className="text-zinc-400">{v.title}</span>
+                <input
+                  type="text"
+                  value={variantDollars[v.id] ?? ""}
+                  autoComplete="off"
+                  onChange={(ev) => {
+                    setSaveError(null);
+                    setVariantDollars((s) => ({ ...s, [v.id]: ev.target.value }));
+                  }}
+                  className="mt-1 block w-full max-w-[10rem] rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-sm text-zinc-200"
+                />
+              </label>
+            </li>
+          ))}
+        </ul>
+        {saveError ? (
+          <p className="text-xs leading-snug text-red-300/90" role="alert">
+            {saveError}
+          </p>
+        ) : null}
+        <button type="submit" disabled={!dirty || pending} className={btnClass}>
+          {label}
+        </button>
+      </form>
+    );
+  }
+
   return (
-    <form onSubmit={onSubmit} className="mt-3 flex flex-wrap items-end gap-2">
+    <form onSubmit={onSubmitSingle} className="mt-3 space-y-2">
+      {printifyListingIntentHint(product, false)}
+      <div className="flex flex-wrap items-end gap-2">
       <input type="hidden" name="listingId" value={listingId} />
       <label className="text-xs text-zinc-500">
         Your price (USD)
@@ -205,6 +388,7 @@ export function DashboardListingPriceForm({
       <button type="submit" disabled={!dirty || pending} className={btnClass}>
         {label}
       </button>
+      </div>
     </form>
   );
 }
@@ -281,5 +465,255 @@ export function DashboardSubmitListingRequestForm({
         {label}
       </button>
     </form>
+  );
+}
+
+type SupplementPhotoFormProps = {
+  listingId: string;
+  ownerSupplementImageUrl: string | null;
+  r2Configured: boolean;
+  /** When false, show current image only (e.g. admin-frozen listing). */
+  canEdit: boolean;
+};
+
+export function DashboardListingSupplementPhotoForm({
+  listingId,
+  ownerSupplementImageUrl,
+  r2Configured,
+  canEdit,
+}: SupplementPhotoFormProps) {
+  const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [hasFile, setHasFile] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    setMessage(null);
+    setHasFile(false);
+    if (fileRef.current) fileRef.current.value = "";
+  }, [listingId, ownerSupplementImageUrl]);
+
+  const uploadLabel = pending ? "Uploading…" : "Upload extra photo";
+  const uploadClass = pending
+    ? savingSave
+    : !hasFile
+      ? disabledSave
+      : activeSave;
+
+  return (
+    <div className="mt-4 border-t border-zinc-800 pt-4">
+      <p className="text-xs font-medium text-zinc-500">Extra storefront photo (optional)</p>
+      <p className="mt-1 text-[11px] text-zinc-600">
+        One image per listing, compressed to about 100 KiB. It is added after the main product
+        images from the catalog and platform admin. You cannot remove or replace those images here.
+      </p>
+      {ownerSupplementImageUrl ? (
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={ownerSupplementImageUrl}
+            alt=""
+            className="h-20 w-20 rounded border border-zinc-700 object-cover"
+          />
+          {canEdit ? (
+            <form
+              className="inline"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (pending) return;
+                const fd = new FormData();
+                fd.set("listingId", listingId);
+                startTransition(async () => {
+                  setMessage(null);
+                  const r = await dashboardClearListingSupplementPhoto(fd);
+                  router.refresh();
+                  if (!r.ok) setMessage(r.error);
+                });
+              }}
+            >
+              <button
+                type="submit"
+                disabled={pending}
+                className="rounded border border-zinc-700 px-2 py-1 text-[11px] text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
+              >
+                Remove only this extra photo
+              </button>
+            </form>
+          ) : (
+            <p className="text-[11px] text-zinc-600">Uploads disabled while this listing is frozen.</p>
+          )}
+        </div>
+      ) : null}
+      {!canEdit ? null : !r2Configured ? (
+        <p className="mt-2 text-xs text-amber-200/80">
+          R2 uploads are not configured on this server — contact the platform operator.
+        </p>
+      ) : (
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={(e) => setHasFile(Boolean(e.target.files?.length))}
+            className="max-w-full text-xs text-zinc-400 file:mr-2 file:rounded file:border-0 file:bg-zinc-800 file:px-2 file:py-1 file:text-zinc-200"
+          />
+          <button
+            type="button"
+            disabled={!hasFile || pending}
+            className={uploadClass}
+            onClick={() => {
+              const file = fileRef.current?.files?.[0];
+              if (!file || pending) return;
+              const fd = new FormData();
+              fd.set("listingId", listingId);
+              fd.set("supplementPhoto", file);
+              startTransition(async () => {
+                setMessage(null);
+                const r = await dashboardUploadListingSupplementPhoto(fd);
+                router.refresh();
+                if (!r.ok) setMessage(r.error);
+                else if (fileRef.current) fileRef.current.value = "";
+                if (r.ok) setHasFile(false);
+              });
+            }}
+          >
+            {uploadLabel}
+          </button>
+        </div>
+      )}
+      {message ? <p className="mt-2 text-xs text-red-300/90">{message}</p> : null}
+    </div>
+  );
+}
+
+const initialCatalogImagesForm: ListingCatalogImagesFormState = {
+  ok: false,
+  error: null,
+};
+
+export function ListingStorefrontCatalogImagesForms({
+  listingId,
+  catalogUrls,
+  savedCatalogSelection,
+}: {
+  listingId: string;
+  catalogUrls: string[];
+  savedCatalogSelection: string[] | null;
+}) {
+  const router = useRouter();
+  const [subsetPending, startSubset] = useTransition();
+  const [allPending, startAll] = useTransition();
+  const [subsetOk, setSubsetOk] = useState(false);
+  const [allOk, setAllOk] = useState(false);
+  const [subsetError, setSubsetError] = useState<string | null>(null);
+  const [allError, setAllError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSubsetOk(false);
+    setAllOk(false);
+    setSubsetError(null);
+    setAllError(null);
+  }, [listingId]);
+
+  const handleSubset = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    startSubset(async () => {
+      setSubsetError(null);
+      const fd = new FormData(form);
+      const r = await dashboardSetListingStorefrontCatalogImagesForm(initialCatalogImagesForm, fd);
+      if (r.ok) {
+        setSubsetOk(true);
+        router.refresh();
+        window.setTimeout(() => setSubsetOk(false), 2500);
+      } else {
+        setSubsetError(r.error);
+      }
+    });
+  };
+
+  const handleAll = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    startAll(async () => {
+      setAllError(null);
+      const fd = new FormData(form);
+      const r = await dashboardSetListingStorefrontCatalogImagesForm(initialCatalogImagesForm, fd);
+      if (r.ok) {
+        setAllOk(true);
+        router.refresh();
+        window.setTimeout(() => setAllOk(false), 2500);
+      } else {
+        setAllError(r.error);
+      }
+    });
+  };
+
+  const subsetLabel = subsetPending ? "Saving…" : subsetOk ? "Saved" : "Save image selection";
+  const subsetBtnClass = subsetPending ? savingSave : subsetOk ? savedSave : activeSave;
+
+  const allLabel = allPending ? "Updating…" : allOk ? "Saved" : "Show all catalog images";
+  const allBtnClass = allPending
+    ? `${savingSave} w-full text-left sm:w-auto`
+    : allOk
+      ? `${savedSave} w-full text-left sm:w-auto`
+      : "w-full rounded border border-zinc-700/80 bg-transparent px-2 py-1.5 text-left text-[11px] text-zinc-500 hover:border-zinc-600 hover:text-zinc-300 sm:w-auto";
+
+  return (
+    <div className="mt-4 border-t border-zinc-800 pt-4">
+      <p className="sr-only">Storefront catalog images — toggle which photos appear on your public product page.</p>
+      <form onSubmit={handleSubset} className="space-y-3">
+        <input type="hidden" name="listingId" value={listingId} />
+        <input type="hidden" name="mode" value="subset" />
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(5rem,1fr))]">
+          {catalogUrls.map((url) => (
+            <label key={url} className="group relative block cursor-pointer">
+              <input
+                type="checkbox"
+                name="catalogUrl"
+                value={url}
+                defaultChecked={
+                  savedCatalogSelection === null ? true : savedCatalogSelection.includes(url)
+                }
+                className="peer sr-only"
+              />
+              <span className="block overflow-hidden rounded-lg border border-zinc-700/90 bg-zinc-900/40 ring-2 ring-transparent ring-offset-2 ring-offset-zinc-950 transition peer-focus-visible:ring-blue-400/60 peer-checked:border-blue-600/50 peer-checked:ring-blue-500/75">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt=""
+                  className="aspect-square w-full object-cover transition group-hover:opacity-90"
+                />
+              </span>
+            </label>
+          ))}
+        </div>
+        {subsetError ? (
+          <p className="text-xs text-red-400/95" role="alert">
+            {subsetError}
+          </p>
+        ) : null}
+        <button
+          type="submit"
+          disabled={subsetPending}
+          className={`${subsetBtnClass} disabled:opacity-70`}
+        >
+          {subsetLabel}
+        </button>
+      </form>
+      <form onSubmit={handleAll} className="mt-2">
+        <input type="hidden" name="listingId" value={listingId} />
+        <input type="hidden" name="mode" value="all" />
+        {allError ? (
+          <p className="mb-2 text-xs text-red-400/95" role="alert">
+            {allError}
+          </p>
+        ) : null}
+        <button type="submit" disabled={allPending} className={allBtnClass}>
+          {allLabel}
+        </button>
+      </form>
+    </div>
   );
 }

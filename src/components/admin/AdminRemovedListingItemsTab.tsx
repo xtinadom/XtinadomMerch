@@ -32,7 +32,8 @@ export function AdminRemovedListingItemsTab(props: { rows: RemovedListingRow[] }
         Rows you removed from <span className="text-zinc-500">Listing requests</span>. Live listings were taken off the
         creator&apos;s shop unless they were already frozen. Pipeline requests were rejected for the creator. Use{" "}
         <span className="text-zinc-500">delete</span> to clear the row from here and from Shop watch (same as Shop watch;
-        does not delete the listing record; approved rows can show again under Requests).
+        does not delete the listing record; approved rows can show again under Requests). Rejected listings without
+        removal timestamps reset to draft so they leave Shop watch history.
       </p>
 
       {rows.length === 0 ? (
@@ -98,7 +99,7 @@ export function AdminRemovedListingItemsTab(props: { rows: RemovedListingRow[] }
                       <input type="hidden" name="listingId" value={r.id} />
                       <button
                         type="submit"
-                        title="Clears this row from Removed items and Shop watch (freeze, creator remove, queue timestamps, notes). Does not delete the listing record or change approval/active by itself."
+                        title="Clears removal audit (freeze, creator remove, queue timestamps, notes). Rejected-only rows also reset to draft. Does not delete the listing record."
                         className="rounded border border-zinc-600 px-2 py-1 text-[11px] text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900"
                       >
                         delete

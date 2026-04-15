@@ -5,11 +5,13 @@ import { uniqueImageUrlsOrdered } from "@/lib/product-media";
 
 type Props = {
   images: string[];
-  /** When this changes (e.g. selected Printify variant), reset the main image to the first URL. */
+  /** When this changes (e.g. selected Printify variant), move the main image to match `preferMainSrc` if it exists in `images`, else first. */
   resetKey?: string;
+  /** e.g. variant mockup URL — must already be in `images` to select it; otherwise main falls back to first image. */
+  preferMainSrc?: string | null;
 };
 
-export function ProductImageGallery({ images, resetKey }: Props) {
+export function ProductImageGallery({ images, resetKey, preferMainSrc }: Props) {
   const list = useMemo(
     () => uniqueImageUrlsOrdered(images),
     // Stable when parent passes a new array each render with same contents
@@ -19,8 +21,15 @@ export function ProductImageGallery({ images, resetKey }: Props) {
   const [mainIndex, setMainIndex] = useState(0);
 
   useEffect(() => {
-    setMainIndex(0);
-  }, [resetKey]);
+    if (resetKey === undefined) return;
+    const prefer = preferMainSrc?.trim();
+    if (prefer) {
+      const idx = list.findIndex((u) => u.trim() === prefer);
+      setMainIndex(idx >= 0 ? idx : 0);
+    } else {
+      setMainIndex(0);
+    }
+  }, [resetKey, list, preferMainSrc]);
 
   useEffect(() => {
     if (mainIndex >= list.length) setMainIndex(0);
@@ -45,23 +54,23 @@ export function ProductImageGallery({ images, resetKey }: Props) {
         )}
       </div>
       {list.length > 1 ? (
-        <ul className="mt-3 flex flex-wrap justify-center gap-2">
+        <ul className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] justify-items-center gap-2 sm:grid-cols-[repeat(auto-fill,minmax(6rem,1fr))]">
           {list.map((src, i) => (
-            <li key={`${src}-${i}`}>
+            <li key={`${src}-${i}`} className="flex justify-center">
               <button
                 type="button"
                 onClick={() => setMainIndex(i)}
-                className={`rounded-lg p-0 transition ${
+                className={`rounded border p-0 transition ${
                   i === mainIndex
-                    ? "ring-2 ring-blue-500/70 ring-offset-2 ring-offset-zinc-950"
-                    : "opacity-90 hover:opacity-100"
+                    ? "ring-2 ring-blue-500/75 ring-offset-2 ring-offset-zinc-950"
+                    : "border-transparent opacity-95 hover:opacity-100"
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={src}
                   alt=""
-                  className="h-16 w-16 rounded-lg border border-zinc-800 object-cover"
+                  className="h-24 w-24 rounded border border-zinc-700 object-cover"
                 />
               </button>
             </li>

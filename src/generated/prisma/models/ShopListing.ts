@@ -45,6 +45,9 @@ export type ShopListingMinAggregateOutputType = {
   listingFeePaidAt: Date | null
   listingPrintifyProductId: string | null
   listingPrintifyVariantId: string | null
+  listingPrintifyCatalogSyncedAt: Date | null
+  ownerSupplementImageUrl: string | null
+  adminListingSecondaryImageUrl: string | null
   requestItemName: string | null
   requestStatus: $Enums.ListingRequestStatus | null
   adminRemovedFromShopAt: Date | null
@@ -66,6 +69,9 @@ export type ShopListingMaxAggregateOutputType = {
   listingFeePaidAt: Date | null
   listingPrintifyProductId: string | null
   listingPrintifyVariantId: string | null
+  listingPrintifyCatalogSyncedAt: Date | null
+  ownerSupplementImageUrl: string | null
+  adminListingSecondaryImageUrl: string | null
   requestItemName: string | null
   requestStatus: $Enums.ListingRequestStatus | null
   adminRemovedFromShopAt: Date | null
@@ -87,7 +93,12 @@ export type ShopListingCountAggregateOutputType = {
   listingFeePaidAt: number
   listingPrintifyProductId: number
   listingPrintifyVariantId: number
+  listingPrintifyVariantPrices: number
+  listingPrintifyCatalogSyncedAt: number
   requestImages: number
+  ownerSupplementImageUrl: number
+  adminListingSecondaryImageUrl: number
+  listingStorefrontCatalogImageUrls: number
   requestItemName: number
   requestStatus: number
   adminRemovedFromShopAt: number
@@ -119,6 +130,9 @@ export type ShopListingMinAggregateInputType = {
   listingFeePaidAt?: true
   listingPrintifyProductId?: true
   listingPrintifyVariantId?: true
+  listingPrintifyCatalogSyncedAt?: true
+  ownerSupplementImageUrl?: true
+  adminListingSecondaryImageUrl?: true
   requestItemName?: true
   requestStatus?: true
   adminRemovedFromShopAt?: true
@@ -140,6 +154,9 @@ export type ShopListingMaxAggregateInputType = {
   listingFeePaidAt?: true
   listingPrintifyProductId?: true
   listingPrintifyVariantId?: true
+  listingPrintifyCatalogSyncedAt?: true
+  ownerSupplementImageUrl?: true
+  adminListingSecondaryImageUrl?: true
   requestItemName?: true
   requestStatus?: true
   adminRemovedFromShopAt?: true
@@ -161,7 +178,12 @@ export type ShopListingCountAggregateInputType = {
   listingFeePaidAt?: true
   listingPrintifyProductId?: true
   listingPrintifyVariantId?: true
+  listingPrintifyVariantPrices?: true
+  listingPrintifyCatalogSyncedAt?: true
   requestImages?: true
+  ownerSupplementImageUrl?: true
+  adminListingSecondaryImageUrl?: true
+  listingStorefrontCatalogImageUrls?: true
   requestItemName?: true
   requestStatus?: true
   adminRemovedFromShopAt?: true
@@ -270,7 +292,12 @@ export type ShopListingGroupByOutputType = {
   listingFeePaidAt: Date | null
   listingPrintifyProductId: string | null
   listingPrintifyVariantId: string | null
+  listingPrintifyVariantPrices: runtime.JsonValue | null
+  listingPrintifyCatalogSyncedAt: Date | null
   requestImages: runtime.JsonValue | null
+  ownerSupplementImageUrl: string | null
+  adminListingSecondaryImageUrl: string | null
+  listingStorefrontCatalogImageUrls: runtime.JsonValue | null
   requestItemName: string | null
   requestStatus: $Enums.ListingRequestStatus
   adminRemovedFromShopAt: Date | null
@@ -315,7 +342,12 @@ export type ShopListingWhereInput = {
   listingFeePaidAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   listingPrintifyProductId?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   listingPrintifyVariantId?: Prisma.StringNullableFilter<"ShopListing"> | string | null
+  listingPrintifyVariantPrices?: Prisma.JsonNullableFilter<"ShopListing">
+  listingPrintifyCatalogSyncedAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   requestImages?: Prisma.JsonNullableFilter<"ShopListing">
+  ownerSupplementImageUrl?: Prisma.StringNullableFilter<"ShopListing"> | string | null
+  adminListingSecondaryImageUrl?: Prisma.StringNullableFilter<"ShopListing"> | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.JsonNullableFilter<"ShopListing">
   requestItemName?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFilter<"ShopListing"> | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
@@ -328,6 +360,7 @@ export type ShopListingWhereInput = {
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
   shopHomeFeatured?: Prisma.XOR<Prisma.ShopNullableScalarRelationFilter, Prisma.ShopWhereInput> | null
   orderLines?: Prisma.OrderLineListRelationFilter
+  rejectionNotices?: Prisma.ShopOwnerNoticeListRelationFilter
 }
 
 export type ShopListingOrderByWithRelationInput = {
@@ -341,7 +374,12 @@ export type ShopListingOrderByWithRelationInput = {
   listingFeePaidAt?: Prisma.SortOrderInput | Prisma.SortOrder
   listingPrintifyProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   listingPrintifyVariantId?: Prisma.SortOrderInput | Prisma.SortOrder
+  listingPrintifyVariantPrices?: Prisma.SortOrderInput | Prisma.SortOrder
+  listingPrintifyCatalogSyncedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   requestImages?: Prisma.SortOrderInput | Prisma.SortOrder
+  ownerSupplementImageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  adminListingSecondaryImageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  listingStorefrontCatalogImageUrls?: Prisma.SortOrderInput | Prisma.SortOrder
   requestItemName?: Prisma.SortOrderInput | Prisma.SortOrder
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -354,6 +392,7 @@ export type ShopListingOrderByWithRelationInput = {
   product?: Prisma.ProductOrderByWithRelationInput
   shopHomeFeatured?: Prisma.ShopOrderByWithRelationInput
   orderLines?: Prisma.OrderLineOrderByRelationAggregateInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeOrderByRelationAggregateInput
 }
 
 export type ShopListingWhereUniqueInput = Prisma.AtLeast<{
@@ -371,7 +410,12 @@ export type ShopListingWhereUniqueInput = Prisma.AtLeast<{
   listingFeePaidAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   listingPrintifyProductId?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   listingPrintifyVariantId?: Prisma.StringNullableFilter<"ShopListing"> | string | null
+  listingPrintifyVariantPrices?: Prisma.JsonNullableFilter<"ShopListing">
+  listingPrintifyCatalogSyncedAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   requestImages?: Prisma.JsonNullableFilter<"ShopListing">
+  ownerSupplementImageUrl?: Prisma.StringNullableFilter<"ShopListing"> | string | null
+  adminListingSecondaryImageUrl?: Prisma.StringNullableFilter<"ShopListing"> | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.JsonNullableFilter<"ShopListing">
   requestItemName?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFilter<"ShopListing"> | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
@@ -384,6 +428,7 @@ export type ShopListingWhereUniqueInput = Prisma.AtLeast<{
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
   shopHomeFeatured?: Prisma.XOR<Prisma.ShopNullableScalarRelationFilter, Prisma.ShopWhereInput> | null
   orderLines?: Prisma.OrderLineListRelationFilter
+  rejectionNotices?: Prisma.ShopOwnerNoticeListRelationFilter
 }, "id" | "shopId_productId">
 
 export type ShopListingOrderByWithAggregationInput = {
@@ -397,7 +442,12 @@ export type ShopListingOrderByWithAggregationInput = {
   listingFeePaidAt?: Prisma.SortOrderInput | Prisma.SortOrder
   listingPrintifyProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   listingPrintifyVariantId?: Prisma.SortOrderInput | Prisma.SortOrder
+  listingPrintifyVariantPrices?: Prisma.SortOrderInput | Prisma.SortOrder
+  listingPrintifyCatalogSyncedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   requestImages?: Prisma.SortOrderInput | Prisma.SortOrder
+  ownerSupplementImageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  adminListingSecondaryImageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  listingStorefrontCatalogImageUrls?: Prisma.SortOrderInput | Prisma.SortOrder
   requestItemName?: Prisma.SortOrderInput | Prisma.SortOrder
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -427,7 +477,12 @@ export type ShopListingScalarWhereWithAggregatesInput = {
   listingFeePaidAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ShopListing"> | Date | string | null
   listingPrintifyProductId?: Prisma.StringNullableWithAggregatesFilter<"ShopListing"> | string | null
   listingPrintifyVariantId?: Prisma.StringNullableWithAggregatesFilter<"ShopListing"> | string | null
+  listingPrintifyVariantPrices?: Prisma.JsonNullableWithAggregatesFilter<"ShopListing">
+  listingPrintifyCatalogSyncedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ShopListing"> | Date | string | null
   requestImages?: Prisma.JsonNullableWithAggregatesFilter<"ShopListing">
+  ownerSupplementImageUrl?: Prisma.StringNullableWithAggregatesFilter<"ShopListing"> | string | null
+  adminListingSecondaryImageUrl?: Prisma.StringNullableWithAggregatesFilter<"ShopListing"> | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.JsonNullableWithAggregatesFilter<"ShopListing">
   requestItemName?: Prisma.StringNullableWithAggregatesFilter<"ShopListing"> | string | null
   requestStatus?: Prisma.EnumListingRequestStatusWithAggregatesFilter<"ShopListing"> | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ShopListing"> | Date | string | null
@@ -447,7 +502,12 @@ export type ShopListingCreateInput = {
   listingFeePaidAt?: Date | string | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
@@ -460,6 +520,7 @@ export type ShopListingCreateInput = {
   product: Prisma.ProductCreateNestedOneWithoutShopListingsInput
   shopHomeFeatured?: Prisma.ShopCreateNestedOneWithoutHomeFeaturedListingInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutShopListingInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeCreateNestedManyWithoutRelatedListingInput
 }
 
 export type ShopListingUncheckedCreateInput = {
@@ -473,7 +534,12 @@ export type ShopListingUncheckedCreateInput = {
   listingFeePaidAt?: Date | string | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
@@ -484,6 +550,7 @@ export type ShopListingUncheckedCreateInput = {
   updatedAt?: Date | string
   shopHomeFeatured?: Prisma.ShopUncheckedCreateNestedOneWithoutHomeFeaturedListingInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutShopListingInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUncheckedCreateNestedManyWithoutRelatedListingInput
 }
 
 export type ShopListingUpdateInput = {
@@ -495,7 +562,12 @@ export type ShopListingUpdateInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -508,6 +580,7 @@ export type ShopListingUpdateInput = {
   product?: Prisma.ProductUpdateOneRequiredWithoutShopListingsNestedInput
   shopHomeFeatured?: Prisma.ShopUpdateOneWithoutHomeFeaturedListingNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutShopListingNestedInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUpdateManyWithoutRelatedListingNestedInput
 }
 
 export type ShopListingUncheckedUpdateInput = {
@@ -521,7 +594,12 @@ export type ShopListingUncheckedUpdateInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -532,6 +610,7 @@ export type ShopListingUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shopHomeFeatured?: Prisma.ShopUncheckedUpdateOneWithoutHomeFeaturedListingNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutShopListingNestedInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUncheckedUpdateManyWithoutRelatedListingNestedInput
 }
 
 export type ShopListingCreateManyInput = {
@@ -545,7 +624,12 @@ export type ShopListingCreateManyInput = {
   listingFeePaidAt?: Date | string | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
@@ -565,7 +649,12 @@ export type ShopListingUpdateManyMutationInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -587,7 +676,12 @@ export type ShopListingUncheckedUpdateManyInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -629,7 +723,12 @@ export type ShopListingCountOrderByAggregateInput = {
   listingFeePaidAt?: Prisma.SortOrder
   listingPrintifyProductId?: Prisma.SortOrder
   listingPrintifyVariantId?: Prisma.SortOrder
+  listingPrintifyVariantPrices?: Prisma.SortOrder
+  listingPrintifyCatalogSyncedAt?: Prisma.SortOrder
   requestImages?: Prisma.SortOrder
+  ownerSupplementImageUrl?: Prisma.SortOrder
+  adminListingSecondaryImageUrl?: Prisma.SortOrder
+  listingStorefrontCatalogImageUrls?: Prisma.SortOrder
   requestItemName?: Prisma.SortOrder
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrder
@@ -655,6 +754,9 @@ export type ShopListingMaxOrderByAggregateInput = {
   listingFeePaidAt?: Prisma.SortOrder
   listingPrintifyProductId?: Prisma.SortOrder
   listingPrintifyVariantId?: Prisma.SortOrder
+  listingPrintifyCatalogSyncedAt?: Prisma.SortOrder
+  ownerSupplementImageUrl?: Prisma.SortOrder
+  adminListingSecondaryImageUrl?: Prisma.SortOrder
   requestItemName?: Prisma.SortOrder
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrder
@@ -676,6 +778,9 @@ export type ShopListingMinOrderByAggregateInput = {
   listingFeePaidAt?: Prisma.SortOrder
   listingPrintifyProductId?: Prisma.SortOrder
   listingPrintifyVariantId?: Prisma.SortOrder
+  listingPrintifyCatalogSyncedAt?: Prisma.SortOrder
+  ownerSupplementImageUrl?: Prisma.SortOrder
+  adminListingSecondaryImageUrl?: Prisma.SortOrder
   requestItemName?: Prisma.SortOrder
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrder
@@ -790,6 +895,22 @@ export type ShopListingUncheckedUpdateManyWithoutShopNestedInput = {
   deleteMany?: Prisma.ShopListingScalarWhereInput | Prisma.ShopListingScalarWhereInput[]
 }
 
+export type ShopListingCreateNestedOneWithoutRejectionNoticesInput = {
+  create?: Prisma.XOR<Prisma.ShopListingCreateWithoutRejectionNoticesInput, Prisma.ShopListingUncheckedCreateWithoutRejectionNoticesInput>
+  connectOrCreate?: Prisma.ShopListingCreateOrConnectWithoutRejectionNoticesInput
+  connect?: Prisma.ShopListingWhereUniqueInput
+}
+
+export type ShopListingUpdateOneWithoutRejectionNoticesNestedInput = {
+  create?: Prisma.XOR<Prisma.ShopListingCreateWithoutRejectionNoticesInput, Prisma.ShopListingUncheckedCreateWithoutRejectionNoticesInput>
+  connectOrCreate?: Prisma.ShopListingCreateOrConnectWithoutRejectionNoticesInput
+  upsert?: Prisma.ShopListingUpsertWithoutRejectionNoticesInput
+  disconnect?: Prisma.ShopListingWhereInput | boolean
+  delete?: Prisma.ShopListingWhereInput | boolean
+  connect?: Prisma.ShopListingWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ShopListingUpdateToOneWithWhereWithoutRejectionNoticesInput, Prisma.ShopListingUpdateWithoutRejectionNoticesInput>, Prisma.ShopListingUncheckedUpdateWithoutRejectionNoticesInput>
+}
+
 export type EnumListingRequestStatusFieldUpdateOperationsInput = {
   set?: $Enums.ListingRequestStatus
 }
@@ -819,7 +940,12 @@ export type ShopListingCreateWithoutProductInput = {
   listingFeePaidAt?: Date | string | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
@@ -831,6 +957,7 @@ export type ShopListingCreateWithoutProductInput = {
   shop: Prisma.ShopCreateNestedOneWithoutListingsInput
   shopHomeFeatured?: Prisma.ShopCreateNestedOneWithoutHomeFeaturedListingInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutShopListingInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeCreateNestedManyWithoutRelatedListingInput
 }
 
 export type ShopListingUncheckedCreateWithoutProductInput = {
@@ -843,7 +970,12 @@ export type ShopListingUncheckedCreateWithoutProductInput = {
   listingFeePaidAt?: Date | string | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
@@ -854,6 +986,7 @@ export type ShopListingUncheckedCreateWithoutProductInput = {
   updatedAt?: Date | string
   shopHomeFeatured?: Prisma.ShopUncheckedCreateNestedOneWithoutHomeFeaturedListingInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutShopListingInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUncheckedCreateNestedManyWithoutRelatedListingInput
 }
 
 export type ShopListingCreateOrConnectWithoutProductInput = {
@@ -896,7 +1029,12 @@ export type ShopListingScalarWhereInput = {
   listingFeePaidAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   listingPrintifyProductId?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   listingPrintifyVariantId?: Prisma.StringNullableFilter<"ShopListing"> | string | null
+  listingPrintifyVariantPrices?: Prisma.JsonNullableFilter<"ShopListing">
+  listingPrintifyCatalogSyncedAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   requestImages?: Prisma.JsonNullableFilter<"ShopListing">
+  ownerSupplementImageUrl?: Prisma.StringNullableFilter<"ShopListing"> | string | null
+  adminListingSecondaryImageUrl?: Prisma.StringNullableFilter<"ShopListing"> | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.JsonNullableFilter<"ShopListing">
   requestItemName?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFilter<"ShopListing"> | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
@@ -916,7 +1054,12 @@ export type ShopListingCreateWithoutShopHomeFeaturedInput = {
   listingFeePaidAt?: Date | string | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
@@ -928,6 +1071,7 @@ export type ShopListingCreateWithoutShopHomeFeaturedInput = {
   shop: Prisma.ShopCreateNestedOneWithoutListingsInput
   product: Prisma.ProductCreateNestedOneWithoutShopListingsInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutShopListingInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeCreateNestedManyWithoutRelatedListingInput
 }
 
 export type ShopListingUncheckedCreateWithoutShopHomeFeaturedInput = {
@@ -941,7 +1085,12 @@ export type ShopListingUncheckedCreateWithoutShopHomeFeaturedInput = {
   listingFeePaidAt?: Date | string | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
@@ -951,6 +1100,7 @@ export type ShopListingUncheckedCreateWithoutShopHomeFeaturedInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutShopListingInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUncheckedCreateNestedManyWithoutRelatedListingInput
 }
 
 export type ShopListingCreateOrConnectWithoutShopHomeFeaturedInput = {
@@ -967,7 +1117,12 @@ export type ShopListingCreateWithoutShopInput = {
   listingFeePaidAt?: Date | string | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
@@ -979,6 +1134,7 @@ export type ShopListingCreateWithoutShopInput = {
   product: Prisma.ProductCreateNestedOneWithoutShopListingsInput
   shopHomeFeatured?: Prisma.ShopCreateNestedOneWithoutHomeFeaturedListingInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutShopListingInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeCreateNestedManyWithoutRelatedListingInput
 }
 
 export type ShopListingUncheckedCreateWithoutShopInput = {
@@ -991,7 +1147,12 @@ export type ShopListingUncheckedCreateWithoutShopInput = {
   listingFeePaidAt?: Date | string | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
@@ -1002,6 +1163,7 @@ export type ShopListingUncheckedCreateWithoutShopInput = {
   updatedAt?: Date | string
   shopHomeFeatured?: Prisma.ShopUncheckedCreateNestedOneWithoutHomeFeaturedListingInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutShopListingInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUncheckedCreateNestedManyWithoutRelatedListingInput
 }
 
 export type ShopListingCreateOrConnectWithoutShopInput = {
@@ -1034,7 +1196,12 @@ export type ShopListingUpdateWithoutShopHomeFeaturedInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1046,6 +1213,7 @@ export type ShopListingUpdateWithoutShopHomeFeaturedInput = {
   shop?: Prisma.ShopUpdateOneRequiredWithoutListingsNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutShopListingsNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutShopListingNestedInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUpdateManyWithoutRelatedListingNestedInput
 }
 
 export type ShopListingUncheckedUpdateWithoutShopHomeFeaturedInput = {
@@ -1059,7 +1227,12 @@ export type ShopListingUncheckedUpdateWithoutShopHomeFeaturedInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1069,6 +1242,7 @@ export type ShopListingUncheckedUpdateWithoutShopHomeFeaturedInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutShopListingNestedInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUncheckedUpdateManyWithoutRelatedListingNestedInput
 }
 
 export type ShopListingUpsertWithWhereUniqueWithoutShopInput = {
@@ -1087,7 +1261,7 @@ export type ShopListingUpdateManyWithWhereWithoutShopInput = {
   data: Prisma.XOR<Prisma.ShopListingUpdateManyMutationInput, Prisma.ShopListingUncheckedUpdateManyWithoutShopInput>
 }
 
-export type ShopListingCreateWithoutOrderLinesInput = {
+export type ShopListingCreateWithoutRejectionNoticesInput = {
   id?: string
   priceCents: number
   active?: boolean
@@ -1096,7 +1270,12 @@ export type ShopListingCreateWithoutOrderLinesInput = {
   listingFeePaidAt?: Date | string | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
@@ -1108,6 +1287,139 @@ export type ShopListingCreateWithoutOrderLinesInput = {
   shop: Prisma.ShopCreateNestedOneWithoutListingsInput
   product: Prisma.ProductCreateNestedOneWithoutShopListingsInput
   shopHomeFeatured?: Prisma.ShopCreateNestedOneWithoutHomeFeaturedListingInput
+  orderLines?: Prisma.OrderLineCreateNestedManyWithoutShopListingInput
+}
+
+export type ShopListingUncheckedCreateWithoutRejectionNoticesInput = {
+  id?: string
+  shopId: string
+  productId: string
+  priceCents: number
+  active?: boolean
+  featuredOnShop?: boolean
+  featuredForHome?: boolean
+  listingFeePaidAt?: Date | string | null
+  listingPrintifyProductId?: string | null
+  listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
+  requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  requestItemName?: string | null
+  requestStatus?: $Enums.ListingRequestStatus
+  adminRemovedFromShopAt?: Date | string | null
+  creatorRemovedFromShopAt?: Date | string | null
+  removedFromListingRequestsAt?: Date | string | null
+  adminListingRemovalNotes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  shopHomeFeatured?: Prisma.ShopUncheckedCreateNestedOneWithoutHomeFeaturedListingInput
+  orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutShopListingInput
+}
+
+export type ShopListingCreateOrConnectWithoutRejectionNoticesInput = {
+  where: Prisma.ShopListingWhereUniqueInput
+  create: Prisma.XOR<Prisma.ShopListingCreateWithoutRejectionNoticesInput, Prisma.ShopListingUncheckedCreateWithoutRejectionNoticesInput>
+}
+
+export type ShopListingUpsertWithoutRejectionNoticesInput = {
+  update: Prisma.XOR<Prisma.ShopListingUpdateWithoutRejectionNoticesInput, Prisma.ShopListingUncheckedUpdateWithoutRejectionNoticesInput>
+  create: Prisma.XOR<Prisma.ShopListingCreateWithoutRejectionNoticesInput, Prisma.ShopListingUncheckedCreateWithoutRejectionNoticesInput>
+  where?: Prisma.ShopListingWhereInput
+}
+
+export type ShopListingUpdateToOneWithWhereWithoutRejectionNoticesInput = {
+  where?: Prisma.ShopListingWhereInput
+  data: Prisma.XOR<Prisma.ShopListingUpdateWithoutRejectionNoticesInput, Prisma.ShopListingUncheckedUpdateWithoutRejectionNoticesInput>
+}
+
+export type ShopListingUpdateWithoutRejectionNoticesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  priceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
+  adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  shop?: Prisma.ShopUpdateOneRequiredWithoutListingsNestedInput
+  product?: Prisma.ProductUpdateOneRequiredWithoutShopListingsNestedInput
+  shopHomeFeatured?: Prisma.ShopUpdateOneWithoutHomeFeaturedListingNestedInput
+  orderLines?: Prisma.OrderLineUpdateManyWithoutShopListingNestedInput
+}
+
+export type ShopListingUncheckedUpdateWithoutRejectionNoticesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  priceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
+  adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  shopHomeFeatured?: Prisma.ShopUncheckedUpdateOneWithoutHomeFeaturedListingNestedInput
+  orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutShopListingNestedInput
+}
+
+export type ShopListingCreateWithoutOrderLinesInput = {
+  id?: string
+  priceCents: number
+  active?: boolean
+  featuredOnShop?: boolean
+  featuredForHome?: boolean
+  listingFeePaidAt?: Date | string | null
+  listingPrintifyProductId?: string | null
+  listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
+  requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  requestItemName?: string | null
+  requestStatus?: $Enums.ListingRequestStatus
+  adminRemovedFromShopAt?: Date | string | null
+  creatorRemovedFromShopAt?: Date | string | null
+  removedFromListingRequestsAt?: Date | string | null
+  adminListingRemovalNotes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  shop: Prisma.ShopCreateNestedOneWithoutListingsInput
+  product: Prisma.ProductCreateNestedOneWithoutShopListingsInput
+  shopHomeFeatured?: Prisma.ShopCreateNestedOneWithoutHomeFeaturedListingInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeCreateNestedManyWithoutRelatedListingInput
 }
 
 export type ShopListingUncheckedCreateWithoutOrderLinesInput = {
@@ -1121,7 +1433,12 @@ export type ShopListingUncheckedCreateWithoutOrderLinesInput = {
   listingFeePaidAt?: Date | string | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
@@ -1131,6 +1448,7 @@ export type ShopListingUncheckedCreateWithoutOrderLinesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   shopHomeFeatured?: Prisma.ShopUncheckedCreateNestedOneWithoutHomeFeaturedListingInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUncheckedCreateNestedManyWithoutRelatedListingInput
 }
 
 export type ShopListingCreateOrConnectWithoutOrderLinesInput = {
@@ -1158,7 +1476,12 @@ export type ShopListingUpdateWithoutOrderLinesInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1170,6 +1493,7 @@ export type ShopListingUpdateWithoutOrderLinesInput = {
   shop?: Prisma.ShopUpdateOneRequiredWithoutListingsNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutShopListingsNestedInput
   shopHomeFeatured?: Prisma.ShopUpdateOneWithoutHomeFeaturedListingNestedInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUpdateManyWithoutRelatedListingNestedInput
 }
 
 export type ShopListingUncheckedUpdateWithoutOrderLinesInput = {
@@ -1183,7 +1507,12 @@ export type ShopListingUncheckedUpdateWithoutOrderLinesInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1193,6 +1522,7 @@ export type ShopListingUncheckedUpdateWithoutOrderLinesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shopHomeFeatured?: Prisma.ShopUncheckedUpdateOneWithoutHomeFeaturedListingNestedInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUncheckedUpdateManyWithoutRelatedListingNestedInput
 }
 
 export type ShopListingCreateManyProductInput = {
@@ -1205,7 +1535,12 @@ export type ShopListingCreateManyProductInput = {
   listingFeePaidAt?: Date | string | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
@@ -1225,7 +1560,12 @@ export type ShopListingUpdateWithoutProductInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1237,6 +1577,7 @@ export type ShopListingUpdateWithoutProductInput = {
   shop?: Prisma.ShopUpdateOneRequiredWithoutListingsNestedInput
   shopHomeFeatured?: Prisma.ShopUpdateOneWithoutHomeFeaturedListingNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutShopListingNestedInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUpdateManyWithoutRelatedListingNestedInput
 }
 
 export type ShopListingUncheckedUpdateWithoutProductInput = {
@@ -1249,7 +1590,12 @@ export type ShopListingUncheckedUpdateWithoutProductInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1260,6 +1606,7 @@ export type ShopListingUncheckedUpdateWithoutProductInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shopHomeFeatured?: Prisma.ShopUncheckedUpdateOneWithoutHomeFeaturedListingNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutShopListingNestedInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUncheckedUpdateManyWithoutRelatedListingNestedInput
 }
 
 export type ShopListingUncheckedUpdateManyWithoutProductInput = {
@@ -1272,7 +1619,12 @@ export type ShopListingUncheckedUpdateManyWithoutProductInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1293,7 +1645,12 @@ export type ShopListingCreateManyShopInput = {
   listingFeePaidAt?: Date | string | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: string | null
+  adminListingSecondaryImageUrl?: string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
@@ -1313,7 +1670,12 @@ export type ShopListingUpdateWithoutShopInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1325,6 +1687,7 @@ export type ShopListingUpdateWithoutShopInput = {
   product?: Prisma.ProductUpdateOneRequiredWithoutShopListingsNestedInput
   shopHomeFeatured?: Prisma.ShopUpdateOneWithoutHomeFeaturedListingNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutShopListingNestedInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUpdateManyWithoutRelatedListingNestedInput
 }
 
 export type ShopListingUncheckedUpdateWithoutShopInput = {
@@ -1337,7 +1700,12 @@ export type ShopListingUncheckedUpdateWithoutShopInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1348,6 +1716,7 @@ export type ShopListingUncheckedUpdateWithoutShopInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shopHomeFeatured?: Prisma.ShopUncheckedUpdateOneWithoutHomeFeaturedListingNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutShopListingNestedInput
+  rejectionNotices?: Prisma.ShopOwnerNoticeUncheckedUpdateManyWithoutRelatedListingNestedInput
 }
 
 export type ShopListingUncheckedUpdateManyWithoutShopInput = {
@@ -1360,7 +1729,12 @@ export type ShopListingUncheckedUpdateManyWithoutShopInput = {
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  listingPrintifyCatalogSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   requestImages?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  ownerSupplementImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1378,10 +1752,12 @@ export type ShopListingUncheckedUpdateManyWithoutShopInput = {
 
 export type ShopListingCountOutputType = {
   orderLines: number
+  rejectionNotices: number
 }
 
 export type ShopListingCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   orderLines?: boolean | ShopListingCountOutputTypeCountOrderLinesArgs
+  rejectionNotices?: boolean | ShopListingCountOutputTypeCountRejectionNoticesArgs
 }
 
 /**
@@ -1401,6 +1777,13 @@ export type ShopListingCountOutputTypeCountOrderLinesArgs<ExtArgs extends runtim
   where?: Prisma.OrderLineWhereInput
 }
 
+/**
+ * ShopListingCountOutputType without action
+ */
+export type ShopListingCountOutputTypeCountRejectionNoticesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ShopOwnerNoticeWhereInput
+}
+
 
 export type ShopListingSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1413,7 +1796,12 @@ export type ShopListingSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   listingFeePaidAt?: boolean
   listingPrintifyProductId?: boolean
   listingPrintifyVariantId?: boolean
+  listingPrintifyVariantPrices?: boolean
+  listingPrintifyCatalogSyncedAt?: boolean
   requestImages?: boolean
+  ownerSupplementImageUrl?: boolean
+  adminListingSecondaryImageUrl?: boolean
+  listingStorefrontCatalogImageUrls?: boolean
   requestItemName?: boolean
   requestStatus?: boolean
   adminRemovedFromShopAt?: boolean
@@ -1426,6 +1814,7 @@ export type ShopListingSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   shopHomeFeatured?: boolean | Prisma.ShopListing$shopHomeFeaturedArgs<ExtArgs>
   orderLines?: boolean | Prisma.ShopListing$orderLinesArgs<ExtArgs>
+  rejectionNotices?: boolean | Prisma.ShopListing$rejectionNoticesArgs<ExtArgs>
   _count?: boolean | Prisma.ShopListingCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["shopListing"]>
 
@@ -1440,7 +1829,12 @@ export type ShopListingSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   listingFeePaidAt?: boolean
   listingPrintifyProductId?: boolean
   listingPrintifyVariantId?: boolean
+  listingPrintifyVariantPrices?: boolean
+  listingPrintifyCatalogSyncedAt?: boolean
   requestImages?: boolean
+  ownerSupplementImageUrl?: boolean
+  adminListingSecondaryImageUrl?: boolean
+  listingStorefrontCatalogImageUrls?: boolean
   requestItemName?: boolean
   requestStatus?: boolean
   adminRemovedFromShopAt?: boolean
@@ -1464,7 +1858,12 @@ export type ShopListingSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   listingFeePaidAt?: boolean
   listingPrintifyProductId?: boolean
   listingPrintifyVariantId?: boolean
+  listingPrintifyVariantPrices?: boolean
+  listingPrintifyCatalogSyncedAt?: boolean
   requestImages?: boolean
+  ownerSupplementImageUrl?: boolean
+  adminListingSecondaryImageUrl?: boolean
+  listingStorefrontCatalogImageUrls?: boolean
   requestItemName?: boolean
   requestStatus?: boolean
   adminRemovedFromShopAt?: boolean
@@ -1488,7 +1887,12 @@ export type ShopListingSelectScalar = {
   listingFeePaidAt?: boolean
   listingPrintifyProductId?: boolean
   listingPrintifyVariantId?: boolean
+  listingPrintifyVariantPrices?: boolean
+  listingPrintifyCatalogSyncedAt?: boolean
   requestImages?: boolean
+  ownerSupplementImageUrl?: boolean
+  adminListingSecondaryImageUrl?: boolean
+  listingStorefrontCatalogImageUrls?: boolean
   requestItemName?: boolean
   requestStatus?: boolean
   adminRemovedFromShopAt?: boolean
@@ -1499,12 +1903,13 @@ export type ShopListingSelectScalar = {
   updatedAt?: boolean
 }
 
-export type ShopListingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "shopId" | "productId" | "priceCents" | "active" | "featuredOnShop" | "featuredForHome" | "listingFeePaidAt" | "listingPrintifyProductId" | "listingPrintifyVariantId" | "requestImages" | "requestItemName" | "requestStatus" | "adminRemovedFromShopAt" | "creatorRemovedFromShopAt" | "removedFromListingRequestsAt" | "adminListingRemovalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["shopListing"]>
+export type ShopListingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "shopId" | "productId" | "priceCents" | "active" | "featuredOnShop" | "featuredForHome" | "listingFeePaidAt" | "listingPrintifyProductId" | "listingPrintifyVariantId" | "listingPrintifyVariantPrices" | "listingPrintifyCatalogSyncedAt" | "requestImages" | "ownerSupplementImageUrl" | "adminListingSecondaryImageUrl" | "listingStorefrontCatalogImageUrls" | "requestItemName" | "requestStatus" | "adminRemovedFromShopAt" | "creatorRemovedFromShopAt" | "removedFromListingRequestsAt" | "adminListingRemovalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["shopListing"]>
 export type ShopListingInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   shopHomeFeatured?: boolean | Prisma.ShopListing$shopHomeFeaturedArgs<ExtArgs>
   orderLines?: boolean | Prisma.ShopListing$orderLinesArgs<ExtArgs>
+  rejectionNotices?: boolean | Prisma.ShopListing$rejectionNoticesArgs<ExtArgs>
   _count?: boolean | Prisma.ShopListingCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ShopListingIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1523,6 +1928,7 @@ export type $ShopListingPayload<ExtArgs extends runtime.Types.Extensions.Interna
     product: Prisma.$ProductPayload<ExtArgs>
     shopHomeFeatured: Prisma.$ShopPayload<ExtArgs> | null
     orderLines: Prisma.$OrderLinePayload<ExtArgs>[]
+    rejectionNotices: Prisma.$ShopOwnerNoticePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1541,7 +1947,35 @@ export type $ShopListingPayload<ExtArgs extends runtime.Types.Extensions.Interna
      * * Shop-specific Printify variant id for default checkout line when set.
      */
     listingPrintifyVariantId: string | null
+    /**
+     * *
+     *    * Per Printify variant id → shop price in cents when the listing exposes multiple variants
+     *    * (no single forced `listingPrintifyVariantId`). Null = use `priceCents` for every variant until set.
+     */
+    listingPrintifyVariantPrices: runtime.JsonValue | null
+    /**
+     * * Set when an admin saves Printify product/variant IDs (initial or resave); drives “last synced” in admin UI.
+     */
+    listingPrintifyCatalogSyncedAt: Date | null
     requestImages: runtime.JsonValue | null
+    /**
+     * *
+     *    * Optional extra storefront image (one per listing), uploaded by the shop owner after approval.
+     *    * Stored in R2 as WebP capped at ~100 KiB; shown after catalog/Printify images on cards and PDP.
+     */
+    ownerSupplementImageUrl: string | null
+    /**
+     * *
+     *    * Optional second storefront image set by platform admin (WebP on R2, max ~100 KiB).
+     *    * Shown after Printify/catalog images; shop owners cannot remove it from the dashboard.
+     */
+    adminListingSecondaryImageUrl: string | null
+    /**
+     * *
+     *    * When set (JSON string[]), only these catalog/Printify image URLs are shown for this listing
+     *    * on the public storefront (subset of product hero ∪ gallery). Null = show all catalog images.
+     */
+    listingStorefrontCatalogImageUrls: runtime.JsonValue | null
     /**
      * * Shop-provided display name for this listing request (review / fulfillment context).
      */
@@ -1963,6 +2397,7 @@ export interface Prisma__ShopListingClient<T, Null = never, ExtArgs extends runt
   product<T extends Prisma.ProductDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductClient<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   shopHomeFeatured<T extends Prisma.ShopListing$shopHomeFeaturedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ShopListing$shopHomeFeaturedArgs<ExtArgs>>): Prisma.Prisma__ShopClient<runtime.Types.Result.GetResult<Prisma.$ShopPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   orderLines<T extends Prisma.ShopListing$orderLinesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ShopListing$orderLinesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  rejectionNotices<T extends Prisma.ShopListing$rejectionNoticesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ShopListing$rejectionNoticesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ShopOwnerNoticePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2002,7 +2437,12 @@ export interface ShopListingFieldRefs {
   readonly listingFeePaidAt: Prisma.FieldRef<"ShopListing", 'DateTime'>
   readonly listingPrintifyProductId: Prisma.FieldRef<"ShopListing", 'String'>
   readonly listingPrintifyVariantId: Prisma.FieldRef<"ShopListing", 'String'>
+  readonly listingPrintifyVariantPrices: Prisma.FieldRef<"ShopListing", 'Json'>
+  readonly listingPrintifyCatalogSyncedAt: Prisma.FieldRef<"ShopListing", 'DateTime'>
   readonly requestImages: Prisma.FieldRef<"ShopListing", 'Json'>
+  readonly ownerSupplementImageUrl: Prisma.FieldRef<"ShopListing", 'String'>
+  readonly adminListingSecondaryImageUrl: Prisma.FieldRef<"ShopListing", 'String'>
+  readonly listingStorefrontCatalogImageUrls: Prisma.FieldRef<"ShopListing", 'Json'>
   readonly requestItemName: Prisma.FieldRef<"ShopListing", 'String'>
   readonly requestStatus: Prisma.FieldRef<"ShopListing", 'ListingRequestStatus'>
   readonly adminRemovedFromShopAt: Prisma.FieldRef<"ShopListing", 'DateTime'>
@@ -2452,6 +2892,30 @@ export type ShopListing$orderLinesArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   distinct?: Prisma.OrderLineScalarFieldEnum | Prisma.OrderLineScalarFieldEnum[]
+}
+
+/**
+ * ShopListing.rejectionNotices
+ */
+export type ShopListing$rejectionNoticesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ShopOwnerNotice
+   */
+  select?: Prisma.ShopOwnerNoticeSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ShopOwnerNotice
+   */
+  omit?: Prisma.ShopOwnerNoticeOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ShopOwnerNoticeInclude<ExtArgs> | null
+  where?: Prisma.ShopOwnerNoticeWhereInput
+  orderBy?: Prisma.ShopOwnerNoticeOrderByWithRelationInput | Prisma.ShopOwnerNoticeOrderByWithRelationInput[]
+  cursor?: Prisma.ShopOwnerNoticeWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ShopOwnerNoticeScalarFieldEnum | Prisma.ShopOwnerNoticeScalarFieldEnum[]
 }
 
 /**

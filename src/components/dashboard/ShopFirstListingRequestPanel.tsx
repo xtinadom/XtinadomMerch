@@ -9,6 +9,7 @@ import {
   flattenShopBaselineCatalogGroups,
   type ShopSetupCatalogGroup,
 } from "@/lib/shop-baseline-catalog";
+import type { DraftListingRequestPrefillPayload } from "@/lib/shop-baseline-draft-prefill";
 
 const btnPrimary =
   "rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-white disabled:cursor-not-allowed";
@@ -71,9 +72,17 @@ export function ShopFirstListingRequestPanel(props: {
   listingFeePolicySummary: string;
   r2Configured: boolean;
   listingPickerDiagnostics?: { adminCatalogItemCount: number };
+  draftListingRequestPrefill?: DraftListingRequestPrefillPayload | null;
   embedded?: boolean;
 }) {
-  const { catalogGroups, listingFeePolicySummary, r2Configured, listingPickerDiagnostics, embedded } = props;
+  const {
+    catalogGroups,
+    listingFeePolicySummary,
+    r2Configured,
+    listingPickerDiagnostics,
+    draftListingRequestPrefill = null,
+    embedded,
+  } = props;
 
   const router = useRouter();
   const [isListingPending, startListingTransition] = useTransition();
@@ -87,6 +96,7 @@ export function ShopFirstListingRequestPanel(props: {
   const [listingArtworkPreviewUrl, setListingArtworkPreviewUrl] = useState<string | null>(null);
   const [listingSavedFlash, setListingSavedFlash] = useState(false);
   const listingFileRef = useRef<HTMLInputElement>(null);
+  const prefillAppliedListingIdRef = useRef<string | null>(null);
 
   const catalogOptions = useMemo(
     () => flattenShopBaselineCatalogGroups(catalogGroups),
@@ -142,8 +152,43 @@ export function ShopFirstListingRequestPanel(props: {
     );
     if (!isSingle) return;
     const o = catalogOptions.find((x) => x.productId === listingProductId);
-    if (o) setListingPrice((o.minPriceCents / 100).toFixed(2));
+    if (!o) return;
+    setListingPrice((prev) => {
+      const t = prev.trim();
+      if (!t) return (o.minPriceCents / 100).toFixed(2);
+      const parsed = parseFloat(t.replace(/[^0-9.]/g, ""));
+      if (!Number.isFinite(parsed)) return (o.minPriceCents / 100).toFixed(2);
+      if (Math.round(parsed * 100) < o.minPriceCents) return (o.minPriceCents / 100).toFixed(2);
+      return prev;
+    });
   }, [listingProductId, catalogOptions, catalogGroups]);
+
+  useEffect(() => {
+    if (!draftListingRequestPrefill) {
+      prefillAppliedListingIdRef.current = null;
+    }
+  }, [draftListingRequestPrefill]);
+
+  useEffect(() => {
+    if (!draftListingRequestPrefill || catalogGroups.length === 0) return;
+    if (prefillAppliedListingIdRef.current === draftListingRequestPrefill.listingId) return;
+    prefillAppliedListingIdRef.current = draftListingRequestPrefill.listingId;
+    setListingProductId(draftListingRequestPrefill.catalogProductPick);
+  }, [draftListingRequestPrefill, catalogGroups.length]);
+
+  useEffect(() => {
+    const p = draftListingRequestPrefill;
+    if (!p || catalogGroups.length === 0) return;
+    if (prefillAppliedListingIdRef.current !== p.listingId) return;
+    if (listingProductId !== p.catalogProductPick) return;
+    if (p.listingPriceDollars != null) {
+      setListingPrice(p.listingPriceDollars);
+    }
+    if (p.variantPricesJson) {
+      setVariantListingPrices((prev) => ({ ...prev, ...p.variantPricesJson! }));
+    }
+    setListingRequestItemName(p.requestItemName);
+  }, [draftListingRequestPrefill, catalogGroups.length, listingProductId]);
 
   const listingPriceMeetsMinimum = useMemo(() => {
     if (!listingProductId) return false;
@@ -186,7 +231,7 @@ export function ShopFirstListingRequestPanel(props: {
       if (r.ok) {
         setMessage({
           tone: "ok",
-          text: "Listing submitted for review. Check the Listings tab for any publication fee (your first listings may be free), then wait for admin approval (usually 1–3 days).",
+          text: "Listing submitted for review. Admin approval usually occurs in 1–3 days.",
         });
         setListingSavedFlash(true);
         window.setTimeout(() => setListingSavedFlash(false), 2500);
@@ -239,20 +284,12 @@ export function ShopFirstListingRequestPanel(props: {
           </Link>
           . {listingFeePolicySummary} Pay from the Listings tab when your row appears if a fee applies.
         </p>
+        {draftListingRequestPrefill ? (
+          <p className="mt-2 rounded-lg border border-sky-900/40 bg-sky-950/20 px-3 py-2 text-xs text-sky-200/90">
+            Your draft listing is selected below — confirm prices and upload artwork to submit for review.
+          </p>
+        ) : null}
       </div>
-
-      {message ? (
-        <p
-          className={
-            message.tone === "ok"
-              ? "rounded-lg border border-emerald-900/50 bg-emerald-950/25 px-3 py-2 text-xs text-emerald-200/90"
-              : "rounded-lg border border-amber-900/50 bg-amber-950/25 px-3 py-2 text-xs text-amber-200/90"
-          }
-          role="status"
-        >
-          {message.text}
-        </p>
-      ) : null}
 
       {catalogGroups.length === 0 ? (
         <p className="text-xs text-amber-200/80">
@@ -314,10 +351,11 @@ export function ShopFirstListingRequestPanel(props: {
             <p className="text-xs font-medium text-zinc-400">Allowed items (Admin → List)</p>
             <p className="mt-1 text-[11px] leading-relaxed text-zinc-600">
               Minimums are shown on each line. Select the main product name. If it has options (sizes, etc.), set a list
-              price for every option — one submission adds all of them with the same artwork.
+              price for every option — one submission is one listing and one admin approval; sizes are options on that
+              item, not separate listings.
             </p>
             <ul
-              className="mt-2 h-[400px] divide-y divide-zinc-800/80 overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950/40"
+              className="mt-2 h-[350px] divide-y divide-zinc-800/80 overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950/40"
               role="listbox"
               aria-label="Items from admin catalog"
             >
@@ -510,6 +548,18 @@ export function ShopFirstListingRequestPanel(props: {
               }}
               className="mt-1 block w-full text-xs text-zinc-400 file:mr-2 file:rounded file:border-0 file:bg-zinc-800 file:px-2 file:py-1 file:text-zinc-200"
             />
+            {message ? (
+              <p
+                className={
+                  message.tone === "ok"
+                    ? "mt-2 rounded-lg border border-emerald-900/50 bg-emerald-950/25 px-3 py-2 text-xs text-emerald-200/90"
+                    : "mt-2 rounded-lg border border-amber-900/50 bg-amber-950/25 px-3 py-2 text-xs text-amber-200/90"
+                }
+                role="status"
+              >
+                {message.text}
+              </p>
+            ) : null}
             {listingArtworkPreviewUrl ? (
               <div className="mt-3">
                 <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-zinc-600">Preview</p>

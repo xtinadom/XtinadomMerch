@@ -18,6 +18,7 @@
     "db:migrate:prod": "node scripts/migrate-production.cjs",
     "db:seed": "prisma db seed --schema prisma/schema.prisma",
     "db:seed:admin-catalog-if-empty": "tsx scripts/seed-admin-catalog-if-empty.ts",
+    "db:sync:admin-catalog": "tsx scripts/sync-admin-catalog-from-remote.ts",
     "cleanup-tags": "tsx scripts/cleanup-duplicate-tags.ts",
     "test:r2": "tsx scripts/test-r2-upload.ts",
     "r2:prune-listings": "tsx scripts/r2-prune-orphan-listings.ts",
