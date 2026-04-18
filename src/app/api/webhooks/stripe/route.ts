@@ -7,11 +7,9 @@ import { Prisma } from "@/generated/prisma/client";
 import {
   FulfillmentType,
   FulfillmentJobStatus,
-  ListingRequestStatus,
   OrderStatus,
 } from "@/generated/prisma/enums";
-import { revalidatePath } from "next/cache";
-import { activateProductWhenShopListingGoesLive } from "@/lib/shop-listing-publish";
+import { fulfillListingFeeForShopListingIfUnpaid } from "@/lib/listing-fee-fulfillment";
 
 export const runtime = "nodejs";
 
@@ -29,65 +27,16 @@ async function fulfillListingFeeCheckout(session: Stripe.Checkout.Session): Prom
   if (session.metadata?.kind !== "listing_fee") return false;
   const listingId = session.metadata.shopListingId;
   if (!listingId || typeof listingId !== "string") return true;
-  const row = await prisma.shopListing.findUnique({
-    where: { id: listingId },
-    select: {
-      requestStatus: true,
-      active: true,
-      shopId: true,
-      productId: true,
-      adminRemovedFromShopAt: true,
-      shop: { select: { slug: true } },
-    },
-  });
-  if (!row) return true;
-  const publishAfterFee =
-    row.requestStatus === ListingRequestStatus.approved &&
-    !row.active &&
-    row.adminRemovedFromShopAt == null;
-  const statusBefore = row.requestStatus;
-  await prisma.shopListing.update({
-    where: { id: listingId },
-    data: {
-      listingFeePaidAt: new Date(),
-      ...(publishAfterFee ? { active: true } : {}),
-    },
-  });
-  if (publishAfterFee) {
-    await activateProductWhenShopListingGoesLive(row.productId, row.shop.slug);
-    await prisma.shopOwnerNotice.create({
-      data: {
-        shopId: row.shopId,
-        kind: "listing_fee_paid",
-        body:
-          "Your listing publication fee was received. That listing is now live in your shop.",
-      },
-    });
-    revalidatePath("/dashboard");
-  } else if (statusBefore === ListingRequestStatus.draft) {
-    await prisma.shopOwnerNotice.create({
-      data: {
-        shopId: row.shopId,
-        kind: "listing_fee_paid",
-        body:
-          "Your listing publication fee was received. Open the Listings tab and submit that draft for admin review when you are ready.",
-      },
-    });
-    revalidatePath("/dashboard");
-  } else if (
-    statusBefore === ListingRequestStatus.submitted ||
-    statusBefore === ListingRequestStatus.images_ok ||
-    statusBefore === ListingRequestStatus.printify_item_created
-  ) {
-    await prisma.shopOwnerNotice.create({
-      data: {
-        shopId: row.shopId,
-        kind: "listing_fee_paid",
-        body: "Your listing publication fee was received. Admin review continues as usual.",
-      },
-    });
-    revalidatePath("/dashboard");
-  }
+  await fulfillListingFeeForShopListingIfUnpaid(listingId);
+  return true;
+}
+
+async function fulfillListingFeePaymentIntent(pi: Stripe.PaymentIntent): Promise<boolean> {
+  if (pi.metadata?.kind !== "listing_fee") return false;
+  const listingId = pi.metadata.shopListingId;
+  if (!listingId || typeof listingId !== "string") return true;
+  if (pi.status !== "succeeded") return true;
+  await fulfillListingFeeForShopListingIfUnpaid(listingId);
   return true;
 }
 
@@ -336,6 +285,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
     await fulfillOrder(session);
+  }
+
+  if (event.type === "payment_intent.succeeded") {
+    const pi = event.data.object as Stripe.PaymentIntent;
+    const listingFee = await fulfillListingFeePaymentIntent(pi);
+    if (listingFee) {
+      return NextResponse.json({ received: true });
+    }
   }
 
   return NextResponse.json({ received: true });

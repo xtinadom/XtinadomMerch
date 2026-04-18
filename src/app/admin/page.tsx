@@ -69,6 +69,7 @@ import {
   formatBytesForAdmin,
   getAdminDeployFootprint,
 } from "@/lib/deploy-footprint";
+import { listingRejectionNoticeDetail } from "@/lib/listing-request-reject-reasons";
 export const dynamic = "force-dynamic";
 
 function formatPrice(cents: number) {
@@ -547,11 +548,26 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           notes: l.adminListingRemovalNotes,
         };
         if (l.creatorRemovedFromShopAt != null) {
-          detailsRemovedRaw.push({ ...base, rowKind: "removed" });
+          detailsRemovedRaw.push({
+            ...base,
+            rowKind: "removed",
+            removalSource: "creator",
+          });
         } else if (l.adminRemovedFromShopAt != null) {
           detailsFrozenRaw.push({ ...base, rowKind: "frozen" });
         } else if (l.active && l.creatorRemovedFromShopAt == null && l.product.active) {
           detailsActiveRaw.push({ ...base, rowKind: "active" });
+        } else if (
+          l.removedFromListingRequestsAt != null &&
+          l.creatorRemovedFromShopAt == null &&
+          l.adminRemovedFromShopAt == null
+        ) {
+          detailsRemovedRaw.push({
+            ...base,
+            rowKind: "removed",
+            removalSource: "admin_queue",
+            rejectionReasonText: listingRejectionNoticeDetail("other", null),
+          });
         } else {
           const row: ShopWatchDetail = {
             ...base,
@@ -615,8 +631,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         salesCount: salesByShop.get(shop.id) ?? 0,
         paidListingsCount,
         frozenCount: frozenByShop.get(shop.id) ?? 0,
-        removedCount:
-          (removedByShop.get(shop.id) ?? 0) + detailsOtherRejected.length,
+        removedCount: detailsRemoved.length + detailsOtherRejected.length,
         detailsActive,
         detailsFrozen,
         detailsRemoved,

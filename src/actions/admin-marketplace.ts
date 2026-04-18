@@ -680,7 +680,7 @@ async function executeRemoveListingFromRequestsQueueOnce(listingId: string): Pro
         shopId: listing.shopId,
         kind: "listing_rejected",
         relatedListingId: listingId,
-        body: `The platform removed your listing request for “${productLabel}” from review and marked it rejected. Check the Listings tab or contact support.`,
+        body: `The platform removed your listing request for “${productLabel}” from review and marked it rejected. ${listingRejectionNoticeDetail("other", null)} Check the Listings tab or contact support.`,
       },
     });
   } else {

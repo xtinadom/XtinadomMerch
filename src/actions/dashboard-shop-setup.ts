@@ -21,8 +21,11 @@ import { shopSocialLinksFromFormData } from "@/lib/shop-social-links";
 import {
   PLATFORM_SHOP_SLUG,
   SHOP_LISTING_MAX_PRICE_CENTS,
+  listingFeeCentsForOrdinal,
   shopListingMaxPriceUsdLabel,
 } from "@/lib/marketplace-constants";
+import { shopStripeConnectReadyForListingCharges } from "@/lib/shop-stripe-connect-gate";
+import { ensureListingFeeStripeConnectNotice } from "@/lib/listing-fee-connect-notice";
 import { allocateUniqueShopSlug } from "@/lib/shop-slug";
 import {
   encodeBaselinePickVariant,
@@ -202,6 +205,30 @@ export async function submitFirstListingSetup(
         "Confirm in the dialog that you have rights to your images and that they follow the item guidelines.",
     };
   }
+
+  const existingListingCount = await prisma.shopListing.count({
+    where: { shopId: shop.id },
+  });
+  const nextListingOrdinal = existingListingCount + 1;
+  const publicationFeeCentsForRequest = listingFeeCentsForOrdinal(nextListingOrdinal, shop.slug);
+  if (publicationFeeCentsForRequest > 0) {
+    if (String(formData.get("feeChargeAttestation") ?? "").trim() !== "1") {
+      return {
+        ok: false,
+        error:
+          "Confirm the publication fee agreement in the dialog before submitting your listing request.",
+      };
+    }
+    if (!shopStripeConnectReadyForListingCharges(shop)) {
+      await ensureListingFeeStripeConnectNotice(shop.id);
+      return {
+        ok: false,
+        error:
+          "Finish Stripe Connect on the Onboarding tab (charges and payouts enabled) before creating a listing that has a publication fee.",
+      };
+    }
+  }
+
   if (!isR2UploadConfigured()) {
     return {
       ok: false,

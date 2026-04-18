@@ -12,6 +12,8 @@ export type ShopWatchDetail = {
   /** Paid fee, unpaid fee, standard free slots, or promo / founder-style free listings. */
   listingFeeKind: "paid" | "unpaid" | "free_slot" | "free_promo";
   rowKind: "active" | "frozen" | "removed" | "other";
+  /** When `rowKind` is `removed`: self-serve vs admin “×” queue removal (latter shows as Removed + Other). */
+  removalSource?: "creator" | "admin_queue";
   queueRemoved: boolean;
   notes: string | null;
   /** When `rowKind` is other: listing request status (draft, approved but not live, etc.). */
@@ -34,7 +36,7 @@ export type ShopWatchRow = {
   /** Listings where a publication fee applied and was paid (matches blue $ in details; excludes free / promo). */
   paidListingsCount: number;
   frozenCount: number;
-  /** Creator self-removals plus admin-rejected rows (same roll-up as the Removed column). */
+  /** Creator self-removals, admin “×” queue removals, plus formal admin rejects (same roll-up as the Removed column). */
   removedCount: number;
   detailsActive: ShopWatchDetail[];
   detailsFrozen: ShopWatchDetail[];
@@ -45,7 +47,7 @@ export type ShopWatchRow = {
   detailsOtherPipeline: ShopWatchDetail[];
   /** Approved but not on storefront (e.g. fee pending, inactive product). */
   detailsOtherApproved: ShopWatchDetail[];
-  /** Admin-rejected — rendered together with creator-removed under the Removed section. */
+  /** Formal admin rejects (without queue timestamp) — merged under Removed with creator and × removals. */
   detailsOtherRejected: ShopWatchDetail[];
 };
 
@@ -151,7 +153,7 @@ function DetailSection(props: {
                   ) : null}
                   {d.rowKind === "removed" ? (
                     <span className="rounded-full bg-fuchsia-950/45 px-2 py-0.5 text-[10px] font-medium tracking-wide text-fuchsia-200/90 ring-1 ring-fuchsia-800/50">
-                      Creator removed
+                      {d.removalSource === "admin_queue" ? "Removed" : "Creator removed"}
                     </span>
                   ) : null}
                   {d.rowKind === "other" ? (
@@ -174,13 +176,14 @@ function DetailSection(props: {
                       listing {d.listingActive ? "on" : "off"} · product {d.productActive ? "on" : "off"}
                     </span>
                   ) : null}
-                  {d.queueRemoved ? (
+                  {d.queueRemoved && d.removalSource !== "admin_queue" ? (
                     <span className="rounded-full bg-amber-950/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-200/90 ring-1 ring-amber-800/50">
                       Removed from queue
                     </span>
                   ) : null}
                 </p>
-                {d.pipelineStatus === "rejected" && d.rejectionReasonText ? (
+                {d.rejectionReasonText &&
+                (d.pipelineStatus === "rejected" || d.removalSource === "admin_queue") ? (
                   <p className="mt-1.5 text-[10px] leading-snug text-rose-200/85">
                     <DashboardNoticeBody body={d.rejectionReasonText} />
                   </p>
@@ -372,8 +375,9 @@ export function AdminShopWatchTab(props: {
         <strong className="font-medium text-zinc-500">listing groups</strong> under each shop:{" "}
         <strong className="font-medium text-zinc-500">Approved</strong> = the Live group (storefront-active plus
         approved-but-not-live, e.g. fee pending); <strong className="font-medium text-zinc-500">Frozen</strong> = admin
-        freeze; <strong className="font-medium text-zinc-500">Removed</strong> = creator self-removals and admin-rejected
-        requests;         <strong className="font-medium text-zinc-500">All</strong> also shows{" "}
+        freeze; <strong className="font-medium text-zinc-500">Removed</strong> = creator self-removals, formal admin
+        rejects, and Listing-requests <strong className="font-medium text-zinc-500">×</strong> removals (reason{" "}
+        <strong className="font-medium text-zinc-500">Other</strong>); <strong className="font-medium text-zinc-500">All</strong> also shows{" "}
         <strong className="font-medium text-zinc-500">Requested</strong> (submitted) and pipeline rows (draft / Printify).{" "}
         <strong className="font-medium text-zinc-500">Remove</strong> (Live group) hides an approved listing that is still
         active on the shop from the public storefront (same as Freeze on Listing requests).{" "}
@@ -407,7 +411,7 @@ export function AdminShopWatchTab(props: {
             {
               id: "removed" as const,
               label: "Removed",
-              title: "Creator-removed listings and admin-rejected listing requests",
+              title: "Creator removals, × queue removals (Other), and formal admin rejects",
             },
           ] as const
         ).map((opt) => (
@@ -471,7 +475,7 @@ export function AdminShopWatchTab(props: {
                 </th>
                 <th
                   className="whitespace-nowrap px-3 py-2.5 text-center"
-                  title="Creator-removed listings plus admin-rejected listing requests"
+                  title="Creator removals, admin × queue removals, and admin-rejected listing requests"
                 >
                   Removed
                 </th>

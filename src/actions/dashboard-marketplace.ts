@@ -9,7 +9,6 @@ import { getStripe } from "@/lib/stripe";
 import { publicAppBaseUrl } from "@/lib/public-app-url";
 import { isMockCheckoutEnabled } from "@/lib/checkout-mock";
 import {
-  LISTING_FEE_CENTS,
   listingFeeCentsForOrdinal,
   PLATFORM_SHOP_SLUG,
   SHOP_LISTING_MAX_PRICE_CENTS,
@@ -27,7 +26,9 @@ import {
   shopListingRequestImageUrlStrings,
 } from "@/lib/r2-upload";
 import { compressShopListingSupplementPhotoWebp } from "@/lib/shop-setup-image";
-import { activateProductWhenShopListingGoesLive } from "@/lib/shop-listing-publish";
+import { fulfillListingFeeForShopListingIfUnpaid } from "@/lib/listing-fee-fulfillment";
+import { ensureListingFeeStripeConnectNotice } from "@/lib/listing-fee-connect-notice";
+import { shopStripeConnectReadyForListingCharges } from "@/lib/shop-stripe-connect-gate";
 import { printifyVariantShopFloorCents } from "@/lib/listing-cart-price";
 import { listingCatalogUrlsForPersist } from "@/lib/product-media";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
@@ -390,10 +391,25 @@ export async function dashboardSubmitListingRequest(
     const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug);
     if (feeCents > 0 && !feePaid) {
       revalidatePath("/dashboard");
+      if (!shopStripeConnectReadyForListingCharges(shop)) {
+        await ensureListingFeeStripeConnectNotice(shop.id);
+        return {
+          ok: false,
+          error:
+            "Finish Stripe Connect on the Onboarding tab (charges and payouts enabled) before you can pay the publication fee or submit this listing for review.",
+        };
+      }
       return {
         ok: false,
         error:
           "Pay the publication fee for this listing on the Listings tab before submitting for admin review.",
+      };
+    }
+    if (feeCents > 0 && String(formData.get("feeChargeAttestation") ?? "").trim() !== "1") {
+      return {
+        ok: false,
+        error:
+          "Confirm the publication fee agreement in the dialog before submitting for admin review.",
       };
     }
   }
@@ -427,10 +443,8 @@ export async function dashboardPayListingFee(formData: FormData) {
     where: { id: listingId, shopId: shop.id },
     select: {
       id: true,
-      productId: true,
       listingFeePaidAt: true,
       requestStatus: true,
-      active: true,
       creatorRemovedFromShopAt: true,
       adminRemovedFromShopAt: true,
     },
@@ -439,121 +453,159 @@ export async function dashboardPayListingFee(formData: FormData) {
   if (listing.creatorRemovedFromShopAt != null) return;
   if (listing.adminRemovedFromShopAt != null) return;
 
-  const row = listing;
-
   const canPayListingFee =
-    row.requestStatus === ListingRequestStatus.draft ||
-    row.requestStatus === ListingRequestStatus.approved ||
-    row.requestStatus === ListingRequestStatus.submitted ||
-    row.requestStatus === ListingRequestStatus.images_ok ||
-    row.requestStatus === ListingRequestStatus.printify_item_created;
+    listing.requestStatus === ListingRequestStatus.draft ||
+    listing.requestStatus === ListingRequestStatus.approved ||
+    listing.requestStatus === ListingRequestStatus.submitted ||
+    listing.requestStatus === ListingRequestStatus.images_ok ||
+    listing.requestStatus === ListingRequestStatus.printify_item_created;
   if (!canPayListingFee) return;
 
   const ordinal = await getListingOrdinal(listingId, shop.id);
   if (ordinal === null) return;
   const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug);
-  const publishAfterFee =
-    row.requestStatus === ListingRequestStatus.approved &&
-    !row.active &&
-    row.adminRemovedFromShopAt == null &&
-    row.creatorRemovedFromShopAt == null;
-
-  async function notifyAfterFeePayment() {
-    if (publishAfterFee) {
-      await activateProductWhenShopListingGoesLive(row.productId, shop.slug);
-      await prisma.shopOwnerNotice.create({
-        data: {
-          shopId: shop.id,
-          kind: "listing_fee_paid",
-          body:
-            "Your listing publication fee was received. That listing is now live in your shop.",
-        },
-      });
-      return;
-    }
-    if (feeCents <= 0) return;
-    if (row.requestStatus === ListingRequestStatus.draft) {
-      await prisma.shopOwnerNotice.create({
-        data: {
-          shopId: shop.id,
-          kind: "listing_fee_paid",
-          body:
-            "Your listing publication fee was received. Open the Listings tab and submit that draft for admin review when you are ready.",
-        },
-      });
-      return;
-    }
-    if (
-      row.requestStatus === ListingRequestStatus.submitted ||
-      row.requestStatus === ListingRequestStatus.images_ok ||
-      row.requestStatus === ListingRequestStatus.printify_item_created
-    ) {
-      await prisma.shopOwnerNotice.create({
-        data: {
-          shopId: shop.id,
-          kind: "listing_fee_paid",
-          body: "Your listing publication fee was received. Admin review continues as usual.",
-        },
-      });
-    }
-  }
 
   if (feeCents === 0) {
-    await prisma.shopListing.update({
-      where: { id: listingId },
-      data: {
-        listingFeePaidAt: new Date(),
-        ...(publishAfterFee ? { active: true } : {}),
-      },
-    });
-    await notifyAfterFeePayment();
-    revalidatePath("/dashboard");
+    await fulfillListingFeeForShopListingIfUnpaid(listingId);
     redirect("/dashboard?fee=ok");
   }
 
   if (isMockCheckoutEnabled()) {
-    await prisma.shopListing.update({
-      where: { id: listingId },
-      data: {
-        listingFeePaidAt: new Date(),
-        ...(publishAfterFee ? { active: true } : {}),
-      },
-    });
-    await notifyAfterFeePayment();
-    revalidatePath("/dashboard");
+    await fulfillListingFeeForShopListingIfUnpaid(listingId);
     redirect("/dashboard?fee=ok");
   }
 
-  const base = publicAppBaseUrl();
-  if (!base) redirect("/dashboard?fee=err&reason=no_app_url");
+  redirect("/dashboard?fee=err&reason=listing_fee_use_card_on_listings_tab");
+}
+
+export type StartListingFeePaymentIntentResult =
+  | { ok: true; clientSecret: string }
+  | { ok: false; error: string };
+
+export async function startListingFeePaymentIntent(
+  listingId: string,
+): Promise<StartListingFeePaymentIntentResult> {
+  const user = await requireShopOwner();
+  const shop = user.shop;
+  if (shop.slug === PLATFORM_SHOP_SLUG) {
+    return { ok: false, error: "Not available for the platform catalog shop." };
+  }
+  const id = listingId.trim();
+  if (!id) return { ok: false, error: "Missing listing." };
+
+  const listing = await prisma.shopListing.findFirst({
+    where: { id, shopId: shop.id },
+    select: {
+      id: true,
+      listingFeePaidAt: true,
+      requestStatus: true,
+      creatorRemovedFromShopAt: true,
+      adminRemovedFromShopAt: true,
+    },
+  });
+  if (!listing) return { ok: false, error: "Listing not found." };
+  if (listing.listingFeePaidAt) return { ok: false, error: "This listing fee is already paid." };
+  if (listing.creatorRemovedFromShopAt != null || listing.adminRemovedFromShopAt != null) {
+    return { ok: false, error: "This listing cannot be charged." };
+  }
+
+  const canPayListingFee =
+    listing.requestStatus === ListingRequestStatus.draft ||
+    listing.requestStatus === ListingRequestStatus.approved ||
+    listing.requestStatus === ListingRequestStatus.submitted ||
+    listing.requestStatus === ListingRequestStatus.images_ok ||
+    listing.requestStatus === ListingRequestStatus.printify_item_created;
+  if (!canPayListingFee) {
+    return { ok: false, error: "Publication fees can only be paid for eligible listing rows." };
+  }
+
+  const ordinal = await getListingOrdinal(id, shop.id);
+  if (ordinal === null) return { ok: false, error: "Listing not found." };
+  const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug);
+  if (feeCents <= 0) return { ok: false, error: "No publication fee is due for this listing." };
+
+  if (isMockCheckoutEnabled()) {
+    return {
+      ok: false,
+      error: "Mock checkout is enabled on the server — use the mock pay button instead of card entry.",
+    };
+  }
+
+  if (!shopStripeConnectReadyForListingCharges(shop)) {
+    await ensureListingFeeStripeConnectNotice(shop.id);
+    return {
+      ok: false,
+      error:
+        "Finish Stripe Connect on the Onboarding tab (charges and payouts enabled) before paying publication fees.",
+    };
+  }
 
   const stripe = getStripe();
-  const checkoutSession = await stripe.checkout.sessions.create({
-    mode: "payment",
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: feeCents,
+    currency: "usd",
     payment_method_types: ["card"],
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: "usd",
-          unit_amount: feeCents,
-          product_data: {
-            name: "Listing publication fee",
-            description: `Shop “${shop.displayName}” — one listing`,
-          },
-        },
-      },
-    ],
     metadata: {
       kind: "listing_fee",
       shopListingId: listing.id,
+      shopId: shop.id,
+      feeCents: String(feeCents),
     },
-    success_url: `${base}/dashboard?fee=ok`,
-    cancel_url: `${base}/dashboard?fee=cancel`,
   });
 
-  if (!checkoutSession.url) redirect("/dashboard?fee=err&reason=stripe");
-  redirect(checkoutSession.url);
+  const clientSecret = paymentIntent.client_secret;
+  if (!clientSecret) return { ok: false, error: "Stripe did not return a client secret." };
+  return { ok: true, clientSecret };
+}
+
+export type FinalizeListingFeePaymentIntentResult = { ok: true } | { ok: false; error: string };
+
+export async function finalizeListingFeePaymentIntent(
+  paymentIntentId: string,
+): Promise<FinalizeListingFeePaymentIntentResult> {
+  const user = await requireShopOwner();
+  const shop = user.shop;
+  if (shop.slug === PLATFORM_SHOP_SLUG) {
+    return { ok: false, error: "Not available for the platform catalog shop." };
+  }
+  const piId = paymentIntentId.trim();
+  if (!piId) return { ok: false, error: "Missing payment confirmation." };
+
+  const stripe = getStripe();
+  const pi = await stripe.paymentIntents.retrieve(piId);
+
+  if (pi.metadata?.kind !== "listing_fee") {
+    return { ok: false, error: "This payment is not a listing publication fee." };
+  }
+  const metaShopId = pi.metadata.shopId;
+  if (metaShopId && metaShopId !== shop.id) {
+    return { ok: false, error: "This payment does not belong to your shop." };
+  }
+
+  const listingId = pi.metadata.shopListingId;
+  if (!listingId) return { ok: false, error: "Invalid payment metadata." };
+
+  const listing = await prisma.shopListing.findFirst({
+    where: { id: listingId, shopId: shop.id },
+    select: { id: true, listingFeePaidAt: true },
+  });
+  if (!listing) return { ok: false, error: "Listing not found." };
+  if (listing.listingFeePaidAt) return { ok: true };
+
+  const ordinal = await getListingOrdinal(listingId, shop.id);
+  if (ordinal === null) return { ok: false, error: "Listing not found." };
+  const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug);
+  if (feeCents <= 0) return { ok: false, error: "No fee is configured for this listing." };
+  if (pi.amount !== feeCents) {
+    return { ok: false, error: "Payment amount does not match the current publication fee." };
+  }
+
+  if (pi.status !== "succeeded") {
+    return { ok: false, error: `Payment is not complete yet (status: ${pi.status}).` };
+  }
+
+  await fulfillListingFeeForShopListingIfUnpaid(listingId);
+  return { ok: true };
 }
 
 export async function dashboardStartStripeConnect() {

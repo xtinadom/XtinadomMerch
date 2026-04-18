@@ -415,6 +415,8 @@ type SubmitRequestFormProps = {
   /** When true, publication fee is required before submit (server also enforces). */
   feeBlocksSubmit?: boolean;
   paidListingFeeLabel?: string;
+  /** When true, confirm publication fee in the dialog (slot charges after free listings). */
+  listingFeeChargeConsentRequired?: boolean;
 };
 
 export function DashboardSubmitListingRequestForm({
@@ -422,6 +424,7 @@ export function DashboardSubmitListingRequestForm({
   defaultImageUrlsText,
   feeBlocksSubmit = false,
   paidListingFeeLabel = "",
+  listingFeeChargeConsentRequired = false,
 }: SubmitRequestFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -430,6 +433,7 @@ export function DashboardSubmitListingRequestForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [attestationOpen, setAttestationOpen] = useState(false);
   const [attestationChecked, setAttestationChecked] = useState(false);
+  const [feeChargeConsentChecked, setFeeChargeConsentChecked] = useState(false);
   const pendingFdRef = useRef<FormData | null>(null);
 
   useLayoutEffect(() => {
@@ -439,8 +443,13 @@ export function DashboardSubmitListingRequestForm({
   }, [listingId, defaultImageUrlsText]);
 
   useEffect(() => {
-    if (attestationOpen) setAttestationChecked(false);
+    if (attestationOpen) {
+      setAttestationChecked(false);
+      setFeeChargeConsentChecked(false);
+    }
   }, [attestationOpen]);
+
+  const feeConsentOk = !listingFeeChargeConsentRequired || feeChargeConsentChecked;
 
   const hasUrls = text.trim().length > 0;
 
@@ -537,6 +546,19 @@ export function DashboardSubmitListingRequestForm({
                 .
               </span>
             </label>
+            {listingFeeChargeConsentRequired && paidListingFeeLabel.trim() ? (
+              <label className="mt-3 flex cursor-pointer gap-2 text-sm text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={feeChargeConsentChecked}
+                  onChange={(e) => setFeeChargeConsentChecked(e.target.checked)}
+                  className="mt-1 shrink-0 rounded border-zinc-600"
+                />
+                <span>
+                  I agree to be charged {paidListingFeeLabel.trim()} for this listing.
+                </span>
+              </label>
+            ) : null}
             <div className="mt-5 flex flex-wrap justify-end gap-2">
               <button
                 type="button"
@@ -550,12 +572,15 @@ export function DashboardSubmitListingRequestForm({
               </button>
               <button
                 type="button"
-                disabled={!attestationChecked || pending || feeBlocksSubmit}
+                disabled={!attestationChecked || !feeConsentOk || pending || feeBlocksSubmit}
                 className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => {
                   const fd = pendingFdRef.current;
-                  if (!fd || !attestationChecked || feeBlocksSubmit) return;
+                  if (!fd || !attestationChecked || !feeConsentOk || feeBlocksSubmit) return;
                   fd.set("guidelinesAttestation", "1");
+                  if (listingFeeChargeConsentRequired) {
+                    fd.set("feeChargeAttestation", "1");
+                  }
                   setAttestationOpen(false);
                   pendingFdRef.current = null;
                   startTransition(async () => {

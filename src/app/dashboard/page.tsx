@@ -8,6 +8,7 @@ import {
   LISTING_FEE_FREE_SLOT_COUNT,
   PLATFORM_SHOP_SLUG,
   isFounderUnlimitedFreeListingsShop,
+  listingFeeCentsForOrdinal,
 } from "@/lib/marketplace-constants";
 import { syncFreeListingFeeWaivers } from "@/lib/listing-fee";
 import { getStripe } from "@/lib/stripe";
@@ -41,6 +42,8 @@ import {
   countIncompleteOnboardingSteps,
 } from "@/lib/shop-onboarding-gate";
 import { getStripeConnectBalanceUsdCents } from "@/lib/stripe-connect-balance";
+import { shopStripeConnectReadyForListingCharges } from "@/lib/shop-stripe-connect-gate";
+import { isMockCheckoutEnabled } from "@/lib/checkout-mock";
 
 export const dynamic = "force-dynamic";
 
@@ -154,11 +157,20 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   });
 
   const isPlatform = shop.slug === PLATFORM_SHOP_SLUG;
+  const shopStripeConnectReadyForCharges = shopStripeConnectReadyForListingCharges(shop);
+  const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
+  const mockListingFeeCheckout = !isPlatform && isMockCheckoutEnabled();
   const listingFeePolicySummary =
     !isPlatform && isFounderUnlimitedFreeListingsShop(shop.slug)
       ? "As the founder shop, all your listings publish free (no publication fee)."
       : `Your first ${LISTING_FEE_FREE_SLOT_COUNT} listings are free. Each additional listing costs ${formatMoney(LISTING_FEE_CENTS)} to publish.`;
   const paidListingFeeLabel = formatMoney(LISTING_FEE_CENTS);
+  const firstListingPublicationFeeCents = listingFeeCentsForOrdinal(
+    shop.listings.length + 1,
+    shop.slug,
+  );
+  const firstListingPublicationFeeLabel =
+    firstListingPublicationFeeCents > 0 ? formatMoney(firstListingPublicationFeeCents) : null;
 
   const listingOrdinalById = (() => {
     const ordered = [...shop.listings].sort(
@@ -413,6 +425,17 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           Listing fee checkout was cancelled.
         </p>
       ) : null}
+      {fee === "err" ? (
+        <p className="mt-4 rounded-lg border border-red-900/50 bg-red-950/30 px-4 py-2 text-sm text-red-200/90">
+          {connectReason === "listing_fee_use_card_on_listings_tab"
+            ? "Use the Pay button on the Listings tab to enter your card. Listing fees are charged immediately in the dashboard (the old checkout redirect is no longer used)."
+            : connectReason === "no_app_url"
+              ? "Listing fee payment could not start because the app base URL is not configured on the server."
+              : connectReason === "stripe"
+                ? "Stripe returned an error while starting listing fee checkout. Try again or contact support."
+                : "Something went wrong with the listing fee payment. Open the Listings tab and try paying again, or contact support."}
+        </p>
+      ) : null}
 
       {!isPlatform && emailVerify === "ok" ? (
         <p className="mt-4 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
@@ -492,6 +515,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 listingPickerDiagnostics: {
                   adminCatalogItemCount: adminCatalogRows.length,
                 },
+                firstListingPublicationFeeLabel,
+                stripeConnectReadyForPaidListings: shopStripeConnectReadyForCharges,
               }
             : null
         }
@@ -499,6 +524,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         paidListingFeeLabel={paidListingFeeLabel}
         isPlatform={isPlatform}
         r2Configured={isR2UploadConfigured()}
+        mockListingFeeCheckout={mockListingFeeCheckout}
+        shopStripeConnectReadyForCharges={shopStripeConnectReadyForCharges}
+        stripePublishableKey={stripePublishableKey}
         listings={listingRows}
         paidOrders={paidOrders.map((o) => ({
           id: o.id,

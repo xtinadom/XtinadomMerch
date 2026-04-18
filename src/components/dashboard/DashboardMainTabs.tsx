@@ -2,12 +2,14 @@
 
 import type { ReactNode } from "react";
 import type { Prisma } from "@/generated/prisma/client";
+import Link from "next/link";
 import { useId, useState } from "react";
 import { FulfillmentType, ListingRequestStatus } from "@/generated/prisma/enums";
 import {
   dashboardCreatorRemoveListingFromShop,
   dashboardPayListingFee,
 } from "@/actions/dashboard-marketplace";
+import { ListingFeeCardPay } from "@/components/dashboard/ListingFeeCardPay";
 import {
   LISTING_FEE_FREE_SLOT_COUNT,
   isFounderUnlimitedFreeListingsShop,
@@ -51,6 +53,10 @@ export type DashboardSetupPanelProps = {
   listingFeePolicySummary: string;
   r2Configured: boolean;
   listingPickerDiagnostics?: { adminCatalogItemCount: number };
+  /** When set, first listing request from onboarding is charged this publication fee (e.g. "$0.25"). */
+  firstListingPublicationFeeLabel: string | null;
+  /** When a publication fee applies, Connect must be ready before the first paid listing request. */
+  stripeConnectReadyForPaidListings: boolean;
 };
 
 export type DashboardListingRow = {
@@ -267,6 +273,9 @@ function ListingOptionPanel({
   paidListingFeeLabel,
   shopSlug,
   r2Configured,
+  shopStripeConnectReadyForCharges,
+  stripePublishableKey,
+  mockListingFeeCheckout,
   variantLabel,
   stacked,
 }: {
@@ -275,6 +284,9 @@ function ListingOptionPanel({
   paidListingFeeLabel: string;
   shopSlug: string;
   r2Configured: boolean;
+  shopStripeConnectReadyForCharges: boolean;
+  stripePublishableKey: string | null;
+  mockListingFeeCheckout: boolean;
   /** When set (legacy grouped card), show per-option catalog line. */
   variantLabel?: string;
   /** Second+ option in a legacy group — add top divider. */
@@ -422,15 +434,36 @@ function ListingOptionPanel({
           listing.requestStatus === ListingRequestStatus.submitted ||
           listing.requestStatus === ListingRequestStatus.images_ok ||
           listing.requestStatus === ListingRequestStatus.printify_item_created) ? (
-        <form action={dashboardPayListingFee} className="mt-3">
-          <input type="hidden" name="listingId" value={listing.id} />
-          <button
-            type="submit"
-            className="rounded border border-blue-900/60 bg-blue-950/30 px-3 py-1.5 text-xs text-blue-200 hover:border-blue-700/60"
-          >
-            Pay {paidListingFeeLabel} publication fee (Stripe)
-          </button>
-        </form>
+        mockListingFeeCheckout ? (
+          <form action={dashboardPayListingFee} className="mt-3">
+            <input type="hidden" name="listingId" value={listing.id} />
+            <button
+              type="submit"
+              className="rounded border border-blue-900/60 bg-blue-950/30 px-3 py-1.5 text-xs text-blue-200 hover:border-blue-700/60"
+            >
+              Pay {paidListingFeeLabel} publication fee (mock checkout)
+            </button>
+          </form>
+        ) : !shopStripeConnectReadyForCharges ? (
+          <p className="mt-3 rounded-lg border border-amber-900/45 bg-amber-950/25 px-3 py-2 text-xs text-amber-200/90">
+            A publication fee applies. Finish{" "}
+            <Link href="/dashboard?dash=setup" className="text-amber-100 underline-offset-2 hover:underline">
+              Stripe Connect
+            </Link>{" "}
+            on the Onboarding tab (charges and payouts enabled) before you can pay this fee or submit charged listings.
+          </p>
+        ) : !stripePublishableKey?.trim() ? (
+          <p className="mt-3 rounded-lg border border-red-900/45 bg-red-950/25 px-3 py-2 text-xs text-red-200/90">
+            Card payments are not configured (missing{" "}
+            <code className="text-red-100/80">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code>). Contact support.
+          </p>
+        ) : (
+          <ListingFeeCardPay
+            listingId={listing.id}
+            paidListingFeeLabel={paidListingFeeLabel}
+            stripePublishableKey={stripePublishableKey}
+          />
+        )
       ) : !isPlatform && listing.listingFeePaidAt ? (
         <p className="mt-2 text-xs text-emerald-600/90">
           Listing fee paid {listing.listingFeePaidAt.slice(0, 10)}
@@ -443,6 +476,7 @@ function ListingOptionPanel({
           defaultImageUrlsText={imagesDefault}
           feeBlocksSubmit={feeCents > 0 && !listing.listingFeePaidAt}
           paidListingFeeLabel={paidListingFeeLabel}
+          listingFeeChargeConsentRequired={feeCents > 0}
         />
       ) : listingLocked ? (
         <p className="mt-3 text-xs text-zinc-600">
@@ -467,12 +501,18 @@ function ListingCard({
   paidListingFeeLabel,
   shopSlug,
   r2Configured,
+  shopStripeConnectReadyForCharges,
+  stripePublishableKey,
+  mockListingFeeCheckout,
 }: {
   listing: DashboardListingRow;
   isPlatform: boolean;
   paidListingFeeLabel: string;
   shopSlug: string;
   r2Configured: boolean;
+  shopStripeConnectReadyForCharges: boolean;
+  stripePublishableKey: string | null;
+  mockListingFeeCheckout: boolean;
 }) {
   const { dashboardBadge, fieldsReadOnly } = buildListingDerived(listing, shopSlug, isPlatform);
 
@@ -522,6 +562,9 @@ function ListingCard({
         paidListingFeeLabel={paidListingFeeLabel}
         shopSlug={shopSlug}
         r2Configured={r2Configured}
+        shopStripeConnectReadyForCharges={shopStripeConnectReadyForCharges}
+        stripePublishableKey={stripePublishableKey}
+        mockListingFeeCheckout={mockListingFeeCheckout}
       />
     </li>
   );
@@ -570,6 +613,12 @@ export function DashboardMainTabs(props: {
   r2Configured: boolean;
   /** When set, Request listing tab pre-fills from this draft (baseline stub listings only). */
   draftListingRequestPrefill?: DraftListingRequestPrefillPayload | null;
+  /** Server-only mock listing fee pay (MOCK_CHECKOUT=1). */
+  mockListingFeeCheckout: boolean;
+  /** Connect account ready to accept listing-fee card charges. */
+  shopStripeConnectReadyForCharges: boolean;
+  /** Stripe.js publishable key for embedded listing fee card pay. */
+  stripePublishableKey: string | null;
 }) {
   const {
     initialTab: initialTabProp,
@@ -586,6 +635,9 @@ export function DashboardMainTabs(props: {
     paidOrders,
     r2Configured,
     draftListingRequestPrefill = null,
+    mockListingFeeCheckout,
+    shopStripeConnectReadyForCharges,
+    stripePublishableKey,
   } = props;
 
   const hasSetup = setup != null;
@@ -792,6 +844,8 @@ export function DashboardMainTabs(props: {
             r2Configured={setup.r2Configured}
             listingPickerDiagnostics={setup.listingPickerDiagnostics}
             draftListingRequestPrefill={draftListingRequestPrefill}
+            publicationFeeLabel={setup.firstListingPublicationFeeLabel}
+            stripeConnectReadyForPaidListings={setup.stripeConnectReadyForPaidListings}
             embedded
           />
         </div>
@@ -828,6 +882,9 @@ export function DashboardMainTabs(props: {
                   paidListingFeeLabel={paidListingFeeLabel}
                   shopSlug={shopSlug}
                   r2Configured={r2Configured}
+                  shopStripeConnectReadyForCharges={shopStripeConnectReadyForCharges}
+                  stripePublishableKey={stripePublishableKey}
+                  mockListingFeeCheckout={mockListingFeeCheckout}
                 />
               ))}
             </ul>
@@ -853,6 +910,9 @@ export function DashboardMainTabs(props: {
                   paidListingFeeLabel={paidListingFeeLabel}
                   shopSlug={shopSlug}
                   r2Configured={r2Configured}
+                  shopStripeConnectReadyForCharges={shopStripeConnectReadyForCharges}
+                  stripePublishableKey={stripePublishableKey}
+                  mockListingFeeCheckout={mockListingFeeCheckout}
                 />
               ))}
             </ul>
@@ -879,6 +939,9 @@ export function DashboardMainTabs(props: {
                   paidListingFeeLabel={paidListingFeeLabel}
                   shopSlug={shopSlug}
                   r2Configured={r2Configured}
+                  shopStripeConnectReadyForCharges={shopStripeConnectReadyForCharges}
+                  stripePublishableKey={stripePublishableKey}
+                  mockListingFeeCheckout={mockListingFeeCheckout}
                 />
               ))}
             </ul>

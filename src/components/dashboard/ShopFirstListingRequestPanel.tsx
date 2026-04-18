@@ -74,6 +74,10 @@ export function ShopFirstListingRequestPanel(props: {
   r2Configured: boolean;
   listingPickerDiagnostics?: { adminCatalogItemCount: number };
   draftListingRequestPrefill?: DraftListingRequestPrefillPayload | null;
+  /** When set (e.g. "$0.25"), the confirmation dialog requires a second checkbox for the publication fee. */
+  publicationFeeLabel?: string | null;
+  /** When a fee applies, Connect must be complete before this request can be submitted. */
+  stripeConnectReadyForPaidListings?: boolean;
   embedded?: boolean;
 }) {
   const {
@@ -82,6 +86,8 @@ export function ShopFirstListingRequestPanel(props: {
     r2Configured,
     listingPickerDiagnostics,
     draftListingRequestPrefill = null,
+    publicationFeeLabel = null,
+    stripeConnectReadyForPaidListings = true,
     embedded,
   } = props;
 
@@ -101,10 +107,17 @@ export function ShopFirstListingRequestPanel(props: {
   const pendingListingFdRef = useRef<FormData | null>(null);
   const [attestationOpen, setAttestationOpen] = useState(false);
   const [attestationChecked, setAttestationChecked] = useState(false);
+  const [feeChargeConsentChecked, setFeeChargeConsentChecked] = useState(false);
 
   useEffect(() => {
-    if (attestationOpen) setAttestationChecked(false);
+    if (attestationOpen) {
+      setAttestationChecked(false);
+      setFeeChargeConsentChecked(false);
+    }
   }, [attestationOpen]);
+
+  const publicationFeeConsentRequired = Boolean(publicationFeeLabel?.trim());
+  const feeConsentOk = !publicationFeeConsentRequired || feeChargeConsentChecked;
 
   const catalogOptions = useMemo(
     () => flattenShopBaselineCatalogGroups(catalogGroups),
@@ -302,6 +315,16 @@ export function ShopFirstListingRequestPanel(props: {
         {draftListingRequestPrefill ? (
           <p className="mt-2 rounded-lg border border-sky-900/40 bg-sky-950/20 px-3 py-2 text-xs text-sky-200/90">
             Your draft listing is selected below — confirm prices and upload artwork to submit for review.
+          </p>
+        ) : null}
+        {publicationFeeConsentRequired && !stripeConnectReadyForPaidListings ? (
+          <p className="mt-2 rounded-lg border border-amber-900/45 bg-amber-950/25 px-3 py-2 text-xs text-amber-200/90">
+            This listing has a publication fee. Finish{" "}
+            <Link href="/dashboard?dash=setup" className="text-amber-100 underline-offset-2 hover:underline">
+              Stripe Connect
+            </Link>{" "}
+            on the Onboarding tab (charges and payouts enabled) before you can submit — you will also see a notice in
+            your Notifications tab.
           </p>
         ) : null}
       </div>
@@ -661,6 +684,19 @@ export function ShopFirstListingRequestPanel(props: {
                 .
               </span>
             </label>
+            {publicationFeeConsentRequired ? (
+              <label className="mt-3 flex cursor-pointer gap-2 text-sm text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={feeChargeConsentChecked}
+                  onChange={(e) => setFeeChargeConsentChecked(e.target.checked)}
+                  className="mt-1 shrink-0 rounded border-zinc-600"
+                />
+                <span>
+                  I agree to be charged {(publicationFeeLabel ?? "").trim()} for this listing.
+                </span>
+              </label>
+            ) : null}
             <div className="mt-5 flex flex-wrap justify-end gap-2">
               <button
                 type="button"
@@ -674,12 +710,15 @@ export function ShopFirstListingRequestPanel(props: {
               </button>
               <button
                 type="button"
-                disabled={!attestationChecked || isListingPending}
+                disabled={!attestationChecked || !feeConsentOk || isListingPending}
                 className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => {
                   const fd = pendingListingFdRef.current;
-                  if (!fd || !attestationChecked) return;
+                  if (!fd || !attestationChecked || !feeConsentOk) return;
                   fd.set("guidelinesAttestation", "1");
+                  if (publicationFeeConsentRequired) {
+                    fd.set("feeChargeAttestation", "1");
+                  }
                   setAttestationOpen(false);
                   pendingListingFdRef.current = null;
                   void handleListingSubmit(fd);
