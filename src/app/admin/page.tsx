@@ -653,11 +653,10 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           id: p.id.trim(),
           title: p.title.trim() || p.id,
           defaultVariantId: defaultPrintifyVariantIdForCatalogProduct(p),
+          catalogUpdatedAt: p.updatedAt?.getTime() ?? 0,
         }))
         .filter((p) => p.id.length > 0)
-        .sort((a, b) =>
-          a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
-        );
+        .sort((a, b) => b.catalogUpdatedAt - a.catalogUpdatedAt);
     } catch {
       printifyCatalogItemCount = null;
       printifyCatalogPickList = [];

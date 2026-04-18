@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
@@ -406,11 +407,18 @@ export function DashboardSubmitListingRequestForm({
   const [pending, startTransition] = useTransition();
   const [text, setText] = useState(defaultImageUrlsText);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [attestationOpen, setAttestationOpen] = useState(false);
+  const [attestationChecked, setAttestationChecked] = useState(false);
+  const pendingFdRef = useRef<FormData | null>(null);
 
   useLayoutEffect(() => {
     setText(defaultImageUrlsText);
     setSavedFlash(false);
   }, [listingId, defaultImageUrlsText]);
+
+  useEffect(() => {
+    if (attestationOpen) setAttestationChecked(false);
+  }, [attestationOpen]);
 
   const hasUrls = text.trim().length > 0;
 
@@ -419,16 +427,10 @@ export function DashboardSubmitListingRequestForm({
       e.preventDefault();
       if (!hasUrls || pending) return;
       const fd = new FormData(e.currentTarget);
-      startTransition(async () => {
-        const r = await dashboardSubmitListingRequest(fd);
-        router.refresh();
-        if (r.ok) {
-          setSavedFlash(true);
-          window.setTimeout(() => setSavedFlash(false), 2500);
-        }
-      });
+      pendingFdRef.current = fd;
+      setAttestationOpen(true);
     },
-    [hasUrls, pending, router],
+    [hasUrls, pending],
   );
 
   const label = pending
@@ -445,26 +447,99 @@ export function DashboardSubmitListingRequestForm({
         : activeSave;
 
   return (
-    <form onSubmit={onSubmit} className="mt-4 space-y-2">
-      <input type="hidden" name="listingId" value={listingId} />
-      <label className="block text-xs text-zinc-500">
-        Reference image URLs (one per line) for admin review
-        <textarea
-          name="requestImageUrls"
-          rows={3}
-          value={text}
-          onChange={(ev) => setText(ev.target.value)}
-          className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-200"
-        />
-      </label>
-      <button
-        type="submit"
-        disabled={!hasUrls || pending || savedFlash}
-        className={btnClass}
-      >
-        {label}
-      </button>
-    </form>
+    <>
+      <form onSubmit={onSubmit} className="mt-4 space-y-2">
+        <input type="hidden" name="listingId" value={listingId} />
+        <label className="block text-xs text-zinc-500">
+          Reference image URLs (one per line) for admin review
+          <textarea
+            name="requestImageUrls"
+            rows={3}
+            value={text}
+            onChange={(ev) => setText(ev.target.value)}
+            className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-200"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={!hasUrls || pending || savedFlash}
+          className={btnClass}
+        >
+          {label}
+        </button>
+      </form>
+
+      {attestationOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="dash-listing-attestation-title"
+        >
+          <div className="max-w-md rounded-xl border border-zinc-700 bg-zinc-950 p-5 shadow-xl">
+            <h3 id="dash-listing-attestation-title" className="text-base font-semibold text-zinc-100">
+              Confirm listing request
+            </h3>
+            <p className="mt-2 text-sm text-zinc-400">
+              You are about to submit these reference URLs for admin review.
+            </p>
+            <label className="mt-4 flex cursor-pointer gap-2 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={attestationChecked}
+                onChange={(e) => setAttestationChecked(e.target.checked)}
+                className="mt-1 shrink-0 rounded border-zinc-600"
+              />
+              <span>
+                I have the rights to the photos referenced above, and they follow the{" "}
+                <Link
+                  href="/dashboard?dash=itemGuidelines"
+                  className="text-blue-400/90 underline underline-offset-2 hover:text-blue-300"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  item guidelines
+                </Link>
+                .
+              </span>
+            </label>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-zinc-600 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-900"
+                onClick={() => {
+                  setAttestationOpen(false);
+                  pendingFdRef.current = null;
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!attestationChecked || pending}
+                className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => {
+                  const fd = pendingFdRef.current;
+                  if (!fd || !attestationChecked) return;
+                  fd.set("guidelinesAttestation", "1");
+                  setAttestationOpen(false);
+                  pendingFdRef.current = null;
+                  startTransition(async () => {
+                    const r = await dashboardSubmitListingRequest(fd);
+                    router.refresh();
+                    if (r.ok) {
+                      setSavedFlash(true);
+                      window.setTimeout(() => setSavedFlash(false), 2500);
+                    }
+                  });
+                }}
+              >
+                Submit for admin approval
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 

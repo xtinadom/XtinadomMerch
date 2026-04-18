@@ -13,9 +13,9 @@ export default function CreateShopPage() {
     <main className="mx-auto flex min-h-screen max-w-md flex-col px-4 py-16">
       <h1 className="text-2xl font-semibold text-zinc-50">Create Shop</h1>
       <p className="mt-2 text-sm text-zinc-500">
-        You will use this email and password to manage listings and payouts. Your shop&apos;s public URL
-        is set automatically from the shop name (e.g.{" "}
-        <code className="text-zinc-600">/s/your-shop-name</code>).
+        You will use this email and password to manage listings and payouts. Your <strong className="text-zinc-400">username</strong> becomes your public shop URL (e.g.{" "}
+        <code className="text-zinc-600">/s/your-username</code>
+        ). You can set a separate display name for customers on your shop profile.
       </p>
 
       <form
@@ -34,10 +34,20 @@ export default function CreateShopPage() {
         }}
       >
         <label className="block text-sm text-zinc-400">
-          Shop display name
+          Username (shop URL)
+          <input
+            name="username"
+            required
+            maxLength={80}
+            autoComplete="username"
+            placeholder="letters, numbers, hyphens"
+            className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100"
+          />
+        </label>
+        <label className="block text-sm text-zinc-400">
+          Shop display name <span className="text-zinc-600">(optional — defaults to username)</span>
           <input
             name="displayName"
-            required
             maxLength={120}
             className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100"
           />

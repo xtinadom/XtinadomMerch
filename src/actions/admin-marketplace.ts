@@ -25,6 +25,8 @@ import { fetchPublicHttpsImage, parseSafePublicHttpsImageUrl } from "@/lib/fetch
 import { productImageUrlsUnionHero } from "@/lib/product-media";
 import { activateProductWhenShopListingGoesLive } from "@/lib/shop-listing-publish";
 import { syncListingProductWithPrintifyCatalog } from "@/lib/shop-listing-printify-product-sync";
+import { fetchPrintifyProductDetail, isPrintifyConfigured } from "@/lib/printify";
+import { defaultPrintifyVariantIdForCatalogProduct } from "@/lib/printify-catalog";
 import {
   listingRejectionNoticeDetail,
   parseListingRejectReason,
@@ -242,7 +244,7 @@ export async function adminMarkPrintifyListingReady(formData: FormData) {
   await requireAdmin();
   const listingId = String(formData.get("listingId") ?? "").trim();
   const printifyProductId = String(formData.get("printifyProductId") ?? "").trim();
-  const printifyVariantId = String(formData.get("printifyVariantId") ?? "").trim();
+  let printifyVariantId = String(formData.get("printifyVariantId") ?? "").trim();
   if (!listingId || !printifyProductId) return;
 
   const listing = await prisma.shopListing.findUnique({
@@ -257,6 +259,18 @@ export async function adminMarkPrintifyListingReady(formData: FormData) {
   if (!listing || !allowed) return;
 
   if (listing.product.fulfillmentType === FulfillmentType.printify && !printifyVariantId) {
+    const shopId = process.env.PRINTIFY_SHOP_ID?.trim();
+    if (isPrintifyConfigured() && shopId) {
+      const detail = await fetchPrintifyProductDetail(shopId, printifyProductId);
+      if (detail) {
+        const def = defaultPrintifyVariantIdForCatalogProduct(detail);
+        if (def) printifyVariantId = def;
+      }
+    }
+  }
+
+  if (listing.product.fulfillmentType === FulfillmentType.printify && !printifyVariantId) {
+    console.error("[adminMarkPrintifyListingReady] missing Printify variant id", listingId);
     return;
   }
 
@@ -299,7 +313,7 @@ function parseLegacyGroupListingIdsJson(raw: unknown): string[] | null {
 }
 
 type AdminApproveListingExecOk = { ok: true; shopSlug: string; shopId: string };
-type AdminApproveListingExecResult = AdminApproveListingExecOk | { ok: false };
+type AdminApproveListingExecResult = AdminApproveListingExecOk | { ok: false; reason: string };
 
 /**
  * Core approve path (no `revalidatePath`). Used by single approve and legacy multi-size batch approve.
@@ -311,32 +325,41 @@ async function tryExecuteAdminApproveListingRequest(
     where: { id: listingId },
     include: { shop: true },
   });
-  if (!listing) return { ok: false };
+  if (!listing) return { ok: false, reason: "listing_not_found" };
   const productId = listing.productId;
   const product = await prisma.product.findUnique({ where: { id: productId } });
-  if (!product) return { ok: false };
+  if (!product) return { ok: false, reason: "product_not_found" };
 
-  if (listing.requestStatus !== ListingRequestStatus.printify_item_created) return { ok: false };
-  if (!listing.listingPrintifyProductId?.trim()) return { ok: false };
-  if (product.fulfillmentType === FulfillmentType.printify && !listing.listingPrintifyVariantId?.trim()) {
-    return { ok: false };
+  if (listing.requestStatus !== ListingRequestStatus.printify_item_created) {
+    return { ok: false, reason: "wrong_status" };
+  }
+  if (!listing.listingPrintifyProductId?.trim()) {
+    return { ok: false, reason: "missing_printify_product" };
+  }
+
+  const effVariant =
+    listing.listingPrintifyVariantId?.trim() || product.printifyVariantId?.trim() || "";
+  if (product.fulfillmentType === FulfillmentType.printify && !effVariant) {
+    return { ok: false, reason: "no_printify_variant" };
   }
 
   await syncListingProductWithPrintifyCatalog(productId, {
     listingPrintifyProductId: listing.listingPrintifyProductId,
-    listingPrintifyVariantId: listing.listingPrintifyVariantId,
+    listingPrintifyVariantId: effVariant || null,
   });
 
   const productForImages = await prisma.product.findUnique({
     where: { id: productId },
     select: { imageUrl: true, imageGallery: true },
   });
-  if (!productForImages) return { ok: false };
-  if (productImageUrlsUnionHero(productForImages).length === 0) return { ok: false };
+  if (!productForImages) return { ok: false, reason: "product_missing_after_sync" };
+  if (productImageUrlsUnionHero(productForImages).length === 0) {
+    return { ok: false, reason: "no_hero_image" };
+  }
 
   const isPlatform = listing.shop.slug === PLATFORM_SHOP_SLUG;
   const ordinal = await getListingOrdinal(listingId, listing.shopId);
-  if (ordinal === null) return { ok: false };
+  if (ordinal === null) return { ok: false, reason: "ordinal_missing" };
 
   const feeCents = isPlatform ? 0 : listingFeeCentsForOrdinal(ordinal, listing.shop.slug);
   const alreadyPaid = listing.listingFeePaidAt != null;
@@ -436,12 +459,57 @@ export async function adminApproveListingRequest(formData: FormData): Promise<vo
   if (!listing || listing.productId !== productId) return;
 
   const result = await tryExecuteAdminApproveListingRequest(listingId);
-  if (!result.ok) return;
+  if (!result.ok) {
+    console.error("[adminApproveListingRequest]", listingId, result.reason);
+    return;
+  }
 
   revalidatePath("/admin");
   revalidatePath("/shops");
   revalidatePath("/dashboard");
   revalidatePath(`/s/${result.shopSlug}`);
+}
+
+export type AdminApproveListingFormState = { error: string } | null;
+
+export async function adminApproveListingRequestFormState(
+  _prev: AdminApproveListingFormState,
+  formData: FormData,
+): Promise<AdminApproveListingFormState> {
+  await requireAdmin();
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  const productId = String(formData.get("productId") ?? "").trim();
+  if (!listingId || !productId) {
+    return { error: "Missing listing or product." };
+  }
+
+  const listing = await prisma.shopListing.findUnique({
+    where: { id: listingId },
+    select: { productId: true },
+  });
+  if (!listing || listing.productId !== productId) {
+    return { error: "Listing does not match product." };
+  }
+
+  const result = await tryExecuteAdminApproveListingRequest(listingId);
+  if (!result.ok) {
+    console.error("[adminApproveListingRequestFormState]", listingId, result.reason);
+    const msg =
+      result.reason === "no_printify_variant"
+        ? "Approve failed: no Printify variant on the listing or product. Save Printify mapping again."
+        : result.reason === "no_hero_image"
+          ? "Approve failed: no hero image after Printify sync. Check Printify product images."
+          : result.reason === "wrong_status"
+            ? "Approve failed: listing is not in “Printify item created” status."
+            : `Approve failed (${result.reason}). Try re-saving the Printify mapping.`;
+    return { error: msg };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/shops");
+  revalidatePath("/dashboard");
+  revalidatePath(`/s/${result.shopSlug}`);
+  return null;
 }
 
 /** Approve every legacy split-catalog stub in one POST (same shop, oldest-first). */
@@ -463,7 +531,10 @@ export async function adminApproveLegacyVariantListingGroup(formData: FormData):
   const shopSlugs = new Set<string>();
   for (const row of rows) {
     const result = await tryExecuteAdminApproveListingRequest(row.id);
-    if (!result.ok) return;
+    if (!result.ok) {
+      console.error("[adminApproveLegacyVariantListingGroup]", row.id, result.reason);
+      return;
+    }
     shopSlugs.add(result.shopSlug);
   }
 

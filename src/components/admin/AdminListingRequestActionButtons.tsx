@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   adminApproveLegacyVariantListingGroup,
-  adminApproveListingRequest,
+  adminApproveListingRequestFormState,
+  type AdminApproveListingFormState,
   adminRejectLegacyVariantListingGroup,
   adminRejectListingRequest,
 } from "@/actions/admin-marketplace";
@@ -115,16 +117,28 @@ export function AdminListingApproveForm({
   approveButtonClassName?: string;
   approveDisabled?: boolean;
 }) {
+  const [approveState, formAction] = useActionState<
+    AdminApproveListingFormState,
+    FormData
+  >(adminApproveListingRequestFormState, null);
+
   return (
-    <form action={adminApproveListingRequest} className="inline-flex flex-wrap items-end gap-2">
-      <input type="hidden" name="listingId" value={listingId} />
-      <input type="hidden" name="productId" value={productId} />
-      <AdminApproveSubmitButton
-        label={approveButtonLabel}
-        pendingLabel={approvePendingLabel}
-        buttonClassName={approveButtonClassName}
-        disabled={approveDisabled}
-      />
+    <form action={formAction} className="inline-flex flex-col gap-1">
+      <div className="inline-flex flex-wrap items-end gap-2">
+        <input type="hidden" name="listingId" value={listingId} />
+        <input type="hidden" name="productId" value={productId} />
+        <AdminApproveSubmitButton
+          label={approveButtonLabel}
+          pendingLabel={approvePendingLabel}
+          buttonClassName={approveButtonClassName}
+          disabled={approveDisabled}
+        />
+      </div>
+      {approveState?.error ? (
+        <p className="max-w-xs text-[11px] text-red-300/90" role="alert">
+          {approveState.error}
+        </p>
+      ) : null}
     </form>
   );
 }

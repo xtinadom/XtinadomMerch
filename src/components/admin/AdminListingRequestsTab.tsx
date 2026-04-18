@@ -68,29 +68,11 @@ export type PrintifyCatalogPickEntry = {
   title: string;
   /** First enabled variant in live catalog (for default checkout line). */
   defaultVariantId?: string | null;
+  /** Server-only sort key (ms); may be omitted. */
+  catalogUpdatedAt?: number;
 };
 
-/** Separates title and id in the product picker; parse with {@link tryParseCatalogProductDisplay}. */
-const PRINTIFY_PRODUCT_DISPLAY_SEP = " · ";
-
-function tryParseCatalogProductDisplay(
-  raw: string,
-  knownProductIds: ReadonlySet<string>,
-): string | null {
-  const s = raw.trim();
-  if (!s) return null;
-  if (knownProductIds.has(s)) return s;
-  const i = s.lastIndexOf(PRINTIFY_PRODUCT_DISPLAY_SEP);
-  if (i < 0) return null;
-  const idPart = s.slice(i + PRINTIFY_PRODUCT_DISPLAY_SEP.length).trim();
-  return idPart && knownProductIds.has(idPart) ? idPart : null;
-}
-
-function formatCatalogProductDisplay(title: string, id: string): string {
-  return `${title.trim()}${PRINTIFY_PRODUCT_DISPLAY_SEP}${id.trim()}`;
-}
-
-/** Shared controlled fields for {@link adminMarkPrintifyListingReady} (step 2 initial save + step 3 resave). */
+/** Shared fields for {@link adminMarkPrintifyListingReady} (step 2 initial save + step 3 resave). */
 function AdminPrintifyMappingFormFields({
   r,
   needsPrintifyVariant,
@@ -98,9 +80,6 @@ function AdminPrintifyMappingFormFields({
   printifyCatalogPickList,
   printifyProductId,
   setPrintifyProductId,
-  printifyProductDisplay,
-  onPrintifyProductDisplayChange,
-  onPrintifyProductDisplayBlur,
   printifyVariantId,
   setPrintifyVariantId,
   omitVisiblePrintifyProductField = false,
@@ -113,16 +92,10 @@ function AdminPrintifyMappingFormFields({
   printifyCatalogPickList: PrintifyCatalogPickEntry[];
   printifyProductId: string;
   setPrintifyProductId: (v: string) => void;
-  printifyProductDisplay: string;
-  onPrintifyProductDisplayChange: (v: string) => void;
-  onPrintifyProductDisplayBlur: () => void;
   printifyVariantId: string;
   setPrintifyVariantId: (v: string) => void;
-  /** Submit product id via hidden input only (e.g. multi-size group: first row owns the visible field). */
   omitVisiblePrintifyProductField?: boolean;
-  /** Manual fulfillment: hide optional variant UI (first multi-size row uses product only; other rows map variant). */
   omitOptionalPrintifyVariantField?: boolean;
-  /** Overrides the default optional variant label (e.g. multi-size follower rows). */
   optionalPrintifyVariantFieldLabel?: string;
 }) {
   return (
@@ -135,33 +108,24 @@ function AdminPrintifyMappingFormFields({
           Printify product
           {catalogPickEnabled ? (
             <span className="mt-0.5 block text-[10px] font-normal normal-case tracking-normal text-zinc-600">
-              Pick from the list: <span className="font-medium text-zinc-500">name</span> first, then id (after the
-              middle dot). You can paste a raw Printify product id; it normalizes on blur when it matches the catalog.
-              Default checkout variant is taken from the catalog for the product you pick.
+              Most recently updated first. Default Printify variant is filled in automatically when you save.
             </span>
           ) : null}
           {catalogPickEnabled ? (
-            <>
-              <input type="hidden" name="printifyProductId" value={printifyProductId} />
-              <input
-                required
-                value={printifyProductDisplay}
-                onChange={(e) => onPrintifyProductDisplayChange(e.target.value)}
-                onBlur={onPrintifyProductDisplayBlur}
-                className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs text-zinc-200"
-                autoComplete="off"
-                aria-invalid={Boolean(printifyProductDisplay.trim()) && !printifyProductId.trim()}
-                list={`printify-product-pick-${r.id}`}
-              />
-              <datalist id={`printify-product-pick-${r.id}`}>
-                {printifyCatalogPickList.map((p) => (
-                  <option
-                    key={p.id}
-                    value={formatCatalogProductDisplay(p.title.trim() || p.id, p.id.trim())}
-                  />
-                ))}
-              </datalist>
-            </>
+            <select
+              name="printifyProductId"
+              required
+              value={printifyProductId}
+              onChange={(e) => setPrintifyProductId(e.target.value)}
+              className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1.5 text-xs text-zinc-200"
+            >
+              <option value="">Select a Printify catalog product…</option>
+              {printifyCatalogPickList.map((p) => (
+                <option key={p.id} value={p.id.trim()}>
+                  {(p.title || p.id).trim()} — {p.id.trim()}
+                </option>
+              ))}
+            </select>
           ) : (
             <input
               name="printifyProductId"
@@ -174,40 +138,23 @@ function AdminPrintifyMappingFormFields({
           )}
         </label>
       )}
-      {needsPrintifyVariant && catalogPickEnabled ? (
-        <input type="hidden" name="printifyVariantId" value={printifyVariantId} required />
-      ) : needsPrintifyVariant ? (
-        <details className="rounded-lg border border-zinc-800/80 bg-zinc-950/30 px-3 py-2 text-xs text-zinc-500">
-          <summary className="cursor-pointer select-none text-[11px] text-zinc-500 marker:text-zinc-600">
-            No live catalog — set default Printify variant ID (required)
-          </summary>
+      {needsPrintifyVariant ? (
+        <input type="hidden" name="printifyVariantId" value="" />
+      ) : omitOptionalPrintifyVariantField ? (
+        <input type="hidden" name="printifyVariantId" value={printifyVariantId} />
+      ) : (
+        <label className="block text-xs text-zinc-500">
+          {optionalPrintifyVariantFieldLabel ??
+            "Variant ID (optional — leave empty for manual fulfillment)"}
           <input
             name="printifyVariantId"
-            required
             value={printifyVariantId}
             onChange={(e) => setPrintifyVariantId(e.target.value)}
-            className="mt-2 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 font-mono text-xs text-zinc-200"
+            className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 font-mono text-xs text-zinc-200"
             autoComplete="off"
-            aria-label="Default Printify variant ID for checkout"
           />
-        </details>
-      ) : !needsPrintifyVariant ? (
-        omitOptionalPrintifyVariantField ? (
-          <input type="hidden" name="printifyVariantId" value={printifyVariantId} />
-        ) : (
-          <label className="block text-xs text-zinc-500">
-            {optionalPrintifyVariantFieldLabel ??
-              "Variant ID (optional — leave empty for manual fulfillment)"}
-            <input
-              name="printifyVariantId"
-              value={printifyVariantId}
-              onChange={(e) => setPrintifyVariantId(e.target.value)}
-              className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 font-mono text-xs text-zinc-200"
-              autoComplete="off"
-            />
-          </label>
-        )
-      ) : null}
+        </label>
+      )}
     </>
   );
 }
@@ -602,33 +549,12 @@ function ListingRequestCard({
   const needsPrintifyVariant = r.product.fulfillmentType === FulfillmentType.printify;
   const catalogPickEnabled = needsPrintifyVariant && printifyCatalogPickList.length > 0;
 
-  const { variantIdByProductId, titleByProductId, knownProductIds } = useMemo(() => {
-    const variantMap = new Map<string, string>();
-    const titleMap = new Map<string, string>();
-    const ids = new Set<string>();
-    for (const p of printifyCatalogPickList) {
-      const id = p.id.trim();
-      if (!id) continue;
-      ids.add(id);
-      titleMap.set(id, p.title.trim() || id);
-      const dv = p.defaultVariantId?.trim();
-      if (dv) variantMap.set(id, dv);
-    }
-    return {
-      variantIdByProductId: variantMap,
-      titleByProductId: titleMap,
-      knownProductIds: ids,
-    };
-  }, [printifyCatalogPickList]);
-
   const [printifyProductId, setPrintifyProductId] = useState(() => r.listingPrintifyProductId ?? "");
-  const [printifyProductDisplay, setPrintifyProductDisplay] = useState(() => {
-    const id = (r.listingPrintifyProductId ?? "").trim();
-    if (!id) return "";
-    const row = printifyCatalogPickList.find((p) => p.id.trim() === id);
-    return row ? formatCatalogProductDisplay(row.title, id) : id;
-  });
-  const [printifyVariantId, setPrintifyVariantId] = useState(() => r.listingPrintifyVariantId ?? "");
+  const [printifyVariantId, setPrintifyVariantId] = useState(() =>
+    r.product.fulfillmentType === FulfillmentType.printify
+      ? ""
+      : (r.listingPrintifyVariantId ?? ""),
+  );
   /** Step 2 only: admin must click to affirm Image OK before Save Printify is enabled. */
   const [printifyStepImageOk, setPrintifyStepImageOk] = useState(false);
   const effectivePrintifyStepOk = suppressLegacyGroupPrintifyStep1Block
@@ -647,48 +573,13 @@ function ListingRequestCard({
 
   useEffect(() => {
     const p = (r.listingPrintifyProductId ?? "").trim();
-    const vSaved = (r.listingPrintifyVariantId ?? "").trim();
     setPrintifyProductId(p);
-    const title = p ? titleByProductId.get(p) : undefined;
-    setPrintifyProductDisplay(p ? (title ? formatCatalogProductDisplay(title, p) : p) : "");
-    const def = variantIdByProductId.get(p) ?? "";
-    setPrintifyVariantId(vSaved || def);
-  }, [r.id, r.listingPrintifyProductId, r.listingPrintifyVariantId, variantIdByProductId, titleByProductId]);
-
-  const onPrintifyProductDisplayChange = useCallback(
-    (value: string) => {
-      setPrintifyProductDisplay(value);
-      const resolved = tryParseCatalogProductDisplay(value, knownProductIds);
-      if (resolved) {
-        setPrintifyProductId(resolved);
-        const def = variantIdByProductId.get(resolved);
-        if (def) setPrintifyVariantId(def);
-      }
-    },
-    [knownProductIds, variantIdByProductId],
-  );
-
-  const onPrintifyProductDisplayBlur = useCallback(() => {
-    const resolved =
-      tryParseCatalogProductDisplay(printifyProductDisplay, knownProductIds) ??
-      (knownProductIds.has(printifyProductDisplay.trim()) ? printifyProductDisplay.trim() : null);
-    if (resolved) {
-      setPrintifyProductId(resolved);
-      const title = titleByProductId.get(resolved);
-      setPrintifyProductDisplay(
-        title ? formatCatalogProductDisplay(title, resolved) : resolved,
-      );
-      const def = variantIdByProductId.get(resolved);
-      if (def) setPrintifyVariantId(def);
+    if (r.product.fulfillmentType === FulfillmentType.printify) {
+      setPrintifyVariantId("");
     } else {
-      setPrintifyProductId("");
+      setPrintifyVariantId((r.listingPrintifyVariantId ?? "").trim());
     }
-  }, [
-    printifyProductDisplay,
-    knownProductIds,
-    titleByProductId,
-    variantIdByProductId,
-  ]);
+  }, [r.id, r.listingPrintifyProductId, r.listingPrintifyVariantId, r.product.fulfillmentType]);
   const statusChip =
     isApproved && r.active
       ? "On shop"
@@ -916,10 +807,7 @@ function ListingRequestCard({
               e.preventDefault();
               return;
             }
-            if (
-              needsPrintifyVariant &&
-              (!printifyProductId.trim() || !printifyVariantId.trim())
-            ) {
+            if (needsPrintifyVariant && !printifyProductId.trim()) {
               e.preventDefault();
             }
           }}
@@ -936,9 +824,6 @@ function ListingRequestCard({
             printifyCatalogPickList={printifyCatalogPickList}
             printifyProductId={printifyProductId}
             setPrintifyProductId={setPrintifyProductId}
-            printifyProductDisplay={printifyProductDisplay}
-            onPrintifyProductDisplayChange={onPrintifyProductDisplayChange}
-            onPrintifyProductDisplayBlur={onPrintifyProductDisplayBlur}
             printifyVariantId={printifyVariantId}
             setPrintifyVariantId={setPrintifyVariantId}
           />
@@ -997,13 +882,6 @@ function ListingRequestCard({
           <p className="text-xs text-zinc-500">
             <span className="font-medium text-zinc-400">Saved mapping</span> — Printify product:{" "}
             <span className="font-mono text-zinc-400">{r.listingPrintifyProductId ?? "—"}</span>
-            {needsPrintifyVariant ? (
-              <>
-                {" "}
-                · default variant (checkout):{" "}
-                <span className="font-mono text-zinc-400">{r.listingPrintifyVariantId ?? "—"}</span>
-              </>
-            ) : null}
           </p>
           <details className="rounded-lg border border-zinc-800/80 bg-zinc-950/30 px-3 py-2">
             <summary className="cursor-pointer select-none text-[11px] font-medium text-zinc-400">
@@ -1015,10 +893,7 @@ function ListingRequestCard({
                 action={adminMarkPrintifyListingReady}
                 className="space-y-3"
                 onSubmit={(e) => {
-                  if (
-                    needsPrintifyVariant &&
-                    (!printifyProductId.trim() || !printifyVariantId.trim())
-                  ) {
+                  if (needsPrintifyVariant && !printifyProductId.trim()) {
                     e.preventDefault();
                   }
                 }}
@@ -1030,9 +905,6 @@ function ListingRequestCard({
                   printifyCatalogPickList={printifyCatalogPickList}
                   printifyProductId={printifyProductId}
                   setPrintifyProductId={setPrintifyProductId}
-                  printifyProductDisplay={printifyProductDisplay}
-                  onPrintifyProductDisplayChange={onPrintifyProductDisplayChange}
-                  onPrintifyProductDisplayBlur={onPrintifyProductDisplayBlur}
                   printifyVariantId={printifyVariantId}
                   setPrintifyVariantId={setPrintifyVariantId}
                 />
@@ -1095,12 +967,6 @@ function ListingRequestCard({
           <p className="text-xs text-zinc-500">
             <span className="font-medium text-zinc-400">Printify mapping</span> — product:{" "}
             <span className="font-mono text-zinc-400">{r.listingPrintifyProductId ?? "—"}</span>
-            {needsPrintifyVariant ? (
-              <>
-                {" "}
-                · variant: <span className="font-mono text-zinc-400">{r.listingPrintifyVariantId ?? "—"}</span>
-              </>
-            ) : null}
           </p>
           <details className="rounded-lg border border-zinc-800/80 bg-zinc-950/30 px-3 py-2">
             <summary className="cursor-pointer select-none text-[11px] font-medium text-zinc-400">
@@ -1112,10 +978,7 @@ function ListingRequestCard({
                 action={adminMarkPrintifyListingReady}
                 className="space-y-3"
                 onSubmit={(e) => {
-                  if (
-                    needsPrintifyVariant &&
-                    (!printifyProductId.trim() || !printifyVariantId.trim())
-                  ) {
+                  if (needsPrintifyVariant && !printifyProductId.trim()) {
                     e.preventDefault();
                   }
                 }}
@@ -1127,9 +990,6 @@ function ListingRequestCard({
                   printifyCatalogPickList={printifyCatalogPickList}
                   printifyProductId={printifyProductId}
                   setPrintifyProductId={setPrintifyProductId}
-                  printifyProductDisplay={printifyProductDisplay}
-                  onPrintifyProductDisplayChange={onPrintifyProductDisplayChange}
-                  onPrintifyProductDisplayBlur={onPrintifyProductDisplayBlur}
                   printifyVariantId={printifyVariantId}
                   setPrintifyVariantId={setPrintifyVariantId}
                 />

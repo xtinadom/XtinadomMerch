@@ -97,6 +97,13 @@ export function ShopFirstListingRequestPanel(props: {
   const [listingSavedFlash, setListingSavedFlash] = useState(false);
   const listingFileRef = useRef<HTMLInputElement>(null);
   const prefillAppliedListingIdRef = useRef<string | null>(null);
+  const pendingListingFdRef = useRef<FormData | null>(null);
+  const [attestationOpen, setAttestationOpen] = useState(false);
+  const [attestationChecked, setAttestationChecked] = useState(false);
+
+  useEffect(() => {
+    if (attestationOpen) setAttestationChecked(false);
+  }, [attestationOpen]);
 
   const catalogOptions = useMemo(
     () => flattenShopBaselineCatalogGroups(catalogGroups),
@@ -344,7 +351,8 @@ export function ShopFirstListingRequestPanel(props: {
             fd.set("requestItemName", listingRequestItemName.trim());
             const art = listingFileRef.current?.files?.[0];
             if (art) fd.set("listingArtwork", art);
-            void handleListingSubmit(fd);
+            pendingListingFdRef.current = fd;
+            setAttestationOpen(true);
           }}
         >
           <div>
@@ -608,6 +616,70 @@ export function ShopFirstListingRequestPanel(props: {
           </button>
         </form>
       )}
+
+      {attestationOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="listing-attestation-title"
+        >
+          <div className="max-w-md rounded-xl border border-zinc-700 bg-zinc-950 p-5 shadow-xl">
+            <h3 id="listing-attestation-title" className="text-base font-semibold text-zinc-100">
+              Confirm listing request
+            </h3>
+            <p className="mt-2 text-sm text-zinc-400">
+              Submitting sends your artwork for admin review. Please confirm the statements below.
+            </p>
+            <label className="mt-4 flex cursor-pointer gap-2 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={attestationChecked}
+                onChange={(e) => setAttestationChecked(e.target.checked)}
+                className="mt-1 shrink-0 rounded border-zinc-600"
+              />
+              <span>
+                I have the rights to the photo / artwork I am uploading, and it follows the{" "}
+                <Link
+                  href="/dashboard?dash=itemGuidelines"
+                  className="text-blue-400/90 underline underline-offset-2 hover:text-blue-300"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  item guidelines
+                </Link>
+                .
+              </span>
+            </label>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-zinc-600 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-900"
+                onClick={() => {
+                  setAttestationOpen(false);
+                  pendingListingFdRef.current = null;
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!attestationChecked || isListingPending}
+                className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => {
+                  const fd = pendingListingFdRef.current;
+                  if (!fd || !attestationChecked) return;
+                  fd.set("guidelinesAttestation", "1");
+                  setAttestationOpen(false);
+                  pendingListingFdRef.current = null;
+                  void handleListingSubmit(fd);
+                }}
+              >
+                Submit for admin review
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -26,6 +26,7 @@ import {
   type ShopSetupShopPayload,
   type ShopSetupSteps,
 } from "@/components/dashboard/ShopSetupTabs";
+import { ShopItemGuidelinesPanel } from "@/components/dashboard/ShopItemGuidelinesPanel";
 import { ShopFirstListingRequestPanel } from "@/components/dashboard/ShopFirstListingRequestPanel";
 import type { DraftListingRequestPrefillPayload } from "@/lib/shop-baseline-draft-prefill";
 import type { ShopSetupCatalogGroup } from "@/lib/shop-baseline-catalog";
@@ -42,8 +43,11 @@ import type { GroupedDashboardListing } from "@/lib/dashboard-legacy-baseline-li
 export type DashboardSetupPanelProps = {
   setupTabsKey: string;
   shop: ShopSetupShopPayload;
+  itemGuidelinesAcknowledged: boolean;
   catalogGroups: ShopSetupCatalogGroup[];
   steps: ShopSetupSteps;
+  stripeConnectUnlocked: boolean;
+  incompleteSetupCount: number;
   listingFeePolicySummary: string;
   r2Configured: boolean;
   listingPickerDiagnostics?: { adminCatalogItemCount: number };
@@ -524,6 +528,7 @@ function ListingCard({
 type TabId =
   | "setup"
   | "shopProfile"
+  | "itemGuidelines"
   | "requestListing"
   | "listings"
   | "notifications"
@@ -534,6 +539,8 @@ export function DashboardMainTabs(props: {
   initialTab?: TabId;
   /** Creator shop slug — listing fee tiers (e.g. founder unlimited). */
   shopSlug: string;
+  /** Approved listing count / total non-draft listing rows (creator shops). */
+  listingTabCounts?: { approved: number; total: number } | null;
   /** Creator onboarding; when set, “Onboarding” is the first tab. */
   setup?: DashboardSetupPanelProps | null;
   /** Full notice history (creators); drives Notifications tab. */
@@ -562,6 +569,7 @@ export function DashboardMainTabs(props: {
   const {
     initialTab: initialTabProp,
     shopSlug,
+    listingTabCounts = null,
     setup,
     notifications,
     supportChat,
@@ -586,6 +594,7 @@ export function DashboardMainTabs(props: {
         i === "orders" ||
         i === "setup" ||
         i === "shopProfile" ||
+        i === "itemGuidelines" ||
         i === "notifications" ||
         i === "requestListing" ||
         (i === "support" && canSupport)
@@ -606,6 +615,8 @@ export function DashboardMainTabs(props: {
   const setupPanelId = `${baseId}-panel-setup`;
   const shopProfileTabId = `${baseId}-tab-shop-profile`;
   const shopProfilePanelId = `${baseId}-panel-shop-profile`;
+  const itemGuidelinesTabId = `${baseId}-tab-item-guidelines`;
+  const itemGuidelinesPanelId = `${baseId}-panel-item-guidelines`;
   const requestListingTabId = `${baseId}-tab-request-listing`;
   const requestListingPanelId = `${baseId}-panel-request-listing`;
   const listingsTabId = `${baseId}-tab-listings`;
@@ -647,14 +658,50 @@ export function DashboardMainTabs(props: {
         role="tablist"
         aria-label="Shop dashboard"
       >
-        {hasSetup ? tabBtn("setup", "Onboarding", setupTabId, setupPanelId) : null}
+        {hasSetup && setup ? (
+          tabBtn(
+            "setup",
+            <span className="inline-flex items-center gap-2">
+              Onboarding
+              {setup.incompleteSetupCount > 0 ? (
+                <span className="rounded-full bg-amber-900/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-amber-100">
+                  {setup.incompleteSetupCount}
+                </span>
+              ) : null}
+            </span>,
+            setupTabId,
+            setupPanelId,
+          )
+        ) : null}
         {hasSetup && setup
           ? tabBtn("shopProfile", "Shop profile", shopProfileTabId, shopProfilePanelId)
           : null}
         {hasSetup && setup
+          ? tabBtn(
+              "itemGuidelines",
+              "Item guidelines",
+              itemGuidelinesTabId,
+              itemGuidelinesPanelId,
+            )
+          : null}
+        {hasSetup && setup
           ? tabBtn("requestListing", "Request listing", requestListingTabId, requestListingPanelId)
           : null}
-        {tabBtn("listings", "Listings", listingsTabId, listingsPanelId)}
+        {tabBtn(
+          "listings",
+          listingTabCounts ? (
+            <span className="inline-flex items-center gap-2">
+              Listings
+              <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-200">
+                {listingTabCounts.approved}/{listingTabCounts.total}
+              </span>
+            </span>
+          ) : (
+            "Listings"
+          ),
+          listingsTabId,
+          listingsPanelId,
+        )}
         {hasNotifications && notifications
           ? tabBtn(
               "notifications",
@@ -686,6 +733,7 @@ export function DashboardMainTabs(props: {
             key={setup.setupTabsKey}
             shop={setup.shop}
             steps={setup.steps}
+            stripeConnectUnlocked={setup.stripeConnectUnlocked}
             embedded
           />
         </div>
@@ -704,6 +752,22 @@ export function DashboardMainTabs(props: {
             shop={setup.shop}
             profileStepDone={setup.steps.profile}
             r2Configured={setup.r2Configured}
+            embedded
+          />
+        </div>
+      ) : null}
+
+      {hasSetup && setup ? (
+        <div
+          id={itemGuidelinesPanelId}
+          role="tabpanel"
+          aria-labelledby={itemGuidelinesTabId}
+          hidden={tab !== "itemGuidelines"}
+          className="pt-6"
+        >
+          <ShopItemGuidelinesPanel
+            key={setup.setupTabsKey}
+            acknowledged={setup.itemGuidelinesAcknowledged}
             embedded
           />
         </div>

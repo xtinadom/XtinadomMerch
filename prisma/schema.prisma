@@ -127,6 +127,8 @@ model Shop {
   orders                   Order[]
   orderLines               OrderLine[]
   supportThread            SupportThread?
+  /** Creator acknowledged item guidelines (dashboard onboarding). */
+  itemGuidelinesAcknowledgedAt DateTime?
   createdAt                DateTime       @default(now())
   updatedAt                DateTime       @updatedAt
 }
@@ -184,13 +186,27 @@ model ShopUser {
   shopId       String
   shop         Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
   role         ShopUserRole @default(owner)
+  emailVerifiedAt DateTime?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
   passwordResetTokens ShopPasswordResetToken[]
+  emailVerificationTokens ShopEmailVerificationToken[]
 }
 
 model ShopPasswordResetToken {
+  id         String    @id @default(cuid())
+  shopUserId String
+  shopUser   ShopUser  @relation(fields: [shopUserId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([shopUserId])
+}
+
+model ShopEmailVerificationToken {
   id         String    @id @default(cuid())
   shopUserId String
   shopUser   ShopUser  @relation(fields: [shopUserId], references: [id], onDelete: Cascade)

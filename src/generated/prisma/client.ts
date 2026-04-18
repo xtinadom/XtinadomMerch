@@ -87,6 +87,11 @@ export type ShopUser = Prisma.ShopUserModel
  */
 export type ShopPasswordResetToken = Prisma.ShopPasswordResetTokenModel
 /**
+ * Model ShopEmailVerificationToken
+ * 
+ */
+export type ShopEmailVerificationToken = Prisma.ShopEmailVerificationTokenModel
+/**
  * Model ShopListing
  * 
  */

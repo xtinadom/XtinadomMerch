@@ -78,6 +78,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/dashboard/forgot-password") ||
     pathname.startsWith("/dashboard/preview-reset-email") ||
     pathname.startsWith("/dashboard/reset-password") ||
+    pathname.startsWith("/dashboard/verify-email") ||
     pathname.startsWith("/api/site-access") ||
     pathname.startsWith("/api/health") ||
     pathname.startsWith("/api/webhooks/") ||

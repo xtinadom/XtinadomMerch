@@ -393,6 +393,7 @@ export const ModelName = {
   ShopOwnerNotice: 'ShopOwnerNotice',
   ShopUser: 'ShopUser',
   ShopPasswordResetToken: 'ShopPasswordResetToken',
+  ShopEmailVerificationToken: 'ShopEmailVerificationToken',
   ShopListing: 'ShopListing',
   Order: 'Order',
   OrderLine: 'OrderLine',
@@ -415,7 +416,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tag" | "productTag" | "product" | "shop" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopPasswordResetToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "comment"
+    modelProps: "tag" | "productTag" | "product" | "shop" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "comment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1085,6 +1086,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ShopEmailVerificationToken: {
+      payload: Prisma.$ShopEmailVerificationTokenPayload<ExtArgs>
+      fields: Prisma.ShopEmailVerificationTokenFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ShopEmailVerificationTokenFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopEmailVerificationTokenPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ShopEmailVerificationTokenFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopEmailVerificationTokenPayload>
+        }
+        findFirst: {
+          args: Prisma.ShopEmailVerificationTokenFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopEmailVerificationTokenPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ShopEmailVerificationTokenFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopEmailVerificationTokenPayload>
+        }
+        findMany: {
+          args: Prisma.ShopEmailVerificationTokenFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopEmailVerificationTokenPayload>[]
+        }
+        create: {
+          args: Prisma.ShopEmailVerificationTokenCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopEmailVerificationTokenPayload>
+        }
+        createMany: {
+          args: Prisma.ShopEmailVerificationTokenCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ShopEmailVerificationTokenCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopEmailVerificationTokenPayload>[]
+        }
+        delete: {
+          args: Prisma.ShopEmailVerificationTokenDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopEmailVerificationTokenPayload>
+        }
+        update: {
+          args: Prisma.ShopEmailVerificationTokenUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopEmailVerificationTokenPayload>
+        }
+        deleteMany: {
+          args: Prisma.ShopEmailVerificationTokenDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ShopEmailVerificationTokenUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ShopEmailVerificationTokenUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopEmailVerificationTokenPayload>[]
+        }
+        upsert: {
+          args: Prisma.ShopEmailVerificationTokenUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopEmailVerificationTokenPayload>
+        }
+        aggregate: {
+          args: Prisma.ShopEmailVerificationTokenAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateShopEmailVerificationToken>
+        }
+        groupBy: {
+          args: Prisma.ShopEmailVerificationTokenGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ShopEmailVerificationTokenGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ShopEmailVerificationTokenCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ShopEmailVerificationTokenCountAggregateOutputType> | number
+        }
+      }
+    }
     ShopListing: {
       payload: Prisma.$ShopListingPayload<ExtArgs>
       fields: Prisma.ShopListingFieldRefs
@@ -1709,6 +1784,7 @@ export const ShopScalarFieldEnum = {
   editorialPinnedUntil: 'editorialPinnedUntil',
   totalSalesCents: 'totalSalesCents',
   homeFeaturedListingId: 'homeFeaturedListingId',
+  itemGuidelinesAcknowledgedAt: 'itemGuidelinesAcknowledgedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1757,6 +1833,7 @@ export const ShopUserScalarFieldEnum = {
   passwordHash: 'passwordHash',
   shopId: 'shopId',
   role: 'role',
+  emailVerifiedAt: 'emailVerifiedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1774,6 +1851,18 @@ export const ShopPasswordResetTokenScalarFieldEnum = {
 } as const
 
 export type ShopPasswordResetTokenScalarFieldEnum = (typeof ShopPasswordResetTokenScalarFieldEnum)[keyof typeof ShopPasswordResetTokenScalarFieldEnum]
+
+
+export const ShopEmailVerificationTokenScalarFieldEnum = {
+  id: 'id',
+  shopUserId: 'shopUserId',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ShopEmailVerificationTokenScalarFieldEnum = (typeof ShopEmailVerificationTokenScalarFieldEnum)[keyof typeof ShopEmailVerificationTokenScalarFieldEnum]
 
 
 export const ShopListingScalarFieldEnum = {
@@ -2233,6 +2322,7 @@ export type GlobalOmitConfig = {
   shopOwnerNotice?: Prisma.ShopOwnerNoticeOmit
   shopUser?: Prisma.ShopUserOmit
   shopPasswordResetToken?: Prisma.ShopPasswordResetTokenOmit
+  shopEmailVerificationToken?: Prisma.ShopEmailVerificationTokenOmit
   shopListing?: Prisma.ShopListingOmit
   order?: Prisma.OrderOmit
   orderLine?: Prisma.OrderLineOmit

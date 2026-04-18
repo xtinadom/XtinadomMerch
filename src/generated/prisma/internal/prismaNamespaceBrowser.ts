@@ -60,6 +60,7 @@ export const ModelName = {
   ShopOwnerNotice: 'ShopOwnerNotice',
   ShopUser: 'ShopUser',
   ShopPasswordResetToken: 'ShopPasswordResetToken',
+  ShopEmailVerificationToken: 'ShopEmailVerificationToken',
   ShopListing: 'ShopListing',
   Order: 'Order',
   OrderLine: 'OrderLine',
@@ -152,6 +153,7 @@ export const ShopScalarFieldEnum = {
   editorialPinnedUntil: 'editorialPinnedUntil',
   totalSalesCents: 'totalSalesCents',
   homeFeaturedListingId: 'homeFeaturedListingId',
+  itemGuidelinesAcknowledgedAt: 'itemGuidelinesAcknowledgedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -200,6 +202,7 @@ export const ShopUserScalarFieldEnum = {
   passwordHash: 'passwordHash',
   shopId: 'shopId',
   role: 'role',
+  emailVerifiedAt: 'emailVerifiedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -217,6 +220,18 @@ export const ShopPasswordResetTokenScalarFieldEnum = {
 } as const
 
 export type ShopPasswordResetTokenScalarFieldEnum = (typeof ShopPasswordResetTokenScalarFieldEnum)[keyof typeof ShopPasswordResetTokenScalarFieldEnum]
+
+
+export const ShopEmailVerificationTokenScalarFieldEnum = {
+  id: 'id',
+  shopUserId: 'shopUserId',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ShopEmailVerificationTokenScalarFieldEnum = (typeof ShopEmailVerificationTokenScalarFieldEnum)[keyof typeof ShopEmailVerificationTokenScalarFieldEnum]
 
 
 export const ShopListingScalarFieldEnum = {

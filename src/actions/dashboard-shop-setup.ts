@@ -19,6 +19,7 @@ import {
 } from "@/lib/shop-setup-image";
 import { shopSocialLinksFromFormData } from "@/lib/shop-social-links";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
+import { allocateUniqueShopSlug } from "@/lib/shop-slug";
 import {
   encodeBaselinePickVariant,
   parseBaselinePick,
@@ -74,6 +75,17 @@ export async function updateShopProfileSetup(
     return { ok: false, error: "Not available for the platform catalog shop." };
   }
 
+  const shopUsernameRaw = String(formData.get("shopUsername") ?? "").trim();
+  if (!shopUsernameRaw || shopUsernameRaw.length > 80) {
+    return { ok: false, error: "Shop username is required (max 80 characters)." };
+  }
+  const slugResult = await allocateUniqueShopSlug(shopUsernameRaw, shop.id);
+  if ("error" in slugResult) {
+    return { ok: false, error: slugResult.error };
+  }
+  const nextSlug = slugResult.slug;
+  const oldSlug = shop.slug;
+
   const displayName = String(formData.get("displayName") ?? "").trim();
   const welcomeRaw = String(formData.get("welcomeMessage") ?? "").trim();
   if (!displayName || displayName.length > 120) {
@@ -92,15 +104,31 @@ export async function updateShopProfileSetup(
   await prisma.shop.update({
     where: { id: shop.id },
     data: {
+      slug: nextSlug,
       displayName,
       welcomeMessage: welcomeRaw || null,
       socialLinks: socialJson,
     },
   });
   revalidatePath("/dashboard");
-  revalidatePath(`/s/${shop.slug}`);
+  revalidatePath(`/s/${oldSlug}`);
+  revalidatePath(`/s/${nextSlug}`);
   revalidatePath("/shops");
   return { ok: true };
+}
+
+export async function acknowledgeShopItemGuidelines(): Promise<void> {
+  const user = await requireShopOwner();
+  const shop = user.shop;
+  if (shop.slug === PLATFORM_SHOP_SLUG) {
+    return;
+  }
+  await prisma.shop.update({
+    where: { id: shop.id },
+    data: { itemGuidelinesAcknowledgedAt: new Date() },
+  });
+  revalidatePath("/dashboard");
+  revalidatePath(`/s/${shop.slug}`);
 }
 
 export async function uploadShopProfileImageSetup(
@@ -160,6 +188,13 @@ export async function submitFirstListingSetup(
   const shop = user.shop;
   if (shop.slug === PLATFORM_SHOP_SLUG) {
     return { ok: false, error: "Not available for the platform catalog shop." };
+  }
+  if (String(formData.get("guidelinesAttestation") ?? "").trim() !== "1") {
+    return {
+      ok: false,
+      error:
+        "Confirm in the dialog that you have rights to your images and that they follow the item guidelines.",
+    };
   }
   if (!isR2UploadConfigured()) {
     return {

@@ -109,6 +109,7 @@ export function ShopProfileSetupPanel(props: {
   const [isProfilePending, startProfileTransition] = useTransition();
   const [isAvatarPending, startAvatarTransition] = useTransition();
 
+  const [shopUsername, setShopUsername] = useState(shop.shopSlug);
   const [displayName, setDisplayName] = useState(shop.displayName);
   const [welcomeMessage, setWelcomeMessage] = useState(shop.welcomeMessage ?? "");
   const [social, setSocial] = useState(() => socialRecordFromShop(shop.socialLinks));
@@ -122,11 +123,12 @@ export function ShopProfileSetupPanel(props: {
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    setShopUsername(shop.shopSlug);
     setDisplayName(shop.displayName);
     setWelcomeMessage(shop.welcomeMessage ?? "");
     setSocial(socialRecordFromShop(shop.socialLinks));
     setProfileSavedFlash(false);
-  }, [shop.displayName, shop.welcomeMessage, shop.socialLinks]);
+  }, [shop.shopSlug, shop.displayName, shop.welcomeMessage, shop.socialLinks]);
 
   useEffect(() => {
     setAvatarHasFile(false);
@@ -140,13 +142,14 @@ export function ShopProfileSetupPanel(props: {
   );
 
   const profileDirty = useMemo(() => {
+    if (shopUsername.trim() !== shop.shopSlug.trim()) return true;
     if (displayName.trim() !== shop.displayName.trim()) return true;
     if (welcomeMessage.trim() !== (shop.welcomeMessage ?? "").trim()) return true;
     for (const k of SHOP_SOCIAL_KEYS) {
       if ((social[k] ?? "").trim() !== (baselineSocial[k] ?? "").trim()) return true;
     }
     return false;
-  }, [displayName, welcomeMessage, social, shop.displayName, shop.welcomeMessage, baselineSocial]);
+  }, [shopUsername, displayName, welcomeMessage, social, shop.shopSlug, shop.displayName, shop.welcomeMessage, baselineSocial]);
 
   useEffect(() => {
     if (profileDirty) setProfileSavedFlash(false);
@@ -280,7 +283,9 @@ export function ShopProfileSetupPanel(props: {
         </div>
 
         <p className="text-xs text-zinc-500">
-          Display name is shown to customers. Welcome message is short (max 280 characters).
+          <strong className="text-zinc-400">Shop display name</strong> is the store name shown to customers (required).
+          <strong className="text-zinc-400"> Username</strong> is your public URL (<span className="font-mono">/s/…</span>
+          ); changing it breaks old links until you share the new one.
         </p>
 
         <form
@@ -291,6 +296,17 @@ export function ShopProfileSetupPanel(props: {
             void handleProfileSubmit(new FormData(e.currentTarget));
           }}
         >
+          <label className="block text-xs text-zinc-500">
+            Username (shop URL)
+            <input
+              name="shopUsername"
+              required
+              maxLength={80}
+              value={shopUsername}
+              onChange={(e) => setShopUsername(e.target.value)}
+              className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100"
+            />
+          </label>
           <label className="block text-xs text-zinc-500">
             Shop display name
             <input

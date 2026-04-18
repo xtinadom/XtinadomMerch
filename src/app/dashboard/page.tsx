@@ -22,7 +22,6 @@ import {
 } from "@/lib/r2-upload";
 import { ensureBaselineAdminCatalogIfEmpty } from "@/lib/seed-baseline-admin-catalog";
 import { buildShopBaselineCatalogGroups } from "@/lib/shop-baseline-catalog";
-import { parseShopSocialLinksJson } from "@/lib/shop-social-links";
 import {
   listingRejectionReasonTextForCard,
   resolveListingRejectionNoticeBody,
@@ -32,6 +31,11 @@ import {
   type DraftListingRequestPrefillPayload,
 } from "@/lib/shop-baseline-draft-prefill";
 import { buildGroupedListingSectionsForDashboard } from "@/lib/dashboard-legacy-baseline-listing-groups";
+import {
+  canStartStripeConnect,
+  computeShopOnboardingSteps,
+  countIncompleteOnboardingSteps,
+} from "@/lib/shop-onboarding-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +56,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const sp = await searchParams;
   const connect = typeof sp.connect === "string" ? sp.connect : undefined;
+  const connectReason =
+    typeof sp.reason === "string" ? sp.reason : Array.isArray(sp.reason) ? sp.reason[0] : undefined;
+  const emailVerify =
+    typeof sp.emailVerify === "string"
+      ? sp.emailVerify
+      : Array.isArray(sp.emailVerify)
+        ? sp.emailVerify[0]
+        : undefined;
   const fee = typeof sp.fee === "string" ? sp.fee : undefined;
   const dashRaw = sp.dash;
   const dashStr =
@@ -163,8 +175,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const catalogGroups = !isPlatform ? buildShopBaselineCatalogGroups(adminCatalogRows) : [];
 
-  const socialParsed = parseShopSocialLinksJson(shop.socialLinks);
-
   const draftListingForRequestPrefill = !isPlatform
     ? shop.listings.find(
         (l) =>
@@ -212,29 +222,41 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const unreadNoticeCount = allOwnerNotices.filter((n) => n.readAt == null).length;
 
   const setupSteps = !isPlatform
-    ? {
-        stripe: shop.connectChargesEnabled && shop.payoutsEnabled,
-        profile: Boolean(
-          shop.profileImageUrl ||
-            (shop.welcomeMessage?.trim().length ?? 0) > 0 ||
-            Object.keys(socialParsed).length > 0,
-        ),
-        listing: shop.listings.some(
-          (l) =>
-            l.requestStatus === ListingRequestStatus.submitted ||
-            l.requestStatus === ListingRequestStatus.images_ok ||
-            l.requestStatus === ListingRequestStatus.printify_item_created ||
-            l.requestStatus === ListingRequestStatus.approved ||
-            l.active,
-        ),
-      }
-    : { stripe: true, profile: true, listing: true };
+    ? computeShopOnboardingSteps({
+        displayName: shop.displayName,
+        itemGuidelinesAcknowledgedAt: shop.itemGuidelinesAcknowledgedAt,
+        emailVerifiedAt: user.emailVerifiedAt,
+        listings: shop.listings.map((l) => ({
+          requestStatus: l.requestStatus,
+          active: l.active,
+        })),
+        connectChargesEnabled: shop.connectChargesEnabled,
+        payoutsEnabled: shop.payoutsEnabled,
+      })
+    : {
+        profile: true,
+        guidelines: true,
+        emailVerified: true,
+        listing: true,
+        stripe: true,
+      };
 
-  const setupTabsKey = `setup-${setupSteps.stripe}-${setupSteps.profile}-${setupSteps.listing}`;
+  const stripeConnectUnlocked = !isPlatform && canStartStripeConnect(setupSteps);
+  const incompleteSetupCount = !isPlatform ? countIncompleteOnboardingSteps(setupSteps) : 0;
+
+  const listingApprovedCount = !isPlatform
+    ? shop.listings.filter((l) => l.requestStatus === ListingRequestStatus.approved).length
+    : 0;
+  const listingRequestTotalCount = !isPlatform
+    ? shop.listings.filter((l) => l.requestStatus !== ListingRequestStatus.draft).length
+    : 0;
+
+  const setupTabsKey = `setup-${setupSteps.stripe}-${setupSteps.profile}-${setupSteps.guidelines}-${setupSteps.emailVerified}-${setupSteps.listing}-${Boolean(shop.itemGuidelinesAcknowledgedAt)}-${Boolean(user.emailVerifiedAt)}`;
 
   const dashTab:
     | "setup"
     | "shopProfile"
+    | "itemGuidelines"
     | "requestListing"
     | "listings"
     | "notifications"
@@ -247,6 +269,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         dashStr === "orders" ||
         dashStr === "setup" ||
         dashStr === "shopProfile" ||
+        dashStr === "itemGuidelines" ||
         dashStr === "notifications" ||
         dashStr === "requestListing" ||
         dashStr === "support"
@@ -367,6 +390,24 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </p>
       ) : null}
 
+      {!isPlatform && emailVerify === "ok" ? (
+        <p className="mt-4 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
+          Your email address is verified.
+        </p>
+      ) : null}
+      {!isPlatform && emailVerify && emailVerify !== "ok" ? (
+        <p className="mt-4 rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-2 text-sm text-amber-200/90">
+          Email verification link was invalid or expired. Use{" "}
+          <strong className="text-amber-100/90">Resend verification email</strong> on the Onboarding tab.
+        </p>
+      ) : null}
+      {!isPlatform && connect === "err" && connectReason === "onboarding_incomplete" ? (
+        <p className="mt-4 rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-2 text-sm text-amber-200/90">
+          Complete onboarding (shop profile, item guidelines, verify email, and a listing request) before connecting
+          Stripe.
+        </p>
+      ) : null}
+
       {isPlatform ? (
         <p className="mt-8 rounded-lg border border-zinc-800 bg-zinc-900/30 px-4 py-3 text-sm text-zinc-500">
           You are signed in as the platform catalog shop owner. Marketplace Connect and per-listing
@@ -380,6 +421,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         supportChat={supportChatPanel}
         draftListingRequestPrefill={draftListingRequestPrefill}
         groupedListingSections={groupedListingSections}
+        listingTabCounts={
+          !isPlatform ? { approved: listingApprovedCount, total: listingRequestTotalCount } : null
+        }
         setup={
           !isPlatform
             ? {
@@ -394,8 +438,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                   connectChargesEnabled: shop.connectChargesEnabled,
                   payoutsEnabled: shop.payoutsEnabled,
                 },
+                itemGuidelinesAcknowledged: shop.itemGuidelinesAcknowledgedAt != null,
                 catalogGroups: catalogGroups,
                 steps: setupSteps,
+                stripeConnectUnlocked,
+                incompleteSetupCount,
                 listingFeePolicySummary: listingFeePolicySummary,
                 r2Configured: isR2UploadConfigured(),
                 listingPickerDiagnostics: {
