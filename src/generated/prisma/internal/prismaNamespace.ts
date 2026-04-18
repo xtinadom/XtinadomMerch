@@ -1719,6 +1719,7 @@ export type ShopScalarFieldEnum = (typeof ShopScalarFieldEnum)[keyof typeof Shop
 export const SupportThreadScalarFieldEnum = {
   id: 'id',
   shopId: 'shopId',
+  resolvedAt: 'resolvedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

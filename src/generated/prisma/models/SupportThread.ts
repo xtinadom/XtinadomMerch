@@ -27,6 +27,7 @@ export type AggregateSupportThread = {
 export type SupportThreadMinAggregateOutputType = {
   id: string | null
   shopId: string | null
+  resolvedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -34,6 +35,7 @@ export type SupportThreadMinAggregateOutputType = {
 export type SupportThreadMaxAggregateOutputType = {
   id: string | null
   shopId: string | null
+  resolvedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -41,6 +43,7 @@ export type SupportThreadMaxAggregateOutputType = {
 export type SupportThreadCountAggregateOutputType = {
   id: number
   shopId: number
+  resolvedAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -50,6 +53,7 @@ export type SupportThreadCountAggregateOutputType = {
 export type SupportThreadMinAggregateInputType = {
   id?: true
   shopId?: true
+  resolvedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -57,6 +61,7 @@ export type SupportThreadMinAggregateInputType = {
 export type SupportThreadMaxAggregateInputType = {
   id?: true
   shopId?: true
+  resolvedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -64,6 +69,7 @@ export type SupportThreadMaxAggregateInputType = {
 export type SupportThreadCountAggregateInputType = {
   id?: true
   shopId?: true
+  resolvedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -144,6 +150,7 @@ export type SupportThreadGroupByArgs<ExtArgs extends runtime.Types.Extensions.In
 export type SupportThreadGroupByOutputType = {
   id: string
   shopId: string
+  resolvedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: SupportThreadCountAggregateOutputType | null
@@ -172,6 +179,7 @@ export type SupportThreadWhereInput = {
   NOT?: Prisma.SupportThreadWhereInput | Prisma.SupportThreadWhereInput[]
   id?: Prisma.StringFilter<"SupportThread"> | string
   shopId?: Prisma.StringFilter<"SupportThread"> | string
+  resolvedAt?: Prisma.DateTimeNullableFilter<"SupportThread"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"SupportThread"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SupportThread"> | Date | string
   shop?: Prisma.XOR<Prisma.ShopScalarRelationFilter, Prisma.ShopWhereInput>
@@ -181,6 +189,7 @@ export type SupportThreadWhereInput = {
 export type SupportThreadOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   shopId?: Prisma.SortOrder
+  resolvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   shop?: Prisma.ShopOrderByWithRelationInput
@@ -193,6 +202,7 @@ export type SupportThreadWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.SupportThreadWhereInput | Prisma.SupportThreadWhereInput[]
   OR?: Prisma.SupportThreadWhereInput[]
   NOT?: Prisma.SupportThreadWhereInput | Prisma.SupportThreadWhereInput[]
+  resolvedAt?: Prisma.DateTimeNullableFilter<"SupportThread"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"SupportThread"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SupportThread"> | Date | string
   shop?: Prisma.XOR<Prisma.ShopScalarRelationFilter, Prisma.ShopWhereInput>
@@ -202,6 +212,7 @@ export type SupportThreadWhereUniqueInput = Prisma.AtLeast<{
 export type SupportThreadOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   shopId?: Prisma.SortOrder
+  resolvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.SupportThreadCountOrderByAggregateInput
@@ -215,12 +226,14 @@ export type SupportThreadScalarWhereWithAggregatesInput = {
   NOT?: Prisma.SupportThreadScalarWhereWithAggregatesInput | Prisma.SupportThreadScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"SupportThread"> | string
   shopId?: Prisma.StringWithAggregatesFilter<"SupportThread"> | string
+  resolvedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"SupportThread"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SupportThread"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SupportThread"> | Date | string
 }
 
 export type SupportThreadCreateInput = {
   id?: string
+  resolvedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   shop: Prisma.ShopCreateNestedOneWithoutSupportThreadInput
@@ -230,6 +243,7 @@ export type SupportThreadCreateInput = {
 export type SupportThreadUncheckedCreateInput = {
   id?: string
   shopId: string
+  resolvedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   messages?: Prisma.SupportMessageUncheckedCreateNestedManyWithoutThreadInput
@@ -237,6 +251,7 @@ export type SupportThreadUncheckedCreateInput = {
 
 export type SupportThreadUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shop?: Prisma.ShopUpdateOneRequiredWithoutSupportThreadNestedInput
@@ -246,6 +261,7 @@ export type SupportThreadUpdateInput = {
 export type SupportThreadUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   shopId?: Prisma.StringFieldUpdateOperationsInput | string
+  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.SupportMessageUncheckedUpdateManyWithoutThreadNestedInput
@@ -254,12 +270,14 @@ export type SupportThreadUncheckedUpdateInput = {
 export type SupportThreadCreateManyInput = {
   id?: string
   shopId: string
+  resolvedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type SupportThreadUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -267,6 +285,7 @@ export type SupportThreadUpdateManyMutationInput = {
 export type SupportThreadUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   shopId?: Prisma.StringFieldUpdateOperationsInput | string
+  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -279,6 +298,7 @@ export type SupportThreadNullableScalarRelationFilter = {
 export type SupportThreadCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   shopId?: Prisma.SortOrder
+  resolvedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -286,6 +306,7 @@ export type SupportThreadCountOrderByAggregateInput = {
 export type SupportThreadMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   shopId?: Prisma.SortOrder
+  resolvedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -293,6 +314,7 @@ export type SupportThreadMaxOrderByAggregateInput = {
 export type SupportThreadMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   shopId?: Prisma.SortOrder
+  resolvedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -350,6 +372,7 @@ export type SupportThreadUpdateOneRequiredWithoutMessagesNestedInput = {
 
 export type SupportThreadCreateWithoutShopInput = {
   id?: string
+  resolvedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   messages?: Prisma.SupportMessageCreateNestedManyWithoutThreadInput
@@ -357,6 +380,7 @@ export type SupportThreadCreateWithoutShopInput = {
 
 export type SupportThreadUncheckedCreateWithoutShopInput = {
   id?: string
+  resolvedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   messages?: Prisma.SupportMessageUncheckedCreateNestedManyWithoutThreadInput
@@ -380,6 +404,7 @@ export type SupportThreadUpdateToOneWithWhereWithoutShopInput = {
 
 export type SupportThreadUpdateWithoutShopInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.SupportMessageUpdateManyWithoutThreadNestedInput
@@ -387,6 +412,7 @@ export type SupportThreadUpdateWithoutShopInput = {
 
 export type SupportThreadUncheckedUpdateWithoutShopInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.SupportMessageUncheckedUpdateManyWithoutThreadNestedInput
@@ -394,6 +420,7 @@ export type SupportThreadUncheckedUpdateWithoutShopInput = {
 
 export type SupportThreadCreateWithoutMessagesInput = {
   id?: string
+  resolvedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   shop: Prisma.ShopCreateNestedOneWithoutSupportThreadInput
@@ -402,6 +429,7 @@ export type SupportThreadCreateWithoutMessagesInput = {
 export type SupportThreadUncheckedCreateWithoutMessagesInput = {
   id?: string
   shopId: string
+  resolvedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -424,6 +452,7 @@ export type SupportThreadUpdateToOneWithWhereWithoutMessagesInput = {
 
 export type SupportThreadUpdateWithoutMessagesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shop?: Prisma.ShopUpdateOneRequiredWithoutSupportThreadNestedInput
@@ -432,6 +461,7 @@ export type SupportThreadUpdateWithoutMessagesInput = {
 export type SupportThreadUncheckedUpdateWithoutMessagesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   shopId?: Prisma.StringFieldUpdateOperationsInput | string
+  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -470,6 +500,7 @@ export type SupportThreadCountOutputTypeCountMessagesArgs<ExtArgs extends runtim
 export type SupportThreadSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   shopId?: boolean
+  resolvedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
@@ -480,6 +511,7 @@ export type SupportThreadSelect<ExtArgs extends runtime.Types.Extensions.Interna
 export type SupportThreadSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   shopId?: boolean
+  resolvedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
@@ -488,6 +520,7 @@ export type SupportThreadSelectCreateManyAndReturn<ExtArgs extends runtime.Types
 export type SupportThreadSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   shopId?: boolean
+  resolvedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
@@ -496,11 +529,12 @@ export type SupportThreadSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
 export type SupportThreadSelectScalar = {
   id?: boolean
   shopId?: boolean
+  resolvedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type SupportThreadOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "shopId" | "createdAt" | "updatedAt", ExtArgs["result"]["supportThread"]>
+export type SupportThreadOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "shopId" | "resolvedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["supportThread"]>
 export type SupportThreadInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
   messages?: boolean | Prisma.SupportThread$messagesArgs<ExtArgs>
@@ -522,6 +556,12 @@ export type $SupportThreadPayload<ExtArgs extends runtime.Types.Extensions.Inter
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     shopId: string
+    /**
+     * *
+     *    * When an admin last marked the conversation resolved. Cleared when the creator sends a new
+     *    * message. A thread is “unresolved” if this is null or any creator message is newer than it.
+     */
+    resolvedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["supportThread"]>
@@ -951,6 +991,7 @@ export interface Prisma__SupportThreadClient<T, Null = never, ExtArgs extends ru
 export interface SupportThreadFieldRefs {
   readonly id: Prisma.FieldRef<"SupportThread", 'String'>
   readonly shopId: Prisma.FieldRef<"SupportThread", 'String'>
+  readonly resolvedAt: Prisma.FieldRef<"SupportThread", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"SupportThread", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SupportThread", 'DateTime'>
 }

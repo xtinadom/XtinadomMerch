@@ -1,4 +1,5 @@
 import { dashboardSupportSendMessage } from "@/actions/dashboard-support";
+import { formatSupportMessageWhen } from "@/lib/format-support-message-when";
 
 export type DashboardSupportMessageRow = {
   id: string;
@@ -38,10 +39,10 @@ export function DashboardSupportChatPanel(props: {
                   >
                     <p className="whitespace-pre-wrap break-words">{m.body}</p>
                     <time
-                      className="mt-1 block text-[10px] font-medium uppercase tracking-wide text-zinc-500"
+                      className="mt-1 block text-[10px] font-medium tracking-wide text-zinc-500"
                       dateTime={m.createdAt}
                     >
-                      {m.createdAt.slice(0, 16).replace("T", " ")}
+                      {formatSupportMessageWhen(m.createdAt)}
                       {isCreator ? " · You" : " · Support"}
                     </time>
                   </div>

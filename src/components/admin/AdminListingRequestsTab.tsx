@@ -13,7 +13,6 @@ import type { Prisma } from "@/generated/prisma/client";
 import {
   adminClearShopListingSecondaryImage,
   adminFreezeShopListing,
-  adminMarkLegacyVariantListingGroupImagesOk,
   adminMarkListingImagesOk,
   adminMarkPrintifyListingReady,
   adminRemoveListingFromRequestsQueue,
@@ -23,18 +22,10 @@ import {
 import { productImageUrlsUnionHero } from "@/lib/product-media";
 import { FulfillmentType, ListingRequestStatus } from "@/generated/prisma/enums";
 import {
-  AdminLegacyVariantListingGroupApproveForm,
-  AdminLegacyVariantListingGroupRejectForm,
   AdminListingApproveForm,
   AdminListingRejectForm,
   AdminFreezeSubmitButton,
 } from "@/components/admin/AdminListingRequestActionButtons";
-import {
-  groupLegacyBaselineVariantAdminQueueRows,
-  type GroupedDashboardListing,
-  type LegacyBaselineListingGroup,
-} from "@/lib/dashboard-legacy-baseline-listing-groups";
-import type { AdminBaselineRow } from "@/lib/shop-baseline-catalog";
 
 export type ListingRequestTabRow = {
   id: string;
@@ -69,167 +60,6 @@ type RequestsTabId = "new" | "fee";
 function sortRows(rows: ListingRequestTabRow[]): ListingRequestTabRow[] {
   return [...rows].sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-  );
-}
-
-function sortGroupedByLatestUpdate(
-  groups: GroupedDashboardListing<ListingRequestTabRow>[],
-): GroupedDashboardListing<ListingRequestTabRow>[] {
-  const latestMs = (g: GroupedDashboardListing<ListingRequestTabRow>) =>
-    g.kind === "single"
-      ? new Date(g.row.updatedAt).getTime()
-      : Math.max(...g.members.map((m) => new Date(m.row.updatedAt).getTime()));
-  return [...groups].sort((a, b) => latestMs(b) - latestMs(a));
-}
-
-function ListingRequestGroupedCard({
-  group,
-  printifyCatalogPickList,
-  r2Configured,
-}: {
-  group: LegacyBaselineListingGroup<ListingRequestTabRow>;
-  printifyCatalogPickList: PrintifyCatalogPickEntry[];
-  r2Configured: boolean;
-}) {
-  const primary = group.members[0]!.row;
-  const imgs = Array.isArray(primary.requestImages) ? (primary.requestImages as string[]) : [];
-
-  const listingIds = useMemo(() => group.members.map((m) => m.row.id), [group.members]);
-
-  const allPrintifyReady = useMemo(
-    () =>
-      group.members.every((m) => m.row.requestStatus === ListingRequestStatus.printify_item_created),
-    [group.members],
-  );
-
-  const allHaveHero = useMemo(
-    () => group.members.every((m) => productImageUrlsUnionHero(m.row.product).length > 0),
-    [group.members],
-  );
-
-  const groupApproveDisabled = !allHaveHero;
-
-  const allAwaitingImageReview = useMemo(
-    () => group.members.every((m) => m.row.requestStatus === ListingRequestStatus.submitted),
-    [group.members],
-  );
-
-  return (
-    <li
-      className={`rounded-lg border p-4 text-sm text-zinc-300 ${
-        primary.requestStatus === ListingRequestStatus.approved && primary.active
-          ? "border-emerald-900/40 bg-emerald-950/10"
-          : "border-zinc-800 bg-zinc-950/20"
-      }`}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <p className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-          <span className="font-medium">{primary.shop.displayName}</span>
-          <span className="font-mono text-xs text-zinc-500">/s/{primary.shop.slug}</span>
-          <span className="rounded-full bg-violet-950/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-violet-200/90 ring-1 ring-violet-800/50">
-            Multi-size (one request)
-          </span>
-        </p>
-      </div>
-      <p className="mt-1 text-xs leading-snug text-zinc-500">
-        One listing request with multiple size options (legacy split catalog stubs). Use the same Printify product for
-        every option when they belong together. <span className="text-zinc-400">Parent catalog:</span>{" "}
-        {group.parentItemName}
-      </p>
-      {primary.requestItemName?.trim() ? (
-        <p className="mt-1 text-xs text-zinc-400">
-          Creator name: <span className="font-medium text-zinc-200">{primary.requestItemName.trim()}</span>
-        </p>
-      ) : null}
-      {imgs.length > 0 ? (
-        <ul className="mt-2 list-inside list-disc text-xs text-zinc-500">
-          {imgs.map((u, i) => (
-            <li key={i} className="break-all">
-              <a
-                href={u}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400/90 underline decoration-blue-500/40 underline-offset-2 hover:text-blue-300"
-              >
-                {u}
-              </a>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-2 text-xs text-zinc-600">No image URLs submitted.</p>
-      )}
-
-      {allAwaitingImageReview ? (
-        <div
-          className="mt-4 space-y-3 border-t border-zinc-800 pt-4"
-          role="group"
-          aria-label="Image check: pass or fail (all sizes)"
-        >
-          <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Step 1 — Image check</p>
-          <p className="text-xs text-zinc-600">
-            Do the submitted reference images / URLs pass a print-ready check? This applies to every size in this
-            request. Record pass to continue all rows, or fail and reject with a reason.
-          </p>
-          <div className="flex flex-wrap items-start gap-8">
-            <div className="flex min-w-0 flex-col gap-1.5">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Passes check</span>
-              <form action={adminMarkLegacyVariantListingGroupImagesOk} className="inline-flex">
-                <input type="hidden" name="legacyGroupListingIdsJson" value={JSON.stringify(listingIds)} />
-                <ImageOkMarkButton />
-              </form>
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Does not pass</span>
-              <AdminLegacyVariantListingGroupRejectForm
-                listingIds={listingIds}
-                className="max-w-md"
-                rejectionReasonLegend="Why it does not pass"
-              />
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {allPrintifyReady ? (
-        <div className="mt-4 rounded-lg border border-zinc-800/80 bg-zinc-950/30 p-3">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Decision (all sizes)</p>
-          <p className="mt-1 text-xs text-zinc-500">
-            Approve or reject applies to every size row in this legacy group together.
-          </p>
-          <div className="mt-3 flex flex-wrap items-end gap-6">
-            <div className="flex min-w-0 flex-col gap-1">
-              <span className="text-[10px] text-zinc-600">Approve</span>
-              <AdminLegacyVariantListingGroupApproveForm
-                listingIds={listingIds}
-                approveDisabled={groupApproveDisabled}
-              />
-              {groupApproveDisabled ? (
-                <span className="text-[10px] text-zinc-600">
-                  Approve is disabled until every size has a hero image on its catalog product (sync Printify on each
-                  row if needed).
-                </span>
-              ) : null}
-            </div>
-            <AdminLegacyVariantListingGroupRejectForm listingIds={listingIds} className="max-w-md" />
-          </div>
-        </div>
-      ) : null}
-
-      <div className="mt-4 space-y-0">
-        {group.members.map(({ row, variantLabel }, idx) => (
-          <ListingRequestCard
-            key={row.id}
-            r={row}
-            printifyCatalogPickList={printifyCatalogPickList}
-            r2Configured={r2Configured}
-            groupedVariant={{ variantLabel, stacked: idx > 0 }}
-            suppressLegacyGroupStep3Decision={allPrintifyReady}
-            suppressLegacyGroupImageCheck={allAwaitingImageReview}
-          />
-        ))}
-      </div>
-    </li>
   );
 }
 
@@ -273,6 +103,9 @@ function AdminPrintifyMappingFormFields({
   onPrintifyProductDisplayBlur,
   printifyVariantId,
   setPrintifyVariantId,
+  omitVisiblePrintifyProductField = false,
+  omitOptionalPrintifyVariantField = false,
+  optionalPrintifyVariantFieldLabel,
 }: {
   r: ListingRequestTabRow;
   needsPrintifyVariant: boolean;
@@ -285,52 +118,62 @@ function AdminPrintifyMappingFormFields({
   onPrintifyProductDisplayBlur: () => void;
   printifyVariantId: string;
   setPrintifyVariantId: (v: string) => void;
+  /** Submit product id via hidden input only (e.g. multi-size group: first row owns the visible field). */
+  omitVisiblePrintifyProductField?: boolean;
+  /** Manual fulfillment: hide optional variant UI (first multi-size row uses product only; other rows map variant). */
+  omitOptionalPrintifyVariantField?: boolean;
+  /** Overrides the default optional variant label (e.g. multi-size follower rows). */
+  optionalPrintifyVariantFieldLabel?: string;
 }) {
   return (
     <>
       <input type="hidden" name="listingId" value={r.id} />
-      <label className="block text-xs text-zinc-500">
-        Printify product
-        {catalogPickEnabled ? (
-          <span className="mt-0.5 block text-[10px] font-normal normal-case tracking-normal text-zinc-600">
-            Pick from the list: <span className="font-medium text-zinc-500">name</span> first, then id (after the
-            middle dot). You can paste a raw Printify product id; it normalizes on blur when it matches the catalog.
-            Default checkout variant is taken from the catalog for the product you pick.
-          </span>
-        ) : null}
-        {catalogPickEnabled ? (
-          <>
-            <input type="hidden" name="printifyProductId" value={printifyProductId} />
+      {omitVisiblePrintifyProductField ? (
+        <input type="hidden" name="printifyProductId" value={printifyProductId} />
+      ) : (
+        <label className="block text-xs text-zinc-500">
+          Printify product
+          {catalogPickEnabled ? (
+            <span className="mt-0.5 block text-[10px] font-normal normal-case tracking-normal text-zinc-600">
+              Pick from the list: <span className="font-medium text-zinc-500">name</span> first, then id (after the
+              middle dot). You can paste a raw Printify product id; it normalizes on blur when it matches the catalog.
+              Default checkout variant is taken from the catalog for the product you pick.
+            </span>
+          ) : null}
+          {catalogPickEnabled ? (
+            <>
+              <input type="hidden" name="printifyProductId" value={printifyProductId} />
+              <input
+                required
+                value={printifyProductDisplay}
+                onChange={(e) => onPrintifyProductDisplayChange(e.target.value)}
+                onBlur={onPrintifyProductDisplayBlur}
+                className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs text-zinc-200"
+                autoComplete="off"
+                aria-invalid={Boolean(printifyProductDisplay.trim()) && !printifyProductId.trim()}
+                list={`printify-product-pick-${r.id}`}
+              />
+              <datalist id={`printify-product-pick-${r.id}`}>
+                {printifyCatalogPickList.map((p) => (
+                  <option
+                    key={p.id}
+                    value={formatCatalogProductDisplay(p.title.trim() || p.id, p.id.trim())}
+                  />
+                ))}
+              </datalist>
+            </>
+          ) : (
             <input
+              name="printifyProductId"
               required
-              value={printifyProductDisplay}
-              onChange={(e) => onPrintifyProductDisplayChange(e.target.value)}
-              onBlur={onPrintifyProductDisplayBlur}
-              className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs text-zinc-200"
+              value={printifyProductId}
+              onChange={(e) => setPrintifyProductId(e.target.value)}
+              className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 font-mono text-xs text-zinc-200"
               autoComplete="off"
-              aria-invalid={Boolean(printifyProductDisplay.trim()) && !printifyProductId.trim()}
-              list={`printify-product-pick-${r.id}`}
             />
-            <datalist id={`printify-product-pick-${r.id}`}>
-              {printifyCatalogPickList.map((p) => (
-                <option
-                  key={p.id}
-                  value={formatCatalogProductDisplay(p.title.trim() || p.id, p.id.trim())}
-                />
-              ))}
-            </datalist>
-          </>
-        ) : (
-          <input
-            name="printifyProductId"
-            required
-            value={printifyProductId}
-            onChange={(e) => setPrintifyProductId(e.target.value)}
-            className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 font-mono text-xs text-zinc-200"
-            autoComplete="off"
-          />
-        )}
-      </label>
+          )}
+        </label>
+      )}
       {needsPrintifyVariant && catalogPickEnabled ? (
         <input type="hidden" name="printifyVariantId" value={printifyVariantId} required />
       ) : needsPrintifyVariant ? (
@@ -349,16 +192,21 @@ function AdminPrintifyMappingFormFields({
           />
         </details>
       ) : !needsPrintifyVariant ? (
-        <label className="block text-xs text-zinc-500">
-          Variant ID (optional — leave empty for manual fulfillment)
-          <input
-            name="printifyVariantId"
-            value={printifyVariantId}
-            onChange={(e) => setPrintifyVariantId(e.target.value)}
-            className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 font-mono text-xs text-zinc-200"
-            autoComplete="off"
-          />
-        </label>
+        omitOptionalPrintifyVariantField ? (
+          <input type="hidden" name="printifyVariantId" value={printifyVariantId} />
+        ) : (
+          <label className="block text-xs text-zinc-500">
+            {optionalPrintifyVariantFieldLabel ??
+              "Variant ID (optional — leave empty for manual fulfillment)"}
+            <input
+              name="printifyVariantId"
+              value={printifyVariantId}
+              onChange={(e) => setPrintifyVariantId(e.target.value)}
+              className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 font-mono text-xs text-zinc-200"
+              autoComplete="off"
+            />
+          </label>
+        )
       ) : null}
     </>
   );
@@ -617,10 +465,11 @@ function adminQueueStatusChipClass(status: ListingRequestStatus): string {
   }
 }
 
-const imageOkPillBase =
-  "inline-flex items-center justify-center gap-1 rounded-full bg-emerald-950/45 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-200/95 ring-1 ring-emerald-800/50";
-const imageOkPillSubmit = `${imageOkPillBase} cursor-pointer transition hover:bg-emerald-950/60 hover:ring-emerald-700/55 disabled:cursor-not-allowed disabled:opacity-65`;
-const imageOkPillSubmitPending = `${imageOkPillBase} cursor-wait opacity-80 ring-emerald-800/40`;
+/** Step 1: confirm images pass — neutral until clicked (then server advances status). */
+const imageOkNeutralSubmit =
+  "inline-flex items-center justify-center gap-1 rounded-full border border-zinc-600 bg-zinc-950/50 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 ring-1 ring-zinc-800 cursor-pointer transition hover:border-zinc-500 hover:bg-zinc-900/80 hover:text-zinc-300 disabled:cursor-not-allowed disabled:opacity-65";
+const imageOkNeutralSubmitPending =
+  "inline-flex items-center justify-center gap-1 rounded-full border border-zinc-600 bg-zinc-950/50 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 ring-1 ring-zinc-800 cursor-wait opacity-80";
 /** Step 2: unselected “Image OK” toggle before affirming Printify save. */
 const imageOkNeutralToggle =
   "inline-flex min-h-[2rem] min-w-[7.5rem] items-center justify-center gap-1 rounded-full border border-zinc-600 bg-zinc-950/50 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 ring-1 ring-zinc-800 transition-all duration-200 ease-out hover:border-zinc-500 hover:bg-zinc-900/80 hover:text-zinc-300";
@@ -634,20 +483,11 @@ function ImageOkMarkButton() {
     <button
       type="submit"
       disabled={pending}
-      className={pending ? imageOkPillSubmitPending : imageOkPillSubmit}
+      className={pending ? imageOkNeutralSubmitPending : imageOkNeutralSubmit}
       aria-busy={pending}
-      title="Reference images pass the print-ready check"
+      title="Confirm that reference images pass the print-ready check"
     >
-      {pending ? (
-        "Saving…"
-      ) : (
-        <>
-          <span className="text-emerald-400" aria-hidden>
-            ✓
-          </span>
-          Passes check
-        </>
-      )}
+      {pending ? "Saving…" : "Passes check?"}
     </button>
   );
 }
@@ -726,6 +566,9 @@ function ListingRequestCard({
   groupedVariant,
   suppressLegacyGroupStep3Decision = false,
   suppressLegacyGroupImageCheck = false,
+  suppressLegacyGroupPrintifyStep1Block = false,
+  suppressLegacyGroupPrintifyStep2Block = false,
+  legacyGroupPrintifyStep1Ok,
 }: {
   r: ListingRequestTabRow;
   printifyCatalogPickList: PrintifyCatalogPickEntry[];
@@ -736,11 +579,24 @@ function ListingRequestCard({
   suppressLegacyGroupStep3Decision?: boolean;
   /** When true with {@link groupedVariant}, hide per-row Step 1 image check (shown once on the group card). */
   suppressLegacyGroupImageCheck?: boolean;
+  /** When all sizes are `images_ok`, Step 1 (Image OK) lives on the group card; per-row Step 1 is hidden. */
+  suppressLegacyGroupPrintifyStep1Block?: boolean;
+  /** Parent group’s Step 1 Image OK toggle — required before Save Printify on each row. */
+  legacyGroupPrintifyStep1Ok?: boolean;
+  /** When true, Step 2 Printify mapping is on the group card (not repeated per size row). */
+  suppressLegacyGroupPrintifyStep2Block?: boolean;
 }) {
   const imgs = Array.isArray(r.requestImages) ? (r.requestImages as string[]) : [];
   const isAwaitingImageReview = r.requestStatus === ListingRequestStatus.submitted;
   const isImagesOkStep = r.requestStatus === ListingRequestStatus.images_ok;
   const isPrintifyReady = r.requestStatus === ListingRequestStatus.printify_item_created;
+  const showPrintifyWorkflowSection =
+    (isImagesOkStep &&
+      (!suppressLegacyGroupPrintifyStep1Block || !suppressLegacyGroupPrintifyStep2Block)) ||
+    isPrintifyReady;
+  /** Nested legacy size row: trim Step 2 chrome; mapping is framed by the group card / Step 3 resave. */
+  const compactNestedGroupInlineStep2 =
+    Boolean(groupedVariant && isImagesOkStep && !suppressLegacyGroupPrintifyStep2Block);
   const isApproved = r.requestStatus === ListingRequestStatus.approved;
   const adminRemoved = r.adminRemovedFromShopAt != null;
   const needsPrintifyVariant = r.product.fulfillmentType === FulfillmentType.printify;
@@ -775,6 +631,9 @@ function ListingRequestCard({
   const [printifyVariantId, setPrintifyVariantId] = useState(() => r.listingPrintifyVariantId ?? "");
   /** Step 2 only: admin must click to affirm Image OK before Save Printify is enabled. */
   const [printifyStepImageOk, setPrintifyStepImageOk] = useState(false);
+  const effectivePrintifyStepOk = suppressLegacyGroupPrintifyStep1Block
+    ? (legacyGroupPrintifyStep1Ok ?? false)
+    : printifyStepImageOk;
 
   const printifyHeroPreview = useMemo(
     () => productImageUrlsUnionHero(r.product)[0] ?? null,
@@ -782,8 +641,9 @@ function ListingRequestCard({
   );
 
   useEffect(() => {
+    if (suppressLegacyGroupPrintifyStep1Block) return;
     setPrintifyStepImageOk(false);
-  }, [r.id, r.requestStatus]);
+  }, [r.id, r.requestStatus, suppressLegacyGroupPrintifyStep1Block]);
 
   useEffect(() => {
     const p = (r.listingPrintifyProductId ?? "").trim();
@@ -907,17 +767,22 @@ function ListingRequestCard({
             <p className="mt-2 text-xs text-zinc-600">No image URLs submitted.</p>
           )}
         </>
+      ) : suppressLegacyGroupPrintifyStep2Block ? (
+        statusChip ? (
+          <div className="flex flex-wrap items-start gap-3">
+            <p className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              <span className="rounded-full bg-emerald-950/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-300/90 ring-1 ring-emerald-800/50">
+                {statusChip}
+              </span>
+            </p>
+          </div>
+        ) : null
       ) : (
         <>
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start gap-3">
             <p className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
               <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
                 Option: {groupedVariant.variantLabel}
-              </span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide ${adminQueueStatusChipClass(r.requestStatus)}`}
-              >
-                {adminQueueStatusLabel(r.requestStatus)}
               </span>
               {statusChip ? (
                 <span className="rounded-full bg-emerald-950/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-300/90 ring-1 ring-emerald-800/50">
@@ -925,17 +790,6 @@ function ListingRequestCard({
                 </span>
               ) : null}
             </p>
-            <form action={adminRemoveListingFromRequestsQueue} className="shrink-0">
-              <input type="hidden" name="listingId" value={r.id} />
-              <button
-                type="submit"
-                title="Remove this catalog stub from the queue"
-                aria-label="Remove from queue"
-                className="inline-flex size-7 items-center justify-center rounded border border-zinc-700 bg-zinc-900/80 text-sm leading-none text-zinc-500 hover:border-zinc-600 hover:bg-zinc-800 hover:text-zinc-300"
-              >
-                ×
-              </button>
-            </form>
           </div>
           <p className="mt-1 text-xs text-zinc-500">
             Catalog stub: <span className="text-zinc-400">{r.product.name}</span> ({r.product.slug}) ·{" "}
@@ -957,7 +811,7 @@ function ListingRequestCard({
           </p>
           <div className="flex flex-wrap items-start gap-8">
             <div className="flex min-w-0 flex-col gap-1.5">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Passes check</span>
+              <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Passes check?</span>
               <form action={adminMarkListingImagesOk} className="inline-flex">
                 <input type="hidden" name="listingId" value={r.id} />
                 <ImageOkMarkButton />
@@ -975,84 +829,90 @@ function ListingRequestCard({
         </div>
       ) : null}
 
-      {(isImagesOkStep || isPrintifyReady) ? (
+      {showPrintifyWorkflowSection ? (
         <div className="mt-4 space-y-3 border-t border-zinc-800 pt-4">
       {isImagesOkStep ? (
         <>
-          <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Step 1 - Image Check</p>
-          <div
-            className="flex flex-wrap items-start gap-8"
-            role="group"
-            aria-label="Step 1 image check: Image OK or image rejected"
-          >
-            <div className="flex min-w-0 max-w-xs flex-col gap-1.5">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Image OK</span>
-              <button
-                type="button"
-                onClick={() => setPrintifyStepImageOk((v) => !v)}
-                aria-pressed={printifyStepImageOk}
-                aria-describedby={`image-ok-step2-hint-${r.id}`}
-                className={printifyStepImageOk ? imageOkAffirmedToggle : imageOkNeutralToggle}
-                title={
-                  printifyStepImageOk
-                    ? "Click to clear passed check for this step (re-enable reject)"
-                    : "Click when reference images are acceptable — required before saving Printify IDs"
-                }
+          {!suppressLegacyGroupPrintifyStep1Block ? (
+            <>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Step 1 - Image Check</p>
+              <div
+                className="flex flex-wrap items-start gap-8"
+                role="group"
+                aria-label="Step 1 image check: Image OK or image rejected"
               >
-                {printifyStepImageOk ? (
-                  <>
-                    <span className="text-emerald-200 drop-shadow-sm" aria-hidden>
-                      ✓
-                    </span>
-                    Passed check
-                  </>
-                ) : (
-                  "Image OK"
-                )}
-              </button>
-              <span id={`image-ok-live-${r.id}`} className="sr-only" aria-live="polite" aria-atomic="true">
-                {printifyStepImageOk
-                  ? "Passed check. Reject is disabled. You can save Printify IDs."
-                  : "Image OK not selected. Choose Image OK or reject."}
-              </span>
-              <p
-                id={`image-ok-step2-hint-${r.id}`}
-                className={`text-[11px] leading-snug transition-colors duration-200 ${printifyStepImageOk ? "text-emerald-200/90" : "text-zinc-600"}`}
-              >
-                {printifyStepImageOk ? (
-                  <>
-                    <span className="font-medium text-emerald-300/95">Confirmed for this step.</span> Enter Printify
-                    product / variant IDs below and save — then step 3 (admin images, then approve or reject). The shop
-                    still shows{" "}
-                    <span className="font-medium text-zinc-400">In review</span> until you approve.
-                  </>
-                ) : (
-                  <>
-                    Click <span className="font-medium text-zinc-500">Image OK</span> for clear green confirmation,
-                    then fill Printify IDs and save.
-                  </>
-                )}
-              </p>
-            </div>
-            <div
-              className={`flex min-w-0 flex-1 flex-col gap-1.5 transition-opacity duration-200 ${printifyStepImageOk ? "opacity-40 saturate-50" : ""}`}
-              aria-disabled={printifyStepImageOk}
-            >
-              <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Image rejected</span>
-              <AdminListingRejectForm
-                listingId={r.id}
-                className="max-w-md"
-                rejectionReasonLegend="Why images are rejected"
-                disabled={printifyStepImageOk}
-              />
-            </div>
-          </div>
+                <div className="flex min-w-0 max-w-xs flex-col gap-1.5">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Image OK</span>
+                  <button
+                    type="button"
+                    onClick={() => setPrintifyStepImageOk((v) => !v)}
+                    aria-pressed={printifyStepImageOk}
+                    aria-describedby={`image-ok-step2-hint-${r.id}`}
+                    className={printifyStepImageOk ? imageOkAffirmedToggle : imageOkNeutralToggle}
+                    title={
+                      printifyStepImageOk
+                        ? "Click to clear passed check for this step (re-enable reject)"
+                        : "Click when reference images are acceptable — required before saving Printify IDs"
+                    }
+                  >
+                    {printifyStepImageOk ? (
+                      <>
+                        <span className="text-emerald-200 drop-shadow-sm" aria-hidden>
+                          ✓
+                        </span>
+                        Passed check
+                      </>
+                    ) : (
+                      "Image OK"
+                    )}
+                  </button>
+                  <span id={`image-ok-live-${r.id}`} className="sr-only" aria-live="polite" aria-atomic="true">
+                    {printifyStepImageOk
+                      ? "Passed check. Reject is disabled. You can save Printify IDs."
+                      : "Image OK not selected. Choose Image OK or reject."}
+                  </span>
+                  <p
+                    id={`image-ok-step2-hint-${r.id}`}
+                    className={`text-[11px] leading-snug transition-colors duration-200 ${printifyStepImageOk ? "text-emerald-200/90" : "text-zinc-600"}`}
+                  >
+                    {printifyStepImageOk ? (
+                      <>
+                        <span className="font-medium text-emerald-300/95">Confirmed for this step.</span> Enter Printify
+                        product / variant IDs below and save — then step 3 (admin images, then approve or reject). The shop
+                        still shows{" "}
+                        <span className="font-medium text-zinc-400">In review</span> until you approve.
+                      </>
+                    ) : (
+                      <>
+                        Click <span className="font-medium text-zinc-500">Image OK</span> for clear green confirmation,
+                        then fill Printify IDs and save.
+                      </>
+                    )}
+                  </p>
+                </div>
+                <div
+                  className={`flex min-w-0 flex-1 flex-col gap-1.5 transition-opacity duration-200 ${printifyStepImageOk ? "opacity-40 saturate-50" : ""}`}
+                  aria-disabled={printifyStepImageOk}
+                >
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Image rejected</span>
+                  <AdminListingRejectForm
+                    listingId={r.id}
+                    className="max-w-md"
+                    rejectionReasonLegend="Why images are rejected"
+                    disabled={printifyStepImageOk}
+                  />
+                </div>
+              </div>
+            </>
+          ) : null}
+          {!suppressLegacyGroupPrintifyStep2Block ? (
+            <>
           <form
           id={`admin-printify-save-${r.id}`}
           action={adminMarkPrintifyListingReady}
           className="space-y-3"
           onSubmit={(e) => {
-            if (!printifyStepImageOk) {
+            if (!effectivePrintifyStepOk) {
               e.preventDefault();
               return;
             }
@@ -1064,9 +924,11 @@ function ListingRequestCard({
             }
           }}
         >
-          <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-            Step 2 - Printify Item Mapping
-          </p>
+          {!compactNestedGroupInlineStep2 ? (
+            <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+              Step 2 - Printify Item Mapping
+            </p>
+          ) : null}
           <AdminPrintifyMappingFormFields
             r={r}
             needsPrintifyVariant={needsPrintifyVariant}
@@ -1081,32 +943,42 @@ function ListingRequestCard({
             setPrintifyVariantId={setPrintifyVariantId}
           />
           </form>
-          <div className="border-t border-zinc-800/80 pt-3">
+          <div className={compactNestedGroupInlineStep2 ? "pt-2" : "border-t border-zinc-800/80 pt-3"}>
             <div className="flex min-w-0 flex-col gap-1.5">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
-                Save Printify mapping (then Step 3 — admin images &amp; approve)
-              </span>
+              {!compactNestedGroupInlineStep2 ? (
+                <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
+                  Save Printify mapping (then Step 3 — admin images &amp; approve)
+                </span>
+              ) : null}
               <button
                 type="submit"
                 form={`admin-printify-save-${r.id}`}
-                disabled={!printifyStepImageOk}
+                disabled={!effectivePrintifyStepOk}
                 title={
-                  printifyStepImageOk
+                  effectivePrintifyStepOk
                     ? undefined
-                    : "Click Image OK above before saving Printify IDs"
+                    : suppressLegacyGroupPrintifyStep1Block
+                      ? "Click Image OK on the multi-size request above before saving Printify IDs"
+                      : "Click Image OK above before saving Printify IDs"
                 }
                 className="w-fit rounded bg-sky-900/40 px-3 py-1.5 text-xs text-sky-200 hover:bg-sky-900/60 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 Save Printify IDs &amp; mark “Printify item created”
               </button>
             </div>
-            <PrintifyCatalogSyncHint lastSyncedAtIso={r.listingPrintifyCatalogSyncedAt} />
+            {!compactNestedGroupInlineStep2 ? (
+              <PrintifyCatalogSyncHint lastSyncedAtIso={r.listingPrintifyCatalogSyncedAt} />
+            ) : null}
           </div>
-          <p className="text-[11px] leading-snug text-zinc-600">
-            After save, <span className="font-medium text-zinc-500">Step 3 — Admin images</span> (optional
-            second image) and <span className="font-medium text-zinc-500">Approve</span> /{" "}
-            <span className="font-medium text-zinc-500">Reject</span> appear below.
-          </p>
+          {!compactNestedGroupInlineStep2 ? (
+            <p className="text-[11px] leading-snug text-zinc-600">
+              After save, <span className="font-medium text-zinc-500">Step 3 — Admin images</span> (optional
+              second image) and <span className="font-medium text-zinc-500">Approve</span> /{" "}
+              <span className="font-medium text-zinc-500">Reject</span> appear below.
+            </p>
+          ) : null}
+            </>
+          ) : null}
         </>
       ) : null}
 
@@ -1310,14 +1182,12 @@ function ListingRequestCard({
 
 export function AdminListingRequestsTab(props: {
   rows: ListingRequestTabRow[];
-  /** Baseline catalog rows — used to merge legacy per-variant stubs into one queue card. */
-  adminCatalogItems: AdminBaselineRow[];
   /** Printify API catalog for product-ID autocomplete + default variant IDs. */
   printifyCatalogPickList?: PrintifyCatalogPickEntry[];
   /** When false, hide admin secondary image upload (R2 env missing). */
   r2Configured?: boolean;
 }) {
-  const { rows, adminCatalogItems, printifyCatalogPickList = [], r2Configured = true } = props;
+  const { rows, printifyCatalogPickList = [], r2Configured = true } = props;
   const [tab, setTab] = useState<RequestsTabId>("new");
 
   const newRows = useMemo(
@@ -1338,30 +1208,10 @@ export function AdminListingRequestsTab(props: {
     [rows],
   );
 
-  const groupedNewRows = useMemo(
-    () =>
-      sortGroupedByLatestUpdate(
-        adminCatalogItems.length > 0
-          ? groupLegacyBaselineVariantAdminQueueRows(newRows, adminCatalogItems)
-          : newRows.map((row) => ({ kind: "single" as const, row })),
-      ),
-    [newRows, adminCatalogItems],
-  );
-
-  const groupedFeeRows = useMemo(
-    () =>
-      sortGroupedByLatestUpdate(
-        adminCatalogItems.length > 0
-          ? groupLegacyBaselineVariantAdminQueueRows(feeRows, adminCatalogItems)
-          : feeRows.map((row) => ({ kind: "single" as const, row })),
-      ),
-    [feeRows, adminCatalogItems],
-  );
-
   const setTabNew = useCallback(() => setTab("new"), []);
   const setTabFee = useCallback(() => setTab("fee"), []);
 
-  const visibleGrouped = tab === "new" ? groupedNewRows : groupedFeeRows;
+  const visibleRows = tab === "new" ? newRows : feeRows;
 
   return (
     <section aria-label="Listing requests">
@@ -1369,7 +1219,7 @@ export function AdminListingRequestsTab(props: {
       <p className="mt-1 text-xs text-zinc-600">
         <strong className="font-medium text-zinc-500">New requests</strong>: submitted — image check (pass or fail /
         reject); then Step 1 — Image Check + Step 2 — Printify Item Mapping (or reject); Step 3 — admin listing images
-        (optional second image) then approve or reject (one listing per catalog product; all variants together).{" "}
+        (optional second image) then approve or reject (one listing per catalog product).{" "}
         <strong className="font-medium text-zinc-500">Awaiting fee</strong>: approved listings that still need a paid
         publication fee (not in the free slots). Once the fee is recorded or the slot is free, the row leaves this tab
         — use <strong className="font-medium text-zinc-500">Shop watch</strong> for live / frozen / removed listings.
@@ -1394,7 +1244,7 @@ export function AdminListingRequestsTab(props: {
           }`}
         >
           New requests
-          <span className="ml-1.5 tabular-nums text-zinc-500">({groupedNewRows.length})</span>
+          <span className="ml-1.5 tabular-nums text-zinc-500">({newRows.length})</span>
         </button>
         <button
           type="button"
@@ -1410,7 +1260,7 @@ export function AdminListingRequestsTab(props: {
           }`}
         >
           Awaiting listing fee
-          <span className="ml-1.5 tabular-nums text-zinc-500">({groupedFeeRows.length})</span>
+          <span className="ml-1.5 tabular-nums text-zinc-500">({feeRows.length})</span>
         </button>
       </div>
 
@@ -1420,25 +1270,16 @@ export function AdminListingRequestsTab(props: {
         aria-labelledby={tab === "new" ? "listing-requests-tab-new" : "listing-requests-tab-fee"}
         className="mt-4"
       >
-        {visibleGrouped.length > 0 ? (
+        {visibleRows.length > 0 ? (
           <ul className="space-y-4">
-            {visibleGrouped.map((g) =>
-              g.kind === "single" ? (
-                <ListingRequestCard
-                  key={g.row.id}
-                  r={g.row}
-                  printifyCatalogPickList={printifyCatalogPickList}
-                  r2Configured={r2Configured}
-                />
-              ) : (
-                <ListingRequestGroupedCard
-                  key={g.members.map((m) => m.row.id).join("-")}
-                  group={g}
-                  printifyCatalogPickList={printifyCatalogPickList}
-                  r2Configured={r2Configured}
-                />
-              ),
-            )}
+            {visibleRows.map((r) => (
+              <ListingRequestCard
+                key={r.id}
+                r={r}
+                printifyCatalogPickList={printifyCatalogPickList}
+                r2Configured={r2Configured}
+              />
+            ))}
           </ul>
         ) : (
           <p className="text-sm text-zinc-600">

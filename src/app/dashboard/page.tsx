@@ -234,6 +234,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const dashTab:
     | "setup"
+    | "shopProfile"
     | "requestListing"
     | "listings"
     | "notifications"
@@ -245,6 +246,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     : dashStr === "listings" ||
         dashStr === "orders" ||
         dashStr === "setup" ||
+        dashStr === "shopProfile" ||
         dashStr === "notifications" ||
         dashStr === "requestListing" ||
         dashStr === "support"
@@ -383,6 +385,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             ? {
                 setupTabsKey,
                 shop: {
+                  shopSlug: shop.slug,
                   displayName: shop.displayName,
                   profileImageUrl: shop.profileImageUrl,
                   welcomeMessage: shop.welcomeMessage,

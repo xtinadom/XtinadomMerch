@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useCallback, useMemo, useState } from "react";
-import { adminDeleteListingRemovalRecord, adminFreezeShopListing } from "@/actions/admin-marketplace";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { adminDeleteShopListingRecord, adminFreezeShopListing } from "@/actions/admin-marketplace";
 import { DashboardNoticeBody } from "@/components/dashboard/DashboardNoticeBody";
 
 export type ShopWatchDetail = {
@@ -105,121 +105,122 @@ function DetailSection(props: {
         {items.map((d) => (
           <li
             key={d.listingId}
-            className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-2.5"
+            className="flex flex-col gap-3 rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-2.5"
           >
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span className="font-medium text-zinc-200">{d.productName}</span>
-                <span className="font-mono text-[11px] text-zinc-600">{d.productSlug}</span>
-                {d.listingFeeKind === "paid" ? (
-                  <span
-                    className="select-none text-sm font-semibold text-blue-400"
-                    title="Listing publication fee paid"
-                    aria-label="Listing publication fee paid"
-                  >
-                    $
-                  </span>
-                ) : d.listingFeeKind === "free_slot" ? (
-                  <span
-                    className="select-none text-[11px] font-medium text-zinc-500"
-                    title="Standard free publication slot (first listings in the shop)"
-                    aria-label="Standard free publication slot"
-                  >
-                    --
-                  </span>
-                ) : d.listingFeeKind === "free_promo" ? (
-                  <span
-                    className="select-none text-[11px] font-medium text-emerald-300/90"
-                    title="Complimentary listing: founder shop, promotion, or comp slot"
-                    aria-label="Complimentary or promotional listing"
-                  >
-                    :)
-                  </span>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="font-medium text-zinc-200">{d.productName}</span>
+                  <span className="font-mono text-[11px] text-zinc-600">{d.productSlug}</span>
+                  {d.listingFeeKind === "paid" ? (
+                    <span
+                      className="select-none text-sm font-semibold text-blue-400"
+                      title="Listing publication fee paid"
+                      aria-label="Listing publication fee paid"
+                    >
+                      $
+                    </span>
+                  ) : d.listingFeeKind === "free_slot" ? (
+                    <span
+                      className="select-none text-[11px] font-medium text-zinc-500"
+                      title="Standard free publication slot (first listings in the shop)"
+                      aria-label="Standard free publication slot"
+                    >
+                      --
+                    </span>
+                  ) : d.listingFeeKind === "free_promo" ? (
+                    <span
+                      className="select-none text-[11px] font-medium text-emerald-300/90"
+                      title="Complimentary listing: founder shop, promotion, or comp slot"
+                      aria-label="Complimentary or promotional listing"
+                    >
+                      :)
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1.5 flex flex-wrap gap-2">
+                  {d.rowKind === "active" ? (
+                    <span className="rounded-full bg-emerald-950/45 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-200/90 ring-1 ring-emerald-800/50">
+                      Active
+                    </span>
+                  ) : null}
+                  {d.rowKind === "frozen" ? (
+                    <span className="rounded-full bg-sky-950/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-sky-200/90 ring-1 ring-sky-800/50">
+                      Frozen
+                    </span>
+                  ) : null}
+                  {d.rowKind === "removed" ? (
+                    <span className="rounded-full bg-fuchsia-950/45 px-2 py-0.5 text-[10px] font-medium tracking-wide text-fuchsia-200/90 ring-1 ring-fuchsia-800/50">
+                      Creator removed
+                    </span>
+                  ) : null}
+                  {d.rowKind === "other" ? (
+                    <span
+                      className={
+                        d.pipelineStatus === "rejected"
+                          ? "rounded-full bg-rose-950/55 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-rose-200/95 ring-1 ring-rose-800/65"
+                          : d.pipelineStatus === "approved"
+                            ? "rounded-full bg-emerald-950/45 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-200/90 ring-1 ring-emerald-800/50"
+                            : d.pipelineStatus === "submitted"
+                              ? "rounded-full bg-amber-950/45 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-200/90 ring-1 ring-amber-900/50"
+                              : "rounded-full bg-zinc-800/80 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-300 ring-1 ring-zinc-600/80"
+                      }
+                    >
+                      {(d.pipelineStatus ?? "other").replace(/_/g, " ")}
+                    </span>
+                  ) : null}
+                  {d.rowKind === "other" && (d.listingActive != null || d.productActive != null) ? (
+                    <span className="text-[10px] text-zinc-500">
+                      listing {d.listingActive ? "on" : "off"} · product {d.productActive ? "on" : "off"}
+                    </span>
+                  ) : null}
+                  {d.queueRemoved ? (
+                    <span className="rounded-full bg-amber-950/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-200/90 ring-1 ring-amber-800/50">
+                      Removed from queue
+                    </span>
+                  ) : null}
+                </p>
+                {d.pipelineStatus === "rejected" && d.rejectionReasonText ? (
+                  <p className="mt-1.5 text-[10px] leading-snug text-rose-200/85">
+                    <DashboardNoticeBody body={d.rejectionReasonText} />
+                  </p>
+                ) : null}
+                {showDelete ? (
+                  <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                    <span className="font-medium text-zinc-600">Notes: </span>
+                    {d.notes?.trim() ? (
+                      <span className="text-zinc-400">{d.notes.trim()}</span>
+                    ) : (
+                      <span className="text-zinc-600">None</span>
+                    )}
+                  </p>
                 ) : null}
               </div>
-              <p className="mt-1.5 flex flex-wrap gap-2">
-                {d.rowKind === "active" ? (
-                  <span className="rounded-full bg-emerald-950/45 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-200/90 ring-1 ring-emerald-800/50">
-                    Active
-                  </span>
-                ) : null}
-                {d.rowKind === "frozen" ? (
-                  <span className="rounded-full bg-sky-950/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-sky-200/90 ring-1 ring-sky-800/50">
-                    Frozen
-                  </span>
-                ) : null}
-                {d.rowKind === "removed" ? (
-                  <span className="rounded-full bg-fuchsia-950/45 px-2 py-0.5 text-[10px] font-medium tracking-wide text-fuchsia-200/90 ring-1 ring-fuchsia-800/50">
-                    Creator removed
-                  </span>
-                ) : null}
-                {d.rowKind === "other" ? (
-                  <span
-                    className={
-                      d.pipelineStatus === "rejected"
-                        ? "rounded-full bg-rose-950/55 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-rose-200/95 ring-1 ring-rose-800/65"
-                        : d.pipelineStatus === "approved"
-                          ? "rounded-full bg-emerald-950/45 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-200/90 ring-1 ring-emerald-800/50"
-                          : d.pipelineStatus === "submitted"
-                            ? "rounded-full bg-amber-950/45 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-200/90 ring-1 ring-amber-900/50"
-                            : "rounded-full bg-zinc-800/80 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-300 ring-1 ring-zinc-600/80"
-                    }
+              {showRemoveFromShop && canFreezeListingForShopWatch(d) ? (
+                <form action={adminFreezeShopListing} className="shrink-0 pt-0.5">
+                  <input type="hidden" name="listingId" value={d.listingId} />
+                  <button
+                    type="submit"
+                    title="Hides this listing from the creator’s public shop (same as Freeze on Listing requests)."
+                    className="rounded border border-amber-900/50 bg-amber-950/30 px-2.5 py-1 text-[11px] text-amber-200/90 transition hover:border-amber-700/50 hover:bg-amber-950/50"
                   >
-                    {(d.pipelineStatus ?? "other").replace(/_/g, " ")}
-                  </span>
-                ) : null}
-                {d.rowKind === "other" &&
-                (d.listingActive != null || d.productActive != null) ? (
-                  <span className="text-[10px] text-zinc-500">
-                    listing {d.listingActive ? "on" : "off"} · product {d.productActive ? "on" : "off"}
-                  </span>
-                ) : null}
-                {d.queueRemoved ? (
-                  <span className="rounded-full bg-amber-950/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-200/90 ring-1 ring-amber-800/50">
-                    Removed from queue
-                  </span>
-                ) : null}
-              </p>
-              {d.pipelineStatus === "rejected" && d.rejectionReasonText ? (
-                <p className="mt-1.5 text-[10px] leading-snug text-rose-200/85">
-                  <DashboardNoticeBody body={d.rejectionReasonText} />
-                </p>
+                    Remove
+                  </button>
+                </form>
               ) : null}
               {showDelete ? (
-                <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                  <span className="font-medium text-zinc-600">Notes: </span>
-                  {d.notes?.trim() ? (
-                    <span className="text-zinc-400">{d.notes.trim()}</span>
-                  ) : (
-                    <span className="text-zinc-600">None</span>
-                  )}
-                </p>
+                <form action={adminDeleteShopListingRecord} className="shrink-0 pt-0.5">
+                  <input type="hidden" name="listingId" value={d.listingId} />
+                  <button
+                    type="submit"
+                    title="Permanently delete this shop listing row. Clears featured-home pointer if needed; order lines keep a product snapshot. This cannot be undone."
+                    className="rounded border border-zinc-600 px-2 py-1 text-[11px] text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900"
+                  >
+                    delete
+                  </button>
+                </form>
               ) : null}
             </div>
-            {showRemoveFromShop && canFreezeListingForShopWatch(d) ? (
-              <form action={adminFreezeShopListing} className="shrink-0 pt-0.5">
-                <input type="hidden" name="listingId" value={d.listingId} />
-                <button
-                  type="submit"
-                  title="Hides this listing from the creator’s public shop (same as Freeze on Listing requests)."
-                  className="rounded border border-amber-900/50 bg-amber-950/30 px-2.5 py-1 text-[11px] text-amber-200/90 transition hover:border-amber-700/50 hover:bg-amber-950/50"
-                >
-                  Remove
-                </button>
-              </form>
-            ) : null}
-            {showDelete ? (
-              <form action={adminDeleteListingRemovalRecord} className="shrink-0 pt-0.5">
-                <input type="hidden" name="listingId" value={d.listingId} />
-                <button
-                  type="submit"
-                  title="Clears removal audit (freeze, creator remove, queue timestamps, notes). Rejected-only rows also reset to draft so they leave this history. Does not delete the listing record."
-                  className="rounded border border-zinc-600 px-2 py-1 text-[11px] text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900"
-                >
-                  delete
-                </button>
-              </form>
-            ) : null}
           </li>
         ))}
       </ul>
@@ -240,10 +241,28 @@ function StatBlock(props: { label: string; value: string | number; hint?: string
 export function AdminShopWatchTab(props: {
   rows: ShopWatchRow[];
   marketplaceStats: ShopWatchMarketplaceStats;
+  /** When opening `/admin?tab=shop-watch&watchShop=<id>`, expand that shop’s listing details. */
+  initialExpandedShopId?: string | null;
 }) {
-  const { rows, marketplaceStats: stats } = props;
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const { rows, marketplaceStats: stats, initialExpandedShopId = null } = props;
+  const [expanded, setExpanded] = useState<Set<string>>(() => {
+    if (initialExpandedShopId && rows.some((r) => r.shopId === initialExpandedShopId)) {
+      return new Set([initialExpandedShopId]);
+    }
+    return new Set();
+  });
   const [tableFilter, setTableFilter] = useState<TableFilter>("all");
+
+  useEffect(() => {
+    if (!initialExpandedShopId) return;
+    if (!rows.some((r) => r.shopId === initialExpandedShopId)) return;
+    setExpanded((prev) => {
+      if (prev.has(initialExpandedShopId)) return prev;
+      const next = new Set(prev);
+      next.add(initialExpandedShopId);
+      return next;
+    });
+  }, [initialExpandedShopId, rows]);
 
   const toggle = useCallback((shopId: string) => {
     setExpanded((prev) => {
@@ -545,7 +564,7 @@ export function AdminShopWatchTab(props: {
                               title="Live"
                               tone="emerald"
                               items={mergedLiveSection}
-                              showDelete={false}
+                              showDelete
                               showRemoveFromShop
                             />
                           ) : null}
@@ -560,7 +579,7 @@ export function AdminShopWatchTab(props: {
                               title="Requested"
                               tone="amber"
                               items={mergedRequestedSection}
-                              showDelete={false}
+                              showDelete
                             />
                           ) : null}
                           {tableFilter === "all" && mergedPipelineOnly.length > 0 ? (
@@ -568,7 +587,7 @@ export function AdminShopWatchTab(props: {
                               title="Pipeline (draft / Printify)"
                               tone="zinc"
                               items={mergedPipelineOnly}
-                              showDelete={false}
+                              showDelete
                             />
                           ) : null}
                           {visibleListingCount === 0 ? (

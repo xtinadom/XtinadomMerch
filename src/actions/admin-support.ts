@@ -49,3 +49,45 @@ export async function adminSupportSendMessage(formData: FormData) {
 
   revalidatePath("/admin");
 }
+
+export async function adminSupportMarkResolved(formData: FormData) {
+  const admin = await getAdminSessionReadonly();
+  if (!admin.isAdmin) redirect("/admin/login");
+
+  const shopId = String(formData.get("shopId") ?? "").trim();
+  if (!shopId) return;
+
+  const shop = await prisma.shop.findFirst({
+    where: { id: shopId, slug: { not: PLATFORM_SHOP_SLUG } },
+    select: { id: true },
+  });
+  if (!shop) return;
+
+  await prisma.supportThread.updateMany({
+    where: { shopId: shop.id },
+    data: { resolvedAt: new Date(), updatedAt: new Date() },
+  });
+
+  revalidatePath("/admin");
+}
+
+export async function adminSupportMarkUnresolved(formData: FormData) {
+  const admin = await getAdminSessionReadonly();
+  if (!admin.isAdmin) redirect("/admin/login");
+
+  const shopId = String(formData.get("shopId") ?? "").trim();
+  if (!shopId) return;
+
+  const shop = await prisma.shop.findFirst({
+    where: { id: shopId, slug: { not: PLATFORM_SHOP_SLUG } },
+    select: { id: true },
+  });
+  if (!shop) return;
+
+  await prisma.supportThread.updateMany({
+    where: { shopId: shop.id },
+    data: { resolvedAt: null, updatedAt: new Date() },
+  });
+
+  revalidatePath("/admin");
+}

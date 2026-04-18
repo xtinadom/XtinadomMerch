@@ -342,7 +342,7 @@ export async function PrintifyInventoryTab({
                 }
               >
                 <h3 className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                  R2 listing images
+                  R2 image cleanup
                 </h3>
                 {r2PruneNotice?.variant === "preview" ? (
                   <p
@@ -350,8 +350,8 @@ export async function PrintifyInventoryTab({
                     className="mt-2 rounded-md border border-amber-900/50 bg-amber-950/30 px-2.5 py-1.5 text-[11px] text-amber-200/90"
                   >
                     <span className="font-medium text-amber-100/90">Preview:</span>{" "}
-                    {r2PruneNotice.listed} under <code className="text-amber-200/80">listing/</code>,{" "}
-                    {r2PruneNotice.referenced} referenced,{" "}
+                    {r2PruneNotice.listed} objects in the bucket, {r2PruneNotice.referenced} keys referenced from the
+                    database,{" "}
                     <span className="font-medium text-amber-100/90">{r2PruneNotice.orphans} orphan(s)</span>.
                   </p>
                 ) : null}
@@ -361,7 +361,8 @@ export async function PrintifyInventoryTab({
                     className="mt-2 rounded-md border border-emerald-900/50 bg-emerald-950/30 px-2.5 py-1.5 text-[11px] text-emerald-200/90"
                   >
                     <span className="font-medium text-emerald-100/90">Done.</span> Deleted {r2PruneNotice.deleted}{" "}
-                    orphan(s); scanned {r2PruneNotice.listed}, {r2PruneNotice.referenced} still referenced.
+                    orphan object(s); scanned {r2PruneNotice.listed} in bucket, {r2PruneNotice.referenced} referenced keys
+                    kept.
                   </p>
                 ) : null}
                 {r2PruneNotice?.variant === "err" ? (
@@ -372,7 +373,7 @@ export async function PrintifyInventoryTab({
                     {r2PruneNotice.reason === "no_r2"
                       ? "R2 is not configured in the environment."
                       : r2PruneNotice.reason === "confirm_required"
-                        ? "Check the confirmation box before deleting orphans."
+                        ? "Check the confirmation box before deleting R2 image orphans."
                         : r2PruneNotice.reason}
                   </p>
                 ) : null}
@@ -383,20 +384,20 @@ export async function PrintifyInventoryTab({
                       type="submit"
                       className="rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-[11px] font-medium text-zinc-200 hover:bg-zinc-800"
                     >
-                      Preview orphans
+                      Preview bucket orphans
                     </button>
                   </form>
                   <form action={adminPruneOrphanListingImagesR2} className="flex flex-wrap items-center gap-2">
                     <input type="hidden" name="intent" value="delete" />
                     <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-zinc-500">
                       <input type="checkbox" name="confirm" className="rounded border-zinc-600" />
-                      I understand this deletes files
+                      I understand this deletes every unreferenced object in the R2 bucket
                     </label>
                     <button
                       type="submit"
                       className="rounded border border-red-900/60 bg-red-950/40 px-2.5 py-1.5 text-[11px] font-medium text-red-200/90 hover:bg-red-950/60"
                     >
-                      Delete orphans
+                      Delete all bucket orphans
                     </button>
                   </form>
                 </div>

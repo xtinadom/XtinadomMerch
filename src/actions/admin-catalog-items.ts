@@ -5,7 +5,12 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAdminSessionReadonly } from "@/lib/session";
-import { normalizeNewVariants, validateItemLevelWhenNoVariants } from "@/lib/admin-catalog-item";
+import type { AdminCatalogVariant } from "@/lib/admin-catalog-item";
+import {
+  normalizeNewVariants,
+  parseAdminCatalogVariantsJson,
+  validateItemLevelWhenNoVariants,
+} from "@/lib/admin-catalog-item";
 
 function variantsJsonToStored(rawJson: string):
   | {
@@ -64,6 +69,71 @@ function itemLevelFromFormWhenNoVariants(formData: FormData):
 async function requireAdmin() {
   const session = await getAdminSessionReadonly();
   if (!session.isAdmin) redirect("/admin/login");
+}
+
+function catalogVariantsToStoredJson(variants: AdminCatalogVariant[]): Prisma.InputJsonValue {
+  return variants.map((v) => {
+    const row: Record<string, unknown> = {
+      id: v.id,
+      label: v.label,
+      minPriceCents: v.minPriceCents,
+      exampleListingUrl: v.exampleListingUrl,
+    };
+    if (v.platformProductId) row.platformProductId = v.platformProductId;
+    return row;
+  }) as unknown as Prisma.InputJsonValue;
+}
+
+/**
+ * Updates only the minimum price for an admin catalog row (item-level when there are no variants,
+ * or one variant row when variants exist).
+ */
+export async function adminUpdateCatalogMinPrice(formData: FormData) {
+  await requireAdmin();
+  const itemId = String(formData.get("itemId") ?? "").trim();
+  const rawPrice = String(formData.get("minPriceDollars") ?? "").trim();
+  const variantId = String(formData.get("variantId") ?? "").trim();
+  const variantIndexRaw = String(formData.get("variantIndex") ?? "").trim();
+
+  if (!itemId) return;
+
+  const n = parseFloat(rawPrice.replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(n) || n < 0) return;
+
+  const cents = Math.round(n * 100);
+
+  const item = await prisma.adminCatalogItem.findUnique({ where: { id: itemId } });
+  if (!item) return;
+
+  const variants = parseAdminCatalogVariantsJson(item.variants);
+
+  if (variants.length === 0) {
+    await prisma.adminCatalogItem.update({
+      where: { id: itemId },
+      data: { itemMinPriceCents: cents },
+    });
+    revalidatePath("/admin");
+    return;
+  }
+
+  let idx = -1;
+  if (variantId) {
+    idx = variants.findIndex((v) => v.id === variantId);
+  }
+  if (idx < 0 && variantIndexRaw !== "") {
+    const vi = Number.parseInt(variantIndexRaw, 10);
+    if (Number.isFinite(vi) && vi >= 0 && vi < variants.length) idx = vi;
+  }
+  if (idx < 0) return;
+
+  const next = variants.map((v, i) =>
+    i === idx ? { ...v, minPriceCents: cents } : v,
+  );
+  await prisma.adminCatalogItem.update({
+    where: { id: itemId },
+    data: { variants: catalogVariantsToStoredJson(next) },
+  });
+  revalidatePath("/admin");
 }
 
 export async function adminAddCatalogItem(formData: FormData) {

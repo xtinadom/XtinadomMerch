@@ -1,6 +1,11 @@
 import Link from "next/link";
-import { adminSupportSendMessage } from "@/actions/admin-support";
+import {
+  adminSupportMarkResolved,
+  adminSupportMarkUnresolved,
+  adminSupportSendMessage,
+} from "@/actions/admin-support";
 import { SupportMessageAuthor } from "@/generated/prisma/enums";
+import { formatSupportMessageWhen } from "@/lib/format-support-message-when";
 
 export type AdminSupportThreadListRow = {
   shopId: string;
@@ -9,6 +14,8 @@ export type AdminSupportThreadListRow = {
   ownerEmail: string;
   updatedAt: string;
   lastPreview: string;
+  /** True when the thread needs admin follow-up (never resolved, or creator posted after resolve). */
+  needsReply: boolean;
 };
 
 export type AdminSupportMessageRow = {
@@ -23,6 +30,8 @@ export type AdminSupportThreadDetail = {
   shopDisplayName: string;
   shopSlug: string;
   ownerEmail: string;
+  needsReply: boolean;
+  resolvedAtIso: string | null;
   messages: AdminSupportMessageRow[];
 };
 
@@ -50,20 +59,64 @@ export function AdminSupportMessagesTab(props: {
                 const active = selectedShopId === t.shopId;
                 return (
                   <li key={t.shopId}>
-                    <Link
-                      href={`/admin?tab=support&supportShop=${encodeURIComponent(t.shopId)}`}
-                      className={`block rounded-md px-2 py-2 text-left text-xs transition ${
+                    <div
+                      className={`rounded-md px-2 py-2 text-left text-xs transition ${
                         active
                           ? "bg-zinc-800 text-zinc-100 ring-1 ring-zinc-600"
                           : "text-zinc-400 hover:bg-zinc-900/80 hover:text-zinc-200"
                       }`}
                     >
-                      <span className="font-medium text-zinc-200">{t.shopDisplayName}</span>
-                      <span className="mt-0.5 block font-mono text-[10px] text-zinc-600">/s/{t.shopSlug}</span>
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                        <Link
+                          href={`/admin?tab=shop-watch&watchShop=${encodeURIComponent(t.shopId)}`}
+                          className="font-medium text-zinc-200 underline-offset-2 hover:text-zinc-50 hover:underline"
+                        >
+                          {t.shopDisplayName}
+                        </Link>
+                        {t.needsReply ? (
+                          <span className="rounded bg-amber-950/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-200/90 ring-1 ring-amber-900/50">
+                            Open
+                          </span>
+                        ) : (
+                          <span className="rounded bg-zinc-800/80 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500 ring-1 ring-zinc-700/80">
+                            Resolved
+                          </span>
+                        )}
+                        <span className="select-none text-[10px] text-zinc-600" aria-hidden>
+                          ·
+                        </span>
+                        <Link
+                          href={`/admin?tab=support&supportShop=${encodeURIComponent(t.shopId)}`}
+                          className={`text-[11px] underline-offset-2 hover:underline ${
+                            active ? "text-zinc-200" : "text-zinc-500 hover:text-zinc-300"
+                          }`}
+                        >
+                          Support
+                        </Link>
+                        <span className="select-none text-[10px] text-zinc-600" aria-hidden>
+                          ·
+                        </span>
+                        <Link
+                          href={`/s/${encodeURIComponent(t.shopSlug)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] text-blue-400/90 underline-offset-2 hover:text-blue-300 hover:underline"
+                        >
+                          Storefront
+                        </Link>
+                      </div>
+                      <p className="mt-0.5 font-mono text-[10px] text-zinc-600">/s/{t.shopSlug}</p>
                       {t.lastPreview ? (
-                        <span className="mt-1 line-clamp-2 block text-[11px] text-zinc-500">{t.lastPreview}</span>
+                        <Link
+                          href={`/admin?tab=support&supportShop=${encodeURIComponent(t.shopId)}`}
+                          className={`mt-1 line-clamp-2 block text-[11px] hover:underline ${
+                            active ? "text-zinc-400" : "text-zinc-500 hover:text-zinc-400"
+                          }`}
+                        >
+                          {t.lastPreview}
+                        </Link>
                       ) : null}
-                    </Link>
+                    </div>
                   </li>
                 );
               })
@@ -81,11 +134,76 @@ export function AdminSupportMessagesTab(props: {
             <div className="space-y-4">
               <div>
                 <h3 className="text-base font-semibold text-zinc-100">{detail.shopDisplayName}</h3>
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500">
+                  <Link
+                    href={`/admin?tab=shop-watch&watchShop=${encodeURIComponent(detail.shopId)}`}
+                    className="text-zinc-300 underline-offset-2 hover:text-zinc-100 hover:underline"
+                  >
+                    Shop watch
+                  </Link>
+                  <span className="text-zinc-700" aria-hidden>
+                    ·
+                  </span>
+                  <Link
+                    href={`/s/${encodeURIComponent(detail.shopSlug)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400/90 underline-offset-2 hover:text-blue-300 hover:underline"
+                  >
+                    View storefront
+                  </Link>
+                  <span className="text-zinc-700" aria-hidden>
+                    ·
+                  </span>
                   <span className="font-mono text-zinc-600">/s/{detail.shopSlug}</span>
-                  {" · "}
+                  <span className="text-zinc-700" aria-hidden>
+                    ·
+                  </span>
                   <span className="text-zinc-400">{detail.ownerEmail}</span>
                 </p>
+                {detail.messages.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {detail.needsReply ? (
+                      <p className="rounded-md border border-amber-900/45 bg-amber-950/25 px-2.5 py-1.5 text-[11px] text-amber-200/90">
+                        This thread needs a reply or you can mark it resolved when you are done.
+                      </p>
+                    ) : (
+                      <p className="rounded-md border border-emerald-900/40 bg-emerald-950/20 px-2.5 py-1.5 text-[11px] text-emerald-200/85">
+                        Marked resolved
+                        {detail.resolvedAtIso
+                          ? ` · ${new Date(detail.resolvedAtIso).toLocaleString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}`
+                          : null}
+                      </p>
+                    )}
+                    {detail.needsReply ? (
+                      <form action={adminSupportMarkResolved}>
+                        <input type="hidden" name="shopId" value={detail.shopId} />
+                        <button
+                          type="submit"
+                          className="rounded-lg border border-emerald-900/50 bg-emerald-950/35 px-3 py-1.5 text-xs font-medium text-emerald-100/90 hover:border-emerald-800/60 hover:bg-emerald-950/50"
+                        >
+                          Mark resolved
+                        </button>
+                      </form>
+                    ) : (
+                      <form action={adminSupportMarkUnresolved}>
+                        <input type="hidden" name="shopId" value={detail.shopId} />
+                        <button
+                          type="submit"
+                          className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800"
+                        >
+                          Mark as open
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                ) : null}
               </div>
               <div className="max-h-[min(26rem,50vh)] space-y-3 overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
                 {detail.messages.length === 0 ? (
@@ -105,10 +223,10 @@ export function AdminSupportMessagesTab(props: {
                           >
                             <p className="whitespace-pre-wrap break-words">{m.body}</p>
                             <time
-                              className="mt-1 block text-[10px] font-medium uppercase tracking-wide text-zinc-500"
+                              className="mt-1 block text-[10px] font-medium tracking-wide text-zinc-500"
                               dateTime={m.createdAt}
                             >
-                              {m.createdAt.slice(0, 16).replace("T", " ")}
+                              {formatSupportMessageWhen(m.createdAt)}
                               {isAdmin ? " · You (admin)" : " · Creator"}
                             </time>
                           </div>

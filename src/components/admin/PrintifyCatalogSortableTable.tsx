@@ -113,7 +113,6 @@ export function PrintifyCatalogSortableTable({ rows }: { rows: PrintifyCatalogTa
               onSort={onSort}
               align="center"
             />
-            <th className="p-2 text-center font-medium whitespace-nowrap">Edit</th>
             <th className="p-2 text-center font-medium whitespace-nowrap">Resync</th>
             <th className="p-2 text-center font-medium whitespace-nowrap">Toggle published</th>
           </tr>
@@ -172,18 +171,6 @@ export function PrintifyCatalogSortableTable({ rows }: { rows: PrintifyCatalogTa
                   </div>
                 </td>
                 <td className="p-2 text-center align-middle">{updatedCell}</td>
-                <td className="p-2 text-center align-middle whitespace-nowrap">
-                  {p.listingProductId ? (
-                    <Link
-                      href={`/admin?tab=printify&listing=${encodeURIComponent(p.listingProductId)}`}
-                      className="inline-flex rounded border border-blue-900/50 bg-blue-950/30 px-2 py-1.5 text-[11px] font-medium text-blue-200/90 hover:bg-blue-950/50"
-                    >
-                      Edit
-                    </Link>
-                  ) : (
-                    <span className="text-zinc-600">—</span>
-                  )}
-                </td>
                 <td className="p-2 text-center align-middle whitespace-nowrap">
                   <PrintifyCatalogResyncForm printifyProductId={p.printifyId} />
                 </td>

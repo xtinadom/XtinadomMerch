@@ -141,6 +141,11 @@ model SupportThread {
   shopId    String            @unique
   shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
   messages  SupportMessage[]
+  /**
+   * When an admin last marked the conversation resolved. Cleared when the creator sends a new
+   * message. A thread is “unresolved” if this is null or any creator message is newer than it.
+   */
+  resolvedAt DateTime?
   createdAt DateTime          @default(now())
   updatedAt DateTime        @updatedAt
 }

@@ -221,7 +221,7 @@ export async function deleteListingImagesFromR2(
   await deleteR2ObjectsByKeys([...keys]);
 }
 
-/** Paginated list of object keys under a prefix (e.g. `listing/`). Omits zero-byte “folder” markers. */
+/** Paginated list of object keys under a prefix (e.g. `listing/`). Pass `""` for the whole bucket. Omits zero-byte “folder” markers. */
 export async function listR2ObjectKeysWithPrefix(prefix: string): Promise<string[]> {
   if (!isR2UploadConfigured()) {
     throw new Error("R2 is not configured");
@@ -237,7 +237,7 @@ export async function listR2ObjectKeysWithPrefix(prefix: string): Promise<string
     const res = await client.send(
       new ListObjectsV2Command({
         Bucket: bucket,
-        Prefix: prefix,
+        ...(prefix ? { Prefix: prefix } : {}),
         ContinuationToken,
       }),
     );
@@ -249,6 +249,34 @@ export async function listR2ObjectKeysWithPrefix(prefix: string): Promise<string
     ContinuationToken = res.IsTruncated ? res.NextContinuationToken : undefined;
   } while (ContinuationToken);
   return keys;
+}
+
+/** Every object key in the configured bucket (paginated). */
+export async function listAllR2ObjectKeys(): Promise<string[]> {
+  return listR2ObjectKeysWithPrefix("");
+}
+
+/**
+ * Delete objects by exact key (no path guard). Intended only for keys verified as orphans against
+ * {@link listAllR2ObjectKeys} and DB references.
+ */
+export async function deleteR2ObjectsByKeysForPrune(keys: readonly string[]): Promise<number> {
+  if (!isR2UploadConfigured() || keys.length === 0) return 0;
+  const bucket = readR2BucketName();
+  if (!bucket) return 0;
+
+  const client = r2S3Client();
+  let n = 0;
+  for (const Key of keys) {
+    if (!Key || Key.includes("\0") || Key.endsWith("/")) continue;
+    try {
+      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key }));
+      n += 1;
+    } catch {
+      /* best-effort cleanup */
+    }
+  }
+  return n;
 }
 
 /** Single object key for a shop’s profile image (Put overwrites on each upload). */
@@ -446,7 +474,7 @@ export async function deleteLegacyShopProfileAvatarKeys(shopId: string): Promise
   }
 }
 
-/** Best-effort delete by key. Only keys under `listing/` are removed (safety guard). */
+/** Best-effort delete by key. Only keys under `listing/` or `shops/` are removed (safety guard). */
 export async function deleteR2ObjectsByKeys(keys: readonly string[]): Promise<number> {
   if (!isR2UploadConfigured() || keys.length === 0) return 0;
   const bucket = readR2BucketName();
@@ -455,7 +483,7 @@ export async function deleteR2ObjectsByKeys(keys: readonly string[]): Promise<nu
   const client = r2S3Client();
   let n = 0;
   for (const Key of keys) {
-    if (!Key.startsWith("listing/")) continue;
+    if (!Key.startsWith("listing/") && !Key.startsWith("shops/")) continue;
     try {
       await client.send(new DeleteObjectCommand({ Bucket: bucket, Key }));
       n += 1;

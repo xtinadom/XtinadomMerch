@@ -1,6 +1,6 @@
 /**
- * Remove R2 objects under `listing/` that are not referenced by any product
- * (imageUrl, imageGallery, or Printify variant imageUrl fields).
+ * Remove R2 objects in the configured bucket that are not referenced from the database
+ * (products, shops, shop listings, admin catalog example URLs when they resolve to this bucket).
  *
  * Usage (repo root, requires DATABASE_URL + R2 env like test-r2-upload):
  *   npx tsx scripts/r2-prune-orphan-listings.ts           # dry-run (report only)

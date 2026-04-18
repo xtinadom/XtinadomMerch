@@ -509,15 +509,10 @@ export async function adminFreezeShopListing(formData: FormData) {
 }
 
 /**
- * Removes a row from the admin Listing requests queue. Records removal time for the Removed items tab.
- * In-flight requests (submitted / printify_item_created) are rejected like Reject.
- * If the listing is live on the creator’s shop (approved and active), it is frozen off the storefront.
+ * Core removal (no `revalidatePath`). Used by single remove and legacy multi-size batch remove.
+ * @returns true if this listing was removed from the queue.
  */
-export async function adminRemoveListingFromRequestsQueue(formData: FormData) {
-  await requireAdmin();
-  const listingId = String(formData.get("listingId") ?? "").trim();
-  if (!listingId) return;
-
+async function executeRemoveListingFromRequestsQueueOnce(listingId: string): Promise<boolean> {
   const listing = await prisma.shopListing.findUnique({
     where: { id: listingId },
     select: {
@@ -529,7 +524,7 @@ export async function adminRemoveListingFromRequestsQueue(formData: FormData) {
       product: { select: { name: true } },
     },
   });
-  if (!listing || listing.removedFromListingRequestsAt) return;
+  if (!listing || listing.removedFromListingRequestsAt) return false;
 
   const requestImageUrls = shopListingRequestImageUrlStrings(listing.requestImages);
   await deleteShopListingRequestImagesFromR2(listing.shopId, requestImageUrls);
@@ -609,12 +604,53 @@ export async function adminRemoveListingFromRequestsQueue(formData: FormData) {
       },
     });
   } else {
-    return;
+    return false;
   }
 
-  revalidatePath("/admin");
-  revalidatePath("/shops");
-  revalidatePath("/dashboard");
+  return true;
+}
+
+/**
+ * Removes a row from the admin Listing requests queue. Records removal time for the Removed items tab.
+ * In-flight requests (submitted / printify_item_created) are rejected like Reject.
+ * If the listing is live on the creator’s shop (approved and active), it is frozen off the storefront.
+ */
+export async function adminRemoveListingFromRequestsQueue(formData: FormData) {
+  await requireAdmin();
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  if (!listingId) return;
+  if (await executeRemoveListingFromRequestsQueueOnce(listingId)) {
+    revalidatePath("/admin");
+    revalidatePath("/shops");
+    revalidatePath("/dashboard");
+  }
+}
+
+/**
+ * Removes every catalog stub in a legacy multi-size group from the admin queue (one action for the whole request).
+ */
+export async function adminRemoveLegacyVariantListingGroupFromQueue(formData: FormData) {
+  await requireAdmin();
+  const listingIds = parseLegacyGroupListingIdsJson(formData.get("legacyGroupListingIdsJson"));
+  if (!listingIds) return;
+
+  const rows = await prisma.shopListing.findMany({
+    where: { id: { in: listingIds } },
+    select: { id: true, shopId: true },
+  });
+  if (rows.length !== listingIds.length) return;
+  const shopId = rows[0]!.shopId;
+  if (rows.some((r) => r.shopId !== shopId)) return;
+
+  let any = false;
+  for (const id of listingIds) {
+    if (await executeRemoveListingFromRequestsQueueOnce(id)) any = true;
+  }
+  if (any) {
+    revalidatePath("/admin");
+    revalidatePath("/shops");
+    revalidatePath("/dashboard");
+  }
 }
 
 export async function adminUpdateListingRemovalNotes(formData: FormData) {
@@ -684,6 +720,49 @@ export async function adminDeleteListingRemovalRecord(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/shops");
   revalidatePath("/dashboard");
+}
+
+/**
+ * Permanently deletes the `ShopListing` row (admin shop watch “delete”).
+ * Clears `Shop.homeFeaturedListingId` when it points at this listing, removes R2 request/supplement/secondary
+ * images, then deletes the listing. `OrderLine.shopListingId` is set null by FK; `Product` is kept for order history.
+ */
+export async function adminDeleteShopListingRecord(formData: FormData) {
+  await requireAdmin();
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  if (!listingId) return;
+
+  const listing = await prisma.shopListing.findUnique({
+    where: { id: listingId },
+    select: {
+      id: true,
+      shopId: true,
+      requestImages: true,
+      shop: { select: { slug: true, homeFeaturedListingId: true } },
+    },
+  });
+  if (!listing) return;
+
+  const requestImageUrls = shopListingRequestImageUrlStrings(listing.requestImages);
+  await deleteShopListingRequestImagesFromR2(listing.shopId, requestImageUrls);
+  await deleteShopListingSupplementObject(listing.shopId, listingId);
+  await deleteShopListingAdminSecondaryObject(listing.shopId, listingId);
+
+  await prisma.$transaction(async (tx) => {
+    if (listing.shop.homeFeaturedListingId === listingId) {
+      await tx.shop.update({
+        where: { id: listing.shopId },
+        data: { homeFeaturedListingId: null },
+      });
+    }
+    await tx.shopListing.delete({ where: { id: listingId } });
+  });
+
+  await syncFreeListingFeeWaivers(listing.shopId);
+  revalidatePath("/admin");
+  revalidatePath("/shops");
+  revalidatePath("/dashboard");
+  revalidatePath(`/s/${listing.shop.slug}`);
 }
 
 type AdminRejectListingExecOk = { ok: true; shopId: string; productName: string };

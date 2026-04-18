@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
-import { adminDeleteCatalogItem, adminUpdateCatalogItem } from "@/actions/admin-catalog-items";
+import { useState, useTransition } from "react";
+import {
+  adminDeleteCatalogItem,
+  adminUpdateCatalogItem,
+  adminUpdateCatalogMinPrice,
+} from "@/actions/admin-catalog-items";
 import type { AdminCatalogVariant, AdminCatalogVariantFormRow } from "@/lib/admin-catalog-item";
 import {
   dollarsStringFromCents,
@@ -28,6 +32,112 @@ function formatMoney(cents: number) {
     style: "currency",
     currency: "USD",
   }).format(cents / 100);
+}
+
+function minPriceDisplayText(r: {
+  variantLabel: string;
+  minPriceCents: number;
+  exampleUrl: string;
+}) {
+  if (r.variantLabel === "—") {
+    return r.minPriceCents === 0 && !r.exampleUrl.trim()
+      ? "—"
+      : formatMoney(r.minPriceCents);
+  }
+  return r.minPriceCents > 0 ? formatMoney(r.minPriceCents) : "—";
+}
+
+function AdminMinPriceCell({
+  itemId,
+  variantId,
+  variantIndex,
+  variantLabel,
+  minPriceCents,
+  exampleUrl,
+}: {
+  itemId: string;
+  variantId: string | null;
+  variantIndex: number;
+  variantLabel: string;
+  minPriceCents: number;
+  exampleUrl: string;
+}) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  function save() {
+    const fd = new FormData();
+    fd.set("itemId", itemId);
+    fd.set("minPriceDollars", draft);
+    if (variantId) fd.set("variantId", variantId);
+    fd.set("variantIndex", String(variantIndex));
+    startTransition(async () => {
+      await adminUpdateCatalogMinPrice(fd);
+      setEditing(false);
+      router.refresh();
+    });
+  }
+
+  const display = minPriceDisplayText({ variantLabel, minPriceCents, exampleUrl });
+
+  return (
+    <td className="p-3 whitespace-nowrap tabular-nums text-zinc-400">
+      {editing ? (
+        <div className="flex flex-col gap-1.5">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            autoFocus
+            disabled={pending}
+            className="w-[7rem] rounded border border-zinc-600 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-100"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                save();
+              }
+              if (e.key === "Escape") setEditing(false);
+            }}
+          />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={save}
+              disabled={pending}
+              className="text-[11px] text-blue-400/90 hover:underline disabled:opacity-50"
+            >
+              {pending ? "Saving…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              disabled={pending}
+              className="text-[11px] text-zinc-500 hover:underline disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1">
+          <span>{display}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(dollarsStringFromCents(minPriceCents));
+              setEditing(true);
+            }}
+            className="text-left text-[11px] text-blue-400/90 hover:underline"
+          >
+            Edit min price
+          </button>
+        </div>
+      )}
+    </td>
+  );
 }
 
 function exampleLink(url: string) {
@@ -64,26 +174,25 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
   const [editError, setEditError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  useEffect(() => {
-    if (!editingId) {
-      setEditName("");
-      setEditVariants([]);
-      setEditItemExampleListingUrl("");
-      setEditItemMinPriceDollars("");
-      setEditError(null);
-      return;
-    }
-    const item = items.find((x) => x.id === editingId);
-    if (!item) {
-      setEditingId(null);
-      return;
-    }
+  function beginEditItem(itemId: string) {
+    const item = items.find((x) => x.id === itemId);
+    if (!item) return;
     setEditName(item.name);
     setEditVariants(variantsToFormRows(item.variants));
     setEditItemExampleListingUrl(item.itemExampleListingUrl ?? "");
     setEditItemMinPriceDollars(dollarsStringFromCents(item.itemMinPriceCents));
     setEditError(null);
-  }, [editingId, items]);
+    setEditingId(itemId);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditName("");
+    setEditVariants([]);
+    setEditItemExampleListingUrl("");
+    setEditItemMinPriceDollars("");
+    setEditError(null);
+  }
 
   function addEditVariantRow() {
     setEditVariants((v) => [
@@ -132,7 +241,7 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
     fd.set("itemMinPriceDollars", editItemMinPriceDollars);
     startTransition(async () => {
       await adminUpdateCatalogItem(fd);
-      setEditingId(null);
+      cancelEdit();
       router.refresh();
     });
   }
@@ -145,6 +254,7 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
     exampleUrl: string;
     rowSpan: number;
     variantIndex: number;
+    variantId: string | null;
   }[] = [];
 
   for (const item of items) {
@@ -158,6 +268,7 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
         exampleUrl: item.itemExampleListingUrl ?? "",
         rowSpan: 1,
         variantIndex: 0,
+        variantId: null,
       });
       continue;
     }
@@ -170,6 +281,7 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
         exampleUrl: v.exampleListingUrl,
         rowSpan: i === 0 ? variants.length : 0,
         variantIndex: i,
+        variantId: v.id,
       });
     });
   }
@@ -226,7 +338,7 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => setEditingId(null)}
+                onClick={cancelEdit}
                 className="rounded-lg border border-zinc-600 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
               >
                 Cancel
@@ -255,7 +367,7 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
                     <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
                       <button
                         type="button"
-                        onClick={() => setEditingId(r.itemId)}
+                        onClick={() => beginEditItem(r.itemId)}
                         className="text-[11px] text-blue-400/90 hover:underline"
                       >
                         Edit item
@@ -277,15 +389,14 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
                 <td className="p-3 text-zinc-400">
                   {r.exampleUrl ? exampleLink(r.exampleUrl) : <span className="text-zinc-600">—</span>}
                 </td>
-                <td className="p-3 whitespace-nowrap tabular-nums text-zinc-400">
-                  {r.variantLabel === "—"
-                    ? r.minPriceCents === 0 && !r.exampleUrl.trim()
-                      ? "—"
-                      : formatMoney(r.minPriceCents)
-                    : r.minPriceCents > 0
-                      ? formatMoney(r.minPriceCents)
-                      : "—"}
-                </td>
+                <AdminMinPriceCell
+                  itemId={r.itemId}
+                  variantId={r.variantId}
+                  variantIndex={r.variantIndex}
+                  variantLabel={r.variantLabel}
+                  minPriceCents={r.minPriceCents}
+                  exampleUrl={r.exampleUrl}
+                />
               </tr>
             ))}
           </tbody>

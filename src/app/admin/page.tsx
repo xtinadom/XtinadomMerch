@@ -59,9 +59,9 @@ import {
   SPECIAL_PROMOTION_FREE_LISTING_IDS,
 } from "@/lib/marketplace-constants";
 import { ensureBaselineAdminCatalogIfEmpty } from "@/lib/seed-baseline-admin-catalog";
+import { supportUnresolvedThreadShopIdsExcludingPlatform } from "@/lib/support-thread-unresolved";
 import { fetchPrintifyCatalog, hasPrintifyApiToken } from "@/lib/printify";
 import { defaultPrintifyVariantIdForCatalogProduct } from "@/lib/printify-catalog";
-
 export const dynamic = "force-dynamic";
 
 function formatPrice(cents: number) {
@@ -89,6 +89,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const tabParam = typeof sp.tab === "string" ? sp.tab : undefined;
   const supportShopParam =
     typeof sp.supportShop === "string" && sp.supportShop.trim() ? sp.supportShop.trim() : undefined;
+  const watchShopParam =
+    typeof sp.watchShop === "string" && sp.watchShop.trim() ? sp.watchShop.trim() : undefined;
   const inventoryTabLiterals = [
     "manual",
     "printify",
@@ -375,6 +377,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       return true;
     });
 
+  const listingRequestTabBadgeCount = listingRequestTabRows.length;
+
   const creatorShops = await prisma.shop.findMany({
     where: { slug: { not: PLATFORM_SHOP_SLUG }, active: true },
     select: { id: true, displayName: true, slug: true },
@@ -401,6 +405,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           listingFeePaidAt: true,
           active: true,
           requestStatus: true,
+          requestItemName: true,
+          requestImages: true,
           adminRemovedFromShopAt: true,
           creatorRemovedFromShopAt: true,
           removedFromListingRequestsAt: true,
@@ -496,13 +502,13 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         })
         .forEach((row, i) => ordinalByListingId.set(row.id, i + 1));
 
-      const detailsActive: ShopWatchDetail[] = [];
-      const detailsFrozen: ShopWatchDetail[] = [];
-      const detailsRemoved: ShopWatchDetail[] = [];
-      const detailsOtherPipeline: ShopWatchDetail[] = [];
-      const detailsOtherRequested: ShopWatchDetail[] = [];
-      const detailsOtherApproved: ShopWatchDetail[] = [];
-      const detailsOtherRejected: ShopWatchDetail[] = [];
+      const detailsActiveRaw: ShopWatchDetail[] = [];
+      const detailsFrozenRaw: ShopWatchDetail[] = [];
+      const detailsRemovedRaw: ShopWatchDetail[] = [];
+      const detailsOtherPipelineRaw: ShopWatchDetail[] = [];
+      const detailsOtherRequestedRaw: ShopWatchDetail[] = [];
+      const detailsOtherApprovedRaw: ShopWatchDetail[] = [];
+      const detailsOtherRejectedRaw: ShopWatchDetail[] = [];
 
       for (const l of listings) {
         const ordinal = ordinalByListingId.get(l.id) ?? 1;
@@ -516,11 +522,11 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           notes: l.adminListingRemovalNotes,
         };
         if (l.creatorRemovedFromShopAt != null) {
-          detailsRemoved.push({ ...base, rowKind: "removed" });
+          detailsRemovedRaw.push({ ...base, rowKind: "removed" });
         } else if (l.adminRemovedFromShopAt != null) {
-          detailsFrozen.push({ ...base, rowKind: "frozen" });
+          detailsFrozenRaw.push({ ...base, rowKind: "frozen" });
         } else if (l.active && l.creatorRemovedFromShopAt == null && l.product.active) {
-          detailsActive.push({ ...base, rowKind: "active" });
+          detailsActiveRaw.push({ ...base, rowKind: "active" });
         } else {
           const row: ShopWatchDetail = {
             ...base,
@@ -535,30 +541,38 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
               l.id,
               l.product.name,
             );
-            detailsOtherRejected.push({
+            detailsOtherRejectedRaw.push({
               ...row,
               rejectionReasonText: listingRejectionReasonTextForCard(noticeBody),
             });
           } else if (l.requestStatus === ListingRequestStatus.approved) {
-            detailsOtherApproved.push(row);
+            detailsOtherApprovedRaw.push(row);
           } else if (
             l.requestStatus === ListingRequestStatus.submitted ||
             l.requestStatus === ListingRequestStatus.images_ok
           ) {
-            detailsOtherRequested.push(row);
+            detailsOtherRequestedRaw.push(row);
           } else {
-            detailsOtherPipeline.push(row);
+            detailsOtherPipelineRaw.push(row);
           }
         }
       }
 
-      detailsActive.sort(sortDetails);
-      detailsFrozen.sort(sortDetails);
-      detailsRemoved.sort(sortDetails);
-      detailsOtherRequested.sort(sortDetails);
-      detailsOtherPipeline.sort(sortDetails);
-      detailsOtherApproved.sort(sortDetails);
-      detailsOtherRejected.sort(sortDetails);
+      detailsActiveRaw.sort(sortDetails);
+      detailsFrozenRaw.sort(sortDetails);
+      detailsRemovedRaw.sort(sortDetails);
+      detailsOtherRequestedRaw.sort(sortDetails);
+      detailsOtherPipelineRaw.sort(sortDetails);
+      detailsOtherApprovedRaw.sort(sortDetails);
+      detailsOtherRejectedRaw.sort(sortDetails);
+
+      const detailsActive = detailsActiveRaw;
+      const detailsFrozen = detailsFrozenRaw;
+      const detailsRemoved = detailsRemovedRaw;
+      const detailsOtherPipeline = detailsOtherPipelineRaw;
+      const detailsOtherRequested = detailsOtherRequestedRaw;
+      const detailsOtherApproved = detailsOtherApprovedRaw;
+      const detailsOtherRejected = detailsOtherRejectedRaw;
 
       const paidListingsCount = listings.reduce((acc, l) => {
         const ordinal = ordinalByListingId.get(l.id) ?? 1;
@@ -655,9 +669,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
   const defaultCreateTagIds = adminTags[0] ? [adminTags[0].id] : [];
 
-  const supportThreadCount = await prisma.supportThread.count({
-    where: { shop: { slug: { not: PLATFORM_SHOP_SLUG } } },
-  });
+  const supportUnresolvedShopIds = await supportUnresolvedThreadShopIdsExcludingPlatform();
+  const supportUnresolvedCount = supportUnresolvedShopIds.size;
 
   let adminSupportThreads: AdminSupportThreadListRow[] = [];
   let adminSupportDetail: AdminSupportThreadDetail | null = null;
@@ -688,6 +701,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       ownerEmail: t.shop.users[0]?.email ?? "—",
       updatedAt: t.updatedAt.toISOString(),
       lastPreview: t.messages[0]?.body?.slice(0, 160) ?? "",
+      needsReply: supportUnresolvedShopIds.has(t.shopId),
     }));
 
     if (supportShopParam) {
@@ -710,6 +724,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           shopDisplayName: shopRow.displayName,
           shopSlug: shopRow.slug,
           ownerEmail: shopRow.users[0]?.email ?? "—",
+          needsReply: supportUnresolvedShopIds.has(shopRow.id),
+          resolvedAtIso: existingThread?.resolvedAt?.toISOString() ?? null,
           messages:
             existingThread?.messages.map((m) => ({
               id: m.id,
@@ -880,7 +896,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             }`}
           >
             Requests
-            <span className="ml-1.5 tabular-nums text-zinc-500">({listingRequestTabRows.length})</span>
+            <span className="ml-1.5 tabular-nums text-zinc-500">({listingRequestTabBadgeCount})</span>
           </Link>
           <Link
             href="/admin?tab=removed"
@@ -911,6 +927,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           <Link
             href="/admin?tab=support"
             role="tab"
+            title={`${supportUnresolvedCount} unresolved support conversation(s) (needs reply or not marked resolved)`}
             aria-selected={inventoryTab === "support"}
             className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
               inventoryTab === "support"
@@ -919,7 +936,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             }`}
           >
             Support
-            <span className="ml-1.5 tabular-nums text-zinc-500">({supportThreadCount})</span>
+            <span className="ml-1.5 tabular-nums text-zinc-500">({supportUnresolvedCount})</span>
           </Link>
           <Link
             href="/admin?tab=printify-api"
@@ -1341,7 +1358,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           ) : inventoryTab === "requests" ? (
             <AdminListingRequestsTab
               rows={listingRequestTabRows}
-              adminCatalogItems={adminCatalogRows}
               printifyCatalogPickList={printifyCatalogPickList}
               r2Configured={isR2UploadConfigured()}
             />
@@ -1355,6 +1371,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 shopsWithListingCount,
                 shopsWithPaidListingCount,
               }}
+              initialExpandedShopId={watchShopParam}
             />
           ) : inventoryTab === "support" ? (
             <AdminSupportMessagesTab

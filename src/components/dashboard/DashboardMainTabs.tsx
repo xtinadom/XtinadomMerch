@@ -20,6 +20,7 @@ import {
   DashboardSubmitListingRequestForm,
   ListingStorefrontCatalogImagesForms,
 } from "@/components/dashboard/DashboardListingForms";
+import { ShopProfileSetupPanel } from "@/components/dashboard/ShopProfileSetupPanel";
 import {
   ShopSetupTabs,
   type ShopSetupShopPayload,
@@ -36,10 +37,7 @@ import {
   parseListingStorefrontCatalogImageSelection,
   productImageUrlsUnionHero,
 } from "@/lib/product-media";
-import type {
-  GroupedDashboardListing,
-  LegacyBaselineListingGroup,
-} from "@/lib/dashboard-legacy-baseline-listing-groups";
+import type { GroupedDashboardListing } from "@/lib/dashboard-legacy-baseline-listing-groups";
 
 export type DashboardSetupPanelProps = {
   setupTabsKey: string;
@@ -457,82 +455,6 @@ function ListingOptionPanel({
   );
 }
 
-function LegacyVariantGroupCard({
-  group,
-  isPlatform,
-  paidListingFeeLabel,
-  shopSlug,
-  r2Configured,
-}: {
-  group: LegacyBaselineListingGroup<DashboardListingRow>;
-  isPlatform: boolean;
-  paidListingFeeLabel: string;
-  shopSlug: string;
-  r2Configured: boolean;
-}) {
-  const primary = group.members[0]!.row;
-  const statuses = new Set(group.members.map((m) => m.row.requestStatus));
-  const oneStatus = statuses.size === 1 ? primary.requestStatus : null;
-  const d = buildListingDerived(primary, shopSlug, isPlatform);
-  const dashboardBadge =
-    oneStatus != null
-      ? d.dashboardBadge
-      : {
-          label: "Mixed status",
-          ringClass: "bg-zinc-900/80 text-zinc-300 ring-zinc-700/80",
-        };
-
-  return (
-    <li className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 text-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-zinc-500">Item name</p>
-          <p className="mt-0.5 text-sm text-zinc-100">{primary.requestItemName?.trim() || "—"}</p>
-          <p className="mt-1 text-[11px] leading-snug text-zinc-600">
-            Catalog: {group.parentItemName} · one product with multiple size options (shown together).
-          </p>
-        </div>
-        <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ${dashboardBadge.ringClass}`}
-        >
-          {dashboardBadge.label}
-        </span>
-      </div>
-      {oneStatus === ListingRequestStatus.rejected ? (
-        <>
-          <p className="mt-1 text-xs text-zinc-500">
-            Rejected — this listing cannot be edited. Contact support if you need help.
-          </p>
-          {group.members.some((m) => m.row.rejectionReasonText) ? (
-            <p className="mt-1 text-xs leading-snug text-red-200/85">
-              See each option below for any rejection notes.
-            </p>
-          ) : null}
-        </>
-      ) : oneStatus != null ? (
-        <p className="mt-1 text-xs text-zinc-500">{requestStatusDescription(oneStatus)}</p>
-      ) : (
-        <p className="mt-1 text-xs text-zinc-500">
-          Options below may differ slightly in pipeline status; each row is a legacy catalog stub from the same
-          submission.
-        </p>
-      )}
-      {group.members.map(({ row, variantLabel }, idx) => (
-        <ListingOptionPanel
-          key={row.id}
-          listing={row}
-          isPlatform={isPlatform}
-          paidListingFeeLabel={paidListingFeeLabel}
-          shopSlug={shopSlug}
-          r2Configured={r2Configured}
-          variantLabel={variantLabel}
-          stacked={idx > 0}
-        />
-      ))}
-    </li>
-  );
-}
-
 function ListingCard({
   listing,
   isPlatform,
@@ -599,13 +521,20 @@ function ListingCard({
   );
 }
 
-type TabId = "setup" | "requestListing" | "listings" | "notifications" | "support" | "orders";
+type TabId =
+  | "setup"
+  | "shopProfile"
+  | "requestListing"
+  | "listings"
+  | "notifications"
+  | "support"
+  | "orders";
 
 export function DashboardMainTabs(props: {
   initialTab?: TabId;
   /** Creator shop slug — listing fee tiers (e.g. founder unlimited). */
   shopSlug: string;
-  /** Creator onboarding; when set, “Shop setup” is the first tab. */
+  /** Creator onboarding; when set, “Onboarding” is the first tab. */
   setup?: DashboardSetupPanelProps | null;
   /** Full notice history (creators); drives Notifications tab. */
   notifications?: {
@@ -656,6 +585,7 @@ export function DashboardMainTabs(props: {
         i === "listings" ||
         i === "orders" ||
         i === "setup" ||
+        i === "shopProfile" ||
         i === "notifications" ||
         i === "requestListing" ||
         (i === "support" && canSupport)
@@ -674,6 +604,8 @@ export function DashboardMainTabs(props: {
   const baseId = useId();
   const setupTabId = `${baseId}-tab-setup`;
   const setupPanelId = `${baseId}-panel-setup`;
+  const shopProfileTabId = `${baseId}-tab-shop-profile`;
+  const shopProfilePanelId = `${baseId}-panel-shop-profile`;
   const requestListingTabId = `${baseId}-tab-request-listing`;
   const requestListingPanelId = `${baseId}-panel-request-listing`;
   const listingsTabId = `${baseId}-tab-listings`;
@@ -715,7 +647,10 @@ export function DashboardMainTabs(props: {
         role="tablist"
         aria-label="Shop dashboard"
       >
-        {hasSetup ? tabBtn("setup", "Shop setup", setupTabId, setupPanelId) : null}
+        {hasSetup ? tabBtn("setup", "Onboarding", setupTabId, setupPanelId) : null}
+        {hasSetup && setup
+          ? tabBtn("shopProfile", "Shop profile", shopProfileTabId, shopProfilePanelId)
+          : null}
         {hasSetup && setup
           ? tabBtn("requestListing", "Request listing", requestListingTabId, requestListingPanelId)
           : null}
@@ -751,6 +686,23 @@ export function DashboardMainTabs(props: {
             key={setup.setupTabsKey}
             shop={setup.shop}
             steps={setup.steps}
+            embedded
+          />
+        </div>
+      ) : null}
+
+      {hasSetup && setup ? (
+        <div
+          id={shopProfilePanelId}
+          role="tabpanel"
+          aria-labelledby={shopProfileTabId}
+          hidden={tab !== "shopProfile"}
+          className="pt-6"
+        >
+          <ShopProfileSetupPanel
+            key={setup.setupTabsKey}
+            shop={setup.shop}
+            profileStepDone={setup.steps.profile}
             r2Configured={setup.r2Configured}
             embedded
           />
@@ -796,27 +748,16 @@ export function DashboardMainTabs(props: {
               Active on your public storefront right now.
             </p>
             <ul className="mt-3 space-y-6">
-              {groupedLive.map((g) =>
-                g.kind === "single" ? (
-                  <ListingCard
-                    key={g.row.id}
-                    listing={g.row}
-                    isPlatform={isPlatform}
-                    paidListingFeeLabel={paidListingFeeLabel}
-                    shopSlug={shopSlug}
-                    r2Configured={r2Configured}
-                  />
-                ) : (
-                  <LegacyVariantGroupCard
-                    key={g.members.map((m) => m.row.id).join("-")}
-                    group={g}
-                    isPlatform={isPlatform}
-                    paidListingFeeLabel={paidListingFeeLabel}
-                    shopSlug={shopSlug}
-                    r2Configured={r2Configured}
-                  />
-                ),
-              )}
+              {groupedLive.map((g) => (
+                <ListingCard
+                  key={g.row.id}
+                  listing={g.row}
+                  isPlatform={isPlatform}
+                  paidListingFeeLabel={paidListingFeeLabel}
+                  shopSlug={shopSlug}
+                  r2Configured={r2Configured}
+                />
+              ))}
             </ul>
           </div>
         ) : null}
@@ -833,27 +774,16 @@ export function DashboardMainTabs(props: {
               here.
             </p>
             <ul className="mt-3 space-y-6">
-              {groupedRequest.map((g) =>
-                g.kind === "single" ? (
-                  <ListingCard
-                    key={g.row.id}
-                    listing={g.row}
-                    isPlatform={isPlatform}
-                    paidListingFeeLabel={paidListingFeeLabel}
-                    shopSlug={shopSlug}
-                    r2Configured={r2Configured}
-                  />
-                ) : (
-                  <LegacyVariantGroupCard
-                    key={g.members.map((m) => m.row.id).join("-")}
-                    group={g}
-                    isPlatform={isPlatform}
-                    paidListingFeeLabel={paidListingFeeLabel}
-                    shopSlug={shopSlug}
-                    r2Configured={r2Configured}
-                  />
-                ),
-              )}
+              {groupedRequest.map((g) => (
+                <ListingCard
+                  key={g.row.id}
+                  listing={g.row}
+                  isPlatform={isPlatform}
+                  paidListingFeeLabel={paidListingFeeLabel}
+                  shopSlug={shopSlug}
+                  r2Configured={r2Configured}
+                />
+              ))}
             </ul>
           </div>
         ) : null}
@@ -870,27 +800,16 @@ export function DashboardMainTabs(props: {
               contact support to restore a removed listing or to discuss a rejected request.
             </p>
             <ul className="mt-3 space-y-6">
-              {groupedRemoved.map((g) =>
-                g.kind === "single" ? (
-                  <ListingCard
-                    key={g.row.id}
-                    listing={g.row}
-                    isPlatform={isPlatform}
-                    paidListingFeeLabel={paidListingFeeLabel}
-                    shopSlug={shopSlug}
-                    r2Configured={r2Configured}
-                  />
-                ) : (
-                  <LegacyVariantGroupCard
-                    key={g.members.map((m) => m.row.id).join("-")}
-                    group={g}
-                    isPlatform={isPlatform}
-                    paidListingFeeLabel={paidListingFeeLabel}
-                    shopSlug={shopSlug}
-                    r2Configured={r2Configured}
-                  />
-                ),
-              )}
+              {groupedRemoved.map((g) => (
+                <ListingCard
+                  key={g.row.id}
+                  listing={g.row}
+                  isPlatform={isPlatform}
+                  paidListingFeeLabel={paidListingFeeLabel}
+                  shopSlug={shopSlug}
+                  r2Configured={r2Configured}
+                />
+              ))}
             </ul>
           </div>
         ) : null}

@@ -42,8 +42,9 @@ export async function dashboardSupportSendMessage(formData: FormData) {
   });
   await prisma.supportThread.update({
     where: { id: thread.id },
-    data: { updatedAt: new Date() },
+    data: { updatedAt: new Date(), resolvedAt: null },
   });
 
   revalidatePath("/dashboard");
+  revalidatePath("/admin");
 }
