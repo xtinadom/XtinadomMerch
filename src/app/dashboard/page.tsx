@@ -27,6 +27,7 @@ import {
   resolveListingRejectionNoticeBody,
 } from "@/lib/shop-listing-rejection-notice";
 import {
+  resolveCatalogPrefillFromBaselinePickEncoded,
   resolveCatalogPrefillFromStubProductSlug,
   type DraftListingRequestPrefillPayload,
 } from "@/lib/shop-baseline-draft-prefill";
@@ -187,14 +188,26 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   let draftListingRequestPrefill: DraftListingRequestPrefillPayload | null = null;
   if (draftListingForRequestPrefill && adminCatalogRows.length > 0) {
-    const resolved = resolveCatalogPrefillFromStubProductSlug(
-      shop.id,
-      draftListingForRequestPrefill.product.slug,
-      draftListingForRequestPrefill.priceCents,
-      draftListingForRequestPrefill.requestItemName,
-      adminCatalogRows,
-      draftListingForRequestPrefill.listingPrintifyVariantPrices,
-    );
+    const encoded = draftListingForRequestPrefill.baselineCatalogPickEncoded?.trim();
+    const fromEncoded = encoded
+      ? resolveCatalogPrefillFromBaselinePickEncoded(
+          encoded,
+          draftListingForRequestPrefill.priceCents,
+          draftListingForRequestPrefill.requestItemName,
+          adminCatalogRows,
+          draftListingForRequestPrefill.listingPrintifyVariantPrices,
+        )
+      : null;
+    const resolved =
+      fromEncoded ??
+      resolveCatalogPrefillFromStubProductSlug(
+        shop.id,
+        draftListingForRequestPrefill.product.slug,
+        draftListingForRequestPrefill.priceCents,
+        draftListingForRequestPrefill.requestItemName,
+        adminCatalogRows,
+        draftListingForRequestPrefill.listingPrintifyVariantPrices,
+      );
     if (resolved) {
       draftListingRequestPrefill = {
         listingId: draftListingForRequestPrefill.id,

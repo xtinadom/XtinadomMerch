@@ -3,6 +3,7 @@ import { parseAdminCatalogVariantsJson } from "@/lib/admin-catalog-item";
 import { parseListingPrintifyVariantPrices } from "@/lib/listing-printify-variant-prices";
 import { parsePrintifyVariantsJson, type StoredPrintifyVariant } from "@/lib/printify-variants";
 import { prisma } from "@/lib/prisma";
+import { parseBaselinePick } from "@/lib/shop-baseline-catalog";
 import {
   BASELINE_ALL_VARIANTS_STUB_KEY,
   computeBaselineStubSlug,
@@ -78,7 +79,12 @@ export async function remapShopListingCatalogVariantPricesAfterPrintifySync(
 ): Promise<void> {
   const listing = await prisma.shopListing.findFirst({
     where: { productId },
-    select: { id: true, shopId: true, listingPrintifyVariantPrices: true },
+    select: {
+      id: true,
+      shopId: true,
+      listingPrintifyVariantPrices: true,
+      baselineCatalogPickEncoded: true,
+    },
   });
   if (!listing) return;
 
@@ -100,10 +106,17 @@ export async function remapShopListingCatalogVariantPricesAfterPrintifySync(
 
   const items = await prisma.adminCatalogItem.findMany({ select: { id: true, variants: true } });
   let matched: { id: string; variants: unknown } | null = null;
-  for (const item of items) {
-    if (computeBaselineStubSlug(listing.shopId, item.id, BASELINE_ALL_VARIANTS_STUB_KEY) === product.slug) {
-      matched = item;
-      break;
+  const encoded = listing.baselineCatalogPickEncoded?.trim();
+  const fromPick = encoded ? parseBaselinePick(encoded) : null;
+  if (fromPick?.mode === "allVariants") {
+    matched = items.find((it) => it.id === fromPick.itemId) ?? null;
+  }
+  if (!matched) {
+    for (const item of items) {
+      if (computeBaselineStubSlug(listing.shopId, item.id, BASELINE_ALL_VARIANTS_STUB_KEY) === product.slug) {
+        matched = item;
+        break;
+      }
     }
   }
   if (!matched) return;

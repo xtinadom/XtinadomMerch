@@ -1883,6 +1883,7 @@ export const ShopListingScalarFieldEnum = {
   adminListingSecondaryImageUrl: 'adminListingSecondaryImageUrl',
   listingStorefrontCatalogImageUrls: 'listingStorefrontCatalogImageUrls',
   requestItemName: 'requestItemName',
+  baselineCatalogPickEncoded: 'baselineCatalogPickEncoded',
   requestStatus: 'requestStatus',
   adminRemovedFromShopAt: 'adminRemovedFromShopAt',
   creatorRemovedFromShopAt: 'creatorRemovedFromShopAt',

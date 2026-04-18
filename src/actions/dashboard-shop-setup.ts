@@ -26,8 +26,8 @@ import {
 } from "@/lib/shop-baseline-catalog";
 import { parseAdminCatalogVariantsJson } from "@/lib/admin-catalog-item";
 import {
-  getOrCreateBaselineAllVariantsStubProduct,
-  getOrCreateBaselineStubProduct,
+  createBaselineAllVariantsStubProductForNewListing,
+  createBaselineStubProductForNewListing,
 } from "@/lib/shop-baseline-stub-product";
 import { syncFreeListingFeeWaivers } from "@/lib/listing-fee";
 
@@ -275,7 +275,7 @@ export async function submitFirstListingSetup(
       minSubmitted = Math.min(minSubmitted, priceCents);
     }
 
-    const stub = await getOrCreateBaselineAllVariantsStubProduct(shop.id, baselinePick.itemId);
+    const stub = await createBaselineAllVariantsStubProductForNewListing(shop.id, baselinePick.itemId);
     if (!stub) {
       return { ok: false, error: "That catalog item is not available." };
     }
@@ -299,29 +299,6 @@ export async function submitFirstListingSetup(
       };
     }
 
-    const existing = await prisma.shopListing.findUnique({
-      where: { shopId_productId: { shopId: shop.id, productId } },
-    });
-    if (existing) {
-      if (existing.active || existing.requestStatus === ListingRequestStatus.approved) {
-        return {
-          ok: false,
-          error: "This catalog item is already live on your shop.",
-        };
-      }
-      if (
-        existing.requestStatus === ListingRequestStatus.submitted ||
-        existing.requestStatus === ListingRequestStatus.images_ok ||
-        existing.requestStatus === ListingRequestStatus.printify_item_created
-      ) {
-        return {
-          ok: false,
-          error:
-            "This item is already waiting for admin review. Pick another product or wait for a decision.",
-        };
-      }
-    }
-
     const key = `shops/${shop.id}/listing-request/${randomUUID()}.webp`;
     const url = await putPublicR2Object({
       key,
@@ -329,9 +306,8 @@ export async function submitFirstListingSetup(
       contentType: "image/webp",
     });
 
-    await prisma.shopListing.upsert({
-      where: { shopId_productId: { shopId: shop.id, productId } },
-      create: {
+    await prisma.shopListing.create({
+      data: {
         shopId: shop.id,
         productId,
         priceCents: listingPriceCents,
@@ -340,14 +316,7 @@ export async function submitFirstListingSetup(
         requestImages: [url],
         requestStatus: ListingRequestStatus.submitted,
         active: false,
-      },
-      update: {
-        priceCents: listingPriceCents,
-        listingPrintifyVariantPrices: catalogVariantCents as Prisma.InputJsonValue,
-        requestItemName,
-        requestImages: [url],
-        requestStatus: ListingRequestStatus.submitted,
-        active: false,
+        baselineCatalogPickEncoded: pickRaw,
       },
     });
 
@@ -362,7 +331,7 @@ export async function submitFirstListingSetup(
   let minCents: number;
 
   if (baselinePick) {
-    const stub = await getOrCreateBaselineStubProduct(shop.id, baselinePick);
+    const stub = await createBaselineStubProductForNewListing(shop.id, baselinePick);
     if (!stub) {
       return { ok: false, error: "That catalog item is not available." };
     }
@@ -443,25 +412,32 @@ export async function submitFirstListingSetup(
     }
   }
 
-  await prisma.shopListing.upsert({
-    where: { shopId_productId: { shopId: shop.id, productId } },
-    create: {
-      shopId: shop.id,
-      productId,
-      priceCents,
-      requestItemName,
-      requestImages: [url],
-      requestStatus: ListingRequestStatus.submitted,
-      active: false,
-    },
-    update: {
-      priceCents,
-      requestItemName,
-      requestImages: [url],
-      requestStatus: ListingRequestStatus.submitted,
-      active: false,
-    },
-  });
+  const listingCreateData = {
+    shopId: shop.id,
+    productId,
+    priceCents,
+    requestItemName,
+    requestImages: [url],
+    requestStatus: ListingRequestStatus.submitted,
+    active: false,
+    ...(baselinePick ? { baselineCatalogPickEncoded: pickRaw } : {}),
+  };
+
+  if (baselinePick) {
+    await prisma.shopListing.create({ data: listingCreateData });
+  } else {
+    await prisma.shopListing.upsert({
+      where: { shopId_productId: { shopId: shop.id, productId } },
+      create: listingCreateData,
+      update: {
+        priceCents,
+        requestItemName,
+        requestImages: [url],
+        requestStatus: ListingRequestStatus.submitted,
+        active: false,
+      },
+    });
+  }
 
   await syncFreeListingFeeWaivers(shop.id);
   revalidatePath("/dashboard");

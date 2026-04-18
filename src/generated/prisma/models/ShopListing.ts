@@ -49,6 +49,7 @@ export type ShopListingMinAggregateOutputType = {
   ownerSupplementImageUrl: string | null
   adminListingSecondaryImageUrl: string | null
   requestItemName: string | null
+  baselineCatalogPickEncoded: string | null
   requestStatus: $Enums.ListingRequestStatus | null
   adminRemovedFromShopAt: Date | null
   creatorRemovedFromShopAt: Date | null
@@ -73,6 +74,7 @@ export type ShopListingMaxAggregateOutputType = {
   ownerSupplementImageUrl: string | null
   adminListingSecondaryImageUrl: string | null
   requestItemName: string | null
+  baselineCatalogPickEncoded: string | null
   requestStatus: $Enums.ListingRequestStatus | null
   adminRemovedFromShopAt: Date | null
   creatorRemovedFromShopAt: Date | null
@@ -100,6 +102,7 @@ export type ShopListingCountAggregateOutputType = {
   adminListingSecondaryImageUrl: number
   listingStorefrontCatalogImageUrls: number
   requestItemName: number
+  baselineCatalogPickEncoded: number
   requestStatus: number
   adminRemovedFromShopAt: number
   creatorRemovedFromShopAt: number
@@ -134,6 +137,7 @@ export type ShopListingMinAggregateInputType = {
   ownerSupplementImageUrl?: true
   adminListingSecondaryImageUrl?: true
   requestItemName?: true
+  baselineCatalogPickEncoded?: true
   requestStatus?: true
   adminRemovedFromShopAt?: true
   creatorRemovedFromShopAt?: true
@@ -158,6 +162,7 @@ export type ShopListingMaxAggregateInputType = {
   ownerSupplementImageUrl?: true
   adminListingSecondaryImageUrl?: true
   requestItemName?: true
+  baselineCatalogPickEncoded?: true
   requestStatus?: true
   adminRemovedFromShopAt?: true
   creatorRemovedFromShopAt?: true
@@ -185,6 +190,7 @@ export type ShopListingCountAggregateInputType = {
   adminListingSecondaryImageUrl?: true
   listingStorefrontCatalogImageUrls?: true
   requestItemName?: true
+  baselineCatalogPickEncoded?: true
   requestStatus?: true
   adminRemovedFromShopAt?: true
   creatorRemovedFromShopAt?: true
@@ -299,6 +305,7 @@ export type ShopListingGroupByOutputType = {
   adminListingSecondaryImageUrl: string | null
   listingStorefrontCatalogImageUrls: runtime.JsonValue | null
   requestItemName: string | null
+  baselineCatalogPickEncoded: string | null
   requestStatus: $Enums.ListingRequestStatus
   adminRemovedFromShopAt: Date | null
   creatorRemovedFromShopAt: Date | null
@@ -349,6 +356,7 @@ export type ShopListingWhereInput = {
   adminListingSecondaryImageUrl?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   listingStorefrontCatalogImageUrls?: Prisma.JsonNullableFilter<"ShopListing">
   requestItemName?: Prisma.StringNullableFilter<"ShopListing"> | string | null
+  baselineCatalogPickEncoded?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFilter<"ShopListing"> | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   creatorRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
@@ -381,6 +389,7 @@ export type ShopListingOrderByWithRelationInput = {
   adminListingSecondaryImageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   listingStorefrontCatalogImageUrls?: Prisma.SortOrderInput | Prisma.SortOrder
   requestItemName?: Prisma.SortOrderInput | Prisma.SortOrder
+  baselineCatalogPickEncoded?: Prisma.SortOrderInput | Prisma.SortOrder
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrderInput | Prisma.SortOrder
   creatorRemovedFromShopAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -417,6 +426,7 @@ export type ShopListingWhereUniqueInput = Prisma.AtLeast<{
   adminListingSecondaryImageUrl?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   listingStorefrontCatalogImageUrls?: Prisma.JsonNullableFilter<"ShopListing">
   requestItemName?: Prisma.StringNullableFilter<"ShopListing"> | string | null
+  baselineCatalogPickEncoded?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFilter<"ShopListing"> | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   creatorRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
@@ -449,6 +459,7 @@ export type ShopListingOrderByWithAggregationInput = {
   adminListingSecondaryImageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   listingStorefrontCatalogImageUrls?: Prisma.SortOrderInput | Prisma.SortOrder
   requestItemName?: Prisma.SortOrderInput | Prisma.SortOrder
+  baselineCatalogPickEncoded?: Prisma.SortOrderInput | Prisma.SortOrder
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrderInput | Prisma.SortOrder
   creatorRemovedFromShopAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -484,6 +495,7 @@ export type ShopListingScalarWhereWithAggregatesInput = {
   adminListingSecondaryImageUrl?: Prisma.StringNullableWithAggregatesFilter<"ShopListing"> | string | null
   listingStorefrontCatalogImageUrls?: Prisma.JsonNullableWithAggregatesFilter<"ShopListing">
   requestItemName?: Prisma.StringNullableWithAggregatesFilter<"ShopListing"> | string | null
+  baselineCatalogPickEncoded?: Prisma.StringNullableWithAggregatesFilter<"ShopListing"> | string | null
   requestStatus?: Prisma.EnumListingRequestStatusWithAggregatesFilter<"ShopListing"> | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ShopListing"> | Date | string | null
   creatorRemovedFromShopAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ShopListing"> | Date | string | null
@@ -509,6 +521,7 @@ export type ShopListingCreateInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -541,6 +554,7 @@ export type ShopListingUncheckedCreateInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -569,6 +583,7 @@ export type ShopListingUpdateInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -601,6 +616,7 @@ export type ShopListingUncheckedUpdateInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -631,6 +647,7 @@ export type ShopListingCreateManyInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -656,6 +673,7 @@ export type ShopListingUpdateManyMutationInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -683,6 +701,7 @@ export type ShopListingUncheckedUpdateManyInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -730,6 +749,7 @@ export type ShopListingCountOrderByAggregateInput = {
   adminListingSecondaryImageUrl?: Prisma.SortOrder
   listingStorefrontCatalogImageUrls?: Prisma.SortOrder
   requestItemName?: Prisma.SortOrder
+  baselineCatalogPickEncoded?: Prisma.SortOrder
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrder
   creatorRemovedFromShopAt?: Prisma.SortOrder
@@ -758,6 +778,7 @@ export type ShopListingMaxOrderByAggregateInput = {
   ownerSupplementImageUrl?: Prisma.SortOrder
   adminListingSecondaryImageUrl?: Prisma.SortOrder
   requestItemName?: Prisma.SortOrder
+  baselineCatalogPickEncoded?: Prisma.SortOrder
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrder
   creatorRemovedFromShopAt?: Prisma.SortOrder
@@ -782,6 +803,7 @@ export type ShopListingMinOrderByAggregateInput = {
   ownerSupplementImageUrl?: Prisma.SortOrder
   adminListingSecondaryImageUrl?: Prisma.SortOrder
   requestItemName?: Prisma.SortOrder
+  baselineCatalogPickEncoded?: Prisma.SortOrder
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrder
   creatorRemovedFromShopAt?: Prisma.SortOrder
@@ -947,6 +969,7 @@ export type ShopListingCreateWithoutProductInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -977,6 +1000,7 @@ export type ShopListingUncheckedCreateWithoutProductInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -1036,6 +1060,7 @@ export type ShopListingScalarWhereInput = {
   adminListingSecondaryImageUrl?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   listingStorefrontCatalogImageUrls?: Prisma.JsonNullableFilter<"ShopListing">
   requestItemName?: Prisma.StringNullableFilter<"ShopListing"> | string | null
+  baselineCatalogPickEncoded?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFilter<"ShopListing"> | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   creatorRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
@@ -1061,6 +1086,7 @@ export type ShopListingCreateWithoutShopHomeFeaturedInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -1092,6 +1118,7 @@ export type ShopListingUncheckedCreateWithoutShopHomeFeaturedInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -1124,6 +1151,7 @@ export type ShopListingCreateWithoutShopInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -1154,6 +1182,7 @@ export type ShopListingUncheckedCreateWithoutShopInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -1203,6 +1232,7 @@ export type ShopListingUpdateWithoutShopHomeFeaturedInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1234,6 +1264,7 @@ export type ShopListingUncheckedUpdateWithoutShopHomeFeaturedInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1277,6 +1308,7 @@ export type ShopListingCreateWithoutRejectionNoticesInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -1308,6 +1340,7 @@ export type ShopListingUncheckedCreateWithoutRejectionNoticesInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -1351,6 +1384,7 @@ export type ShopListingUpdateWithoutRejectionNoticesInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1382,6 +1416,7 @@ export type ShopListingUncheckedUpdateWithoutRejectionNoticesInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1409,6 +1444,7 @@ export type ShopListingCreateWithoutOrderLinesInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -1440,6 +1476,7 @@ export type ShopListingUncheckedCreateWithoutOrderLinesInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -1483,6 +1520,7 @@ export type ShopListingUpdateWithoutOrderLinesInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1514,6 +1552,7 @@ export type ShopListingUncheckedUpdateWithoutOrderLinesInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1542,6 +1581,7 @@ export type ShopListingCreateManyProductInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -1567,6 +1607,7 @@ export type ShopListingUpdateWithoutProductInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1597,6 +1638,7 @@ export type ShopListingUncheckedUpdateWithoutProductInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1626,6 +1668,7 @@ export type ShopListingUncheckedUpdateManyWithoutProductInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1652,6 +1695,7 @@ export type ShopListingCreateManyShopInput = {
   adminListingSecondaryImageUrl?: string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: string | null
+  baselineCatalogPickEncoded?: string | null
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
@@ -1677,6 +1721,7 @@ export type ShopListingUpdateWithoutShopInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1707,6 +1752,7 @@ export type ShopListingUncheckedUpdateWithoutShopInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1736,6 +1782,7 @@ export type ShopListingUncheckedUpdateManyWithoutShopInput = {
   adminListingSecondaryImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingStorefrontCatalogImageUrls?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   requestItemName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baselineCatalogPickEncoded?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1803,6 +1850,7 @@ export type ShopListingSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   adminListingSecondaryImageUrl?: boolean
   listingStorefrontCatalogImageUrls?: boolean
   requestItemName?: boolean
+  baselineCatalogPickEncoded?: boolean
   requestStatus?: boolean
   adminRemovedFromShopAt?: boolean
   creatorRemovedFromShopAt?: boolean
@@ -1836,6 +1884,7 @@ export type ShopListingSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   adminListingSecondaryImageUrl?: boolean
   listingStorefrontCatalogImageUrls?: boolean
   requestItemName?: boolean
+  baselineCatalogPickEncoded?: boolean
   requestStatus?: boolean
   adminRemovedFromShopAt?: boolean
   creatorRemovedFromShopAt?: boolean
@@ -1865,6 +1914,7 @@ export type ShopListingSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   adminListingSecondaryImageUrl?: boolean
   listingStorefrontCatalogImageUrls?: boolean
   requestItemName?: boolean
+  baselineCatalogPickEncoded?: boolean
   requestStatus?: boolean
   adminRemovedFromShopAt?: boolean
   creatorRemovedFromShopAt?: boolean
@@ -1894,6 +1944,7 @@ export type ShopListingSelectScalar = {
   adminListingSecondaryImageUrl?: boolean
   listingStorefrontCatalogImageUrls?: boolean
   requestItemName?: boolean
+  baselineCatalogPickEncoded?: boolean
   requestStatus?: boolean
   adminRemovedFromShopAt?: boolean
   creatorRemovedFromShopAt?: boolean
@@ -1903,7 +1954,7 @@ export type ShopListingSelectScalar = {
   updatedAt?: boolean
 }
 
-export type ShopListingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "shopId" | "productId" | "priceCents" | "active" | "featuredOnShop" | "featuredForHome" | "listingFeePaidAt" | "listingPrintifyProductId" | "listingPrintifyVariantId" | "listingPrintifyVariantPrices" | "listingPrintifyCatalogSyncedAt" | "requestImages" | "ownerSupplementImageUrl" | "adminListingSecondaryImageUrl" | "listingStorefrontCatalogImageUrls" | "requestItemName" | "requestStatus" | "adminRemovedFromShopAt" | "creatorRemovedFromShopAt" | "removedFromListingRequestsAt" | "adminListingRemovalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["shopListing"]>
+export type ShopListingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "shopId" | "productId" | "priceCents" | "active" | "featuredOnShop" | "featuredForHome" | "listingFeePaidAt" | "listingPrintifyProductId" | "listingPrintifyVariantId" | "listingPrintifyVariantPrices" | "listingPrintifyCatalogSyncedAt" | "requestImages" | "ownerSupplementImageUrl" | "adminListingSecondaryImageUrl" | "listingStorefrontCatalogImageUrls" | "requestItemName" | "baselineCatalogPickEncoded" | "requestStatus" | "adminRemovedFromShopAt" | "creatorRemovedFromShopAt" | "removedFromListingRequestsAt" | "adminListingRemovalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["shopListing"]>
 export type ShopListingInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -1980,6 +2031,12 @@ export type $ShopListingPayload<ExtArgs extends runtime.Types.Extensions.Interna
      * * Shop-provided display name for this listing request (review / fulfillment context).
      */
     requestItemName: string | null
+    /**
+     * *
+     *    * Baseline catalog picker value (`ab|…`) saved at submit. Used when stub `Product.slug` is no longer
+     *    * deterministic (multiple listings of the same catalog line) so draft prefill + variant price remap still work.
+     */
+    baselineCatalogPickEncoded: string | null
     requestStatus: $Enums.ListingRequestStatus
     /**
      * * Set when an admin hides an approved listing from the shop (distinct from awaiting publication fee).
@@ -2444,6 +2501,7 @@ export interface ShopListingFieldRefs {
   readonly adminListingSecondaryImageUrl: Prisma.FieldRef<"ShopListing", 'String'>
   readonly listingStorefrontCatalogImageUrls: Prisma.FieldRef<"ShopListing", 'Json'>
   readonly requestItemName: Prisma.FieldRef<"ShopListing", 'String'>
+  readonly baselineCatalogPickEncoded: Prisma.FieldRef<"ShopListing", 'String'>
   readonly requestStatus: Prisma.FieldRef<"ShopListing", 'ListingRequestStatus'>
   readonly adminRemovedFromShopAt: Prisma.FieldRef<"ShopListing", 'DateTime'>
   readonly creatorRemovedFromShopAt: Prisma.FieldRef<"ShopListing", 'DateTime'>

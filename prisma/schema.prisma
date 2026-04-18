@@ -258,6 +258,11 @@ model ShopListing {
   listingStorefrontCatalogImageUrls Json?
   /** Shop-provided display name for this listing request (review / fulfillment context). */
   requestItemName    String?
+  /**
+   * Baseline catalog picker value (`ab|…`) saved at submit. Used when stub `Product.slug` is no longer
+   * deterministic (multiple listings of the same catalog line) so draft prefill + variant price remap still work.
+   */
+  baselineCatalogPickEncoded String?
   requestStatus      ListingRequestStatus   @default(draft)
   /** Set when an admin hides an approved listing from the shop (distinct from awaiting publication fee). */
   adminRemovedFromShopAt DateTime?
