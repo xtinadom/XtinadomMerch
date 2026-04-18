@@ -15,7 +15,7 @@ import {
   SHOP_LISTING_MAX_PRICE_CENTS,
   shopListingMaxPriceUsdLabel,
 } from "@/lib/marketplace-constants";
-import { getListingOrdinal } from "@/lib/listing-fee";
+import { getListingOrdinal, syncFreeListingFeeWaivers } from "@/lib/listing-fee";
 import { FulfillmentType, ListingRequestStatus } from "@/generated/prisma/enums";
 import {
   deleteShopListingRequestImagesFromR2,
@@ -348,26 +348,54 @@ export async function dashboardCreatorRemoveListingFromShop(formData: FormData):
   revalidatePath(`/s/${shop.slug}`);
 }
 
+export type DashboardSubmitListingRequestResult =
+  | { ok: true }
+  | { ok: false; error?: string };
+
 export async function dashboardSubmitListingRequest(
   formData: FormData,
-): Promise<{ ok: boolean }> {
+): Promise<DashboardSubmitListingRequestResult> {
   const user = await requireShopOwner();
+  const shop = user.shop;
   const listingId = String(formData.get("listingId") ?? "").trim();
   const imagesText = String(formData.get("requestImageUrls") ?? "");
-  if (!listingId) return { ok: false };
+  if (!listingId) return { ok: false, error: "Missing listing." };
   if (String(formData.get("guidelinesAttestation") ?? "").trim() !== "1") {
-    return { ok: false };
+    return {
+      ok: false,
+      error:
+        "Confirm in the dialog that you have rights to your reference images and that they follow the item guidelines.",
+    };
   }
 
   const listing = await prisma.shopListing.findFirst({
     where: { id: listingId, shopId: user.shopId },
   });
-  if (!listing) return { ok: false };
+  if (!listing) return { ok: false, error: "Listing not found." };
   if (listing.requestStatus !== ListingRequestStatus.draft) {
-    return { ok: false };
+    return { ok: false, error: "Only drafts can be submitted for review." };
   }
   if (listing.creatorRemovedFromShopAt != null) {
-    return { ok: false };
+    return { ok: false, error: "This listing cannot be submitted." };
+  }
+
+  await syncFreeListingFeeWaivers(shop.id);
+  const listingAfterSync = await prisma.shopListing.findFirst({
+    where: { id: listingId, shopId: user.shopId },
+    select: { listingFeePaidAt: true },
+  });
+  const feePaid = listingAfterSync?.listingFeePaidAt != null;
+  const ordinal = await getListingOrdinal(listingId, shop.id);
+  if (ordinal !== null) {
+    const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug);
+    if (feeCents > 0 && !feePaid) {
+      revalidatePath("/dashboard");
+      return {
+        ok: false,
+        error:
+          "Pay the publication fee for this listing on the Listings tab before submitting for admin review.",
+      };
+    }
   }
 
   const urls = imagesText
@@ -408,17 +436,67 @@ export async function dashboardPayListingFee(formData: FormData) {
     },
   });
   if (!listing || listing.listingFeePaidAt) return;
-  if (listing.requestStatus !== ListingRequestStatus.approved) return;
   if (listing.creatorRemovedFromShopAt != null) return;
+  if (listing.adminRemovedFromShopAt != null) return;
+
+  const row = listing;
+
+  const canPayListingFee =
+    row.requestStatus === ListingRequestStatus.draft ||
+    row.requestStatus === ListingRequestStatus.approved ||
+    row.requestStatus === ListingRequestStatus.submitted ||
+    row.requestStatus === ListingRequestStatus.images_ok ||
+    row.requestStatus === ListingRequestStatus.printify_item_created;
+  if (!canPayListingFee) return;
 
   const ordinal = await getListingOrdinal(listingId, shop.id);
   if (ordinal === null) return;
   const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug);
   const publishAfterFee =
-    listing.requestStatus === ListingRequestStatus.approved &&
-    !listing.active &&
-    listing.adminRemovedFromShopAt == null &&
-    listing.creatorRemovedFromShopAt == null;
+    row.requestStatus === ListingRequestStatus.approved &&
+    !row.active &&
+    row.adminRemovedFromShopAt == null &&
+    row.creatorRemovedFromShopAt == null;
+
+  async function notifyAfterFeePayment() {
+    if (publishAfterFee) {
+      await activateProductWhenShopListingGoesLive(row.productId, shop.slug);
+      await prisma.shopOwnerNotice.create({
+        data: {
+          shopId: shop.id,
+          kind: "listing_fee_paid",
+          body:
+            "Your listing publication fee was received. That listing is now live in your shop.",
+        },
+      });
+      return;
+    }
+    if (feeCents <= 0) return;
+    if (row.requestStatus === ListingRequestStatus.draft) {
+      await prisma.shopOwnerNotice.create({
+        data: {
+          shopId: shop.id,
+          kind: "listing_fee_paid",
+          body:
+            "Your listing publication fee was received. Open the Listings tab and submit that draft for admin review when you are ready.",
+        },
+      });
+      return;
+    }
+    if (
+      row.requestStatus === ListingRequestStatus.submitted ||
+      row.requestStatus === ListingRequestStatus.images_ok ||
+      row.requestStatus === ListingRequestStatus.printify_item_created
+    ) {
+      await prisma.shopOwnerNotice.create({
+        data: {
+          shopId: shop.id,
+          kind: "listing_fee_paid",
+          body: "Your listing publication fee was received. Admin review continues as usual.",
+        },
+      });
+    }
+  }
 
   if (feeCents === 0) {
     await prisma.shopListing.update({
@@ -428,17 +506,7 @@ export async function dashboardPayListingFee(formData: FormData) {
         ...(publishAfterFee ? { active: true } : {}),
       },
     });
-    if (publishAfterFee) {
-      await activateProductWhenShopListingGoesLive(listing.productId, shop.slug);
-      await prisma.shopOwnerNotice.create({
-        data: {
-          shopId: shop.id,
-          kind: "listing_fee_paid",
-          body:
-            "Your listing publication fee was received. That listing is now live in your shop.",
-        },
-      });
-    }
+    await notifyAfterFeePayment();
     revalidatePath("/dashboard");
     redirect("/dashboard?fee=ok");
   }
@@ -451,17 +519,7 @@ export async function dashboardPayListingFee(formData: FormData) {
         ...(publishAfterFee ? { active: true } : {}),
       },
     });
-    if (publishAfterFee) {
-      await activateProductWhenShopListingGoesLive(listing.productId, shop.slug);
-      await prisma.shopOwnerNotice.create({
-        data: {
-          shopId: shop.id,
-          kind: "listing_fee_paid",
-          body:
-            "Your listing publication fee was received. That listing is now live in your shop.",
-        },
-      });
-    }
+    await notifyAfterFeePayment();
     revalidatePath("/dashboard");
     redirect("/dashboard?fee=ok");
   }

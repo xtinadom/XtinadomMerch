@@ -427,18 +427,18 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       ) : null}
       {!isPlatform && delConfirm === "ok" ? (
         <p className="mt-4 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
-          Account deletion email confirmed. On the <strong className="text-emerald-100/90">Onboarding</strong> tab,
-          scroll to <strong className="text-emerald-100/90">Shop visibility &amp; account</strong> — when your Stripe
-          balance is zero you can permanently delete.
+          Account deletion email confirmed. Open the <strong className="text-emerald-100/90">Shop profile</strong> tab
+          and scroll to <strong className="text-emerald-100/90">Shop visibility &amp; account</strong> — when your
+          Stripe balance is zero you can permanently delete.
         </p>
       ) : null}
       {!isPlatform && delConfirm && delConfirm !== "ok" ? (
         <p className="mt-4 rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-2 text-sm text-amber-200/90">
           {delConfirm === "expired"
-            ? "That account deletion link has expired. Request deletion again from the Onboarding tab to receive a new email."
+            ? "That account deletion link has expired. Request deletion again from the Shop profile tab to receive a new email."
             : delConfirm === "missing"
               ? "That account deletion link was missing a token. Open the full link from your latest email, or request deletion again."
-              : "That account deletion link is invalid. Request a new one from the Onboarding tab if you still want to delete your account."}
+              : "That account deletion link is invalid. Request a new one from the Shop profile tab if you still want to delete your account."}
         </p>
       ) : null}
       {!isPlatform && connect === "err" && connectReason === "onboarding_incomplete" ? (

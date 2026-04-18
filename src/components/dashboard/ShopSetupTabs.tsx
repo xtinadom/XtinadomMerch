@@ -5,7 +5,6 @@ import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { dashboardStartStripeConnect } from "@/actions/dashboard-marketplace";
 import { resendShopEmailVerification } from "@/actions/shop-email-verify";
-import { ShopDangerZonePanel } from "@/components/dashboard/ShopDangerZonePanel";
 
 export type ShopSetupShopPayload = {
   shopSlug: string;
@@ -279,17 +278,19 @@ export function ShopSetupTabs(props: {
             </Link>{" "}
             tab.
           </p>
+          <p className="mt-3 text-xs text-zinc-500">
+            To <strong className="text-zinc-400">pause</strong> the shop,{" "}
+            <strong className="text-zinc-400">request account deletion</strong> (freeze + email), or{" "}
+            <strong className="text-zinc-400">permanently delete</strong> after confirmation, use the{" "}
+            <Link
+              href="/dashboard?dash=shopProfile"
+              className="text-zinc-300 underline decoration-zinc-600 underline-offset-2 hover:text-zinc-100"
+            >
+              Shop profile
+            </Link>{" "}
+            tab.
+          </p>
         </div>
-
-        <ShopDangerZonePanel
-          shopSlug={shop.shopSlug}
-          shopActive={shop.shopActive}
-          ownerPausedShopAt={shop.ownerPausedShopAt}
-          accountDeletionRequestedAt={shop.accountDeletionRequestedAt}
-          accountDeletionEmailConfirmedAt={shop.accountDeletionEmailConfirmedAt}
-          stripeConnectAccountId={shop.stripeConnectAccountId}
-          stripeConnectBalance={shop.stripeConnectBalance}
-        />
       </div>
     </section>
   );

@@ -136,7 +136,7 @@ function requestStatusDescription(status: ListingRequestStatus): string {
     case ListingRequestStatus.printify_item_created:
       return "Printify item created — waiting for admin approval.";
     case ListingRequestStatus.approved:
-      return "Approved — goes live when the publication fee is settled (if required for this slot).";
+      return "Approved — goes live on your storefront once any publication fee for this slot is paid.";
     case ListingRequestStatus.rejected:
       return "Rejected — this listing cannot be edited. Contact support if you need help.";
     default:
@@ -413,24 +413,24 @@ function ListingOptionPanel({
             : `No publication fee — free listing (${listing.listingOrdinal} of ${LISTING_FEE_FREE_SLOT_COUNT}).`}
         </p>
       ) : !isPlatform &&
-        !fieldsReadOnly &&
         !listing.listingFeePaidAt &&
         feeCents > 0 &&
-        listing.requestStatus === ListingRequestStatus.approved ? (
+        listing.creatorRemovedFromShopAt == null &&
+        listing.adminRemovedFromShopAt == null &&
+        (listing.requestStatus === ListingRequestStatus.draft ||
+          listing.requestStatus === ListingRequestStatus.approved ||
+          listing.requestStatus === ListingRequestStatus.submitted ||
+          listing.requestStatus === ListingRequestStatus.images_ok ||
+          listing.requestStatus === ListingRequestStatus.printify_item_created) ? (
         <form action={dashboardPayListingFee} className="mt-3">
           <input type="hidden" name="listingId" value={listing.id} />
           <button
             type="submit"
             className="rounded border border-blue-900/60 bg-blue-950/30 px-3 py-1.5 text-xs text-blue-200 hover:border-blue-700/60"
           >
-            Pay {paidListingFeeLabel} listing fee (Stripe)
+            Pay {paidListingFeeLabel} publication fee (Stripe)
           </button>
         </form>
-      ) : !isPlatform && !listing.listingFeePaidAt && feeCents > 0 ? (
-        <p className="mt-2 text-xs text-zinc-500">
-          Publication fee is due after admin approves this listing. You will be able to pay here once it is
-          approved.
-        </p>
       ) : !isPlatform && listing.listingFeePaidAt ? (
         <p className="mt-2 text-xs text-emerald-600/90">
           Listing fee paid {listing.listingFeePaidAt.slice(0, 10)}
@@ -441,6 +441,8 @@ function ListingOptionPanel({
         <DashboardSubmitListingRequestForm
           listingId={listing.id}
           defaultImageUrlsText={imagesDefault}
+          feeBlocksSubmit={feeCents > 0 && !listing.listingFeePaidAt}
+          paidListingFeeLabel={paidListingFeeLabel}
         />
       ) : listingLocked ? (
         <p className="mt-3 text-xs text-zinc-600">
@@ -803,9 +805,9 @@ export function DashboardMainTabs(props: {
         className="pt-6"
       >
         <p className="text-xs text-zinc-600">
-          Set your public price (at least the catalog minimum). {listingFeePolicySummary} After admin links
-          Printify and approves, pay the publication fee here if required for your slot — then the listing
-          goes live. Platform catalog shop skips the fee.
+          Set your public price (at least the catalog minimum). {listingFeePolicySummary} If a publication fee
+          applies for your slot, pay it on this tab before you submit a draft for admin review; after approval,
+          paid listings go live automatically. Platform catalog shop skips the fee.
         </p>
 
         {groupedRequest.length > 0 ? (

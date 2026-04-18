@@ -1,7 +1,9 @@
+import { ListingRequestStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import {
   LISTING_FEE_FREE_SLOT_COUNT,
   isFounderUnlimitedFreeListingsShop,
+  listingFeeCentsForOrdinal,
 } from "@/lib/marketplace-constants";
 
 /**
@@ -50,4 +52,38 @@ export async function getListingOrdinal(
   });
   const idx = rows.findIndex((r) => r.id === listingId);
   return idx < 0 ? null : idx + 1;
+}
+
+/**
+ * After creating a listing as `submitted`, if it still owes a publication fee, move it back to `draft`
+ * so the queue never contains unpaid fee listings.
+ */
+export async function downgradeSubmittedToDraftIfListingFeeUnpaid(
+  shopId: string,
+  shopSlug: string,
+  listingId: string,
+): Promise<{ downgraded: boolean; message?: string }> {
+  await syncFreeListingFeeWaivers(shopId);
+  const row = await prisma.shopListing.findFirst({
+    where: { id: listingId, shopId },
+    select: { requestStatus: true, listingFeePaidAt: true },
+  });
+  if (!row || row.requestStatus !== ListingRequestStatus.submitted) {
+    return { downgraded: false };
+  }
+  const ordinal = await getListingOrdinal(listingId, shopId);
+  if (ordinal === null) return { downgraded: false };
+  const fee = listingFeeCentsForOrdinal(ordinal, shopSlug);
+  if (fee <= 0 || row.listingFeePaidAt != null) {
+    return { downgraded: false };
+  }
+  await prisma.shopListing.update({
+    where: { id: listingId },
+    data: { requestStatus: ListingRequestStatus.draft },
+  });
+  return {
+    downgraded: true,
+    message:
+      "Your listing was saved as a draft. Pay the publication fee on the Listings tab, then use Submit for admin approval.",
+  };
 }

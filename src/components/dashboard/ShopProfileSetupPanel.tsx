@@ -16,6 +16,7 @@ import {
   socialLinkAddValidationMessage,
 } from "@/lib/shop-social-links";
 import type { ShopSetupShopPayload } from "@/components/dashboard/ShopSetupTabs";
+import { ShopDangerZonePanel } from "@/components/dashboard/ShopDangerZonePanel";
 
 const SOCIAL_LABELS: Record<ShopSocialKey, string> = {
   reddit: "Reddit",
@@ -471,6 +472,18 @@ export function ShopProfileSetupPanel(props: {
             {profileBtnLabel}
           </button>
         </form>
+      </div>
+
+      <div className="mt-10 border-t border-zinc-800 pt-8">
+        <ShopDangerZonePanel
+          shopSlug={shop.shopSlug}
+          shopActive={shop.shopActive}
+          ownerPausedShopAt={shop.ownerPausedShopAt}
+          accountDeletionRequestedAt={shop.accountDeletionRequestedAt}
+          accountDeletionEmailConfirmedAt={shop.accountDeletionEmailConfirmedAt}
+          stripeConnectAccountId={shop.stripeConnectAccountId}
+          stripeConnectBalance={shop.stripeConnectBalance}
+        />
       </div>
     </section>
   );

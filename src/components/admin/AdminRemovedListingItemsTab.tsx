@@ -7,18 +7,20 @@ import { FulfillmentType } from "@/generated/prisma/enums";
 export type RemovedListingRow = {
   id: string;
   requestItemName: string | null;
-  /** Present for rows in this tab (query filters non-null). */
-  removedFromListingRequestsAt: Date | null;
+  /** ISO timestamp when removed from the requests queue (null only if data is inconsistent). */
+  removedFromListingRequestsAt: string | null;
   adminListingRemovalNotes: string | null;
   shop: { displayName: string; slug: string };
   product: { id: string; name: string; slug: string; fulfillmentType: FulfillmentType };
 };
 
-function formatRemovedWhen(d: Date): string {
+function formatRemovedWhen(iso: string): string {
   try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
     return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
   } catch {
-    return String(d);
+    return iso;
   }
 }
 

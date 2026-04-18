@@ -45,6 +45,7 @@ async function fulfillListingFeeCheckout(session: Stripe.Checkout.Session): Prom
     row.requestStatus === ListingRequestStatus.approved &&
     !row.active &&
     row.adminRemovedFromShopAt == null;
+  const statusBefore = row.requestStatus;
   await prisma.shopListing.update({
     where: { id: listingId },
     data: {
@@ -60,6 +61,29 @@ async function fulfillListingFeeCheckout(session: Stripe.Checkout.Session): Prom
         kind: "listing_fee_paid",
         body:
           "Your listing publication fee was received. That listing is now live in your shop.",
+      },
+    });
+    revalidatePath("/dashboard");
+  } else if (statusBefore === ListingRequestStatus.draft) {
+    await prisma.shopOwnerNotice.create({
+      data: {
+        shopId: row.shopId,
+        kind: "listing_fee_paid",
+        body:
+          "Your listing publication fee was received. Open the Listings tab and submit that draft for admin review when you are ready.",
+      },
+    });
+    revalidatePath("/dashboard");
+  } else if (
+    statusBefore === ListingRequestStatus.submitted ||
+    statusBefore === ListingRequestStatus.images_ok ||
+    statusBefore === ListingRequestStatus.printify_item_created
+  ) {
+    await prisma.shopOwnerNotice.create({
+      data: {
+        shopId: row.shopId,
+        kind: "listing_fee_paid",
+        body: "Your listing publication fee was received. Admin review continues as usual.",
       },
     });
     revalidatePath("/dashboard");

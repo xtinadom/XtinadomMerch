@@ -33,7 +33,7 @@ import {
   createBaselineAllVariantsStubProductForNewListing,
   createBaselineStubProductForNewListing,
 } from "@/lib/shop-baseline-stub-product";
-import { syncFreeListingFeeWaivers } from "@/lib/listing-fee";
+import { downgradeSubmittedToDraftIfListingFeeUnpaid } from "@/lib/listing-fee";
 
 const WELCOME_MAX = 280;
 const REQUEST_ITEM_NAME_MAX = 120;
@@ -54,7 +54,9 @@ function parseRequestItemNameFromForm(
   return { ok: true, value: raw };
 }
 
-export type ShopSetupActionResult = { ok: true } | { ok: false; error: string };
+export type ShopSetupActionResult =
+  | { ok: true; message?: string }
+  | { ok: false; error: string };
 
 async function requireShopOwner() {
   const session = await getShopOwnerSession();
@@ -326,7 +328,7 @@ export async function submitFirstListingSetup(
       contentType: "image/webp",
     });
 
-    await prisma.shopListing.create({
+    const created = await prisma.shopListing.create({
       data: {
         shopId: shop.id,
         productId,
@@ -340,10 +342,17 @@ export async function submitFirstListingSetup(
       },
     });
 
-    await syncFreeListingFeeWaivers(shop.id);
+    const gate = await downgradeSubmittedToDraftIfListingFeeUnpaid(
+      shop.id,
+      shop.slug,
+      created.id,
+    );
     revalidatePath("/dashboard");
     revalidatePath(`/s/${shop.slug}`);
     revalidatePath("/admin");
+    if (gate.downgraded && gate.message) {
+      return { ok: true, message: gate.message };
+    }
     return { ok: true };
   }
 
@@ -457,25 +466,30 @@ export async function submitFirstListingSetup(
     ...(baselinePick ? { baselineCatalogPickEncoded: pickRaw } : {}),
   };
 
-  if (baselinePick) {
-    await prisma.shopListing.create({ data: listingCreateData });
-  } else {
-    await prisma.shopListing.upsert({
-      where: { shopId_productId: { shopId: shop.id, productId } },
-      create: listingCreateData,
-      update: {
-        priceCents,
-        requestItemName,
-        requestImages: [url],
-        requestStatus: ListingRequestStatus.submitted,
-        active: false,
-      },
-    });
-  }
+  const saved = baselinePick
+    ? await prisma.shopListing.create({ data: listingCreateData })
+    : await prisma.shopListing.upsert({
+        where: { shopId_productId: { shopId: shop.id, productId } },
+        create: listingCreateData,
+        update: {
+          priceCents,
+          requestItemName,
+          requestImages: [url],
+          requestStatus: ListingRequestStatus.submitted,
+          active: false,
+        },
+      });
 
-  await syncFreeListingFeeWaivers(shop.id);
+  const gate = await downgradeSubmittedToDraftIfListingFeeUnpaid(
+    shop.id,
+    shop.slug,
+    saved.id,
+  );
   revalidatePath("/dashboard");
   revalidatePath(`/s/${shop.slug}`);
   revalidatePath("/admin");
+  if (gate.downgraded && gate.message) {
+    return { ok: true, message: gate.message };
+  }
   return { ok: true };
 }

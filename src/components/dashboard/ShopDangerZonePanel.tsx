@@ -63,7 +63,7 @@ export function ShopDangerZonePanel(props: {
 
   return (
     <section
-      className="mt-10 scroll-mt-4 rounded-lg border border-red-900/40 bg-red-950/15 p-4 sm:p-5"
+      className="scroll-mt-4 rounded-lg border border-red-900/40 bg-red-950/15 p-4 sm:p-5"
       aria-labelledby="shop-danger-heading"
     >
       <h3 id="shop-danger-heading" className="text-sm font-semibold tracking-wide text-red-200/95">

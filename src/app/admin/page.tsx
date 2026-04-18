@@ -36,7 +36,10 @@ import {
 } from "@/lib/product-design-names";
 import { AdminPlatformSalesTab } from "@/components/admin/AdminPlatformSalesTab";
 import { AdminListingRequestsTab } from "@/components/admin/AdminListingRequestsTab";
-import { AdminRemovedListingItemsTab } from "@/components/admin/AdminRemovedListingItemsTab";
+import {
+  AdminRemovedListingItemsTab,
+  type RemovedListingRow,
+} from "@/components/admin/AdminRemovedListingItemsTab";
 import {
   AdminShopWatchTab,
   type ShopWatchDetail,
@@ -62,6 +65,10 @@ import { ensureBaselineAdminCatalogIfEmpty } from "@/lib/seed-baseline-admin-cat
 import { supportUnresolvedThreadShopIdsExcludingPlatform } from "@/lib/support-thread-unresolved";
 import { fetchPrintifyCatalog, hasPrintifyApiToken } from "@/lib/printify";
 import { defaultPrintifyVariantIdForCatalogProduct } from "@/lib/printify-catalog";
+import {
+  formatBytesForAdmin,
+  getAdminDeployFootprint,
+} from "@/lib/deploy-footprint";
 export const dynamic = "force-dynamic";
 
 function formatPrice(cents: number) {
@@ -83,7 +90,11 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     redirect("/admin/login");
   }
 
-  await ensureBaselineAdminCatalogIfEmpty(prisma);
+  try {
+    await ensureBaselineAdminCatalogIfEmpty(prisma);
+  } catch (e) {
+    console.error("[admin] ensureBaselineAdminCatalogIfEmpty failed", e);
+  }
 
   const sp = await searchParams;
   const tabParam = typeof sp.tab === "string" ? sp.tab : undefined;
@@ -325,6 +336,20 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       },
     }),
   ]);
+
+  const removedListingTabRows: RemovedListingRow[] = removedListingRows.map((r) => ({
+    id: r.id,
+    requestItemName: r.requestItemName,
+    removedFromListingRequestsAt: r.removedFromListingRequestsAt?.toISOString() ?? null,
+    adminListingRemovalNotes: r.adminListingRemovalNotes,
+    shop: { displayName: r.shop.displayName, slug: r.shop.slug },
+    product: {
+      id: r.product.id,
+      name: r.product.name,
+      slug: r.product.slug,
+      fulfillmentType: r.product.fulfillmentType,
+    },
+  }));
 
   const listingRequestShopIds = [...new Set(listingRequestRows.map((r) => r.shopId))];
   const ordinalListingRows =
@@ -663,17 +688,22 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     }
   }
 
-  const mappedShopListingPrintifyRows = await prisma.shopListing.findMany({
-    where: { listingPrintifyProductId: { not: null } },
-    select: { listingPrintifyProductId: true },
-  });
-  const printifyProductIdsMappedToShopListings = [
-    ...new Set(
-      mappedShopListingPrintifyRows
-        .map((row) => row.listingPrintifyProductId?.trim())
-        .filter((id): id is string => Boolean(id)),
-    ),
-  ];
+  let printifyProductIdsMappedToShopListings: string[] = [];
+  try {
+    const mappedShopListingPrintifyRows = await prisma.shopListing.findMany({
+      where: { listingPrintifyProductId: { not: null } },
+      select: { listingPrintifyProductId: true },
+    });
+    printifyProductIdsMappedToShopListings = [
+      ...new Set(
+        mappedShopListingPrintifyRows
+          .map((row) => row.listingPrintifyProductId?.trim())
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+  } catch (e) {
+    console.error("[admin] printifyProductIdsMappedToShopListings query failed", e);
+  }
 
   const printifyTabBadgeCount = printifyCatalogItemCount ?? printifyProducts.length;
 
@@ -749,6 +779,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       }
     }
   }
+
+  const deployFootprint = await getAdminDeployFootprint();
 
   return (
     <div className="space-y-12">
@@ -826,6 +858,49 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           </ul>
         </div>
       ) : null}
+
+      <section
+        aria-label="Production deployment footprint"
+        className="rounded-lg border border-zinc-800 bg-zinc-900/35 px-4 py-3 text-xs text-zinc-400"
+      >
+        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+          Production footprint (this host)
+        </h2>
+        <dl className="mt-2 flex flex-wrap gap-x-8 gap-y-2">
+          <div>
+            <dt className="text-zinc-600">Next.js build</dt>
+            <dd className="font-mono text-sm text-zinc-200">
+              {deployFootprint.nextBuildDirPresent
+                ? deployFootprint.nextBuildBytes != null
+                  ? formatBytesForAdmin(deployFootprint.nextBuildBytes)
+                  : "`.next` present (size unavailable)"
+                : "No `.next` folder at process cwd"}
+            </dd>
+            <dd className="mt-0.5 max-w-full truncate font-mono text-[10px] text-zinc-600" title={deployFootprint.processCwd}>
+              {deployFootprint.processCwd}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-zinc-600">Runtime</dt>
+            <dd className="font-mono text-sm text-zinc-200">
+              NODE_ENV={deployFootprint.nodeEnv ?? "—"}
+              {deployFootprint.isVercel ? (
+                <>
+                  {" · "}
+                  VERCEL_ENV={deployFootprint.vercelEnv ?? "—"}
+                </>
+              ) : null}
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-2 text-[11px] leading-relaxed text-zinc-600">
+          Total on-disk size of all files under <code className="text-zinc-500">.next</code> on the server running this
+          page (compiled routes, cache, and optional standalone output). It is not the git repo size and does not
+          include <code className="text-zinc-500">node_modules</code> or your source tree. Local dev without{" "}
+          <code className="text-zinc-500">next build</code> usually shows no <code className="text-zinc-500">.next</code>{" "}
+          until you build.
+        </p>
+      </section>
 
       <div className="rounded-xl border border-zinc-800 bg-zinc-950/40">
         <nav
@@ -921,7 +996,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             }`}
           >
             Removed items
-            <span className="ml-1.5 tabular-nums text-zinc-500">({removedListingRows.length})</span>
+            <span className="ml-1.5 tabular-nums text-zinc-500">({removedListingTabRows.length})</span>
           </Link>
           <Link
             href="/admin?tab=shop-watch"
@@ -1375,7 +1450,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
               r2Configured={isR2UploadConfigured()}
             />
           ) : inventoryTab === "removed" ? (
-            <AdminRemovedListingItemsTab rows={removedListingRows} />
+            <AdminRemovedListingItemsTab rows={removedListingTabRows} />
           ) : inventoryTab === "shop-watch" ? (
             <AdminShopWatchTab
               rows={shopWatchRows}

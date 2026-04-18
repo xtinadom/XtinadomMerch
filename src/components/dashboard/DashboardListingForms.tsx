@@ -21,6 +21,7 @@ import {
   dashboardUpdateListingPrice,
   dashboardUpdateListingVariantPrices,
   dashboardUploadListingSupplementPhoto,
+  type DashboardSubmitListingRequestResult,
   type ListingCatalogImagesFormState,
 } from "@/actions/dashboard-marketplace";
 import { parseListingPrintifyVariantPrices } from "@/lib/listing-printify-variant-prices";
@@ -411,16 +412,22 @@ export function DashboardListingPriceForm({
 type SubmitRequestFormProps = {
   listingId: string;
   defaultImageUrlsText: string;
+  /** When true, publication fee is required before submit (server also enforces). */
+  feeBlocksSubmit?: boolean;
+  paidListingFeeLabel?: string;
 };
 
 export function DashboardSubmitListingRequestForm({
   listingId,
   defaultImageUrlsText,
+  feeBlocksSubmit = false,
+  paidListingFeeLabel = "",
 }: SubmitRequestFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [text, setText] = useState(defaultImageUrlsText);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [attestationOpen, setAttestationOpen] = useState(false);
   const [attestationChecked, setAttestationChecked] = useState(false);
   const pendingFdRef = useRef<FormData | null>(null);
@@ -428,6 +435,7 @@ export function DashboardSubmitListingRequestForm({
   useLayoutEffect(() => {
     setText(defaultImageUrlsText);
     setSavedFlash(false);
+    setSubmitError(null);
   }, [listingId, defaultImageUrlsText]);
 
   useEffect(() => {
@@ -439,12 +447,12 @@ export function DashboardSubmitListingRequestForm({
   const onSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      if (!hasUrls || pending) return;
+      if (!hasUrls || pending || feeBlocksSubmit) return;
       const fd = new FormData(e.currentTarget);
       pendingFdRef.current = fd;
       setAttestationOpen(true);
     },
-    [hasUrls, pending],
+    [hasUrls, pending, feeBlocksSubmit],
   );
 
   const label = pending
@@ -476,12 +484,25 @@ export function DashboardSubmitListingRequestForm({
         </label>
         <button
           type="submit"
-          disabled={!hasUrls || pending || savedFlash}
+          disabled={!hasUrls || pending || savedFlash || feeBlocksSubmit}
           className={btnClass}
         >
           {label}
         </button>
       </form>
+
+      {feeBlocksSubmit ? (
+        <p className="mt-2 text-xs leading-snug text-amber-200/85" role="status">
+          Pay the
+          {paidListingFeeLabel.trim() ? ` ${paidListingFeeLabel.trim()} ` : " "}
+          publication fee above before you can submit for admin review.
+        </p>
+      ) : null}
+      {submitError ? (
+        <p className="mt-2 text-xs leading-snug text-red-300/90" role="alert">
+          {submitError}
+        </p>
+      ) : null}
 
       {attestationOpen ? (
         <div
@@ -529,20 +550,24 @@ export function DashboardSubmitListingRequestForm({
               </button>
               <button
                 type="button"
-                disabled={!attestationChecked || pending}
+                disabled={!attestationChecked || pending || feeBlocksSubmit}
                 className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => {
                   const fd = pendingFdRef.current;
-                  if (!fd || !attestationChecked) return;
+                  if (!fd || !attestationChecked || feeBlocksSubmit) return;
                   fd.set("guidelinesAttestation", "1");
                   setAttestationOpen(false);
                   pendingFdRef.current = null;
                   startTransition(async () => {
-                    const r = await dashboardSubmitListingRequest(fd);
+                    const r: DashboardSubmitListingRequestResult =
+                      await dashboardSubmitListingRequest(fd);
                     router.refresh();
                     if (r.ok) {
+                      setSubmitError(null);
                       setSavedFlash(true);
                       window.setTimeout(() => setSavedFlash(false), 2500);
+                    } else {
+                      setSubmitError(r.error ?? "Could not submit for review. Try again.");
                     }
                   });
                 }}

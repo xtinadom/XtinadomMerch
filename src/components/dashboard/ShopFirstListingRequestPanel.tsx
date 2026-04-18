@@ -243,7 +243,9 @@ export function ShopFirstListingRequestPanel(props: {
       if (r.ok) {
         setMessage({
           tone: "ok",
-          text: "Listing submitted for review. Admin approval usually occurs in 1–3 days.",
+          text:
+            r.message ??
+            "Listing submitted for review. Admin approval usually occurs in 1–3 days.",
         });
         setListingSavedFlash(true);
         window.setTimeout(() => setListingSavedFlash(false), 2500);
@@ -294,7 +296,8 @@ export function ShopFirstListingRequestPanel(props: {
           <Link href="/shop-regulations" className="text-blue-400/90 underline">
             shop regulations
           </Link>
-          . {listingFeePolicySummary} Pay from the Listings tab when your row appears if a fee applies.
+          . {listingFeePolicySummary} If a publication fee applies, pay it on the Listings tab before you submit for
+          admin review.
         </p>
         {draftListingRequestPrefill ? (
           <p className="mt-2 rounded-lg border border-sky-900/40 bg-sky-950/20 px-3 py-2 text-xs text-sky-200/90">
