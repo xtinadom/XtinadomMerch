@@ -72,89 +72,61 @@ export type PrintifyCatalogPickEntry = {
   catalogUpdatedAt?: number;
 };
 
-/** Shared fields for {@link adminMarkPrintifyListingReady} (step 2 initial save + step 3 resave). */
+/**
+ * Shared fields for {@link adminMarkPrintifyListingReady} (step 2 initial save + step 3 resave).
+ * Variant id is not collected here — the server picks Printify’s default variant from the product.
+ */
 function AdminPrintifyMappingFormFields({
   r,
-  needsPrintifyVariant,
   catalogPickEnabled,
   printifyCatalogPickList,
   printifyProductId,
   setPrintifyProductId,
-  printifyVariantId,
-  setPrintifyVariantId,
-  omitVisiblePrintifyProductField = false,
-  omitOptionalPrintifyVariantField = false,
-  optionalPrintifyVariantFieldLabel,
 }: {
   r: ListingRequestTabRow;
-  needsPrintifyVariant: boolean;
   catalogPickEnabled: boolean;
   printifyCatalogPickList: PrintifyCatalogPickEntry[];
   printifyProductId: string;
   setPrintifyProductId: (v: string) => void;
-  printifyVariantId: string;
-  setPrintifyVariantId: (v: string) => void;
-  omitVisiblePrintifyProductField?: boolean;
-  omitOptionalPrintifyVariantField?: boolean;
-  optionalPrintifyVariantFieldLabel?: string;
 }) {
   return (
     <>
       <input type="hidden" name="listingId" value={r.id} />
-      {omitVisiblePrintifyProductField ? (
-        <input type="hidden" name="printifyProductId" value={printifyProductId} />
-      ) : (
-        <label className="block text-xs text-zinc-500">
-          Printify product
-          {catalogPickEnabled ? (
-            <span className="mt-0.5 block text-[10px] font-normal normal-case tracking-normal text-zinc-600">
-              Most recently updated first. Default Printify variant is filled in automatically when you save.
-            </span>
-          ) : null}
-          {catalogPickEnabled ? (
-            <select
-              name="printifyProductId"
-              required
-              value={printifyProductId}
-              onChange={(e) => setPrintifyProductId(e.target.value)}
-              className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1.5 text-xs text-zinc-200"
-            >
-              <option value="">Select a Printify catalog product…</option>
-              {printifyCatalogPickList.map((p) => (
-                <option key={p.id} value={p.id.trim()}>
-                  {(p.title || p.id).trim()} — {p.id.trim()}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              name="printifyProductId"
-              required
-              value={printifyProductId}
-              onChange={(e) => setPrintifyProductId(e.target.value)}
-              className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 font-mono text-xs text-zinc-200"
-              autoComplete="off"
-            />
-          )}
-        </label>
-      )}
-      {needsPrintifyVariant ? (
-        <input type="hidden" name="printifyVariantId" value="" />
-      ) : omitOptionalPrintifyVariantField ? (
-        <input type="hidden" name="printifyVariantId" value={printifyVariantId} />
-      ) : (
-        <label className="block text-xs text-zinc-500">
-          {optionalPrintifyVariantFieldLabel ??
-            "Variant ID (optional — leave empty for manual fulfillment)"}
+      <input type="hidden" name="printifyVariantId" value="" />
+      <label className="block text-xs text-zinc-500">
+        Printify product
+        {catalogPickEnabled ? (
+          <span className="mt-0.5 block text-[10px] font-normal normal-case tracking-normal text-zinc-600">
+            Most recently updated first. The default Printify variant is stored automatically when you save.
+          </span>
+        ) : null}
+        {catalogPickEnabled ? (
+          <select
+            name="printifyProductId"
+            required
+            value={printifyProductId}
+            onChange={(e) => setPrintifyProductId(e.target.value)}
+            className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1.5 text-xs text-zinc-200"
+          >
+            <option value="">Select a Printify catalog product…</option>
+            {printifyCatalogPickList.map((p) => (
+              <option key={p.id} value={p.id.trim()}>
+                {(p.title || p.id).trim()} — {p.id.trim()}
+              </option>
+            ))}
+          </select>
+        ) : (
           <input
-            name="printifyVariantId"
-            value={printifyVariantId}
-            onChange={(e) => setPrintifyVariantId(e.target.value)}
+            name="printifyProductId"
+            required
+            value={printifyProductId}
+            onChange={(e) => setPrintifyProductId(e.target.value)}
             className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 font-mono text-xs text-zinc-200"
             autoComplete="off"
+            placeholder="Printify product id (API catalog unavailable — check PRINTIFY_* env)"
           />
-        </label>
-      )}
+        )}
+      </label>
     </>
   );
 }
@@ -322,7 +294,7 @@ function ListingAdminSecondaryImagePanel({
             />
             <p className="max-w-md text-[11px] text-zinc-600">
               Synced from Printify onto the catalog product — buyers see this first. Refresh the admin page if you
-              just saved Printify IDs and the preview is stale.
+              just saved the Printify product mapping and the preview is stale.
             </p>
           </div>
         ) : (
@@ -464,7 +436,7 @@ function PrintifyCatalogSyncHint({ lastSyncedAtIso }: { lastSyncedAtIso: string 
           </time>
         </>
       ) : (
-        "Catalog sync time is recorded when you save Printify IDs below."
+        "Catalog sync time is recorded when you save the Printify product below."
       )}
     </p>
   );
@@ -486,7 +458,7 @@ function PrintifyCatalogSyncSubmitFooter({ lastSyncedAtIso }: { lastSyncedAtIso:
         }
         aria-busy={pending}
       >
-        {pending ? "Syncing catalog…" : "Resave Printify IDs and sync catalog"}
+        {pending ? "Syncing catalog…" : "Resave Printify product and sync catalog"}
       </button>
       <p className="text-[10px] leading-snug text-zinc-600" aria-live="polite">
         {pending ? (
@@ -546,15 +518,14 @@ function ListingRequestCard({
     Boolean(groupedVariant && isImagesOkStep && !suppressLegacyGroupPrintifyStep2Block);
   const isApproved = r.requestStatus === ListingRequestStatus.approved;
   const adminRemoved = r.adminRemovedFromShopAt != null;
-  const needsPrintifyVariant = r.product.fulfillmentType === FulfillmentType.printify;
-  const catalogPickEnabled = needsPrintifyVariant && printifyCatalogPickList.length > 0;
+  /**
+   * Use the live Printify catalog `<select>` whenever the server loaded `printifyCatalogPickList`.
+   * Do **not** gate on `product.fulfillmentType === printify`: baseline listing stubs stay `manual`
+   * until this mapping runs; the old gate hid the dropdown and showed the optional variant field instead.
+   */
+  const catalogPickEnabled = printifyCatalogPickList.length > 0;
 
   const [printifyProductId, setPrintifyProductId] = useState(() => r.listingPrintifyProductId ?? "");
-  const [printifyVariantId, setPrintifyVariantId] = useState(() =>
-    r.product.fulfillmentType === FulfillmentType.printify
-      ? ""
-      : (r.listingPrintifyVariantId ?? ""),
-  );
   /** Step 2 only: admin must click to affirm Image OK before Save Printify is enabled. */
   const [printifyStepImageOk, setPrintifyStepImageOk] = useState(false);
   const effectivePrintifyStepOk = suppressLegacyGroupPrintifyStep1Block
@@ -572,14 +543,8 @@ function ListingRequestCard({
   }, [r.id, r.requestStatus, suppressLegacyGroupPrintifyStep1Block]);
 
   useEffect(() => {
-    const p = (r.listingPrintifyProductId ?? "").trim();
-    setPrintifyProductId(p);
-    if (r.product.fulfillmentType === FulfillmentType.printify) {
-      setPrintifyVariantId("");
-    } else {
-      setPrintifyVariantId((r.listingPrintifyVariantId ?? "").trim());
-    }
-  }, [r.id, r.listingPrintifyProductId, r.listingPrintifyVariantId, r.product.fulfillmentType]);
+    setPrintifyProductId((r.listingPrintifyProductId ?? "").trim());
+  }, [r.id, r.listingPrintifyProductId]);
   const statusChip =
     isApproved && r.active
       ? "On shop"
@@ -743,7 +708,7 @@ function ListingRequestCard({
                     title={
                       printifyStepImageOk
                         ? "Click to clear passed check for this step (re-enable reject)"
-                        : "Click when reference images are acceptable — required before saving Printify IDs"
+                        : "Click when reference images are acceptable — required before saving the Printify product"
                     }
                   >
                     {printifyStepImageOk ? (
@@ -759,7 +724,7 @@ function ListingRequestCard({
                   </button>
                   <span id={`image-ok-live-${r.id}`} className="sr-only" aria-live="polite" aria-atomic="true">
                     {printifyStepImageOk
-                      ? "Passed check. Reject is disabled. You can save Printify IDs."
+                      ? "Passed check. Reject is disabled. You can save the Printify product."
                       : "Image OK not selected. Choose Image OK or reject."}
                   </span>
                   <p
@@ -768,15 +733,15 @@ function ListingRequestCard({
                   >
                     {printifyStepImageOk ? (
                       <>
-                        <span className="font-medium text-emerald-300/95">Confirmed for this step.</span> Enter Printify
-                        product / variant IDs below and save — then step 3 (admin images, then approve or reject). The shop
-                        still shows{" "}
+                        <span className="font-medium text-emerald-300/95">Confirmed for this step.</span> Choose the
+                        Printify catalog product below and save — then step 3 (admin images, then approve or reject). The
+                        shop still shows{" "}
                         <span className="font-medium text-zinc-400">In review</span> until you approve.
                       </>
                     ) : (
                       <>
                         Click <span className="font-medium text-zinc-500">Image OK</span> for clear green confirmation,
-                        then fill Printify IDs and save.
+                        then choose the Printify product and save.
                       </>
                     )}
                   </p>
@@ -807,7 +772,7 @@ function ListingRequestCard({
               e.preventDefault();
               return;
             }
-            if (needsPrintifyVariant && !printifyProductId.trim()) {
+            if (!printifyProductId.trim()) {
               e.preventDefault();
             }
           }}
@@ -819,13 +784,10 @@ function ListingRequestCard({
           ) : null}
           <AdminPrintifyMappingFormFields
             r={r}
-            needsPrintifyVariant={needsPrintifyVariant}
             catalogPickEnabled={catalogPickEnabled}
             printifyCatalogPickList={printifyCatalogPickList}
             printifyProductId={printifyProductId}
             setPrintifyProductId={setPrintifyProductId}
-            printifyVariantId={printifyVariantId}
-            setPrintifyVariantId={setPrintifyVariantId}
           />
           </form>
           <div className={compactNestedGroupInlineStep2 ? "pt-2" : "border-t border-zinc-800/80 pt-3"}>
@@ -843,12 +805,12 @@ function ListingRequestCard({
                   effectivePrintifyStepOk
                     ? undefined
                     : suppressLegacyGroupPrintifyStep1Block
-                      ? "Click Image OK on the multi-size request above before saving Printify IDs"
-                      : "Click Image OK above before saving Printify IDs"
+                      ? "Click Image OK on the multi-size request above before saving the Printify product"
+                      : "Click Image OK above before saving the Printify product"
                 }
                 className="w-fit rounded bg-sky-900/40 px-3 py-1.5 text-xs text-sky-200 hover:bg-sky-900/60 disabled:cursor-not-allowed disabled:opacity-45"
               >
-                Save Printify IDs &amp; mark “Printify item created”
+                Save Printify product &amp; mark “Printify item created”
               </button>
             </div>
             {!compactNestedGroupInlineStep2 ? (
@@ -885,7 +847,7 @@ function ListingRequestCard({
           </p>
           <details className="rounded-lg border border-zinc-800/80 bg-zinc-950/30 px-3 py-2">
             <summary className="cursor-pointer select-none text-[11px] font-medium text-zinc-400">
-              Edit and resave Printify IDs (re-syncs catalog mockups)
+              Edit and resave Printify product (re-syncs catalog mockups)
             </summary>
             <div className="mt-3 space-y-3">
               <form
@@ -893,20 +855,17 @@ function ListingRequestCard({
                 action={adminMarkPrintifyListingReady}
                 className="space-y-3"
                 onSubmit={(e) => {
-                  if (needsPrintifyVariant && !printifyProductId.trim()) {
+                  if (!printifyProductId.trim()) {
                     e.preventDefault();
                   }
                 }}
               >
                 <AdminPrintifyMappingFormFields
                   r={r}
-                  needsPrintifyVariant={needsPrintifyVariant}
                   catalogPickEnabled={catalogPickEnabled}
                   printifyCatalogPickList={printifyCatalogPickList}
                   printifyProductId={printifyProductId}
                   setPrintifyProductId={setPrintifyProductId}
-                  printifyVariantId={printifyVariantId}
-                  setPrintifyVariantId={setPrintifyVariantId}
                 />
                 <PrintifyCatalogSyncSubmitFooter lastSyncedAtIso={r.listingPrintifyCatalogSyncedAt} />
               </form>
@@ -970,7 +929,7 @@ function ListingRequestCard({
           </p>
           <details className="rounded-lg border border-zinc-800/80 bg-zinc-950/30 px-3 py-2">
             <summary className="cursor-pointer select-none text-[11px] font-medium text-zinc-400">
-              Resave Printify IDs (re-syncs catalog before go-live)
+              Resave Printify product (re-syncs catalog before go-live)
             </summary>
             <div className="mt-3 space-y-3">
               <form
@@ -978,20 +937,17 @@ function ListingRequestCard({
                 action={adminMarkPrintifyListingReady}
                 className="space-y-3"
                 onSubmit={(e) => {
-                  if (needsPrintifyVariant && !printifyProductId.trim()) {
+                  if (!printifyProductId.trim()) {
                     e.preventDefault();
                   }
                 }}
               >
                 <AdminPrintifyMappingFormFields
                   r={r}
-                  needsPrintifyVariant={needsPrintifyVariant}
                   catalogPickEnabled={catalogPickEnabled}
                   printifyCatalogPickList={printifyCatalogPickList}
                   printifyProductId={printifyProductId}
                   setPrintifyProductId={setPrintifyProductId}
-                  printifyVariantId={printifyVariantId}
-                  setPrintifyVariantId={setPrintifyVariantId}
                 />
                 <PrintifyCatalogSyncSubmitFooter lastSyncedAtIso={r.listingPrintifyCatalogSyncedAt} />
               </form>
@@ -1042,7 +998,7 @@ function ListingRequestCard({
 
 export function AdminListingRequestsTab(props: {
   rows: ListingRequestTabRow[];
-  /** Printify API catalog for product-ID autocomplete + default variant IDs. */
+  /** Live Printify shop catalog for the step-2 product `<select>` (when API env is configured). */
   printifyCatalogPickList?: PrintifyCatalogPickEntry[];
   /** When false, hide admin secondary image upload (R2 env missing). */
   r2Configured?: boolean;

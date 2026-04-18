@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { getAdminSessionReadonly } from "@/lib/session";
-import { FulfillmentType, ListingRequestStatus } from "@/generated/prisma/enums";
+import { ListingRequestStatus } from "@/generated/prisma/enums";
 
 const ADMIN_LISTING_REMOVAL_NOTES_MAX = 4000;
 import { PLATFORM_SHOP_SLUG, listingFeeCentsForOrdinal } from "@/lib/marketplace-constants";
@@ -236,7 +236,7 @@ export async function adminMarkLegacyVariantListingGroupImagesOk(formData: FormD
 }
 
 /**
- * Record or update Printify product (and variant for printify catalog items).
+ * Record or update Printify product on the listing. Default Printify variant is resolved from the API when absent.
  * From `images_ok` → `printify_item_created`. From `printify_item_created` or `approved`, updates IDs and re-syncs
  * without changing status (resave / fix mapping before or after approval).
  */
@@ -258,7 +258,7 @@ export async function adminMarkPrintifyListingReady(formData: FormData) {
     st === ListingRequestStatus.approved;
   if (!listing || !allowed) return;
 
-  if (listing.product.fulfillmentType === FulfillmentType.printify && !printifyVariantId) {
+  if (!printifyVariantId) {
     const shopId = process.env.PRINTIFY_SHOP_ID?.trim();
     if (isPrintifyConfigured() && shopId) {
       const detail = await fetchPrintifyProductDetail(shopId, printifyProductId);
@@ -269,7 +269,7 @@ export async function adminMarkPrintifyListingReady(formData: FormData) {
     }
   }
 
-  if (listing.product.fulfillmentType === FulfillmentType.printify && !printifyVariantId) {
+  if (!printifyVariantId) {
     console.error("[adminMarkPrintifyListingReady] missing Printify variant id", listingId);
     return;
   }
@@ -337,9 +337,22 @@ async function tryExecuteAdminApproveListingRequest(
     return { ok: false, reason: "missing_printify_product" };
   }
 
-  const effVariant =
+  let effVariant =
     listing.listingPrintifyVariantId?.trim() || product.printifyVariantId?.trim() || "";
-  if (product.fulfillmentType === FulfillmentType.printify && !effVariant) {
+  if (!effVariant && listing.listingPrintifyProductId?.trim()) {
+    const shopId = process.env.PRINTIFY_SHOP_ID?.trim();
+    if (isPrintifyConfigured() && shopId) {
+      const detail = await fetchPrintifyProductDetail(
+        shopId,
+        listing.listingPrintifyProductId.trim(),
+      );
+      if (detail) {
+        const def = defaultPrintifyVariantIdForCatalogProduct(detail);
+        if (def) effVariant = def;
+      }
+    }
+  }
+  if (!effVariant) {
     return { ok: false, reason: "no_printify_variant" };
   }
 
@@ -496,7 +509,7 @@ export async function adminApproveListingRequestFormState(
     console.error("[adminApproveListingRequestFormState]", listingId, result.reason);
     const msg =
       result.reason === "no_printify_variant"
-        ? "Approve failed: no Printify variant on the listing or product. Save Printify mapping again."
+        ? "Approve failed: could not resolve a default Printify variant. Re-save the Printify product mapping or check the Printify API."
         : result.reason === "no_hero_image"
           ? "Approve failed: no hero image after Printify sync. Check Printify product images."
           : result.reason === "wrong_status"
