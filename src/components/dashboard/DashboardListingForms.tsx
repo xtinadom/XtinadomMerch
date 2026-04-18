@@ -24,6 +24,7 @@ import {
   type ListingCatalogImagesFormState,
 } from "@/actions/dashboard-marketplace";
 import { parseListingPrintifyVariantPrices } from "@/lib/listing-printify-variant-prices";
+import { shopListingMaxPriceUsdLabel } from "@/lib/marketplace-constants";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 
 const REQUEST_ITEM_NAME_MAX = 120;
@@ -263,10 +264,13 @@ export function DashboardListingPriceForm({
       const fd = new FormData(e.currentTarget);
       startTransition(async () => {
         const r = await dashboardUpdateListingPrice(fd);
-        router.refresh();
         if (r.ok) {
+          setSaveError(null);
+          router.refresh();
           setSavedFlash(true);
           window.setTimeout(() => setSavedFlash(false), 2500);
+        } else {
+          setSaveError(r.error);
         }
       });
     },
@@ -339,6 +343,7 @@ export function DashboardListingPriceForm({
       <form onSubmit={onSubmitMulti} className="mt-3 space-y-3">
         <input type="hidden" name="listingId" value={listingId} />
         {printifyListingIntentHint(product, true)}
+        <p className="text-[11px] text-zinc-600">Maximum {shopListingMaxPriceUsdLabel()} per option.</p>
         <p className="text-xs text-zinc-500">Your price (USD) — each option</p>
         <ul className="space-y-2">
           {printifyVariants.map((v) => (
@@ -374,6 +379,7 @@ export function DashboardListingPriceForm({
   return (
     <form onSubmit={onSubmitSingle} className="mt-3 space-y-2">
       {printifyListingIntentHint(product, false)}
+      <p className="text-[11px] text-zinc-600">Maximum list price {shopListingMaxPriceUsdLabel()} per listing.</p>
       <div className="flex flex-wrap items-end gap-2">
       <input type="hidden" name="listingId" value={listingId} />
       <label className="text-xs text-zinc-500">
@@ -382,7 +388,10 @@ export function DashboardListingPriceForm({
           type="text"
           name="priceDollars"
           value={price}
-          onChange={(ev) => setPrice(ev.target.value)}
+          onChange={(ev) => {
+            setSaveError(null);
+            setPrice(ev.target.value);
+          }}
           className="ml-2 w-28 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-zinc-200"
         />
       </label>
@@ -390,6 +399,11 @@ export function DashboardListingPriceForm({
         {label}
       </button>
       </div>
+      {saveError ? (
+        <p className="text-xs leading-snug text-red-300/90" role="alert">
+          {saveError}
+        </p>
+      ) : null}
     </form>
   );
 }

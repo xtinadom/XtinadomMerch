@@ -119,6 +119,15 @@ model Shop {
   editorialPinnedUntil     DateTime?
   /** Cached from paid orders for browse sort (webhook updates). */
   totalSalesCents          Int            @default(0)
+  /**
+   * Creator paused the shop (browse + storefront hidden). Cleared when they unpause, unless a
+   * deletion request still requires the shop to stay inactive.
+   */
+  ownerPausedShopAt        DateTime?
+  /** Self-serve account deletion started — confirmation email is sent; shop is frozen (`active=false`). */
+  accountDeletionRequestedAt DateTime?
+  /** Email link confirmed; final deletion runs only when Stripe Connect balance is zero. */
+  accountDeletionEmailConfirmedAt DateTime?
   homeFeaturedListingId    String?        @unique
   homeFeaturedListing      ShopListing?   @relation("ShopHomeFeatured", fields: [homeFeaturedListingId], references: [id], onDelete: SetNull)
   users                    ShopUser[]
@@ -192,6 +201,19 @@ model ShopUser {
 
   passwordResetTokens ShopPasswordResetToken[]
   emailVerificationTokens ShopEmailVerificationToken[]
+  accountDeletionTokens ShopAccountDeletionToken[]
+}
+
+model ShopAccountDeletionToken {
+  id         String    @id @default(cuid())
+  shopUserId String
+  shopUser   ShopUser  @relation(fields: [shopUserId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([shopUserId])
 }
 
 model ShopPasswordResetToken {

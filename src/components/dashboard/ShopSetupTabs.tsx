@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { dashboardStartStripeConnect } from "@/actions/dashboard-marketplace";
 import { resendShopEmailVerification } from "@/actions/shop-email-verify";
+import { ShopDangerZonePanel } from "@/components/dashboard/ShopDangerZonePanel";
 
 export type ShopSetupShopPayload = {
   shopSlug: string;
@@ -15,6 +16,12 @@ export type ShopSetupShopPayload = {
   stripeConnectAccountId: string | null;
   connectChargesEnabled: boolean;
   payoutsEnabled: boolean;
+  shopActive: boolean;
+  ownerPausedShopAt: string | null;
+  accountDeletionRequestedAt: string | null;
+  accountDeletionEmailConfirmedAt: string | null;
+  /** Stripe USD cents when deletion email is confirmed (for gating final delete); null otherwise. */
+  stripeConnectBalance: { availableCents: number; pendingCents: number } | null;
 };
 
 export type ShopSetupSteps = {
@@ -273,6 +280,16 @@ export function ShopSetupTabs(props: {
             tab.
           </p>
         </div>
+
+        <ShopDangerZonePanel
+          shopSlug={shop.shopSlug}
+          shopActive={shop.shopActive}
+          ownerPausedShopAt={shop.ownerPausedShopAt}
+          accountDeletionRequestedAt={shop.accountDeletionRequestedAt}
+          accountDeletionEmailConfirmedAt={shop.accountDeletionEmailConfirmedAt}
+          stripeConnectAccountId={shop.stripeConnectAccountId}
+          stripeConnectBalance={shop.stripeConnectBalance}
+        />
       </div>
     </section>
   );

@@ -59,6 +59,7 @@ export const ModelName = {
   SupportMessage: 'SupportMessage',
   ShopOwnerNotice: 'ShopOwnerNotice',
   ShopUser: 'ShopUser',
+  ShopAccountDeletionToken: 'ShopAccountDeletionToken',
   ShopPasswordResetToken: 'ShopPasswordResetToken',
   ShopEmailVerificationToken: 'ShopEmailVerificationToken',
   ShopListing: 'ShopListing',
@@ -152,6 +153,9 @@ export const ShopScalarFieldEnum = {
   editorialPriority: 'editorialPriority',
   editorialPinnedUntil: 'editorialPinnedUntil',
   totalSalesCents: 'totalSalesCents',
+  ownerPausedShopAt: 'ownerPausedShopAt',
+  accountDeletionRequestedAt: 'accountDeletionRequestedAt',
+  accountDeletionEmailConfirmedAt: 'accountDeletionEmailConfirmedAt',
   homeFeaturedListingId: 'homeFeaturedListingId',
   itemGuidelinesAcknowledgedAt: 'itemGuidelinesAcknowledgedAt',
   createdAt: 'createdAt',
@@ -208,6 +212,18 @@ export const ShopUserScalarFieldEnum = {
 } as const
 
 export type ShopUserScalarFieldEnum = (typeof ShopUserScalarFieldEnum)[keyof typeof ShopUserScalarFieldEnum]
+
+
+export const ShopAccountDeletionTokenScalarFieldEnum = {
+  id: 'id',
+  shopUserId: 'shopUserId',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ShopAccountDeletionTokenScalarFieldEnum = (typeof ShopAccountDeletionTokenScalarFieldEnum)[keyof typeof ShopAccountDeletionTokenScalarFieldEnum]
 
 
 export const ShopPasswordResetTokenScalarFieldEnum = {

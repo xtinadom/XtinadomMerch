@@ -18,6 +18,22 @@ export type DashboardListingBucketRow = DashboardListingRowLike & {
   creatorRemovedFromShopAt: string | null;
 };
 
+/** Same buckets as {@link buildGroupedListingSectionsForDashboard} — for tab badge `live / (live + request)`. */
+export function dashboardListingTabBadgeCounts<T extends DashboardListingBucketRow>(
+  allRows: T[],
+): { live: number; livePlusRequested: number } {
+  const live = allRows.filter(
+    (l) => l.active && l.requestStatus !== ListingRequestStatus.rejected,
+  );
+  const request = allRows.filter(
+    (l) =>
+      !l.active &&
+      l.creatorRemovedFromShopAt == null &&
+      l.requestStatus !== ListingRequestStatus.rejected,
+  );
+  return { live: live.length, livePlusRequested: live.length + request.length };
+}
+
 /**
  * Server-only: builds the dashboard “Listings” tab sections — one card per listing (no variant grouping).
  */

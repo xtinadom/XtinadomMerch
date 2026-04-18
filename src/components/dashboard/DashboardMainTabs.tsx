@@ -539,8 +539,11 @@ export function DashboardMainTabs(props: {
   initialTab?: TabId;
   /** Creator shop slug — listing fee tiers (e.g. founder unlimited). */
   shopSlug: string;
-  /** Approved listing count / total non-draft listing rows (creator shops). */
-  listingTabCounts?: { approved: number; total: number } | null;
+  /**
+   * Listings tab badge: `live` storefront-active rows / `livePlusRequested` (= live + in-progress requests).
+   * Rejected and creator-removed rows are excluded (same buckets as the Listings tab sections).
+   */
+  listingTabCounts?: { live: number; livePlusRequested: number } | null;
   /** Creator onboarding; when set, “Onboarding” is the first tab. */
   setup?: DashboardSetupPanelProps | null;
   /** Full notice history (creators); drives Notifications tab. */
@@ -693,7 +696,7 @@ export function DashboardMainTabs(props: {
             <span className="inline-flex items-center gap-2">
               Listings
               <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-200">
-                {listingTabCounts.approved}/{listingTabCounts.total}
+                {listingTabCounts.live}/{listingTabCounts.livePlusRequested}
               </span>
             </span>
           ) : (
@@ -805,31 +808,8 @@ export function DashboardMainTabs(props: {
           goes live. Platform catalog shop skips the fee.
         </p>
 
-        {groupedLive.length > 0 ? (
-          <div className="mt-6">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-500/90">Live</h3>
-            <p className="mt-1 text-[11px] text-zinc-600">
-              Active on your public storefront right now.
-            </p>
-            <ul className="mt-3 space-y-6">
-              {groupedLive.map((g) => (
-                <ListingCard
-                  key={g.row.id}
-                  listing={g.row}
-                  isPlatform={isPlatform}
-                  paidListingFeeLabel={paidListingFeeLabel}
-                  shopSlug={shopSlug}
-                  r2Configured={r2Configured}
-                />
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
         {groupedRequest.length > 0 ? (
-          <div
-            className={groupedLive.length > 0 || groupedRemoved.length > 0 ? "mt-10" : "mt-6"}
-          >
+          <div className="mt-6">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
               Listing requests & setup
             </h3>
@@ -852,10 +832,35 @@ export function DashboardMainTabs(props: {
           </div>
         ) : null}
 
+        {groupedLive.length > 0 ? (
+          <div
+            className={
+              groupedRequest.length > 0 || groupedRemoved.length > 0 ? "mt-10" : "mt-6"
+            }
+          >
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-500/90">Live</h3>
+            <p className="mt-1 text-[11px] text-zinc-600">
+              Active on your public storefront right now.
+            </p>
+            <ul className="mt-3 space-y-6">
+              {groupedLive.map((g) => (
+                <ListingCard
+                  key={g.row.id}
+                  listing={g.row}
+                  isPlatform={isPlatform}
+                  paidListingFeeLabel={paidListingFeeLabel}
+                  shopSlug={shopSlug}
+                  r2Configured={r2Configured}
+                />
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
         {groupedRemoved.length > 0 ? (
           <div
             className={
-              groupedLive.length > 0 || groupedRequest.length > 0 ? "mt-10" : "mt-6"
+              groupedRequest.length > 0 || groupedLive.length > 0 ? "mt-10" : "mt-6"
             }
           >
             <h3 className="text-xs font-semibold uppercase tracking-wide text-red-400/95">Rejected</h3>

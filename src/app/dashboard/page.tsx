@@ -31,12 +31,16 @@ import {
   resolveCatalogPrefillFromStubProductSlug,
   type DraftListingRequestPrefillPayload,
 } from "@/lib/shop-baseline-draft-prefill";
-import { buildGroupedListingSectionsForDashboard } from "@/lib/dashboard-legacy-baseline-listing-groups";
+import {
+  buildGroupedListingSectionsForDashboard,
+  dashboardListingTabBadgeCounts,
+} from "@/lib/dashboard-legacy-baseline-listing-groups";
 import {
   canStartStripeConnect,
   computeShopOnboardingSteps,
   countIncompleteOnboardingSteps,
 } from "@/lib/shop-onboarding-gate";
+import { getStripeConnectBalanceUsdCents } from "@/lib/stripe-connect-balance";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +73,13 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const dashRaw = sp.dash;
   const dashStr =
     typeof dashRaw === "string" ? dashRaw : Array.isArray(dashRaw) ? dashRaw[0] : undefined;
+  const delConfirmRaw = sp.delConfirm;
+  const delConfirm =
+    typeof delConfirmRaw === "string"
+      ? delConfirmRaw
+      : Array.isArray(delConfirmRaw)
+        ? delConfirmRaw[0]
+        : undefined;
 
   const user = await prisma.shopUser.findUnique({
     where: { id: owner.shopUserId },
@@ -257,13 +268,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const stripeConnectUnlocked = !isPlatform && canStartStripeConnect(setupSteps);
   const incompleteSetupCount = !isPlatform ? countIncompleteOnboardingSteps(setupSteps) : 0;
 
-  const listingApprovedCount = !isPlatform
-    ? shop.listings.filter((l) => l.requestStatus === ListingRequestStatus.approved).length
-    : 0;
-  const listingRequestTotalCount = !isPlatform
-    ? shop.listings.filter((l) => l.requestStatus !== ListingRequestStatus.draft).length
-    : 0;
-
   const setupTabsKey = `setup-${setupSteps.stripe}-${setupSteps.profile}-${setupSteps.guidelines}-${setupSteps.emailVerified}-${setupSteps.listing}-${Boolean(shop.itemGuidelinesAcknowledgedAt)}-${Boolean(user.emailVerifiedAt)}`;
 
   const dashTab:
@@ -364,6 +368,13 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     adminCatalogRows,
   );
 
+  const listingTabCounts = !isPlatform ? dashboardListingTabBadgeCounts(listingRows) : null;
+
+  const stripeConnectBalance =
+    !isPlatform && shop.accountDeletionEmailConfirmedAt != null
+      ? await getStripeConnectBalanceUsdCents(shop.stripeConnectAccountId)
+      : null;
+
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-12">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -414,6 +425,22 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           <strong className="text-amber-100/90">Resend verification email</strong> on the Onboarding tab.
         </p>
       ) : null}
+      {!isPlatform && delConfirm === "ok" ? (
+        <p className="mt-4 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
+          Account deletion email confirmed. On the <strong className="text-emerald-100/90">Onboarding</strong> tab,
+          scroll to <strong className="text-emerald-100/90">Shop visibility &amp; account</strong> — when your Stripe
+          balance is zero you can permanently delete.
+        </p>
+      ) : null}
+      {!isPlatform && delConfirm && delConfirm !== "ok" ? (
+        <p className="mt-4 rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-2 text-sm text-amber-200/90">
+          {delConfirm === "expired"
+            ? "That account deletion link has expired. Request deletion again from the Onboarding tab to receive a new email."
+            : delConfirm === "missing"
+              ? "That account deletion link was missing a token. Open the full link from your latest email, or request deletion again."
+              : "That account deletion link is invalid. Request a new one from the Onboarding tab if you still want to delete your account."}
+        </p>
+      ) : null}
       {!isPlatform && connect === "err" && connectReason === "onboarding_incomplete" ? (
         <p className="mt-4 rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-2 text-sm text-amber-200/90">
           Complete onboarding (shop profile, item guidelines, verify email, and a listing request) before connecting
@@ -434,9 +461,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         supportChat={supportChatPanel}
         draftListingRequestPrefill={draftListingRequestPrefill}
         groupedListingSections={groupedListingSections}
-        listingTabCounts={
-          !isPlatform ? { approved: listingApprovedCount, total: listingRequestTotalCount } : null
-        }
+        listingTabCounts={listingTabCounts}
         setup={
           !isPlatform
             ? {
@@ -450,6 +475,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                   stripeConnectAccountId: shop.stripeConnectAccountId,
                   connectChargesEnabled: shop.connectChargesEnabled,
                   payoutsEnabled: shop.payoutsEnabled,
+                  shopActive: shop.active,
+                  ownerPausedShopAt: shop.ownerPausedShopAt?.toISOString() ?? null,
+                  accountDeletionRequestedAt: shop.accountDeletionRequestedAt?.toISOString() ?? null,
+                  accountDeletionEmailConfirmedAt:
+                    shop.accountDeletionEmailConfirmedAt?.toISOString() ?? null,
+                  stripeConnectBalance,
                 },
                 itemGuidelinesAcknowledged: shop.itemGuidelinesAcknowledgedAt != null,
                 catalogGroups: catalogGroups,

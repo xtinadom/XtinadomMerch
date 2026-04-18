@@ -10,6 +10,7 @@ import {
   type ShopSetupCatalogGroup,
 } from "@/lib/shop-baseline-catalog";
 import type { DraftListingRequestPrefillPayload } from "@/lib/shop-baseline-draft-prefill";
+import { SHOP_LISTING_MAX_PRICE_CENTS, shopListingMaxPriceUsdLabel } from "@/lib/marketplace-constants";
 
 const btnPrimary =
   "rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-white disabled:cursor-not-allowed";
@@ -165,7 +166,9 @@ export function ShopFirstListingRequestPanel(props: {
       if (!t) return (o.minPriceCents / 100).toFixed(2);
       const parsed = parseFloat(t.replace(/[^0-9.]/g, ""));
       if (!Number.isFinite(parsed)) return (o.minPriceCents / 100).toFixed(2);
-      if (Math.round(parsed * 100) < o.minPriceCents) return (o.minPriceCents / 100).toFixed(2);
+      const cents = Math.round(parsed * 100);
+      if (cents < o.minPriceCents) return (o.minPriceCents / 100).toFixed(2);
+      if (cents > SHOP_LISTING_MAX_PRICE_CENTS) return (SHOP_LISTING_MAX_PRICE_CENTS / 100).toFixed(2);
       return prev;
     });
   }, [listingProductId, catalogOptions, catalogGroups]);
@@ -204,7 +207,8 @@ export function ShopFirstListingRequestPanel(props: {
       if (!o) return false;
       const parsed = parseFloat(listingPrice.replace(/[^0-9.]/g, ""));
       if (!Number.isFinite(parsed) || parsed <= 0) return false;
-      return Math.round(parsed * 100) >= o.minPriceCents;
+      const cents = Math.round(parsed * 100);
+      return cents >= o.minPriceCents && cents <= SHOP_LISTING_MAX_PRICE_CENTS;
     }
     let variantGroup: Extract<ShopSetupCatalogGroup, { kind: "variants" }> | undefined;
     for (const g of catalogGroups) {
@@ -219,7 +223,8 @@ export function ShopFirstListingRequestPanel(props: {
       const str = variantListingPrices[v.productId] ?? "";
       const parsed = parseFloat(str.replace(/[^0-9.]/g, ""));
       if (!Number.isFinite(parsed) || parsed <= 0) return false;
-      if (Math.round(parsed * 100) < v.minPriceCents) return false;
+      const cents = Math.round(parsed * 100);
+      if (cents < v.minPriceCents || cents > SHOP_LISTING_MAX_PRICE_CENTS) return false;
     }
     return true;
   }, [
@@ -358,9 +363,9 @@ export function ShopFirstListingRequestPanel(props: {
           <div>
             <p className="text-xs font-medium text-zinc-400">Allowed items (Admin → List)</p>
             <p className="mt-1 text-[11px] leading-relaxed text-zinc-600">
-              Minimums are shown on each line. Select the main product name. If it has options (sizes, etc.), set a list
-              price for every option — one submission is one listing and one admin approval; sizes are options on that
-              item, not separate listings.
+              Minimums are shown on each line; maximum list price is {shopListingMaxPriceUsdLabel()} per option. Select the
+              main product name. If it has options (sizes, etc.), set a list price for every option — one submission is one
+              listing and one admin approval; sizes are options on that item, not separate listings.
             </p>
             <ul
               className="mt-2 h-[350px] divide-y divide-zinc-800/80 overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950/40"
@@ -411,9 +416,10 @@ export function ShopFirstListingRequestPanel(props: {
                             onBlur={() => {
                               const minC = g.option.minPriceCents;
                               const parsed = parseFloat(listingPrice.replace(/[^0-9.]/g, ""));
-                              if (!Number.isFinite(parsed) || Math.round(parsed * 100) < minC) {
-                                setListingPrice((minC / 100).toFixed(2));
-                              }
+                              let cents = Number.isFinite(parsed) ? Math.round(parsed * 100) : minC;
+                              if (cents < minC) cents = minC;
+                              if (cents > SHOP_LISTING_MAX_PRICE_CENTS) cents = SHOP_LISTING_MAX_PRICE_CENTS;
+                              setListingPrice((cents / 100).toFixed(2));
                             }}
                             className="mt-1 block w-full max-w-xs rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100"
                           />
@@ -491,12 +497,13 @@ export function ShopFirstListingRequestPanel(props: {
                                     const raw = variantListingPrices[v.productId] ?? "";
                                     const parsed = parseFloat(raw.replace(/[^0-9.]/g, ""));
                                     const minC = v.minPriceCents;
-                                    if (!Number.isFinite(parsed) || Math.round(parsed * 100) < minC) {
-                                      setVariantListingPrices((prev) => ({
-                                        ...prev,
-                                        [v.productId]: (minC / 100).toFixed(2),
-                                      }));
-                                    }
+                                    let cents = Number.isFinite(parsed) ? Math.round(parsed * 100) : minC;
+                                    if (cents < minC) cents = minC;
+                                    if (cents > SHOP_LISTING_MAX_PRICE_CENTS) cents = SHOP_LISTING_MAX_PRICE_CENTS;
+                                    setVariantListingPrices((prev) => ({
+                                      ...prev,
+                                      [v.productId]: (cents / 100).toFixed(2),
+                                    }));
                                   }}
                                   className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-xs text-zinc-100"
                                 />
@@ -522,7 +529,8 @@ export function ShopFirstListingRequestPanel(props: {
             </ul>
           </div>
           <p className="text-xs leading-relaxed text-zinc-600">
-            List prices must meet each line’s minimum. Customers may add tips at checkout on eligible carts.
+            List prices must meet each line’s minimum and cannot exceed {shopListingMaxPriceUsdLabel()} per option.
+            Customers may add tips at checkout on eligible carts.
           </p>
           <label className="block text-xs text-zinc-500" htmlFor="listing-request-item-name">
             Name item

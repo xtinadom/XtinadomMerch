@@ -386,7 +386,6 @@ async function tryExecuteAdminApproveListingRequest(
       data: {
         requestStatus: ListingRequestStatus.approved,
         active: true,
-        priceCents: product.priceCents,
         requestImages: [],
       },
     });
@@ -401,7 +400,6 @@ async function tryExecuteAdminApproveListingRequest(
       data: {
         requestStatus: ListingRequestStatus.approved,
         active: true,
-        priceCents: product.priceCents,
         listingFeePaidAt: listing.listingFeePaidAt ?? new Date(),
         requestImages: [],
       },
@@ -421,7 +419,6 @@ async function tryExecuteAdminApproveListingRequest(
       data: {
         requestStatus: ListingRequestStatus.approved,
         active: true,
-        priceCents: product.priceCents,
         requestImages: [],
       },
     });
@@ -439,7 +436,6 @@ async function tryExecuteAdminApproveListingRequest(
       data: {
         requestStatus: ListingRequestStatus.approved,
         active: false,
-        priceCents: product.priceCents,
         requestImages: [],
       },
     });

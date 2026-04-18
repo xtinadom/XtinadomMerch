@@ -209,6 +209,7 @@ export type ShopUserWhereInput = {
   shop?: Prisma.XOR<Prisma.ShopScalarRelationFilter, Prisma.ShopWhereInput>
   passwordResetTokens?: Prisma.ShopPasswordResetTokenListRelationFilter
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenListRelationFilter
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenListRelationFilter
 }
 
 export type ShopUserOrderByWithRelationInput = {
@@ -223,6 +224,7 @@ export type ShopUserOrderByWithRelationInput = {
   shop?: Prisma.ShopOrderByWithRelationInput
   passwordResetTokens?: Prisma.ShopPasswordResetTokenOrderByRelationAggregateInput
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenOrderByRelationAggregateInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenOrderByRelationAggregateInput
 }
 
 export type ShopUserWhereUniqueInput = Prisma.AtLeast<{
@@ -240,6 +242,7 @@ export type ShopUserWhereUniqueInput = Prisma.AtLeast<{
   shop?: Prisma.XOR<Prisma.ShopScalarRelationFilter, Prisma.ShopWhereInput>
   passwordResetTokens?: Prisma.ShopPasswordResetTokenListRelationFilter
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenListRelationFilter
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenListRelationFilter
 }, "id" | "email">
 
 export type ShopUserOrderByWithAggregationInput = {
@@ -281,6 +284,7 @@ export type ShopUserCreateInput = {
   shop: Prisma.ShopCreateNestedOneWithoutUsersInput
   passwordResetTokens?: Prisma.ShopPasswordResetTokenCreateNestedManyWithoutShopUserInput
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenCreateNestedManyWithoutShopUserInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenCreateNestedManyWithoutShopUserInput
 }
 
 export type ShopUserUncheckedCreateInput = {
@@ -294,6 +298,7 @@ export type ShopUserUncheckedCreateInput = {
   updatedAt?: Date | string
   passwordResetTokens?: Prisma.ShopPasswordResetTokenUncheckedCreateNestedManyWithoutShopUserInput
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenUncheckedCreateNestedManyWithoutShopUserInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenUncheckedCreateNestedManyWithoutShopUserInput
 }
 
 export type ShopUserUpdateInput = {
@@ -307,6 +312,7 @@ export type ShopUserUpdateInput = {
   shop?: Prisma.ShopUpdateOneRequiredWithoutUsersNestedInput
   passwordResetTokens?: Prisma.ShopPasswordResetTokenUpdateManyWithoutShopUserNestedInput
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenUpdateManyWithoutShopUserNestedInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenUpdateManyWithoutShopUserNestedInput
 }
 
 export type ShopUserUncheckedUpdateInput = {
@@ -320,6 +326,7 @@ export type ShopUserUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   passwordResetTokens?: Prisma.ShopPasswordResetTokenUncheckedUpdateManyWithoutShopUserNestedInput
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenUncheckedUpdateManyWithoutShopUserNestedInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenUncheckedUpdateManyWithoutShopUserNestedInput
 }
 
 export type ShopUserCreateManyInput = {
@@ -448,6 +455,20 @@ export type EnumShopUserRoleFieldUpdateOperationsInput = {
   set?: $Enums.ShopUserRole
 }
 
+export type ShopUserCreateNestedOneWithoutAccountDeletionTokensInput = {
+  create?: Prisma.XOR<Prisma.ShopUserCreateWithoutAccountDeletionTokensInput, Prisma.ShopUserUncheckedCreateWithoutAccountDeletionTokensInput>
+  connectOrCreate?: Prisma.ShopUserCreateOrConnectWithoutAccountDeletionTokensInput
+  connect?: Prisma.ShopUserWhereUniqueInput
+}
+
+export type ShopUserUpdateOneRequiredWithoutAccountDeletionTokensNestedInput = {
+  create?: Prisma.XOR<Prisma.ShopUserCreateWithoutAccountDeletionTokensInput, Prisma.ShopUserUncheckedCreateWithoutAccountDeletionTokensInput>
+  connectOrCreate?: Prisma.ShopUserCreateOrConnectWithoutAccountDeletionTokensInput
+  upsert?: Prisma.ShopUserUpsertWithoutAccountDeletionTokensInput
+  connect?: Prisma.ShopUserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ShopUserUpdateToOneWithWhereWithoutAccountDeletionTokensInput, Prisma.ShopUserUpdateWithoutAccountDeletionTokensInput>, Prisma.ShopUserUncheckedUpdateWithoutAccountDeletionTokensInput>
+}
+
 export type ShopUserCreateNestedOneWithoutPasswordResetTokensInput = {
   create?: Prisma.XOR<Prisma.ShopUserCreateWithoutPasswordResetTokensInput, Prisma.ShopUserUncheckedCreateWithoutPasswordResetTokensInput>
   connectOrCreate?: Prisma.ShopUserCreateOrConnectWithoutPasswordResetTokensInput
@@ -486,6 +507,7 @@ export type ShopUserCreateWithoutShopInput = {
   updatedAt?: Date | string
   passwordResetTokens?: Prisma.ShopPasswordResetTokenCreateNestedManyWithoutShopUserInput
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenCreateNestedManyWithoutShopUserInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenCreateNestedManyWithoutShopUserInput
 }
 
 export type ShopUserUncheckedCreateWithoutShopInput = {
@@ -498,6 +520,7 @@ export type ShopUserUncheckedCreateWithoutShopInput = {
   updatedAt?: Date | string
   passwordResetTokens?: Prisma.ShopPasswordResetTokenUncheckedCreateNestedManyWithoutShopUserInput
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenUncheckedCreateNestedManyWithoutShopUserInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenUncheckedCreateNestedManyWithoutShopUserInput
 }
 
 export type ShopUserCreateOrConnectWithoutShopInput = {
@@ -540,6 +563,74 @@ export type ShopUserScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"ShopUser"> | Date | string
 }
 
+export type ShopUserCreateWithoutAccountDeletionTokensInput = {
+  id?: string
+  email: string
+  passwordHash: string
+  role?: $Enums.ShopUserRole
+  emailVerifiedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  shop: Prisma.ShopCreateNestedOneWithoutUsersInput
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenCreateNestedManyWithoutShopUserInput
+  emailVerificationTokens?: Prisma.ShopEmailVerificationTokenCreateNestedManyWithoutShopUserInput
+}
+
+export type ShopUserUncheckedCreateWithoutAccountDeletionTokensInput = {
+  id?: string
+  email: string
+  passwordHash: string
+  shopId: string
+  role?: $Enums.ShopUserRole
+  emailVerifiedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenUncheckedCreateNestedManyWithoutShopUserInput
+  emailVerificationTokens?: Prisma.ShopEmailVerificationTokenUncheckedCreateNestedManyWithoutShopUserInput
+}
+
+export type ShopUserCreateOrConnectWithoutAccountDeletionTokensInput = {
+  where: Prisma.ShopUserWhereUniqueInput
+  create: Prisma.XOR<Prisma.ShopUserCreateWithoutAccountDeletionTokensInput, Prisma.ShopUserUncheckedCreateWithoutAccountDeletionTokensInput>
+}
+
+export type ShopUserUpsertWithoutAccountDeletionTokensInput = {
+  update: Prisma.XOR<Prisma.ShopUserUpdateWithoutAccountDeletionTokensInput, Prisma.ShopUserUncheckedUpdateWithoutAccountDeletionTokensInput>
+  create: Prisma.XOR<Prisma.ShopUserCreateWithoutAccountDeletionTokensInput, Prisma.ShopUserUncheckedCreateWithoutAccountDeletionTokensInput>
+  where?: Prisma.ShopUserWhereInput
+}
+
+export type ShopUserUpdateToOneWithWhereWithoutAccountDeletionTokensInput = {
+  where?: Prisma.ShopUserWhereInput
+  data: Prisma.XOR<Prisma.ShopUserUpdateWithoutAccountDeletionTokensInput, Prisma.ShopUserUncheckedUpdateWithoutAccountDeletionTokensInput>
+}
+
+export type ShopUserUpdateWithoutAccountDeletionTokensInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumShopUserRoleFieldUpdateOperationsInput | $Enums.ShopUserRole
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  shop?: Prisma.ShopUpdateOneRequiredWithoutUsersNestedInput
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenUpdateManyWithoutShopUserNestedInput
+  emailVerificationTokens?: Prisma.ShopEmailVerificationTokenUpdateManyWithoutShopUserNestedInput
+}
+
+export type ShopUserUncheckedUpdateWithoutAccountDeletionTokensInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumShopUserRoleFieldUpdateOperationsInput | $Enums.ShopUserRole
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  passwordResetTokens?: Prisma.ShopPasswordResetTokenUncheckedUpdateManyWithoutShopUserNestedInput
+  emailVerificationTokens?: Prisma.ShopEmailVerificationTokenUncheckedUpdateManyWithoutShopUserNestedInput
+}
+
 export type ShopUserCreateWithoutPasswordResetTokensInput = {
   id?: string
   email: string
@@ -550,6 +641,7 @@ export type ShopUserCreateWithoutPasswordResetTokensInput = {
   updatedAt?: Date | string
   shop: Prisma.ShopCreateNestedOneWithoutUsersInput
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenCreateNestedManyWithoutShopUserInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenCreateNestedManyWithoutShopUserInput
 }
 
 export type ShopUserUncheckedCreateWithoutPasswordResetTokensInput = {
@@ -562,6 +654,7 @@ export type ShopUserUncheckedCreateWithoutPasswordResetTokensInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenUncheckedCreateNestedManyWithoutShopUserInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenUncheckedCreateNestedManyWithoutShopUserInput
 }
 
 export type ShopUserCreateOrConnectWithoutPasswordResetTokensInput = {
@@ -590,6 +683,7 @@ export type ShopUserUpdateWithoutPasswordResetTokensInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shop?: Prisma.ShopUpdateOneRequiredWithoutUsersNestedInput
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenUpdateManyWithoutShopUserNestedInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenUpdateManyWithoutShopUserNestedInput
 }
 
 export type ShopUserUncheckedUpdateWithoutPasswordResetTokensInput = {
@@ -602,6 +696,7 @@ export type ShopUserUncheckedUpdateWithoutPasswordResetTokensInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenUncheckedUpdateManyWithoutShopUserNestedInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenUncheckedUpdateManyWithoutShopUserNestedInput
 }
 
 export type ShopUserCreateWithoutEmailVerificationTokensInput = {
@@ -614,6 +709,7 @@ export type ShopUserCreateWithoutEmailVerificationTokensInput = {
   updatedAt?: Date | string
   shop: Prisma.ShopCreateNestedOneWithoutUsersInput
   passwordResetTokens?: Prisma.ShopPasswordResetTokenCreateNestedManyWithoutShopUserInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenCreateNestedManyWithoutShopUserInput
 }
 
 export type ShopUserUncheckedCreateWithoutEmailVerificationTokensInput = {
@@ -626,6 +722,7 @@ export type ShopUserUncheckedCreateWithoutEmailVerificationTokensInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   passwordResetTokens?: Prisma.ShopPasswordResetTokenUncheckedCreateNestedManyWithoutShopUserInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenUncheckedCreateNestedManyWithoutShopUserInput
 }
 
 export type ShopUserCreateOrConnectWithoutEmailVerificationTokensInput = {
@@ -654,6 +751,7 @@ export type ShopUserUpdateWithoutEmailVerificationTokensInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shop?: Prisma.ShopUpdateOneRequiredWithoutUsersNestedInput
   passwordResetTokens?: Prisma.ShopPasswordResetTokenUpdateManyWithoutShopUserNestedInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenUpdateManyWithoutShopUserNestedInput
 }
 
 export type ShopUserUncheckedUpdateWithoutEmailVerificationTokensInput = {
@@ -666,6 +764,7 @@ export type ShopUserUncheckedUpdateWithoutEmailVerificationTokensInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   passwordResetTokens?: Prisma.ShopPasswordResetTokenUncheckedUpdateManyWithoutShopUserNestedInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenUncheckedUpdateManyWithoutShopUserNestedInput
 }
 
 export type ShopUserCreateManyShopInput = {
@@ -688,6 +787,7 @@ export type ShopUserUpdateWithoutShopInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   passwordResetTokens?: Prisma.ShopPasswordResetTokenUpdateManyWithoutShopUserNestedInput
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenUpdateManyWithoutShopUserNestedInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenUpdateManyWithoutShopUserNestedInput
 }
 
 export type ShopUserUncheckedUpdateWithoutShopInput = {
@@ -700,6 +800,7 @@ export type ShopUserUncheckedUpdateWithoutShopInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   passwordResetTokens?: Prisma.ShopPasswordResetTokenUncheckedUpdateManyWithoutShopUserNestedInput
   emailVerificationTokens?: Prisma.ShopEmailVerificationTokenUncheckedUpdateManyWithoutShopUserNestedInput
+  accountDeletionTokens?: Prisma.ShopAccountDeletionTokenUncheckedUpdateManyWithoutShopUserNestedInput
 }
 
 export type ShopUserUncheckedUpdateManyWithoutShopInput = {
@@ -720,11 +821,13 @@ export type ShopUserUncheckedUpdateManyWithoutShopInput = {
 export type ShopUserCountOutputType = {
   passwordResetTokens: number
   emailVerificationTokens: number
+  accountDeletionTokens: number
 }
 
 export type ShopUserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   passwordResetTokens?: boolean | ShopUserCountOutputTypeCountPasswordResetTokensArgs
   emailVerificationTokens?: boolean | ShopUserCountOutputTypeCountEmailVerificationTokensArgs
+  accountDeletionTokens?: boolean | ShopUserCountOutputTypeCountAccountDeletionTokensArgs
 }
 
 /**
@@ -751,6 +854,13 @@ export type ShopUserCountOutputTypeCountEmailVerificationTokensArgs<ExtArgs exte
   where?: Prisma.ShopEmailVerificationTokenWhereInput
 }
 
+/**
+ * ShopUserCountOutputType without action
+ */
+export type ShopUserCountOutputTypeCountAccountDeletionTokensArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ShopAccountDeletionTokenWhereInput
+}
+
 
 export type ShopUserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -764,6 +874,7 @@ export type ShopUserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
   passwordResetTokens?: boolean | Prisma.ShopUser$passwordResetTokensArgs<ExtArgs>
   emailVerificationTokens?: boolean | Prisma.ShopUser$emailVerificationTokensArgs<ExtArgs>
+  accountDeletionTokens?: boolean | Prisma.ShopUser$accountDeletionTokensArgs<ExtArgs>
   _count?: boolean | Prisma.ShopUserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["shopUser"]>
 
@@ -807,6 +918,7 @@ export type ShopUserInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
   passwordResetTokens?: boolean | Prisma.ShopUser$passwordResetTokensArgs<ExtArgs>
   emailVerificationTokens?: boolean | Prisma.ShopUser$emailVerificationTokensArgs<ExtArgs>
+  accountDeletionTokens?: boolean | Prisma.ShopUser$accountDeletionTokensArgs<ExtArgs>
   _count?: boolean | Prisma.ShopUserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ShopUserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -822,6 +934,7 @@ export type $ShopUserPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     shop: Prisma.$ShopPayload<ExtArgs>
     passwordResetTokens: Prisma.$ShopPasswordResetTokenPayload<ExtArgs>[]
     emailVerificationTokens: Prisma.$ShopEmailVerificationTokenPayload<ExtArgs>[]
+    accountDeletionTokens: Prisma.$ShopAccountDeletionTokenPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1229,6 +1342,7 @@ export interface Prisma__ShopUserClient<T, Null = never, ExtArgs extends runtime
   shop<T extends Prisma.ShopDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ShopDefaultArgs<ExtArgs>>): Prisma.Prisma__ShopClient<runtime.Types.Result.GetResult<Prisma.$ShopPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   passwordResetTokens<T extends Prisma.ShopUser$passwordResetTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ShopUser$passwordResetTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ShopPasswordResetTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   emailVerificationTokens<T extends Prisma.ShopUser$emailVerificationTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ShopUser$emailVerificationTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ShopEmailVerificationTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  accountDeletionTokens<T extends Prisma.ShopUser$accountDeletionTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ShopUser$accountDeletionTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ShopAccountDeletionTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1712,6 +1826,30 @@ export type ShopUser$emailVerificationTokensArgs<ExtArgs extends runtime.Types.E
   take?: number
   skip?: number
   distinct?: Prisma.ShopEmailVerificationTokenScalarFieldEnum | Prisma.ShopEmailVerificationTokenScalarFieldEnum[]
+}
+
+/**
+ * ShopUser.accountDeletionTokens
+ */
+export type ShopUser$accountDeletionTokensArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ShopAccountDeletionToken
+   */
+  select?: Prisma.ShopAccountDeletionTokenSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ShopAccountDeletionToken
+   */
+  omit?: Prisma.ShopAccountDeletionTokenOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ShopAccountDeletionTokenInclude<ExtArgs> | null
+  where?: Prisma.ShopAccountDeletionTokenWhereInput
+  orderBy?: Prisma.ShopAccountDeletionTokenOrderByWithRelationInput | Prisma.ShopAccountDeletionTokenOrderByWithRelationInput[]
+  cursor?: Prisma.ShopAccountDeletionTokenWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ShopAccountDeletionTokenScalarFieldEnum | Prisma.ShopAccountDeletionTokenScalarFieldEnum[]
 }
 
 /**

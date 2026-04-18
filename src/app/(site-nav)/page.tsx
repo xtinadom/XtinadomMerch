@@ -13,7 +13,19 @@ import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function HomePage({ searchParams }: PageProps) {
+  const sp = await searchParams;
+  const accountDeletedRaw = sp.accountDeleted;
+  const accountDeleted =
+    typeof accountDeletedRaw === "string"
+      ? accountDeletedRaw
+      : Array.isArray(accountDeletedRaw)
+        ? accountDeletedRaw[0]
+        : undefined;
   let featuredShops: Awaited<ReturnType<typeof getFeaturedCreatorShopsForHome>>;
   let hotProducts: Awaited<ReturnType<typeof getHotListingProductsForHome>>;
   try {
@@ -55,6 +67,16 @@ export default async function HomePage() {
           Browse independent shops or open a shop — platform catalog and fulfillment stay unified.
         </p>
       </header>
+
+      {accountDeleted === "1" ? (
+        <p className="mx-auto mt-8 max-w-lg rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-center text-sm text-emerald-200/90">
+          Your shop account was removed. You can create a new shop anytime from{" "}
+          <Link href="/create-shop" className="text-emerald-100 underline decoration-emerald-700 underline-offset-2">
+            Create shop
+          </Link>
+          .
+        </p>
+      ) : null}
 
       {featuredShopCards.length > 0 ? (
         <section className="mt-16">

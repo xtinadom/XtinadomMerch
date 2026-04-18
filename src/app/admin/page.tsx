@@ -662,6 +662,19 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       printifyCatalogPickList = [];
     }
   }
+
+  const mappedShopListingPrintifyRows = await prisma.shopListing.findMany({
+    where: { listingPrintifyProductId: { not: null } },
+    select: { listingPrintifyProductId: true },
+  });
+  const printifyProductIdsMappedToShopListings = [
+    ...new Set(
+      mappedShopListingPrintifyRows
+        .map((row) => row.listingPrintifyProductId?.trim())
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+
   const printifyTabBadgeCount = printifyCatalogItemCount ?? printifyProducts.length;
 
   const knownDesignNames = collectKnownDesignNamesFromProducts(products);
@@ -1358,6 +1371,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             <AdminListingRequestsTab
               rows={listingRequestTabRows}
               printifyCatalogPickList={printifyCatalogPickList}
+              printifyProductIdsMappedToShopListings={printifyProductIdsMappedToShopListings}
               r2Configured={isR2UploadConfigured()}
             />
           ) : inventoryTab === "removed" ? (

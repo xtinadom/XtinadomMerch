@@ -58,6 +58,11 @@ export type ShopOwnerNotice = Prisma.ShopOwnerNoticeModel
  */
 export type ShopUser = Prisma.ShopUserModel
 /**
+ * Model ShopAccountDeletionToken
+ * 
+ */
+export type ShopAccountDeletionToken = Prisma.ShopAccountDeletionTokenModel
+/**
  * Model ShopPasswordResetToken
  * 
  */

@@ -12,6 +12,8 @@ import {
   LISTING_FEE_CENTS,
   listingFeeCentsForOrdinal,
   PLATFORM_SHOP_SLUG,
+  SHOP_LISTING_MAX_PRICE_CENTS,
+  shopListingMaxPriceUsdLabel,
 } from "@/lib/marketplace-constants";
 import { getListingOrdinal } from "@/lib/listing-fee";
 import { FulfillmentType, ListingRequestStatus } from "@/generated/prisma/enums";
@@ -54,34 +56,42 @@ async function requireShopOwner() {
   return user;
 }
 
+export type DashboardUpdateListingPriceResult = { ok: true } | { ok: false; error: string };
+
 export async function dashboardUpdateListingPrice(
   formData: FormData,
-): Promise<{ ok: boolean }> {
+): Promise<DashboardUpdateListingPriceResult> {
   const user = await requireShopOwner();
   const listingId = String(formData.get("listingId") ?? "").trim();
   const dollars = String(formData.get("priceDollars") ?? "").trim();
-  if (!listingId) return { ok: false };
+  if (!listingId) return { ok: false, error: "Missing listing." };
 
   const listing = await prisma.shopListing.findFirst({
     where: { id: listingId, shopId: user.shopId },
     include: { product: true },
   });
-  if (!listing) return { ok: false };
+  if (!listing) return { ok: false, error: "Listing not found." };
   if (
     listing.requestStatus === ListingRequestStatus.rejected ||
     listing.creatorRemovedFromShopAt != null
   ) {
-    return { ok: false };
+    return { ok: false, error: "This listing can't be edited." };
   }
   if (
     listing.requestStatus !== ListingRequestStatus.draft &&
     listing.requestStatus !== ListingRequestStatus.approved
   ) {
-    return { ok: false };
+    return {
+      ok: false,
+      error:
+        "Price can't be changed while this request is in review. Wait for approval, or finish editing your draft.",
+    };
   }
 
   const parsed = parseFloat(dollars.replace(/[^0-9.]/g, ""));
-  if (!Number.isFinite(parsed) || parsed < 0) return { ok: false };
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return { ok: false, error: "Enter a valid USD amount." };
+  }
   const cents = Math.round(parsed * 100);
   const p = listing.product;
   const minCents =
@@ -93,13 +103,24 @@ export async function dashboardUpdateListingPrice(
       : p.minPriceCents > 0
         ? p.minPriceCents
         : p.priceCents;
-  if (cents < minCents) return { ok: false };
+  if (cents < minCents) {
+    return {
+      ok: false,
+      error: `Price must be at least ${formatUsdFromCents(minCents)} for this item.`,
+    };
+  }
+  if (cents > SHOP_LISTING_MAX_PRICE_CENTS) {
+    return {
+      ok: false,
+      error: `Price cannot exceed ${shopListingMaxPriceUsdLabel()} per listing.`,
+    };
+  }
 
   if (
     listing.product.fulfillmentType === FulfillmentType.printify &&
     getPrintifyVariantsForProduct(listing.product).length > 1
   ) {
-    return { ok: false };
+    return { ok: false, error: "Use per-option prices for this product." };
   }
 
   await prisma.shopListing.update({
@@ -172,7 +193,15 @@ export async function dashboardUpdateListingVariantPrices(
   const obj = payload as Record<string, unknown>;
 
   const centsById: Record<string, number> = {};
+  const maxLabel = shopListingMaxPriceUsdLabel();
   for (const v of variants) {
+    const minAllowed = printifyVariantShopFloorCents(listing.product, v.priceCents);
+    if (minAllowed > SHOP_LISTING_MAX_PRICE_CENTS) {
+      return {
+        ok: false,
+        error: `"${v.title}" requires at least ${formatUsdFromCents(minAllowed)}, which is above the ${maxLabel} listing cap. Contact support if you need an exception.`,
+      };
+    }
     const raw = obj[v.id];
     const dollars =
       typeof raw === "string"
@@ -187,7 +216,6 @@ export async function dashboardUpdateListingVariantPrices(
       };
     }
     const cents = Math.round(dollars * 100);
-    const minAllowed = printifyVariantShopFloorCents(listing.product, v.priceCents);
     if (cents < minAllowed) {
       const platformHigher =
         listing.product.minPriceCents > 0 &&
@@ -195,6 +223,12 @@ export async function dashboardUpdateListingVariantPrices(
       return {
         ok: false,
         error: `"${v.title}" must be at least ${formatUsdFromCents(minAllowed)} (this size's synced Printify retail${platformHigher ? "; platform minimum is higher than this size's base" : ""}).`,
+      };
+    }
+    if (cents > SHOP_LISTING_MAX_PRICE_CENTS) {
+      return {
+        ok: false,
+        error: `"${v.title}" cannot exceed ${maxLabel} per listing.`,
       };
     }
     centsById[v.id] = cents;

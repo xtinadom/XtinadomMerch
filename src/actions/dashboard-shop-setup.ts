@@ -18,7 +18,11 @@ import {
   compressShopProfileImageWebp,
 } from "@/lib/shop-setup-image";
 import { shopSocialLinksFromFormData } from "@/lib/shop-social-links";
-import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
+import {
+  PLATFORM_SHOP_SLUG,
+  SHOP_LISTING_MAX_PRICE_CENTS,
+  shopListingMaxPriceUsdLabel,
+} from "@/lib/marketplace-constants";
 import { allocateUniqueShopSlug } from "@/lib/shop-slug";
 import {
   encodeBaselinePickVariant,
@@ -228,6 +232,16 @@ export async function submitFirstListingSetup(
     if (variants.length === 0) {
       return { ok: false, error: "That catalog item has no variants to list." };
     }
+    const maxLabel = shopListingMaxPriceUsdLabel();
+    for (const v of variants) {
+      const minC = Math.max(0, v.minPriceCents);
+      if (minC > SHOP_LISTING_MAX_PRICE_CENTS) {
+        return {
+          ok: false,
+          error: `This catalog line requires at least ${(minC / 100).toFixed(2)} USD for ${v.label}, which is above the ${maxLabel} listing cap. Pick another item or contact support.`,
+        };
+      }
+    }
 
     const variantPricesJson = String(formData.get("listingVariantPricesJson") ?? "").trim();
     let pricesPayload: Record<string, unknown>;
@@ -269,6 +283,12 @@ export async function submitFirstListingSetup(
         return {
           ok: false,
           error: `Price must be at least ${(minCents / 100).toFixed(2)} USD for ${v.label}.`,
+        };
+      }
+      if (priceCents > SHOP_LISTING_MAX_PRICE_CENTS) {
+        return {
+          ok: false,
+          error: `Price for ${v.label} cannot exceed ${maxLabel} per listing.`,
         };
       }
       catalogVariantCents[v.id] = priceCents;
@@ -357,6 +377,14 @@ export async function submitFirstListingSetup(
     minCents = product.minPriceCents > 0 ? product.minPriceCents : product.priceCents;
   }
 
+  const maxLabel = shopListingMaxPriceUsdLabel();
+  if (minCents > SHOP_LISTING_MAX_PRICE_CENTS) {
+    return {
+      ok: false,
+      error: `This item's minimum price (${(minCents / 100).toFixed(2)} USD) is above the ${maxLabel} listing cap. Pick another product or contact support.`,
+    };
+  }
+
   const parsed = parseFloat(dollars.replace(/[^0-9.]/g, ""));
   if (!Number.isFinite(parsed) || parsed <= 0) {
     return { ok: false, error: "Enter a valid list price." };
@@ -366,6 +394,12 @@ export async function submitFirstListingSetup(
     return {
       ok: false,
       error: `Price must be at least ${(minCents / 100).toFixed(2)} USD for this item.`,
+    };
+  }
+  if (priceCents > SHOP_LISTING_MAX_PRICE_CENTS) {
+    return {
+      ok: false,
+      error: `List price cannot exceed ${maxLabel} per listing.`,
     };
   }
 

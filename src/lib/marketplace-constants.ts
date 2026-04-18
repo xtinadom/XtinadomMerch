@@ -26,6 +26,20 @@ export const SPECIAL_PROMOTION_FREE_LISTING_IDS = new Set<string>([]);
  */
 export const LISTING_FEE_CENTS = 25;
 
+/**
+ * Maximum shop-owner list price (USD cents) for listing requests and dashboard price edits.
+ * Enforced on submit / save; admin tooling is not limited by this constant.
+ */
+export const SHOP_LISTING_MAX_PRICE_CENTS = 50_000;
+
+/** e.g. "$500.00" for UI copy tied to {@link SHOP_LISTING_MAX_PRICE_CENTS}. */
+export function shopListingMaxPriceUsdLabel(): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(SHOP_LISTING_MAX_PRICE_CENTS / 100);
+}
+
 /** Fee in cents for the Nth listing in a shop (1 = oldest), after free slots. */
 export function listingFeeCentsForOrdinal(ordinal1Based: number, shopSlug?: string): number {
   if (shopSlug && isFounderUnlimitedFreeListingsShop(shopSlug)) {

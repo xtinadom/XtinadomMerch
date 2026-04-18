@@ -72,6 +72,26 @@ export type PrintifyCatalogPickEntry = {
   catalogUpdatedAt?: number;
 };
 
+/** Printify products already saved on a shop listing are hidden, except this row’s current mapping. */
+function printifyCatalogPickListForListingRow(
+  fullCatalog: PrintifyCatalogPickEntry[],
+  mappedToAnyListing: readonly string[],
+  currentPrintifyProductId: string,
+): PrintifyCatalogPickEntry[] {
+  const mapped = new Set(mappedToAnyListing.map((id) => id.trim()).filter(Boolean));
+  const cur = currentPrintifyProductId.trim();
+  const base = fullCatalog.filter((p) => {
+    const id = p.id.trim();
+    return !mapped.has(id) || id === cur;
+  });
+  if (cur && !base.some((p) => p.id.trim() === cur)) {
+    const hit = fullCatalog.find((p) => p.id.trim() === cur);
+    if (hit) return [hit, ...base.filter((p) => p.id.trim() !== cur)];
+    return [{ id: cur, title: `Linked Printify product (not in live catalog)` }, ...base];
+  }
+  return base;
+}
+
 /**
  * Shared fields for {@link adminMarkPrintifyListingReady} (step 2 initial save + step 3 resave).
  * Variant id is not collected here — the server picks Printify’s default variant from the product.
@@ -80,27 +100,41 @@ function AdminPrintifyMappingFormFields({
   r,
   catalogPickEnabled,
   printifyCatalogPickList,
+  printifyProductIdsMappedToShopListings,
   printifyProductId,
   setPrintifyProductId,
 }: {
   r: ListingRequestTabRow;
   catalogPickEnabled: boolean;
   printifyCatalogPickList: PrintifyCatalogPickEntry[];
+  printifyProductIdsMappedToShopListings: readonly string[];
   printifyProductId: string;
   setPrintifyProductId: (v: string) => void;
 }) {
+  const rowPickList = useMemo(
+    () =>
+      printifyCatalogPickListForListingRow(
+        printifyCatalogPickList,
+        printifyProductIdsMappedToShopListings,
+        printifyProductId,
+      ),
+    [printifyCatalogPickList, printifyProductIdsMappedToShopListings, printifyProductId],
+  );
+  const useCatalogSelect = catalogPickEnabled && rowPickList.length > 0;
+
   return (
     <>
       <input type="hidden" name="listingId" value={r.id} />
       <input type="hidden" name="printifyVariantId" value="" />
       <label className="block text-xs text-zinc-500">
         Printify product
-        {catalogPickEnabled ? (
+        {useCatalogSelect ? (
           <span className="mt-0.5 block text-[10px] font-normal normal-case tracking-normal text-zinc-600">
-            Most recently updated first. The default Printify variant is stored automatically when you save.
+            Most recently updated first. Products already linked to another shop listing are hidden; this row’s saved
+            id stays selectable. The default Printify variant is stored automatically when you save.
           </span>
         ) : null}
-        {catalogPickEnabled ? (
+        {useCatalogSelect ? (
           <select
             name="printifyProductId"
             required
@@ -109,7 +143,7 @@ function AdminPrintifyMappingFormFields({
             className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1.5 text-xs text-zinc-200"
           >
             <option value="">Select a Printify catalog product…</option>
-            {printifyCatalogPickList.map((p) => (
+            {rowPickList.map((p) => (
               <option key={p.id} value={p.id.trim()}>
                 {(p.title || p.id).trim()} — {p.id.trim()}
               </option>
@@ -123,7 +157,11 @@ function AdminPrintifyMappingFormFields({
             onChange={(e) => setPrintifyProductId(e.target.value)}
             className="mt-1 w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 font-mono text-xs text-zinc-200"
             autoComplete="off"
-            placeholder="Printify product id (API catalog unavailable — check PRINTIFY_* env)"
+            placeholder={
+              catalogPickEnabled
+                ? "Printify product id (no unmapped catalog items for this row — paste id)"
+                : "Printify product id (API catalog unavailable — check PRINTIFY_* env)"
+            }
           />
         )}
       </label>
@@ -481,6 +519,7 @@ function PrintifyCatalogSyncSubmitFooter({ lastSyncedAtIso }: { lastSyncedAtIso:
 function ListingRequestCard({
   r,
   printifyCatalogPickList,
+  printifyProductIdsMappedToShopListings,
   r2Configured,
   groupedVariant,
   suppressLegacyGroupStep3Decision = false,
@@ -491,6 +530,7 @@ function ListingRequestCard({
 }: {
   r: ListingRequestTabRow;
   printifyCatalogPickList: PrintifyCatalogPickEntry[];
+  printifyProductIdsMappedToShopListings: readonly string[];
   r2Configured: boolean;
   /** When set, this row is rendered inside a multi-variant group (outer &lt;li&gt; is the parent). */
   groupedVariant?: { variantLabel: string; stacked: boolean };
@@ -786,6 +826,7 @@ function ListingRequestCard({
             r={r}
             catalogPickEnabled={catalogPickEnabled}
             printifyCatalogPickList={printifyCatalogPickList}
+            printifyProductIdsMappedToShopListings={printifyProductIdsMappedToShopListings}
             printifyProductId={printifyProductId}
             setPrintifyProductId={setPrintifyProductId}
           />
@@ -864,6 +905,7 @@ function ListingRequestCard({
                   r={r}
                   catalogPickEnabled={catalogPickEnabled}
                   printifyCatalogPickList={printifyCatalogPickList}
+                  printifyProductIdsMappedToShopListings={printifyProductIdsMappedToShopListings}
                   printifyProductId={printifyProductId}
                   setPrintifyProductId={setPrintifyProductId}
                 />
@@ -946,6 +988,7 @@ function ListingRequestCard({
                   r={r}
                   catalogPickEnabled={catalogPickEnabled}
                   printifyCatalogPickList={printifyCatalogPickList}
+                  printifyProductIdsMappedToShopListings={printifyProductIdsMappedToShopListings}
                   printifyProductId={printifyProductId}
                   setPrintifyProductId={setPrintifyProductId}
                 />
@@ -1000,10 +1043,20 @@ export function AdminListingRequestsTab(props: {
   rows: ListingRequestTabRow[];
   /** Live Printify shop catalog for the step-2 product `<select>` (when API env is configured). */
   printifyCatalogPickList?: PrintifyCatalogPickEntry[];
+  /**
+   * Printify catalog product ids already stored on a `ShopListing` — excluded from the dropdown except
+   * the current row’s saved id (so admins can resync without losing the selection).
+   */
+  printifyProductIdsMappedToShopListings?: readonly string[];
   /** When false, hide admin secondary image upload (R2 env missing). */
   r2Configured?: boolean;
 }) {
-  const { rows, printifyCatalogPickList = [], r2Configured = true } = props;
+  const {
+    rows,
+    printifyCatalogPickList = [],
+    printifyProductIdsMappedToShopListings = [],
+    r2Configured = true,
+  } = props;
   const [tab, setTab] = useState<RequestsTabId>("new");
 
   const newRows = useMemo(
@@ -1093,6 +1146,7 @@ export function AdminListingRequestsTab(props: {
                 key={r.id}
                 r={r}
                 printifyCatalogPickList={printifyCatalogPickList}
+                printifyProductIdsMappedToShopListings={printifyProductIdsMappedToShopListings}
                 r2Configured={r2Configured}
               />
             ))}

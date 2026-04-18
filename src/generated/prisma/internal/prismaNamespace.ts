@@ -392,6 +392,7 @@ export const ModelName = {
   SupportMessage: 'SupportMessage',
   ShopOwnerNotice: 'ShopOwnerNotice',
   ShopUser: 'ShopUser',
+  ShopAccountDeletionToken: 'ShopAccountDeletionToken',
   ShopPasswordResetToken: 'ShopPasswordResetToken',
   ShopEmailVerificationToken: 'ShopEmailVerificationToken',
   ShopListing: 'ShopListing',
@@ -416,7 +417,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tag" | "productTag" | "product" | "shop" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "comment"
+    modelProps: "tag" | "productTag" | "product" | "shop" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopAccountDeletionToken" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "comment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1009,6 +1010,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.ShopUserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.ShopUserCountAggregateOutputType> | number
+        }
+      }
+    }
+    ShopAccountDeletionToken: {
+      payload: Prisma.$ShopAccountDeletionTokenPayload<ExtArgs>
+      fields: Prisma.ShopAccountDeletionTokenFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ShopAccountDeletionTokenFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopAccountDeletionTokenPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ShopAccountDeletionTokenFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopAccountDeletionTokenPayload>
+        }
+        findFirst: {
+          args: Prisma.ShopAccountDeletionTokenFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopAccountDeletionTokenPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ShopAccountDeletionTokenFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopAccountDeletionTokenPayload>
+        }
+        findMany: {
+          args: Prisma.ShopAccountDeletionTokenFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopAccountDeletionTokenPayload>[]
+        }
+        create: {
+          args: Prisma.ShopAccountDeletionTokenCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopAccountDeletionTokenPayload>
+        }
+        createMany: {
+          args: Prisma.ShopAccountDeletionTokenCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ShopAccountDeletionTokenCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopAccountDeletionTokenPayload>[]
+        }
+        delete: {
+          args: Prisma.ShopAccountDeletionTokenDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopAccountDeletionTokenPayload>
+        }
+        update: {
+          args: Prisma.ShopAccountDeletionTokenUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopAccountDeletionTokenPayload>
+        }
+        deleteMany: {
+          args: Prisma.ShopAccountDeletionTokenDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ShopAccountDeletionTokenUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ShopAccountDeletionTokenUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopAccountDeletionTokenPayload>[]
+        }
+        upsert: {
+          args: Prisma.ShopAccountDeletionTokenUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopAccountDeletionTokenPayload>
+        }
+        aggregate: {
+          args: Prisma.ShopAccountDeletionTokenAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateShopAccountDeletionToken>
+        }
+        groupBy: {
+          args: Prisma.ShopAccountDeletionTokenGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ShopAccountDeletionTokenGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ShopAccountDeletionTokenCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ShopAccountDeletionTokenCountAggregateOutputType> | number
         }
       }
     }
@@ -1783,6 +1858,9 @@ export const ShopScalarFieldEnum = {
   editorialPriority: 'editorialPriority',
   editorialPinnedUntil: 'editorialPinnedUntil',
   totalSalesCents: 'totalSalesCents',
+  ownerPausedShopAt: 'ownerPausedShopAt',
+  accountDeletionRequestedAt: 'accountDeletionRequestedAt',
+  accountDeletionEmailConfirmedAt: 'accountDeletionEmailConfirmedAt',
   homeFeaturedListingId: 'homeFeaturedListingId',
   itemGuidelinesAcknowledgedAt: 'itemGuidelinesAcknowledgedAt',
   createdAt: 'createdAt',
@@ -1839,6 +1917,18 @@ export const ShopUserScalarFieldEnum = {
 } as const
 
 export type ShopUserScalarFieldEnum = (typeof ShopUserScalarFieldEnum)[keyof typeof ShopUserScalarFieldEnum]
+
+
+export const ShopAccountDeletionTokenScalarFieldEnum = {
+  id: 'id',
+  shopUserId: 'shopUserId',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ShopAccountDeletionTokenScalarFieldEnum = (typeof ShopAccountDeletionTokenScalarFieldEnum)[keyof typeof ShopAccountDeletionTokenScalarFieldEnum]
 
 
 export const ShopPasswordResetTokenScalarFieldEnum = {
@@ -2322,6 +2412,7 @@ export type GlobalOmitConfig = {
   supportMessage?: Prisma.SupportMessageOmit
   shopOwnerNotice?: Prisma.ShopOwnerNoticeOmit
   shopUser?: Prisma.ShopUserOmit
+  shopAccountDeletionToken?: Prisma.ShopAccountDeletionTokenOmit
   shopPasswordResetToken?: Prisma.ShopPasswordResetTokenOmit
   shopEmailVerificationToken?: Prisma.ShopEmailVerificationTokenOmit
   shopListing?: Prisma.ShopListingOmit
