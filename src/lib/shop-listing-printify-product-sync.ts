@@ -2,16 +2,30 @@ import { Prisma } from "@/generated/prisma/client";
 import { FulfillmentType } from "@/generated/prisma/enums";
 import { fetchPrintifyProductDetail, isPrintifyConfigured } from "@/lib/printify";
 import { pickImageForVariant, type PrintifyCatalogProduct } from "@/lib/printify-catalog";
+import { isPrintifyManagedListingImageUrl } from "@/lib/printify-import-image";
 import { prisma } from "@/lib/prisma";
+import { galleryFromJson } from "@/lib/product-media";
 import { parsePrintifyVariantsJson } from "@/lib/printify-variants";
 import { remapShopListingCatalogVariantPricesAfterPrintifySync } from "@/lib/shop-listing-catalog-variant-price-remap";
+
+/**
+ * Shop listing `Product` rows should not duplicate every Printify mockup in `imageGallery` (that
+ * doubles storefront/R2 references). Keep optional manual (non-Printify) gallery URLs only.
+ */
+function listingStubImageGalleryJson(
+  imageGallery: Prisma.JsonValue | null,
+): Prisma.InputJsonValue | typeof Prisma.JsonNull {
+  const manual = galleryFromJson(imageGallery).filter(
+    (url) => !isPrintifyManagedListingImageUrl(url),
+  );
+  return manual.length > 0 ? manual : Prisma.JsonNull;
+}
 
 function imagesFromPrintifyDetail(
   detail: PrintifyCatalogProduct,
   variantId: string | null,
 ): {
   hero: string | null;
-  gallery: string[];
   variantsJson: Prisma.InputJsonValue;
   description: string | null;
 } {
@@ -29,7 +43,6 @@ function imagesFromPrintifyDetail(
   }));
   return {
     hero,
-    gallery,
     variantsJson,
     description: detail.description,
   };
@@ -47,9 +60,9 @@ async function fetchPrintifyDetailForListing(printifyProductId: string): Promise
  * (often a baseline stub) must match Printify fulfillment semantics and reuse catalog imagery:
  * manual + tracked + qty 0 reads as "Sold out"; missing `imageUrl` shows no card image.
  *
- * Copies description, hero + gallery, and `printifyVariants` JSON from another `Product` with the same
- * `printifyProductId` (platform catalog / synced Printify product), preferring the variant row image when
- * `listingPrintifyVariantId` is set.
+ * Copies description, hero image, optional manual (non-Printify) gallery URLs, and `printifyVariants`
+ * JSON from another `Product` with the same `printifyProductId` (platform catalog / synced Printify
+ * product), preferring the variant row image when `listingPrintifyVariantId` is set.
  *
  * If there is no other `Product` template (common for shop-specific stubs), loads the same data from the
  * Printify API (`PRINTIFY_SHOP_ID` + `PRINTIFY_API_TOKEN`) so mockups match the admin catalog table.
@@ -85,7 +98,7 @@ export async function syncListingProductWithPrintifyCatalog(
   if (!template) {
     const detail = await fetchPrintifyDetailForListing(pid);
     if (detail) {
-      const { hero, gallery, variantsJson, description } = imagesFromPrintifyDetail(detail, variantId);
+      const { hero, variantsJson, description } = imagesFromPrintifyDetail(detail, variantId);
       await prisma.product.update({
         where: { id: productId },
         data: {
@@ -93,7 +106,7 @@ export async function syncListingProductWithPrintifyCatalog(
           description: description ?? undefined,
           printifyVariants: variantsJson,
           imageUrl: hero,
-          imageGallery: gallery.length > 0 ? gallery : Prisma.JsonNull,
+          imageGallery: Prisma.JsonNull,
         },
       });
       await remapShopListingCatalogVariantPricesAfterPrintifySync(productId);
@@ -117,17 +130,13 @@ export async function syncListingProductWithPrintifyCatalog(
   let description: string | null | undefined = template.description;
   let printifyVariants: Prisma.InputJsonValue | typeof Prisma.JsonNull =
     template.printifyVariants ?? Prisma.JsonNull;
-  let imageGallery: Prisma.InputJsonValue | typeof Prisma.JsonNull =
-    template.imageGallery ?? Prisma.JsonNull;
+  let imageGallery = listingStubImageGalleryJson(template.imageGallery);
 
   if (!hero) {
     const detail = await fetchPrintifyDetailForListing(pid);
     if (detail) {
       const fromApi = imagesFromPrintifyDetail(detail, variantId);
       hero = fromApi.hero;
-      if (fromApi.gallery.length > 0) {
-        imageGallery = fromApi.gallery;
-      }
       printifyVariants = fromApi.variantsJson;
       if (fromApi.description && !description?.trim()) {
         description = fromApi.description;
