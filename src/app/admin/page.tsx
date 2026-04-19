@@ -2,24 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAdminSessionReadonly } from "@/lib/session";
-import {
-  createManualUsedProduct,
-  deleteManualUsedProduct,
-  logoutAdmin,
-  submitManualStockForm,
-  updateProductDetails,
-} from "@/actions/admin";
+import { logoutAdmin, updateProductDetails } from "@/actions/admin";
 import {
   adminCreateTagForm,
   adminDeleteTagForm,
   adminUpdateTagForm,
 } from "@/actions/admin-tags";
 import type { Prisma } from "@/generated/prisma/client";
-import {
-  FulfillmentType,
-  ListingRequestStatus,
-  OrderStatus,
-} from "@/generated/prisma/enums";
+import { ListingRequestStatus, OrderStatus } from "@/generated/prisma/enums";
 import { productImageUrls } from "@/lib/product-media";
 import { isR2UploadConfigured } from "@/lib/r2-upload";
 import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
@@ -28,7 +18,6 @@ import { ProductTagFields } from "@/components/admin/ProductTagFields";
 import { productHasTag, productTagIds } from "@/lib/product-tags";
 import { PrintifyApiTab } from "./printify-api-tab";
 import { PrintifyInventoryTab } from "./printify-inventory-tab";
-import { ListingGalleryEditor } from "@/components/admin/ListingGalleryEditor";
 import { SaveListingForm } from "@/components/admin/SaveListingForm";
 import {
   collectKnownDesignNamesFromProducts,
@@ -104,7 +93,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const watchShopParam =
     typeof sp.watchShop === "string" && sp.watchShop.trim() ? sp.watchShop.trim() : undefined;
   const inventoryTabLiterals = [
-    "manual",
     "printify",
     "admin-list",
     "orders",
@@ -121,7 +109,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     tabParam as InventoryTab,
   )
     ? (tabParam as InventoryTab)
-    : "manual";
+    : "printify";
 
   const salesFromRaw = typeof sp.salesFrom === "string" ? sp.salesFrom : "";
   const salesToRaw = typeof sp.salesTo === "string" ? sp.salesTo : "";
@@ -146,11 +134,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       ...(salesOrderCreatedAt ? { createdAt: salesOrderCreatedAt } : {}),
     },
   };
-  const createOk = sp.create === "ok";
-  const createErr = typeof sp.create === "string" && sp.create === "err";
-  const createReason = typeof sp.reason === "string" ? sp.reason : undefined;
-  const deleteOk = sp.delete === "ok";
-  const deleteArchived = sp.delete === "archived";
   const sync = typeof sp.sync === "string" ? sp.sync : undefined;
   const syncUpdated = typeof sp.updated === "string" ? sp.updated : undefined;
   const syncCreated = typeof sp.created === "string" ? sp.created : undefined;
@@ -176,7 +159,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const tagSaved = typeof sp.tag_saved === "string" ? sp.tag_saved : undefined;
   const savedTagId =
     typeof sp.saved_tag_id === "string" ? sp.saved_tag_id : undefined;
-  const stockErr = typeof sp.stock_err === "string" ? sp.stock_err : undefined;
   const pfyHook = typeof sp.pfyHook === "string" ? sp.pfyHook : undefined;
   const pfyHookReason = typeof sp.pfyHookReason === "string" ? sp.pfyHookReason : undefined;
   const pfyHookDetail = typeof sp.pfyHookDetail === "string" ? sp.pfyHookDetail : undefined;
@@ -671,10 +653,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       }),
     ]);
 
-  const manualProducts = products.filter((p) => p.fulfillmentType === FulfillmentType.manual);
-  const printifyProducts = products.filter(
-    (p) => p.fulfillmentType === FulfillmentType.printify,
-  );
+  const printifyProducts = products;
 
   /** Live Printify shop catalog (tab badge + listing-request ID picker). */
   let printifyCatalogItemCount: number | null = null;
@@ -813,25 +792,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {saved === "stock" ? (
-        <p
-          role="status"
-          className="rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90"
-        >
-          Stock updated.
-        </p>
-      ) : null}
-      {stockErr ? (
-        <p
-          role="alert"
-          className="rounded-lg border border-blue-900/50 bg-blue-950/30 px-4 py-2 text-sm text-blue-200/90"
-        >
-          {stockErr === "invalid"
-            ? "Enter a valid whole number for stock."
-            : "Could not update stock."}
-        </p>
-      ) : null}
-
       {products.length === 0 ? (
         <div
           role="status"
@@ -922,19 +882,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           className="flex flex-wrap gap-1 border-b border-zinc-800 px-2 pt-2"
           aria-label="Admin sections"
         >
-          <Link
-            href="/admin?tab=manual"
-            role="tab"
-            aria-selected={inventoryTab === "manual"}
-            className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
-              inventoryTab === "manual"
-                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
-                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
-            }`}
-          >
-            Manual items
-            <span className="ml-1.5 tabular-nums text-zinc-500">({manualProducts.length})</span>
-          </Link>
           <Link
             href="/admin?tab=printify"
             role="tab"
@@ -1068,296 +1015,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         </nav>
 
         <div className="p-4 pt-6 sm:p-6">
-          {inventoryTab === "manual" ? (
-            <section aria-label="Manual inventory">
-              {createOk && (
-                <p className="mb-4 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
-                  Used item created.
-                </p>
-              )}
-              {createErr && (
-                <p className="mb-4 rounded-lg border border-blue-900/50 bg-blue-950/30 px-4 py-2 text-sm text-blue-200/90">
-                  Could not create item
-                  {createReason === "category"
-                    ? " — pick at least one tag."
-                    : createReason === "name"
-                      ? " — title is required."
-                      : createReason === "price"
-                        ? " — invalid price."
-                        : "."}
-                </p>
-              )}
-              {deleteOk && (
-                <p className="mb-4 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
-                  Used item deleted.
-                </p>
-              )}
-              {deleteArchived && (
-                <p className="mb-4 rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-2 text-sm text-amber-200/90">
-                  Item has order history — it was hidden from the shop (inactive) instead of being removed.
-                </p>
-              )}
-              <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
-                Used items (manual fulfillment)
-              </h2>
-              <p className="mt-1 text-xs text-zinc-600">
-                Shipped by you; stock is enforced at checkout. Add photos by URL or upload (see .env for
-                Vercel Blob).
-                Payment options apply to carts that include this item together with others (Stripe shows the
-                intersection of what every line allows).
-              </p>
-
-              <div className="mt-6 rounded-lg border border-dashed border-zinc-700 bg-zinc-900/30 p-4">
-                <h3 className="text-xs font-medium uppercase tracking-wide text-zinc-500">Add used item</h3>
-                <form action={createManualUsedProduct} className="mt-3 space-y-3">
-                  <label className="block text-xs text-zinc-500">
-                    Title
-                    <input
-                      type="text"
-                      name="name"
-                      required
-                      className="mt-1 block w-full max-w-md rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-100"
-                    />
-                  </label>
-                  <label className="block text-xs text-zinc-500">
-                    Description
-                    <textarea
-                      name="description"
-                      rows={3}
-                      className="mt-1 block w-full max-w-xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200"
-                    />
-                  </label>
-                  <div className="flex flex-wrap gap-4">
-                    <label className="block text-xs text-zinc-500">
-                      Price (USD)
-                      <input
-                        type="number"
-                        name="price"
-                        required
-                        min={0}
-                        step={0.01}
-                        className="mt-1 block w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-sm"
-                      />
-                    </label>
-                    <label className="block text-xs text-zinc-500">
-                      Initial stock
-                      <input
-                        type="number"
-                        name="stock"
-                        min={0}
-                        defaultValue={0}
-                        className="mt-1 block w-24 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm"
-                      />
-                    </label>
-                  </div>
-                  <ListingGalleryEditor defaultUrls={[]} />
-                  <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
-                    <label className="flex cursor-pointer items-center gap-2">
-                      <input type="checkbox" name="payCard" defaultChecked className="rounded border-zinc-600" />
-                      Card
-                    </label>
-                    <label className="flex cursor-pointer items-center gap-2">
-                      <input
-                        type="checkbox"
-                        name="payCashApp"
-                        defaultChecked
-                        className="rounded border-zinc-600"
-                      />
-                      Cash App
-                    </label>
-                    <label className="flex cursor-pointer items-center gap-2">
-                      <input
-                        type="checkbox"
-                        name="checkoutTipEligible"
-                        defaultChecked
-                        className="rounded border-zinc-600"
-                      />
-                      Allow checkout tip
-                    </label>
-                  </div>
-                  {adminTags.length > 0 ? (
-                    <ProductTagFields
-                      key="create-manual-used"
-                      tags={adminTags}
-                      defaultTagIds={defaultCreateTagIds}
-                    />
-                  ) : (
-                    <p className="text-xs text-amber-400/90">
-                      Add tags in the Tags tab before creating used items.
-                    </p>
-                  )}
-                  <ProductDesignNameFields knownNames={knownDesignNames} defaultNames={[]} />
-                  <button
-                    type="submit"
-                    className="rounded bg-emerald-900/80 px-3 py-2 text-xs font-medium text-emerald-100 hover:bg-emerald-800/80"
-                  >
-                    Add used item
-                  </button>
-                </form>
-              </div>
-
-              <ul className="mt-6 space-y-6">
-                {manualProducts.map((p) => (
-                  <li
-                    key={p.id}
-                    className="rounded-lg border border-zinc-800 bg-zinc-900/20 p-4"
-                  >
-                    <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                      <div className="flex flex-wrap items-start gap-3">
-                        {productImageUrls(p)[0] ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={productImageUrls(p)[0]}
-                            alt=""
-                            className="h-16 w-16 shrink-0 rounded border border-zinc-700 object-cover"
-                          />
-                        ) : null}
-                        <div className="text-xs text-zinc-500">
-                          <span className="text-zinc-400">
-                            {p.tags.map((x) => x.tag.name).join(" · ")}
-                          </span>
-                          {" · "}
-                          <Link
-                            href={`/product/${p.slug}`}
-                            className="text-blue-400/90 hover:underline"
-                          >
-                            /product/{p.slug}
-                          </Link>
-                          {p.active ? "" : " · inactive"}
-                        </div>
-                      </div>
-                      <ConfirmDeleteForm
-                        action={deleteManualUsedProduct.bind(null, p.id)}
-                        message={`Delete “${p.name}”? This cannot be undone.`}
-                      >
-                        <button
-                          type="submit"
-                          className="rounded border border-blue-900/60 bg-blue-950/40 px-2 py-1 text-xs text-blue-300 hover:bg-blue-900/50"
-                        >
-                          Delete
-                        </button>
-                      </ConfirmDeleteForm>
-                    </div>
-                    <SaveListingForm
-                      action={updateProductDetails.bind(null, p.id)}
-                      savedHighlight={
-                        saved === "product" && listingQueryId === p.id
-                      }
-                    >
-                      <label className="block text-xs text-zinc-500">
-                        Title
-                        <input
-                          type="text"
-                          name="name"
-                          required
-                          defaultValue={p.name}
-                          className="mt-1 block w-full max-w-xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-100"
-                        />
-                      </label>
-                      <label className="block text-xs text-zinc-500">
-                        Description
-                        <textarea
-                          name="description"
-                          rows={4}
-                          defaultValue={p.description ?? ""}
-                          className="mt-1 block w-full max-w-2xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200"
-                        />
-                      </label>
-                      <ProductTagFields
-                        key={`edit-${p.id}-${productTagIds(p).join("-")}`}
-                        tags={adminTags}
-                        defaultTagIds={productTagIds(p)}
-                      />
-                      <ProductDesignNameFields
-                        key={`edit-design-${p.id}-${designNamesFromJson(p.designNames).join("|")}`}
-                        knownNames={knownDesignNames}
-                        defaultNames={designNamesFromJson(p.designNames)}
-                      />
-                      <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
-                        <input
-                          type="checkbox"
-                          name="checkoutTipEligible"
-                          defaultChecked={p.checkoutTipEligible}
-                          className="rounded border-zinc-600"
-                        />
-                        Allow checkout tip
-                      </label>
-                      <ListingGalleryEditor defaultUrls={productImageUrls(p)} />
-                      <div className="flex flex-wrap items-end gap-4">
-                        <label className="block text-xs text-zinc-500">
-                          Price (USD)
-                          <input
-                            type="number"
-                            name="price"
-                            required
-                            min={0}
-                            step={0.01}
-                            defaultValue={priceInputValue(p.priceCents)}
-                            className="mt-1 block w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-sm"
-                          />
-                        </label>
-                        <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
-                          <input
-                            type="checkbox"
-                            name="active"
-                            defaultChecked={p.active}
-                            className="rounded border-zinc-600"
-                          />
-                          Visible in shop
-                        </label>
-                        <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
-                          <label className="flex cursor-pointer items-center gap-2">
-                            <input
-                              type="checkbox"
-                              name="payCard"
-                              defaultChecked={p.payCard}
-                              className="rounded border-zinc-600"
-                            />
-                            Card
-                          </label>
-                          <label className="flex cursor-pointer items-center gap-2">
-                            <input
-                              type="checkbox"
-                              name="payCashApp"
-                              defaultChecked={p.payCashApp}
-                              className="rounded border-zinc-600"
-                            />
-                            Cash App
-                          </label>
-                        </div>
-                      </div>
-                    </SaveListingForm>
-                    <div className="mt-4 border-t border-zinc-800 pt-4">
-                      <form
-                        action={submitManualStockForm.bind(null, p.id)}
-                        className="flex flex-wrap items-center gap-2"
-                      >
-                        <label className="text-xs text-zinc-500">
-                          Stock qty
-                          <input
-                            type="number"
-                            name="stock"
-                            min={0}
-                            defaultValue={p.stockQuantity}
-                            className="ml-2 w-24 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm"
-                          />
-                        </label>
-                        <button
-                          type="submit"
-                          className="rounded bg-zinc-800 px-3 py-1 text-xs text-zinc-200 hover:bg-zinc-700"
-                        >
-                          Update stock
-                        </button>
-                      </form>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              {manualProducts.length === 0 ? (
-                <p className="mt-4 text-sm text-zinc-600">No used items yet — add one above.</p>
-              ) : null}
-            </section>
-          ) : inventoryTab === "printify" ? (
+          {inventoryTab === "printify" ? (
             <PrintifyInventoryTab
               products={printifyProducts}
               allTags={adminTags}
@@ -1515,9 +1173,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
               </p>
               <ul className="mt-4 divide-y divide-zinc-800 border-y border-zinc-800 text-sm">
                 {adminTags.map((t) => {
-                  const effectiveSpotlightId =
-                    t.subCollectionSpotlightProductId ??
-                    t.dommeCollectionSpotlightProductId;
+                  const effectiveSpotlightId = t.byItemSpotlightProductId;
                   const byItemSpotlightDefault =
                     effectiveSpotlightId &&
                     products.some(

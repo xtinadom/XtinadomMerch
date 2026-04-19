@@ -79,24 +79,6 @@ async function main() {
 
   await prisma.product.create({
     data: {
-      slug: "sample-used-item",
-      name: "Sample used item",
-      description: "Example one-of-a-kind piece. Stock is managed in admin.",
-      priceCents: 3500,
-      imageUrl: null,
-      audience: "sub",
-      fulfillmentType: "manual",
-      checkoutTipEligible: true,
-      primaryTagId: tid("sticker"),
-      stockQuantity: 1,
-      trackInventory: true,
-      active: true,
-      tags: { create: [{ tagId: tid("sticker") }] },
-    },
-  });
-
-  await prisma.product.create({
-    data: {
       slug: "domme-tee",
       name: "Creator graphic tee",
       description: "Soft cotton tee, printed to order.",

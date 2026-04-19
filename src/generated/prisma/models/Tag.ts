@@ -39,8 +39,7 @@ export type TagMinAggregateOutputType = {
   slug: string | null
   name: string | null
   sortOrder: number | null
-  subCollectionSpotlightProductId: string | null
-  dommeCollectionSpotlightProductId: string | null
+  byItemSpotlightProductId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,8 +49,7 @@ export type TagMaxAggregateOutputType = {
   slug: string | null
   name: string | null
   sortOrder: number | null
-  subCollectionSpotlightProductId: string | null
-  dommeCollectionSpotlightProductId: string | null
+  byItemSpotlightProductId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -61,8 +59,7 @@ export type TagCountAggregateOutputType = {
   slug: number
   name: number
   sortOrder: number
-  subCollectionSpotlightProductId: number
-  dommeCollectionSpotlightProductId: number
+  byItemSpotlightProductId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -82,8 +79,7 @@ export type TagMinAggregateInputType = {
   slug?: true
   name?: true
   sortOrder?: true
-  subCollectionSpotlightProductId?: true
-  dommeCollectionSpotlightProductId?: true
+  byItemSpotlightProductId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -93,8 +89,7 @@ export type TagMaxAggregateInputType = {
   slug?: true
   name?: true
   sortOrder?: true
-  subCollectionSpotlightProductId?: true
-  dommeCollectionSpotlightProductId?: true
+  byItemSpotlightProductId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -104,8 +99,7 @@ export type TagCountAggregateInputType = {
   slug?: true
   name?: true
   sortOrder?: true
-  subCollectionSpotlightProductId?: true
-  dommeCollectionSpotlightProductId?: true
+  byItemSpotlightProductId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -202,8 +196,7 @@ export type TagGroupByOutputType = {
   slug: string
   name: string
   sortOrder: number
-  subCollectionSpotlightProductId: string | null
-  dommeCollectionSpotlightProductId: string | null
+  byItemSpotlightProductId: string | null
   createdAt: Date
   updatedAt: Date
   _count: TagCountAggregateOutputType | null
@@ -236,12 +229,10 @@ export type TagWhereInput = {
   slug?: Prisma.StringFilter<"Tag"> | string
   name?: Prisma.StringFilter<"Tag"> | string
   sortOrder?: Prisma.IntFilter<"Tag"> | number
-  subCollectionSpotlightProductId?: Prisma.StringNullableFilter<"Tag"> | string | null
-  dommeCollectionSpotlightProductId?: Prisma.StringNullableFilter<"Tag"> | string | null
+  byItemSpotlightProductId?: Prisma.StringNullableFilter<"Tag"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
-  subCollectionSpotlightProduct?: Prisma.XOR<Prisma.ProductNullableScalarRelationFilter, Prisma.ProductWhereInput> | null
-  dommeCollectionSpotlightProduct?: Prisma.XOR<Prisma.ProductNullableScalarRelationFilter, Prisma.ProductWhereInput> | null
+  byItemSpotlightProduct?: Prisma.XOR<Prisma.ProductNullableScalarRelationFilter, Prisma.ProductWhereInput> | null
   productTags?: Prisma.ProductTagListRelationFilter
   primaryProducts?: Prisma.ProductListRelationFilter
 }
@@ -251,12 +242,10 @@ export type TagOrderByWithRelationInput = {
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
-  subCollectionSpotlightProductId?: Prisma.SortOrderInput | Prisma.SortOrder
-  dommeCollectionSpotlightProductId?: Prisma.SortOrderInput | Prisma.SortOrder
+  byItemSpotlightProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  subCollectionSpotlightProduct?: Prisma.ProductOrderByWithRelationInput
-  dommeCollectionSpotlightProduct?: Prisma.ProductOrderByWithRelationInput
+  byItemSpotlightProduct?: Prisma.ProductOrderByWithRelationInput
   productTags?: Prisma.ProductTagOrderByRelationAggregateInput
   primaryProducts?: Prisma.ProductOrderByRelationAggregateInput
 }
@@ -269,12 +258,10 @@ export type TagWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.TagWhereInput | Prisma.TagWhereInput[]
   name?: Prisma.StringFilter<"Tag"> | string
   sortOrder?: Prisma.IntFilter<"Tag"> | number
-  subCollectionSpotlightProductId?: Prisma.StringNullableFilter<"Tag"> | string | null
-  dommeCollectionSpotlightProductId?: Prisma.StringNullableFilter<"Tag"> | string | null
+  byItemSpotlightProductId?: Prisma.StringNullableFilter<"Tag"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
-  subCollectionSpotlightProduct?: Prisma.XOR<Prisma.ProductNullableScalarRelationFilter, Prisma.ProductWhereInput> | null
-  dommeCollectionSpotlightProduct?: Prisma.XOR<Prisma.ProductNullableScalarRelationFilter, Prisma.ProductWhereInput> | null
+  byItemSpotlightProduct?: Prisma.XOR<Prisma.ProductNullableScalarRelationFilter, Prisma.ProductWhereInput> | null
   productTags?: Prisma.ProductTagListRelationFilter
   primaryProducts?: Prisma.ProductListRelationFilter
 }, "id" | "slug">
@@ -284,8 +271,7 @@ export type TagOrderByWithAggregationInput = {
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
-  subCollectionSpotlightProductId?: Prisma.SortOrderInput | Prisma.SortOrder
-  dommeCollectionSpotlightProductId?: Prisma.SortOrderInput | Prisma.SortOrder
+  byItemSpotlightProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.TagCountOrderByAggregateInput
@@ -303,8 +289,7 @@ export type TagScalarWhereWithAggregatesInput = {
   slug?: Prisma.StringWithAggregatesFilter<"Tag"> | string
   name?: Prisma.StringWithAggregatesFilter<"Tag"> | string
   sortOrder?: Prisma.IntWithAggregatesFilter<"Tag"> | number
-  subCollectionSpotlightProductId?: Prisma.StringNullableWithAggregatesFilter<"Tag"> | string | null
-  dommeCollectionSpotlightProductId?: Prisma.StringNullableWithAggregatesFilter<"Tag"> | string | null
+  byItemSpotlightProductId?: Prisma.StringNullableWithAggregatesFilter<"Tag"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Tag"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Tag"> | Date | string
 }
@@ -316,8 +301,7 @@ export type TagCreateInput = {
   sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  subCollectionSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagSubCollectionSpotlightsInput
-  dommeCollectionSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagDommeCollectionSpotlightsInput
+  byItemSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagByItemSpotlightsInput
   productTags?: Prisma.ProductTagCreateNestedManyWithoutTagInput
   primaryProducts?: Prisma.ProductCreateNestedManyWithoutPrimaryTagInput
 }
@@ -327,8 +311,7 @@ export type TagUncheckedCreateInput = {
   slug: string
   name: string
   sortOrder?: number
-  subCollectionSpotlightProductId?: string | null
-  dommeCollectionSpotlightProductId?: string | null
+  byItemSpotlightProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   productTags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutTagInput
@@ -342,8 +325,7 @@ export type TagUpdateInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subCollectionSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagSubCollectionSpotlightsNestedInput
-  dommeCollectionSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagDommeCollectionSpotlightsNestedInput
+  byItemSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagByItemSpotlightsNestedInput
   productTags?: Prisma.ProductTagUpdateManyWithoutTagNestedInput
   primaryProducts?: Prisma.ProductUpdateManyWithoutPrimaryTagNestedInput
 }
@@ -353,8 +335,7 @@ export type TagUncheckedUpdateInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  subCollectionSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  dommeCollectionSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  byItemSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   productTags?: Prisma.ProductTagUncheckedUpdateManyWithoutTagNestedInput
@@ -366,8 +347,7 @@ export type TagCreateManyInput = {
   slug: string
   name: string
   sortOrder?: number
-  subCollectionSpotlightProductId?: string | null
-  dommeCollectionSpotlightProductId?: string | null
+  byItemSpotlightProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -386,8 +366,7 @@ export type TagUncheckedUpdateManyInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  subCollectionSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  dommeCollectionSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  byItemSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -397,8 +376,7 @@ export type TagCountOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
-  subCollectionSpotlightProductId?: Prisma.SortOrder
-  dommeCollectionSpotlightProductId?: Prisma.SortOrder
+  byItemSpotlightProductId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -412,8 +390,7 @@ export type TagMaxOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
-  subCollectionSpotlightProductId?: Prisma.SortOrder
-  dommeCollectionSpotlightProductId?: Prisma.SortOrder
+  byItemSpotlightProductId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -423,8 +400,7 @@ export type TagMinOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
-  subCollectionSpotlightProductId?: Prisma.SortOrder
-  dommeCollectionSpotlightProductId?: Prisma.SortOrder
+  byItemSpotlightProductId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -493,31 +469,17 @@ export type TagCreateNestedOneWithoutPrimaryProductsInput = {
   connect?: Prisma.TagWhereUniqueInput
 }
 
-export type TagCreateNestedManyWithoutSubCollectionSpotlightProductInput = {
-  create?: Prisma.XOR<Prisma.TagCreateWithoutSubCollectionSpotlightProductInput, Prisma.TagUncheckedCreateWithoutSubCollectionSpotlightProductInput> | Prisma.TagCreateWithoutSubCollectionSpotlightProductInput[] | Prisma.TagUncheckedCreateWithoutSubCollectionSpotlightProductInput[]
-  connectOrCreate?: Prisma.TagCreateOrConnectWithoutSubCollectionSpotlightProductInput | Prisma.TagCreateOrConnectWithoutSubCollectionSpotlightProductInput[]
-  createMany?: Prisma.TagCreateManySubCollectionSpotlightProductInputEnvelope
+export type TagCreateNestedManyWithoutByItemSpotlightProductInput = {
+  create?: Prisma.XOR<Prisma.TagCreateWithoutByItemSpotlightProductInput, Prisma.TagUncheckedCreateWithoutByItemSpotlightProductInput> | Prisma.TagCreateWithoutByItemSpotlightProductInput[] | Prisma.TagUncheckedCreateWithoutByItemSpotlightProductInput[]
+  connectOrCreate?: Prisma.TagCreateOrConnectWithoutByItemSpotlightProductInput | Prisma.TagCreateOrConnectWithoutByItemSpotlightProductInput[]
+  createMany?: Prisma.TagCreateManyByItemSpotlightProductInputEnvelope
   connect?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
 }
 
-export type TagCreateNestedManyWithoutDommeCollectionSpotlightProductInput = {
-  create?: Prisma.XOR<Prisma.TagCreateWithoutDommeCollectionSpotlightProductInput, Prisma.TagUncheckedCreateWithoutDommeCollectionSpotlightProductInput> | Prisma.TagCreateWithoutDommeCollectionSpotlightProductInput[] | Prisma.TagUncheckedCreateWithoutDommeCollectionSpotlightProductInput[]
-  connectOrCreate?: Prisma.TagCreateOrConnectWithoutDommeCollectionSpotlightProductInput | Prisma.TagCreateOrConnectWithoutDommeCollectionSpotlightProductInput[]
-  createMany?: Prisma.TagCreateManyDommeCollectionSpotlightProductInputEnvelope
-  connect?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
-}
-
-export type TagUncheckedCreateNestedManyWithoutSubCollectionSpotlightProductInput = {
-  create?: Prisma.XOR<Prisma.TagCreateWithoutSubCollectionSpotlightProductInput, Prisma.TagUncheckedCreateWithoutSubCollectionSpotlightProductInput> | Prisma.TagCreateWithoutSubCollectionSpotlightProductInput[] | Prisma.TagUncheckedCreateWithoutSubCollectionSpotlightProductInput[]
-  connectOrCreate?: Prisma.TagCreateOrConnectWithoutSubCollectionSpotlightProductInput | Prisma.TagCreateOrConnectWithoutSubCollectionSpotlightProductInput[]
-  createMany?: Prisma.TagCreateManySubCollectionSpotlightProductInputEnvelope
-  connect?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
-}
-
-export type TagUncheckedCreateNestedManyWithoutDommeCollectionSpotlightProductInput = {
-  create?: Prisma.XOR<Prisma.TagCreateWithoutDommeCollectionSpotlightProductInput, Prisma.TagUncheckedCreateWithoutDommeCollectionSpotlightProductInput> | Prisma.TagCreateWithoutDommeCollectionSpotlightProductInput[] | Prisma.TagUncheckedCreateWithoutDommeCollectionSpotlightProductInput[]
-  connectOrCreate?: Prisma.TagCreateOrConnectWithoutDommeCollectionSpotlightProductInput | Prisma.TagCreateOrConnectWithoutDommeCollectionSpotlightProductInput[]
-  createMany?: Prisma.TagCreateManyDommeCollectionSpotlightProductInputEnvelope
+export type TagUncheckedCreateNestedManyWithoutByItemSpotlightProductInput = {
+  create?: Prisma.XOR<Prisma.TagCreateWithoutByItemSpotlightProductInput, Prisma.TagUncheckedCreateWithoutByItemSpotlightProductInput> | Prisma.TagCreateWithoutByItemSpotlightProductInput[] | Prisma.TagUncheckedCreateWithoutByItemSpotlightProductInput[]
+  connectOrCreate?: Prisma.TagCreateOrConnectWithoutByItemSpotlightProductInput | Prisma.TagCreateOrConnectWithoutByItemSpotlightProductInput[]
+  createMany?: Prisma.TagCreateManyByItemSpotlightProductInputEnvelope
   connect?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
 }
 
@@ -531,59 +493,31 @@ export type TagUpdateOneWithoutPrimaryProductsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.TagUpdateToOneWithWhereWithoutPrimaryProductsInput, Prisma.TagUpdateWithoutPrimaryProductsInput>, Prisma.TagUncheckedUpdateWithoutPrimaryProductsInput>
 }
 
-export type TagUpdateManyWithoutSubCollectionSpotlightProductNestedInput = {
-  create?: Prisma.XOR<Prisma.TagCreateWithoutSubCollectionSpotlightProductInput, Prisma.TagUncheckedCreateWithoutSubCollectionSpotlightProductInput> | Prisma.TagCreateWithoutSubCollectionSpotlightProductInput[] | Prisma.TagUncheckedCreateWithoutSubCollectionSpotlightProductInput[]
-  connectOrCreate?: Prisma.TagCreateOrConnectWithoutSubCollectionSpotlightProductInput | Prisma.TagCreateOrConnectWithoutSubCollectionSpotlightProductInput[]
-  upsert?: Prisma.TagUpsertWithWhereUniqueWithoutSubCollectionSpotlightProductInput | Prisma.TagUpsertWithWhereUniqueWithoutSubCollectionSpotlightProductInput[]
-  createMany?: Prisma.TagCreateManySubCollectionSpotlightProductInputEnvelope
+export type TagUpdateManyWithoutByItemSpotlightProductNestedInput = {
+  create?: Prisma.XOR<Prisma.TagCreateWithoutByItemSpotlightProductInput, Prisma.TagUncheckedCreateWithoutByItemSpotlightProductInput> | Prisma.TagCreateWithoutByItemSpotlightProductInput[] | Prisma.TagUncheckedCreateWithoutByItemSpotlightProductInput[]
+  connectOrCreate?: Prisma.TagCreateOrConnectWithoutByItemSpotlightProductInput | Prisma.TagCreateOrConnectWithoutByItemSpotlightProductInput[]
+  upsert?: Prisma.TagUpsertWithWhereUniqueWithoutByItemSpotlightProductInput | Prisma.TagUpsertWithWhereUniqueWithoutByItemSpotlightProductInput[]
+  createMany?: Prisma.TagCreateManyByItemSpotlightProductInputEnvelope
   set?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
   disconnect?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
   delete?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
   connect?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
-  update?: Prisma.TagUpdateWithWhereUniqueWithoutSubCollectionSpotlightProductInput | Prisma.TagUpdateWithWhereUniqueWithoutSubCollectionSpotlightProductInput[]
-  updateMany?: Prisma.TagUpdateManyWithWhereWithoutSubCollectionSpotlightProductInput | Prisma.TagUpdateManyWithWhereWithoutSubCollectionSpotlightProductInput[]
+  update?: Prisma.TagUpdateWithWhereUniqueWithoutByItemSpotlightProductInput | Prisma.TagUpdateWithWhereUniqueWithoutByItemSpotlightProductInput[]
+  updateMany?: Prisma.TagUpdateManyWithWhereWithoutByItemSpotlightProductInput | Prisma.TagUpdateManyWithWhereWithoutByItemSpotlightProductInput[]
   deleteMany?: Prisma.TagScalarWhereInput | Prisma.TagScalarWhereInput[]
 }
 
-export type TagUpdateManyWithoutDommeCollectionSpotlightProductNestedInput = {
-  create?: Prisma.XOR<Prisma.TagCreateWithoutDommeCollectionSpotlightProductInput, Prisma.TagUncheckedCreateWithoutDommeCollectionSpotlightProductInput> | Prisma.TagCreateWithoutDommeCollectionSpotlightProductInput[] | Prisma.TagUncheckedCreateWithoutDommeCollectionSpotlightProductInput[]
-  connectOrCreate?: Prisma.TagCreateOrConnectWithoutDommeCollectionSpotlightProductInput | Prisma.TagCreateOrConnectWithoutDommeCollectionSpotlightProductInput[]
-  upsert?: Prisma.TagUpsertWithWhereUniqueWithoutDommeCollectionSpotlightProductInput | Prisma.TagUpsertWithWhereUniqueWithoutDommeCollectionSpotlightProductInput[]
-  createMany?: Prisma.TagCreateManyDommeCollectionSpotlightProductInputEnvelope
+export type TagUncheckedUpdateManyWithoutByItemSpotlightProductNestedInput = {
+  create?: Prisma.XOR<Prisma.TagCreateWithoutByItemSpotlightProductInput, Prisma.TagUncheckedCreateWithoutByItemSpotlightProductInput> | Prisma.TagCreateWithoutByItemSpotlightProductInput[] | Prisma.TagUncheckedCreateWithoutByItemSpotlightProductInput[]
+  connectOrCreate?: Prisma.TagCreateOrConnectWithoutByItemSpotlightProductInput | Prisma.TagCreateOrConnectWithoutByItemSpotlightProductInput[]
+  upsert?: Prisma.TagUpsertWithWhereUniqueWithoutByItemSpotlightProductInput | Prisma.TagUpsertWithWhereUniqueWithoutByItemSpotlightProductInput[]
+  createMany?: Prisma.TagCreateManyByItemSpotlightProductInputEnvelope
   set?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
   disconnect?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
   delete?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
   connect?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
-  update?: Prisma.TagUpdateWithWhereUniqueWithoutDommeCollectionSpotlightProductInput | Prisma.TagUpdateWithWhereUniqueWithoutDommeCollectionSpotlightProductInput[]
-  updateMany?: Prisma.TagUpdateManyWithWhereWithoutDommeCollectionSpotlightProductInput | Prisma.TagUpdateManyWithWhereWithoutDommeCollectionSpotlightProductInput[]
-  deleteMany?: Prisma.TagScalarWhereInput | Prisma.TagScalarWhereInput[]
-}
-
-export type TagUncheckedUpdateManyWithoutSubCollectionSpotlightProductNestedInput = {
-  create?: Prisma.XOR<Prisma.TagCreateWithoutSubCollectionSpotlightProductInput, Prisma.TagUncheckedCreateWithoutSubCollectionSpotlightProductInput> | Prisma.TagCreateWithoutSubCollectionSpotlightProductInput[] | Prisma.TagUncheckedCreateWithoutSubCollectionSpotlightProductInput[]
-  connectOrCreate?: Prisma.TagCreateOrConnectWithoutSubCollectionSpotlightProductInput | Prisma.TagCreateOrConnectWithoutSubCollectionSpotlightProductInput[]
-  upsert?: Prisma.TagUpsertWithWhereUniqueWithoutSubCollectionSpotlightProductInput | Prisma.TagUpsertWithWhereUniqueWithoutSubCollectionSpotlightProductInput[]
-  createMany?: Prisma.TagCreateManySubCollectionSpotlightProductInputEnvelope
-  set?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
-  disconnect?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
-  delete?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
-  connect?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
-  update?: Prisma.TagUpdateWithWhereUniqueWithoutSubCollectionSpotlightProductInput | Prisma.TagUpdateWithWhereUniqueWithoutSubCollectionSpotlightProductInput[]
-  updateMany?: Prisma.TagUpdateManyWithWhereWithoutSubCollectionSpotlightProductInput | Prisma.TagUpdateManyWithWhereWithoutSubCollectionSpotlightProductInput[]
-  deleteMany?: Prisma.TagScalarWhereInput | Prisma.TagScalarWhereInput[]
-}
-
-export type TagUncheckedUpdateManyWithoutDommeCollectionSpotlightProductNestedInput = {
-  create?: Prisma.XOR<Prisma.TagCreateWithoutDommeCollectionSpotlightProductInput, Prisma.TagUncheckedCreateWithoutDommeCollectionSpotlightProductInput> | Prisma.TagCreateWithoutDommeCollectionSpotlightProductInput[] | Prisma.TagUncheckedCreateWithoutDommeCollectionSpotlightProductInput[]
-  connectOrCreate?: Prisma.TagCreateOrConnectWithoutDommeCollectionSpotlightProductInput | Prisma.TagCreateOrConnectWithoutDommeCollectionSpotlightProductInput[]
-  upsert?: Prisma.TagUpsertWithWhereUniqueWithoutDommeCollectionSpotlightProductInput | Prisma.TagUpsertWithWhereUniqueWithoutDommeCollectionSpotlightProductInput[]
-  createMany?: Prisma.TagCreateManyDommeCollectionSpotlightProductInputEnvelope
-  set?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
-  disconnect?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
-  delete?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
-  connect?: Prisma.TagWhereUniqueInput | Prisma.TagWhereUniqueInput[]
-  update?: Prisma.TagUpdateWithWhereUniqueWithoutDommeCollectionSpotlightProductInput | Prisma.TagUpdateWithWhereUniqueWithoutDommeCollectionSpotlightProductInput[]
-  updateMany?: Prisma.TagUpdateManyWithWhereWithoutDommeCollectionSpotlightProductInput | Prisma.TagUpdateManyWithWhereWithoutDommeCollectionSpotlightProductInput[]
+  update?: Prisma.TagUpdateWithWhereUniqueWithoutByItemSpotlightProductInput | Prisma.TagUpdateWithWhereUniqueWithoutByItemSpotlightProductInput[]
+  updateMany?: Prisma.TagUpdateManyWithWhereWithoutByItemSpotlightProductInput | Prisma.TagUpdateManyWithWhereWithoutByItemSpotlightProductInput[]
   deleteMany?: Prisma.TagScalarWhereInput | Prisma.TagScalarWhereInput[]
 }
 
@@ -594,8 +528,7 @@ export type TagCreateWithoutProductTagsInput = {
   sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  subCollectionSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagSubCollectionSpotlightsInput
-  dommeCollectionSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagDommeCollectionSpotlightsInput
+  byItemSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagByItemSpotlightsInput
   primaryProducts?: Prisma.ProductCreateNestedManyWithoutPrimaryTagInput
 }
 
@@ -604,8 +537,7 @@ export type TagUncheckedCreateWithoutProductTagsInput = {
   slug: string
   name: string
   sortOrder?: number
-  subCollectionSpotlightProductId?: string | null
-  dommeCollectionSpotlightProductId?: string | null
+  byItemSpotlightProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   primaryProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutPrimaryTagInput
@@ -634,8 +566,7 @@ export type TagUpdateWithoutProductTagsInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subCollectionSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagSubCollectionSpotlightsNestedInput
-  dommeCollectionSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagDommeCollectionSpotlightsNestedInput
+  byItemSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagByItemSpotlightsNestedInput
   primaryProducts?: Prisma.ProductUpdateManyWithoutPrimaryTagNestedInput
 }
 
@@ -644,8 +575,7 @@ export type TagUncheckedUpdateWithoutProductTagsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  subCollectionSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  dommeCollectionSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  byItemSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryProducts?: Prisma.ProductUncheckedUpdateManyWithoutPrimaryTagNestedInput
@@ -658,8 +588,7 @@ export type TagCreateWithoutPrimaryProductsInput = {
   sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  subCollectionSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagSubCollectionSpotlightsInput
-  dommeCollectionSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagDommeCollectionSpotlightsInput
+  byItemSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagByItemSpotlightsInput
   productTags?: Prisma.ProductTagCreateNestedManyWithoutTagInput
 }
 
@@ -668,8 +597,7 @@ export type TagUncheckedCreateWithoutPrimaryProductsInput = {
   slug: string
   name: string
   sortOrder?: number
-  subCollectionSpotlightProductId?: string | null
-  dommeCollectionSpotlightProductId?: string | null
+  byItemSpotlightProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   productTags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutTagInput
@@ -680,71 +608,35 @@ export type TagCreateOrConnectWithoutPrimaryProductsInput = {
   create: Prisma.XOR<Prisma.TagCreateWithoutPrimaryProductsInput, Prisma.TagUncheckedCreateWithoutPrimaryProductsInput>
 }
 
-export type TagCreateWithoutSubCollectionSpotlightProductInput = {
+export type TagCreateWithoutByItemSpotlightProductInput = {
   id?: string
   slug: string
   name: string
   sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  dommeCollectionSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagDommeCollectionSpotlightsInput
   productTags?: Prisma.ProductTagCreateNestedManyWithoutTagInput
   primaryProducts?: Prisma.ProductCreateNestedManyWithoutPrimaryTagInput
 }
 
-export type TagUncheckedCreateWithoutSubCollectionSpotlightProductInput = {
+export type TagUncheckedCreateWithoutByItemSpotlightProductInput = {
   id?: string
   slug: string
   name: string
   sortOrder?: number
-  dommeCollectionSpotlightProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   productTags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutTagInput
   primaryProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutPrimaryTagInput
 }
 
-export type TagCreateOrConnectWithoutSubCollectionSpotlightProductInput = {
+export type TagCreateOrConnectWithoutByItemSpotlightProductInput = {
   where: Prisma.TagWhereUniqueInput
-  create: Prisma.XOR<Prisma.TagCreateWithoutSubCollectionSpotlightProductInput, Prisma.TagUncheckedCreateWithoutSubCollectionSpotlightProductInput>
+  create: Prisma.XOR<Prisma.TagCreateWithoutByItemSpotlightProductInput, Prisma.TagUncheckedCreateWithoutByItemSpotlightProductInput>
 }
 
-export type TagCreateManySubCollectionSpotlightProductInputEnvelope = {
-  data: Prisma.TagCreateManySubCollectionSpotlightProductInput | Prisma.TagCreateManySubCollectionSpotlightProductInput[]
-  skipDuplicates?: boolean
-}
-
-export type TagCreateWithoutDommeCollectionSpotlightProductInput = {
-  id?: string
-  slug: string
-  name: string
-  sortOrder?: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  subCollectionSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagSubCollectionSpotlightsInput
-  productTags?: Prisma.ProductTagCreateNestedManyWithoutTagInput
-  primaryProducts?: Prisma.ProductCreateNestedManyWithoutPrimaryTagInput
-}
-
-export type TagUncheckedCreateWithoutDommeCollectionSpotlightProductInput = {
-  id?: string
-  slug: string
-  name: string
-  sortOrder?: number
-  subCollectionSpotlightProductId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  productTags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutTagInput
-  primaryProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutPrimaryTagInput
-}
-
-export type TagCreateOrConnectWithoutDommeCollectionSpotlightProductInput = {
-  where: Prisma.TagWhereUniqueInput
-  create: Prisma.XOR<Prisma.TagCreateWithoutDommeCollectionSpotlightProductInput, Prisma.TagUncheckedCreateWithoutDommeCollectionSpotlightProductInput>
-}
-
-export type TagCreateManyDommeCollectionSpotlightProductInputEnvelope = {
-  data: Prisma.TagCreateManyDommeCollectionSpotlightProductInput | Prisma.TagCreateManyDommeCollectionSpotlightProductInput[]
+export type TagCreateManyByItemSpotlightProductInputEnvelope = {
+  data: Prisma.TagCreateManyByItemSpotlightProductInput | Prisma.TagCreateManyByItemSpotlightProductInput[]
   skipDuplicates?: boolean
 }
 
@@ -766,8 +658,7 @@ export type TagUpdateWithoutPrimaryProductsInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subCollectionSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagSubCollectionSpotlightsNestedInput
-  dommeCollectionSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagDommeCollectionSpotlightsNestedInput
+  byItemSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagByItemSpotlightsNestedInput
   productTags?: Prisma.ProductTagUpdateManyWithoutTagNestedInput
 }
 
@@ -776,27 +667,26 @@ export type TagUncheckedUpdateWithoutPrimaryProductsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  subCollectionSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  dommeCollectionSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  byItemSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   productTags?: Prisma.ProductTagUncheckedUpdateManyWithoutTagNestedInput
 }
 
-export type TagUpsertWithWhereUniqueWithoutSubCollectionSpotlightProductInput = {
+export type TagUpsertWithWhereUniqueWithoutByItemSpotlightProductInput = {
   where: Prisma.TagWhereUniqueInput
-  update: Prisma.XOR<Prisma.TagUpdateWithoutSubCollectionSpotlightProductInput, Prisma.TagUncheckedUpdateWithoutSubCollectionSpotlightProductInput>
-  create: Prisma.XOR<Prisma.TagCreateWithoutSubCollectionSpotlightProductInput, Prisma.TagUncheckedCreateWithoutSubCollectionSpotlightProductInput>
+  update: Prisma.XOR<Prisma.TagUpdateWithoutByItemSpotlightProductInput, Prisma.TagUncheckedUpdateWithoutByItemSpotlightProductInput>
+  create: Prisma.XOR<Prisma.TagCreateWithoutByItemSpotlightProductInput, Prisma.TagUncheckedCreateWithoutByItemSpotlightProductInput>
 }
 
-export type TagUpdateWithWhereUniqueWithoutSubCollectionSpotlightProductInput = {
+export type TagUpdateWithWhereUniqueWithoutByItemSpotlightProductInput = {
   where: Prisma.TagWhereUniqueInput
-  data: Prisma.XOR<Prisma.TagUpdateWithoutSubCollectionSpotlightProductInput, Prisma.TagUncheckedUpdateWithoutSubCollectionSpotlightProductInput>
+  data: Prisma.XOR<Prisma.TagUpdateWithoutByItemSpotlightProductInput, Prisma.TagUncheckedUpdateWithoutByItemSpotlightProductInput>
 }
 
-export type TagUpdateManyWithWhereWithoutSubCollectionSpotlightProductInput = {
+export type TagUpdateManyWithWhereWithoutByItemSpotlightProductInput = {
   where: Prisma.TagScalarWhereInput
-  data: Prisma.XOR<Prisma.TagUpdateManyMutationInput, Prisma.TagUncheckedUpdateManyWithoutSubCollectionSpotlightProductInput>
+  data: Prisma.XOR<Prisma.TagUpdateManyMutationInput, Prisma.TagUncheckedUpdateManyWithoutByItemSpotlightProductInput>
 }
 
 export type TagScalarWhereInput = {
@@ -807,112 +697,47 @@ export type TagScalarWhereInput = {
   slug?: Prisma.StringFilter<"Tag"> | string
   name?: Prisma.StringFilter<"Tag"> | string
   sortOrder?: Prisma.IntFilter<"Tag"> | number
-  subCollectionSpotlightProductId?: Prisma.StringNullableFilter<"Tag"> | string | null
-  dommeCollectionSpotlightProductId?: Prisma.StringNullableFilter<"Tag"> | string | null
+  byItemSpotlightProductId?: Prisma.StringNullableFilter<"Tag"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
 }
 
-export type TagUpsertWithWhereUniqueWithoutDommeCollectionSpotlightProductInput = {
-  where: Prisma.TagWhereUniqueInput
-  update: Prisma.XOR<Prisma.TagUpdateWithoutDommeCollectionSpotlightProductInput, Prisma.TagUncheckedUpdateWithoutDommeCollectionSpotlightProductInput>
-  create: Prisma.XOR<Prisma.TagCreateWithoutDommeCollectionSpotlightProductInput, Prisma.TagUncheckedCreateWithoutDommeCollectionSpotlightProductInput>
-}
-
-export type TagUpdateWithWhereUniqueWithoutDommeCollectionSpotlightProductInput = {
-  where: Prisma.TagWhereUniqueInput
-  data: Prisma.XOR<Prisma.TagUpdateWithoutDommeCollectionSpotlightProductInput, Prisma.TagUncheckedUpdateWithoutDommeCollectionSpotlightProductInput>
-}
-
-export type TagUpdateManyWithWhereWithoutDommeCollectionSpotlightProductInput = {
-  where: Prisma.TagScalarWhereInput
-  data: Prisma.XOR<Prisma.TagUpdateManyMutationInput, Prisma.TagUncheckedUpdateManyWithoutDommeCollectionSpotlightProductInput>
-}
-
-export type TagCreateManySubCollectionSpotlightProductInput = {
+export type TagCreateManyByItemSpotlightProductInput = {
   id?: string
   slug: string
   name: string
   sortOrder?: number
-  dommeCollectionSpotlightProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
-export type TagCreateManyDommeCollectionSpotlightProductInput = {
-  id?: string
-  slug: string
-  name: string
-  sortOrder?: number
-  subCollectionSpotlightProductId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type TagUpdateWithoutSubCollectionSpotlightProductInput = {
+export type TagUpdateWithoutByItemSpotlightProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  dommeCollectionSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagDommeCollectionSpotlightsNestedInput
   productTags?: Prisma.ProductTagUpdateManyWithoutTagNestedInput
   primaryProducts?: Prisma.ProductUpdateManyWithoutPrimaryTagNestedInput
 }
 
-export type TagUncheckedUpdateWithoutSubCollectionSpotlightProductInput = {
+export type TagUncheckedUpdateWithoutByItemSpotlightProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  dommeCollectionSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   productTags?: Prisma.ProductTagUncheckedUpdateManyWithoutTagNestedInput
   primaryProducts?: Prisma.ProductUncheckedUpdateManyWithoutPrimaryTagNestedInput
 }
 
-export type TagUncheckedUpdateManyWithoutSubCollectionSpotlightProductInput = {
+export type TagUncheckedUpdateManyWithoutByItemSpotlightProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  dommeCollectionSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type TagUpdateWithoutDommeCollectionSpotlightProductInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subCollectionSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagSubCollectionSpotlightsNestedInput
-  productTags?: Prisma.ProductTagUpdateManyWithoutTagNestedInput
-  primaryProducts?: Prisma.ProductUpdateManyWithoutPrimaryTagNestedInput
-}
-
-export type TagUncheckedUpdateWithoutDommeCollectionSpotlightProductInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  subCollectionSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  productTags?: Prisma.ProductTagUncheckedUpdateManyWithoutTagNestedInput
-  primaryProducts?: Prisma.ProductUncheckedUpdateManyWithoutPrimaryTagNestedInput
-}
-
-export type TagUncheckedUpdateManyWithoutDommeCollectionSpotlightProductInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  subCollectionSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -962,12 +787,10 @@ export type TagSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   slug?: boolean
   name?: boolean
   sortOrder?: boolean
-  subCollectionSpotlightProductId?: boolean
-  dommeCollectionSpotlightProductId?: boolean
+  byItemSpotlightProductId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  subCollectionSpotlightProduct?: boolean | Prisma.Tag$subCollectionSpotlightProductArgs<ExtArgs>
-  dommeCollectionSpotlightProduct?: boolean | Prisma.Tag$dommeCollectionSpotlightProductArgs<ExtArgs>
+  byItemSpotlightProduct?: boolean | Prisma.Tag$byItemSpotlightProductArgs<ExtArgs>
   productTags?: boolean | Prisma.Tag$productTagsArgs<ExtArgs>
   primaryProducts?: boolean | Prisma.Tag$primaryProductsArgs<ExtArgs>
   _count?: boolean | Prisma.TagCountOutputTypeDefaultArgs<ExtArgs>
@@ -978,12 +801,10 @@ export type TagSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extension
   slug?: boolean
   name?: boolean
   sortOrder?: boolean
-  subCollectionSpotlightProductId?: boolean
-  dommeCollectionSpotlightProductId?: boolean
+  byItemSpotlightProductId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  subCollectionSpotlightProduct?: boolean | Prisma.Tag$subCollectionSpotlightProductArgs<ExtArgs>
-  dommeCollectionSpotlightProduct?: boolean | Prisma.Tag$dommeCollectionSpotlightProductArgs<ExtArgs>
+  byItemSpotlightProduct?: boolean | Prisma.Tag$byItemSpotlightProductArgs<ExtArgs>
 }, ExtArgs["result"]["tag"]>
 
 export type TagSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -991,12 +812,10 @@ export type TagSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extension
   slug?: boolean
   name?: boolean
   sortOrder?: boolean
-  subCollectionSpotlightProductId?: boolean
-  dommeCollectionSpotlightProductId?: boolean
+  byItemSpotlightProductId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  subCollectionSpotlightProduct?: boolean | Prisma.Tag$subCollectionSpotlightProductArgs<ExtArgs>
-  dommeCollectionSpotlightProduct?: boolean | Prisma.Tag$dommeCollectionSpotlightProductArgs<ExtArgs>
+  byItemSpotlightProduct?: boolean | Prisma.Tag$byItemSpotlightProductArgs<ExtArgs>
 }, ExtArgs["result"]["tag"]>
 
 export type TagSelectScalar = {
@@ -1004,34 +823,29 @@ export type TagSelectScalar = {
   slug?: boolean
   name?: boolean
   sortOrder?: boolean
-  subCollectionSpotlightProductId?: boolean
-  dommeCollectionSpotlightProductId?: boolean
+  byItemSpotlightProductId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "sortOrder" | "subCollectionSpotlightProductId" | "dommeCollectionSpotlightProductId" | "createdAt" | "updatedAt", ExtArgs["result"]["tag"]>
+export type TagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "sortOrder" | "byItemSpotlightProductId" | "createdAt" | "updatedAt", ExtArgs["result"]["tag"]>
 export type TagInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  subCollectionSpotlightProduct?: boolean | Prisma.Tag$subCollectionSpotlightProductArgs<ExtArgs>
-  dommeCollectionSpotlightProduct?: boolean | Prisma.Tag$dommeCollectionSpotlightProductArgs<ExtArgs>
+  byItemSpotlightProduct?: boolean | Prisma.Tag$byItemSpotlightProductArgs<ExtArgs>
   productTags?: boolean | Prisma.Tag$productTagsArgs<ExtArgs>
   primaryProducts?: boolean | Prisma.Tag$primaryProductsArgs<ExtArgs>
   _count?: boolean | Prisma.TagCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TagIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  subCollectionSpotlightProduct?: boolean | Prisma.Tag$subCollectionSpotlightProductArgs<ExtArgs>
-  dommeCollectionSpotlightProduct?: boolean | Prisma.Tag$dommeCollectionSpotlightProductArgs<ExtArgs>
+  byItemSpotlightProduct?: boolean | Prisma.Tag$byItemSpotlightProductArgs<ExtArgs>
 }
 export type TagIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  subCollectionSpotlightProduct?: boolean | Prisma.Tag$subCollectionSpotlightProductArgs<ExtArgs>
-  dommeCollectionSpotlightProduct?: boolean | Prisma.Tag$dommeCollectionSpotlightProductArgs<ExtArgs>
+  byItemSpotlightProduct?: boolean | Prisma.Tag$byItemSpotlightProductArgs<ExtArgs>
 }
 
 export type $TagPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Tag"
   objects: {
-    subCollectionSpotlightProduct: Prisma.$ProductPayload<ExtArgs> | null
-    dommeCollectionSpotlightProduct: Prisma.$ProductPayload<ExtArgs> | null
+    byItemSpotlightProduct: Prisma.$ProductPayload<ExtArgs> | null
     productTags: Prisma.$ProductTagPayload<ExtArgs>[]
     primaryProducts: Prisma.$ProductPayload<ExtArgs>[]
   }
@@ -1041,13 +855,9 @@ export type $TagPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     name: string
     sortOrder: number
     /**
-     * * Optional: “By Item” pick for Fans collection; product must have this tag and Sub or Both audience.
+     * * Optional admin pick for “By Item” browse; product must have this tag.
      */
-    subCollectionSpotlightProductId: string | null
-    /**
-     * * Optional: “By Item” pick for Creator collection; product must have this tag and Domme or Both audience.
-     */
-    dommeCollectionSpotlightProductId: string | null
+    byItemSpotlightProductId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["tag"]>
@@ -1444,8 +1254,7 @@ readonly fields: TagFieldRefs;
  */
 export interface Prisma__TagClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  subCollectionSpotlightProduct<T extends Prisma.Tag$subCollectionSpotlightProductArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tag$subCollectionSpotlightProductArgs<ExtArgs>>): Prisma.Prisma__ProductClient<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  dommeCollectionSpotlightProduct<T extends Prisma.Tag$dommeCollectionSpotlightProductArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tag$dommeCollectionSpotlightProductArgs<ExtArgs>>): Prisma.Prisma__ProductClient<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  byItemSpotlightProduct<T extends Prisma.Tag$byItemSpotlightProductArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tag$byItemSpotlightProductArgs<ExtArgs>>): Prisma.Prisma__ProductClient<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   productTags<T extends Prisma.Tag$productTagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tag$productTagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductTagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   primaryProducts<T extends Prisma.Tag$primaryProductsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tag$primaryProductsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1481,8 +1290,7 @@ export interface TagFieldRefs {
   readonly slug: Prisma.FieldRef<"Tag", 'String'>
   readonly name: Prisma.FieldRef<"Tag", 'String'>
   readonly sortOrder: Prisma.FieldRef<"Tag", 'Int'>
-  readonly subCollectionSpotlightProductId: Prisma.FieldRef<"Tag", 'String'>
-  readonly dommeCollectionSpotlightProductId: Prisma.FieldRef<"Tag", 'String'>
+  readonly byItemSpotlightProductId: Prisma.FieldRef<"Tag", 'String'>
   readonly createdAt: Prisma.FieldRef<"Tag", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Tag", 'DateTime'>
 }
@@ -1886,28 +1694,9 @@ export type TagDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.InternalA
 }
 
 /**
- * Tag.subCollectionSpotlightProduct
+ * Tag.byItemSpotlightProduct
  */
-export type Tag$subCollectionSpotlightProductArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Product
-   */
-  select?: Prisma.ProductSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Product
-   */
-  omit?: Prisma.ProductOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.ProductInclude<ExtArgs> | null
-  where?: Prisma.ProductWhereInput
-}
-
-/**
- * Tag.dommeCollectionSpotlightProduct
- */
-export type Tag$dommeCollectionSpotlightProductArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type Tag$byItemSpotlightProductArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
    * Select specific fields to fetch from the Product
    */

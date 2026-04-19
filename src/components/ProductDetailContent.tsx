@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { FulfillmentType } from "@/generated/prisma/enums";
 import { ProductAddToCartForm } from "@/components/ProductAddToCartForm";
 import { getShippingFlatCents } from "@/lib/shipping";
 import { productImageUrlsForShopListing } from "@/lib/product-media";
@@ -18,14 +17,7 @@ function formatPrice(cents: number) {
   }).format(cents / 100);
 }
 
-function stockLabel(
-  fulfillment: string,
-  track: boolean,
-  qty: number,
-): string {
-  if (fulfillment === FulfillmentType.printify) return "In stock";
-  if (fulfillment !== FulfillmentType.manual || !track) return "Available";
-  if (qty <= 0) return "Sold out";
+function stockLabel(): string {
   return "In stock";
 }
 
@@ -54,11 +46,7 @@ export function ProductDetailContent({
   const shopSlug = tenant?.shopSlug ?? PLATFORM_SHOP_SLUG;
   const displayPriceCents = tenant?.listingPriceCents ?? product.priceCents;
 
-  const availability = stockLabel(
-    product.fulfillmentType,
-    product.trackInventory,
-    product.stockQuantity,
-  );
+  const availability = stockLabel();
   const shippingCents = getShippingFlatCents();
   const images = productImageUrlsForShopListing(product, {
     adminListingSecondaryImageUrl,
@@ -66,9 +54,7 @@ export function ProductDetailContent({
     listingStorefrontCatalogImageUrls,
   });
   const printifyVariants = getPrintifyVariantsForProduct(product);
-  const multiPrintify =
-    product.fulfillmentType === FulfillmentType.printify &&
-    printifyVariants.length > 1;
+  const multiPrintify = printifyVariants.length > 1;
 
   const primary = product.primaryTag;
   const allProductsHref =
@@ -111,25 +97,17 @@ export function ProductDetailContent({
       ) : (
         <div className="mx-auto w-full max-w-[400px]">
           <ProductImageGallery images={images} />
-          {availability !== "Sold out" && (
-            <ProductAddToCartForm
-              productId={product.id}
-              shopSlug={shopSlug === PLATFORM_SHOP_SLUG ? undefined : shopSlug}
-            />
-          )}
+          <ProductAddToCartForm
+            productId={product.id}
+            shopSlug={shopSlug === PLATFORM_SHOP_SLUG ? undefined : shopSlug}
+          />
         </div>
       )}
       <div>
         {!multiPrintify ? (
           <p className="text-2xl text-blue-200/90">{formatPrice(displayPriceCents)}</p>
         ) : null}
-        <p
-          className={`mt-2 text-sm ${
-            availability === "Sold out" ? "text-amber-400" : "text-zinc-500"
-          }`}
-        >
-          {availability}
-        </p>
+        <p className="mt-2 text-sm text-zinc-500">{availability}</p>
         <p className="mt-2 text-sm text-zinc-500">
           Shipping: {formatPrice(shippingCents)} flat rate
         </p>
@@ -139,9 +117,7 @@ export function ProductDetailContent({
           </p>
         )}
         <p className="mt-6 text-xs text-zinc-600">
-          {product.fulfillmentType === FulfillmentType.printify
-            ? "Print on demand — ships from our print partner."
-            : "Shipped directly by Xtinadom."}
+          Print on demand — ships from our print partner.
         </p>
       </div>
     </div>

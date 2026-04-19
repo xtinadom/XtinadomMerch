@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { FulfillmentType } from "@/generated/prisma/enums";
 import { SHOP_ALL_ROUTE } from "@/lib/constants";
-import { CART_MAX_PRINTIFY_LINE_QTY, CART_MAX_MANUAL_LINE_QTY } from "@/lib/cart-limits";
+import { CART_MAX_PRINTIFY_LINE_QTY } from "@/lib/cart-limits";
 import { CheckoutForm } from "@/components/CheckoutForm";
 import {
   updateCartLineFromForm,
@@ -108,10 +107,7 @@ export function CartAndCheckoutClient({
         }
       >
         {lines.map((l) => {
-          const maxQty =
-            l.fulfillmentType === FulfillmentType.printify
-              ? CART_MAX_PRINTIFY_LINE_QTY
-              : CART_MAX_MANUAL_LINE_QTY;
+          const maxQty = CART_MAX_PRINTIFY_LINE_QTY;
           return (
             <li
               key={l.listingId}

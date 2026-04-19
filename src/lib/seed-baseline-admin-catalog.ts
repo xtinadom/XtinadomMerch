@@ -9,7 +9,6 @@ type AdminBaselineDb = Pick<PrismaClient, "adminCatalogItem" | "product">;
 export const BASELINE_ADMIN_CATALOG_PRODUCT_SLUGS = [
   "ceramic-mug-photo",
   "canvas-print-12",
-  "sample-used-item",
   "domme-tee",
   "domme-mug",
 ] as const;

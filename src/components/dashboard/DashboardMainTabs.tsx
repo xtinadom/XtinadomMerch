@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import type { Prisma } from "@/generated/prisma/client";
 import Link from "next/link";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { FulfillmentType, ListingRequestStatus } from "@/generated/prisma/enums";
 import {
   dashboardCreatorRemoveListingFromShop,
@@ -580,6 +580,33 @@ type TabId =
   | "support"
   | "orders";
 
+function normalizeDashboardMainTab(
+  i: TabId | undefined,
+  opts: { hasSetup: boolean; hasNotifications: boolean; canSupport: boolean },
+): TabId {
+  const { hasSetup, hasNotifications, canSupport } = opts;
+  if (hasSetup) {
+    if (
+      i === "listings" ||
+      i === "orders" ||
+      i === "setup" ||
+      i === "shopProfile" ||
+      i === "itemGuidelines" ||
+      i === "notifications" ||
+      i === "requestListing" ||
+      (i === "support" && canSupport)
+    ) {
+      if (i === "notifications" && !hasNotifications) return "setup";
+      if (i === "support" && !canSupport) return "setup";
+      return i;
+    }
+    return "setup";
+  }
+  if (i === "orders") return "orders";
+  if (i === "support" && canSupport) return "support";
+  return "listings";
+}
+
 export function DashboardMainTabs(props: {
   initialTab?: TabId;
   /** Creator shop slug — listing fee tiers (e.g. founder unlimited). */
@@ -643,29 +670,14 @@ export function DashboardMainTabs(props: {
   const hasSetup = setup != null;
   const hasNotifications = Boolean(notifications);
   const canSupport = Boolean(supportChat);
-  const [tab, setTab] = useState<TabId>(() => {
-    const i = initialTabProp;
-    if (hasSetup) {
-      if (
-        i === "listings" ||
-        i === "orders" ||
-        i === "setup" ||
-        i === "shopProfile" ||
-        i === "itemGuidelines" ||
-        i === "notifications" ||
-        i === "requestListing" ||
-        (i === "support" && canSupport)
-      ) {
-        if (i === "notifications" && !hasNotifications) return "setup";
-        if (i === "support" && !canSupport) return "setup";
-        return i;
-      }
-      return "setup";
-    }
-    if (i === "orders") return "orders";
-    if (i === "support" && canSupport) return "support";
-    return "listings";
-  });
+  const tabOpts = { hasSetup, hasNotifications, canSupport };
+  const [tab, setTab] = useState<TabId>(() =>
+    normalizeDashboardMainTab(initialTabProp, tabOpts),
+  );
+
+  useEffect(() => {
+    setTab(normalizeDashboardMainTab(initialTabProp, tabOpts));
+  }, [initialTabProp, hasSetup, hasNotifications, canSupport]);
 
   const baseId = useId();
   const setupTabId = `${baseId}-tab-setup`;

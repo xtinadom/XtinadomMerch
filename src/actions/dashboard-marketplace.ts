@@ -15,7 +15,7 @@ import {
   shopListingMaxPriceUsdLabel,
 } from "@/lib/marketplace-constants";
 import { getListingOrdinal, syncFreeListingFeeWaivers } from "@/lib/listing-fee";
-import { FulfillmentType, ListingRequestStatus } from "@/generated/prisma/enums";
+import { ListingRequestStatus } from "@/generated/prisma/enums";
 import {
   deleteShopListingRequestImagesFromR2,
   deleteShopListingSupplementObject,
@@ -95,15 +95,10 @@ export async function dashboardUpdateListingPrice(
   }
   const cents = Math.round(parsed * 100);
   const p = listing.product;
-  const minCents =
-    p.fulfillmentType === FulfillmentType.printify
-      ? printifyVariantShopFloorCents(
-          p,
-          getPrintifyVariantsForProduct(p)[0]?.priceCents ?? p.priceCents,
-        )
-      : p.minPriceCents > 0
-        ? p.minPriceCents
-        : p.priceCents;
+  const minCents = printifyVariantShopFloorCents(
+    p,
+    getPrintifyVariantsForProduct(p)[0]?.priceCents ?? p.priceCents,
+  );
   if (cents < minCents) {
     return {
       ok: false,
@@ -117,10 +112,7 @@ export async function dashboardUpdateListingPrice(
     };
   }
 
-  if (
-    listing.product.fulfillmentType === FulfillmentType.printify &&
-    getPrintifyVariantsForProduct(listing.product).length > 1
-  ) {
+  if (getPrintifyVariantsForProduct(listing.product).length > 1) {
     return { ok: false, error: "Use per-option prices for this product." };
   }
 
@@ -173,10 +165,6 @@ export async function dashboardUpdateListingVariantPrices(
         "Prices can't be changed while this request is in review. Wait for approval, or finish editing your draft.",
     };
   }
-  if (listing.product.fulfillmentType !== FulfillmentType.printify) {
-    return { ok: false, error: "This listing isn't a Printify product." };
-  }
-
   const variants = getPrintifyVariantsForProduct(listing.product);
   if (variants.length <= 1) {
     return { ok: false, error: "This product doesn't have multiple variants to price separately." };

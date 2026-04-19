@@ -98,12 +98,6 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
     const quantity = cartLine?.quantity ?? 0;
     if (quantity <= 0) continue;
 
-    if (p.fulfillmentType === FulfillmentType.manual && p.trackInventory) {
-      if (p.stockQuantity < quantity) {
-        return { ok: false, error: `Not enough stock for “${p.name}”.` };
-      }
-    }
-
     const unitPriceCents = listingCartUnitCents(listing, cartLine);
     const { name: stripeProductName, printifyVariantId: orderPrintifyVariantId } =
       listingStripeProductName(listing, cartLine);

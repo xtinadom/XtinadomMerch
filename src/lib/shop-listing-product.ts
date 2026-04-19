@@ -1,5 +1,4 @@
 import type { ProductCardProduct } from "@/components/ProductCard";
-import { FulfillmentType } from "@/generated/prisma/enums";
 import { parseListingPrintifyVariantPrices } from "@/lib/listing-printify-variant-prices";
 import { parseListingStorefrontCatalogImageSelection } from "@/lib/product-media";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
@@ -15,7 +14,6 @@ function listingCardPriceCents(listing: {
   product: ProductCardProduct;
 }): number {
   const p = listing.product;
-  if (p.fulfillmentType !== FulfillmentType.printify) return listing.priceCents;
   const variants = getPrintifyVariantsForProduct(p);
   if (variants.length <= 1) return listing.priceCents;
   const map = parseListingPrintifyVariantPrices(listing.listingPrintifyVariantPrices);

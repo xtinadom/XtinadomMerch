@@ -104,25 +104,6 @@ async function fulfillOrder(session: Stripe.Checkout.Session) {
       });
     }
 
-    for (const line of order.lines) {
-      if (
-        line.fulfillmentType === FulfillmentType.manual &&
-        line.product.trackInventory
-      ) {
-        const r = await tx.product.updateMany({
-          where: {
-            id: line.productId,
-            stockQuantity: { gte: line.quantity },
-          },
-          data: { stockQuantity: { decrement: line.quantity } },
-        });
-        if ((r?.count ?? 0) === 0) {
-          console.error(
-            `[webhook] Stock race for product ${line.productId} order ${orderId}`,
-          );
-        }
-      }
-    }
   });
 
   const paid = await prisma.order.findUnique({

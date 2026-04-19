@@ -45,6 +45,9 @@ export function parsePrintifyVariantsJson(value: unknown): StoredPrintifyVariant
   return out;
 }
 
+/** Placeholder variant id when a product has no Printify variant JSON yet (e.g. catalog listing stubs). */
+export const STUB_PRINTIFY_VARIANT_ID = "__stub_printify_variant__";
+
 export function getPrintifyVariantsForProduct(product: {
   fulfillmentType: FulfillmentType;
   printifyVariants: Prisma.JsonValue | null;
@@ -54,17 +57,24 @@ export function getPrintifyVariantsForProduct(product: {
   const parsed = parsePrintifyVariantsJson(product.printifyVariants);
   if (parsed.length > 0) return parsed;
   if (product.fulfillmentType !== FulfillmentType.printify) return [];
-  if (product.printifyVariantId) {
+  if (product.printifyVariantId?.trim()) {
     return [
       {
-        id: product.printifyVariantId,
+        id: product.printifyVariantId.trim(),
         title: "Default",
         priceCents: product.priceCents > 0 ? product.priceCents : 100,
         imageUrl: null,
       },
     ];
   }
-  return [];
+  return [
+    {
+      id: STUB_PRINTIFY_VARIANT_ID,
+      title: "Default",
+      priceCents: product.priceCents > 0 ? product.priceCents : 100,
+      imageUrl: null,
+    },
+  ];
 }
 
 export function resolvePrintifyCheckoutLine(
@@ -77,7 +87,6 @@ export function resolvePrintifyCheckoutLine(
   },
   cartLine: CartLine | undefined,
 ): { unitPriceCents: number; printifyVariantId: string; stripeName: string; variantTitle: string } | null {
-  if (product.fulfillmentType !== FulfillmentType.printify) return null;
   const variants = getPrintifyVariantsForProduct(product);
   if (variants.length === 0) return null;
   const vid =
@@ -109,7 +118,6 @@ export function cartLineUnitPriceCents(
   },
   cartLine: CartLine | undefined,
 ): number {
-  if (product.fulfillmentType !== FulfillmentType.printify) return product.priceCents;
   const r = resolvePrintifyCheckoutLine(product, cartLine);
   return r?.unitPriceCents ?? product.priceCents;
 }
@@ -124,7 +132,6 @@ export function cartLineVariantSubtitle(
   },
   cartLine: CartLine | undefined,
 ): string | undefined {
-  if (product.fulfillmentType !== FulfillmentType.printify) return undefined;
   const variants = getPrintifyVariantsForProduct(product);
   if (variants.length <= 1) return undefined;
   const r = resolvePrintifyCheckoutLine(product, cartLine);

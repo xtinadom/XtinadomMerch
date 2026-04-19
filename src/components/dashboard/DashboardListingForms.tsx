@@ -165,10 +165,9 @@ function variantDollarsStableKey(obj: Record<string, string>): string {
 }
 
 function printifyListingIntentHint(
-  product: PriceFormProps["product"],
+  _product: PriceFormProps["product"],
   eachOptionSentence: boolean,
 ): ReactNode {
-  if (product.fulfillmentType !== FulfillmentType.printify) return null;
   return (
     <p className="text-[11px] leading-relaxed text-zinc-600">
       This is one listing in your shop for this item. Printify options (such as size) are part of this same listing,
@@ -183,7 +182,6 @@ function initialVariantDollarsById(
   listingPrintifyVariantPrices: unknown,
   product: PriceFormProps["product"],
 ): Record<string, string> | null {
-  if (product.fulfillmentType !== FulfillmentType.printify) return null;
   const variants = getPrintifyVariantsForProduct(product);
   if (variants.length <= 1) return null;
   const map = parseListingPrintifyVariantPrices(listingPrintifyVariantPrices);
@@ -211,8 +209,7 @@ export function DashboardListingPriceForm({
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const printifyVariants = getPrintifyVariantsForProduct(product);
-  const multiVariantPricing =
-    product.fulfillmentType === FulfillmentType.printify && printifyVariants.length > 1;
+  const multiVariantPricing = printifyVariants.length > 1;
 
   const [variantDollars, setVariantDollars] = useState<Record<string, string>>(() =>
     initialVariantDollarsById(listingPriceCents, listingPrintifyVariantPrices, product) ?? {},

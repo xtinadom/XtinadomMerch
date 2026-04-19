@@ -165,20 +165,12 @@ export async function updateProductDetails(
       : {}),
   };
 
-  if (
-    product.fulfillmentType === FulfillmentType.manual ||
-    product.fulfillmentType === FulfillmentType.printify
-  ) {
-    const payCashApp = formData.get("payCashApp") === "on";
-    let payCard = formData.get("payCard") === "on";
-    if (!payCard && !payCashApp) payCard = true;
-    data.payCard = payCard;
-    data.payCashApp = payCashApp;
-  }
-
-  if (product.fulfillmentType === FulfillmentType.printify) {
-    data.trackInventory = false;
-  }
+  const payCashApp = formData.get("payCashApp") === "on";
+  let payCard = formData.get("payCard") === "on";
+  if (!payCard && !payCashApp) payCard = true;
+  data.payCard = payCard;
+  data.payCashApp = payCashApp;
+  data.trackInventory = false;
 
   const noTagId = await resolveNoTagId();
   const tagIds = normalizeProductTagIds(
@@ -214,149 +206,9 @@ export async function updateProductDetails(
     revalidatePath("/product/" + slugNext);
   }
 
-  const tab =
-    product.fulfillmentType === FulfillmentType.printify ? "printify" : "manual";
   redirect(
-    `/admin?saved=product&tab=${tab}&listing=${encodeURIComponent(productId)}`,
+    `/admin?saved=product&tab=printify&listing=${encodeURIComponent(productId)}`,
   );
-}
-
-export async function submitManualStockForm(
-  productId: string,
-  formData: FormData,
-): Promise<void> {
-  const admin = await getAdminSessionReadonly();
-  if (!admin.isAdmin) return;
-  const raw = String(formData.get("stock") ?? "");
-  const q = parseInt(raw, 10);
-  if (!Number.isFinite(q)) {
-    redirect("/admin?tab=manual&stock_err=invalid");
-  }
-  const r = await updateManualStock(productId, q);
-  if (!r.ok) {
-    redirect("/admin?tab=manual&stock_err=1");
-  }
-  redirect("/admin?saved=stock&tab=manual");
-}
-
-export async function updateManualStock(productId: string, stockQuantity: number) {
-  const admin = await getAdminSessionReadonly();
-  if (!admin.isAdmin) {
-    return { ok: false as const, error: "Unauthorized." };
-  }
-  const product = await prisma.product.findUnique({ where: { id: productId } });
-  if (!product || product.fulfillmentType !== "manual") {
-    return { ok: false as const, error: "Invalid product." };
-  }
-  const q = Math.max(0, Math.min(999999, Math.floor(stockQuantity)));
-  await prisma.product.update({
-    where: { id: productId },
-    data: { stockQuantity: q },
-  });
-  revalidatePath("/admin");
-  revalidateShopSurface();
-  revalidatePath("/product/" + product.slug);
-  return { ok: true as const };
-}
-
-export async function createManualUsedProduct(formData: FormData): Promise<void> {
-  const admin = await getAdminSessionReadonly();
-  if (!admin.isAdmin) return;
-
-  const name = String(formData.get("name") ?? "").trim().slice(0, MAX_NAME_LEN);
-  if (!name) redirect("/admin?create=err&reason=name&tab=manual");
-
-  const descRaw = String(formData.get("description") ?? "");
-  const description =
-    descRaw.trim() === "" ? null : descRaw.trim().slice(0, MAX_DESC_LEN);
-
-  const priceRaw = String(formData.get("price") ?? "").trim();
-  const priceFloat = parseFloat(priceRaw.replace(/,/g, ""));
-  if (!Number.isFinite(priceFloat) || priceFloat < 0) {
-    redirect("/admin?create=err&reason=price&tab=manual");
-  }
-  const priceCents = Math.round(priceFloat * 100);
-  if (priceCents > 99_999_999) redirect("/admin?create=err&reason=price&tab=manual");
-
-  const galleryRaw = String(formData.get("gallery") ?? "");
-  const urls = parseImageUrlList(galleryRaw);
-  const stockRaw = parseInt(String(formData.get("stock") ?? "0"), 10);
-  const stockQuantity = Number.isFinite(stockRaw)
-    ? Math.max(0, Math.min(999999, stockRaw))
-    : 0;
-
-  const payCashApp = formData.get("payCashApp") === "on";
-  let payCard = formData.get("payCard") === "on";
-  if (!payCard && !payCashApp) payCard = true;
-
-  const noTagId = await resolveNoTagId();
-  const tagIds = normalizeProductTagIds(
-    parseProductTagIdsFromForm(formData),
-    noTagId,
-  );
-
-  const valid = await assertTagsValidForAudience(Audience.both, tagIds);
-  if (!valid.ok) {
-    redirect("/admin?create=err&reason=category&tab=manual");
-  }
-  const primary = tagIds[0]!;
-  const designNameList = parseDesignNamesFromForm(formData);
-
-  const slug = await uniqueProductSlug(slugify(name));
-
-  await prisma.product.create({
-    data: {
-      slug,
-      name,
-      description,
-      priceCents,
-      imageUrl: urls[0] ?? null,
-      imageGallery: toGalleryJson(urls),
-      designNames: toDesignNamesJson(designNameList),
-      payCard,
-      payCashApp,
-      audience: Audience.both,
-      fulfillmentType: FulfillmentType.manual,
-      primaryTagId: primary,
-      checkoutTipEligible: formData.get("checkoutTipEligible") === "on",
-      tags: { create: tagIds.map((tagId) => ({ tagId })) },
-      stockQuantity,
-      trackInventory: true,
-      active: true,
-    },
-  });
-
-  revalidatePath("/admin");
-  revalidateShopSurface();
-  redirect("/admin?create=ok&tab=manual");
-}
-
-export async function deleteManualUsedProduct(productId: string): Promise<void> {
-  const admin = await getAdminSessionReadonly();
-  if (!admin.isAdmin) return;
-
-  const product = await prisma.product.findUnique({ where: { id: productId } });
-  if (!product || product.fulfillmentType !== "manual") return;
-
-  const lines = await prisma.orderLine.count({ where: { productId } });
-  if (lines > 0) {
-    await prisma.product.update({
-      where: { id: productId },
-      data: { active: false },
-    });
-    revalidatePath("/admin");
-    revalidateShopSurface();
-    revalidatePath("/product/" + product.slug);
-    redirect("/admin?delete=archived&tab=manual");
-  }
-
-  await deleteListingImagesFromR2(productImageUrls(product));
-  await prisma.product.delete({ where: { id: productId } });
-
-  revalidatePath("/admin");
-  revalidateShopSurface();
-  revalidatePath("/product/" + product.slug);
-  redirect("/admin?delete=ok&tab=manual");
 }
 
 export async function updateProductPrintifyIds(
@@ -370,7 +222,7 @@ export async function updateProductPrintifyIds(
   const printifyVariantId = String(formData.get("printifyVariantId") ?? "").trim();
 
   const product = await prisma.product.findUnique({ where: { id: productId } });
-  if (!product || product.fulfillmentType !== FulfillmentType.printify) return;
+  if (!product) return;
 
   await prisma.product.update({
     where: { id: productId },

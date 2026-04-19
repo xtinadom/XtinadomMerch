@@ -92,8 +92,7 @@ export const TagScalarFieldEnum = {
   slug: 'slug',
   name: 'name',
   sortOrder: 'sortOrder',
-  subCollectionSpotlightProductId: 'subCollectionSpotlightProductId',
-  dommeCollectionSpotlightProductId: 'dommeCollectionSpotlightProductId',
+  byItemSpotlightProductId: 'byItemSpotlightProductId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

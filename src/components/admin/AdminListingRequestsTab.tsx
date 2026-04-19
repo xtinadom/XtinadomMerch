@@ -560,8 +560,7 @@ function ListingRequestCard({
   const adminRemoved = r.adminRemovedFromShopAt != null;
   /**
    * Use the live Printify catalog `<select>` whenever the server loaded `printifyCatalogPickList`.
-   * Do **not** gate on `product.fulfillmentType === printify`: baseline listing stubs stay `manual`
-   * until this mapping runs; the old gate hid the dropdown and showed the optional variant field instead.
+   * Do **not** gate on stub products missing Printify IDs yet — the old gate hid the dropdown.
    */
   const catalogPickEnabled = printifyCatalogPickList.length > 0;
 

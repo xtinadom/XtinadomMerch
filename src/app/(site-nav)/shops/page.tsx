@@ -55,40 +55,6 @@ export default async function ShopsBrowsePage({ searchParams }: PageProps) {
         </p>
       </header>
 
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-sm">
-        <span className="text-zinc-600">Sort:</span>
-        <Link
-          href="/shops?sort=editorial"
-          className={
-            sort === "editorial"
-              ? "rounded-full bg-zinc-100 px-3 py-1 font-medium text-zinc-900"
-              : "rounded-full border border-zinc-700 px-3 py-1 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-          }
-        >
-          Editorial &amp; sales
-        </Link>
-        <Link
-          href="/shops?sort=sales"
-          className={
-            sort === "sales"
-              ? "rounded-full bg-zinc-100 px-3 py-1 font-medium text-zinc-900"
-              : "rounded-full border border-zinc-700 px-3 py-1 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-          }
-        >
-          Sales only
-        </Link>
-        <Link
-          href="/shops?sort=new"
-          className={
-            sort === "new"
-              ? "rounded-full bg-zinc-100 px-3 py-1 font-medium text-zinc-900"
-              : "rounded-full border border-zinc-700 px-3 py-1 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-          }
-        >
-          Newest
-        </Link>
-      </div>
-
       <ul className="mt-10 grid gap-4 sm:grid-cols-2">
         {shops.map((s) => (
           <li key={s.id}>
@@ -116,9 +82,6 @@ export default async function ShopsBrowsePage({ searchParams }: PageProps) {
                 {s.bio ? (
                   <p className="mt-2 line-clamp-2 text-xs text-zinc-500">{s.bio}</p>
                 ) : null}
-                <p className="mt-2 text-[11px] text-zinc-600">
-                  Lifetime sales {formatMoney(s.totalSalesCents)}
-                </p>
               </div>
             </Link>
           </li>
@@ -144,11 +107,4 @@ export default async function ShopsBrowsePage({ searchParams }: PageProps) {
       <SiteLegalFooter />
     </main>
   );
-}
-
-function formatMoney(cents: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
 }

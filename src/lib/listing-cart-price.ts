@@ -1,5 +1,4 @@
 import type { Product } from "@/generated/prisma/client";
-import { FulfillmentType } from "@/generated/prisma/enums";
 import type { CartLine } from "@/lib/session";
 import { parseListingPrintifyVariantPrices } from "@/lib/listing-printify-variant-prices";
 import {
@@ -41,9 +40,6 @@ export function dashboardListingMinPriceHintCents(
     "fulfillmentType" | "minPriceCents" | "priceCents" | "printifyVariantId" | "printifyVariants"
   >,
 ): number {
-  if (product.fulfillmentType !== FulfillmentType.printify) {
-    return product.minPriceCents > 0 ? product.minPriceCents : product.priceCents;
-  }
   const vs = getPrintifyVariantsForProduct(product);
   if (vs.length === 0) {
     return product.minPriceCents > 0 ? product.minPriceCents : product.priceCents;
@@ -64,7 +60,6 @@ export function printifyVariantShopPriceCentsByIdForListing(
     "fulfillmentType" | "priceCents" | "printifyVariantId" | "printifyVariants"
   >,
 ): Record<string, number> | undefined {
-  if (product.fulfillmentType !== FulfillmentType.printify) return undefined;
   const variants = getPrintifyVariantsForProduct(product);
   if (variants.length <= 1) return undefined;
   const map = parseListingPrintifyVariantPrices(listing.listingPrintifyVariantPrices);
@@ -81,9 +76,6 @@ export function listingCartUnitCents(
   cartLine: CartLine | undefined,
 ): number {
   const p = listing.product;
-  if (p.fulfillmentType !== FulfillmentType.printify) {
-    return listing.priceCents;
-  }
   const variants = getPrintifyVariantsForProduct(p);
   if (variants.length <= 1) {
     return listing.priceCents;

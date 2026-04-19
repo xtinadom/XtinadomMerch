@@ -1,5 +1,4 @@
 import type { Product } from "@/generated/prisma/client";
-import { FulfillmentType } from "@/generated/prisma/enums";
 import type { CartLine } from "@/lib/session";
 import { getPrintifyVariantsForProduct, resolvePrintifyCheckoutLine } from "@/lib/printify-variants";
 
@@ -17,9 +16,6 @@ export function listingStripeProductName(
   cartLine: CartLine | undefined,
 ): { name: string; printifyVariantId: string | null } {
   const p = listing.product;
-  if (p.fulfillmentType !== FulfillmentType.printify) {
-    return { name: p.name, printifyVariantId: null };
-  }
   if (getPrintifyVariantsForProduct(p).length > 1) {
     const r = resolvePrintifyCheckoutLine(p, cartLine);
     if (!r) return { name: p.name, printifyVariantId: p.printifyVariantId };

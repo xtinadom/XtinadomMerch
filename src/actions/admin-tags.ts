@@ -126,8 +126,7 @@ export async function adminUpdateTag(
       name,
       slug,
       sortOrder,
-      subCollectionSpotlightProductId: pick.id,
-      dommeCollectionSpotlightProductId: pick.id,
+      byItemSpotlightProductId: pick.id,
     },
   });
 

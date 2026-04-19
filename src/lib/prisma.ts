@@ -9,7 +9,7 @@ import { runtimeDatabaseUrlFromEnv } from "@/lib/env-postgres-url";
  * you get unknown-field validation errors. After `npx prisma generate`, bump this and restart dev
  * (or delete `.next`) if needed.
  */
-const PRISMA_SINGLETON_STAMP = "postgres-adapter-v22-support-thread-resolved-at";
+const PRISMA_SINGLETON_STAMP = "postgres-adapter-v25-purge-legacy-manual-products";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

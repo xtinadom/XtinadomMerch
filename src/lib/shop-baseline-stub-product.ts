@@ -50,7 +50,7 @@ function resolveBaselineAgainstItem(
 }
 
 /**
- * Ensures a manual, inactive Product exists for this shop + admin baseline line (deterministic slug).
+ * Ensures an inactive Printify-stub `Product` exists for this shop + admin baseline line (deterministic slug).
  */
 export async function getOrCreateBaselineStubProduct(
   shopId: string,
@@ -89,7 +89,7 @@ export async function getOrCreateBaselineStubProduct(
       priceCents,
       minPriceCents,
       audience: Audience.both,
-      fulfillmentType: FulfillmentType.manual,
+      fulfillmentType: FulfillmentType.printify,
       active: false,
       primaryTagId: null,
     },
@@ -140,7 +140,7 @@ export async function getOrCreateBaselineAllVariantsStubProduct(
       priceCents,
       minPriceCents,
       audience: Audience.both,
-      fulfillmentType: FulfillmentType.manual,
+      fulfillmentType: FulfillmentType.printify,
       active: false,
       primaryTagId: null,
     },
@@ -149,7 +149,7 @@ export async function getOrCreateBaselineAllVariantsStubProduct(
 }
 
 /**
- * Creates a new manual inactive stub `Product` for a baseline listing request (does not reuse
+ * Creates a new inactive stub `Product` for a baseline listing request (does not reuse
  * {@link getOrCreateBaselineStubProduct} slug — avoids `ShopListing` @@unique([shopId, productId]) collisions).
  */
 export async function createBaselineStubProductForNewListing(
@@ -176,7 +176,7 @@ export async function createBaselineStubProductForNewListing(
       priceCents,
       minPriceCents,
       audience: Audience.both,
-      fulfillmentType: FulfillmentType.manual,
+      fulfillmentType: FulfillmentType.printify,
       active: false,
       primaryTagId: null,
     },
@@ -212,7 +212,7 @@ export async function createBaselineAllVariantsStubProductForNewListing(
       priceCents,
       minPriceCents,
       audience: Audience.both,
-      fulfillmentType: FulfillmentType.manual,
+      fulfillmentType: FulfillmentType.printify,
       active: false,
       primaryTagId: null,
     },

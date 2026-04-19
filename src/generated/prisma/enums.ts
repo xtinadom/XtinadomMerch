@@ -19,19 +19,10 @@ export type Audience = (typeof Audience)[keyof typeof Audience]
 
 
 export const FulfillmentType = {
-  printify: 'printify',
-  manual: 'manual'
+  printify: 'printify'
 } as const
 
 export type FulfillmentType = (typeof FulfillmentType)[keyof typeof FulfillmentType]
-
-
-export const CatalogGroup = {
-  sub: 'sub',
-  domme: 'domme'
-} as const
-
-export type CatalogGroup = (typeof CatalogGroup)[keyof typeof CatalogGroup]
 
 
 export const ListingRequestStatus = {

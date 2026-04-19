@@ -5,7 +5,7 @@ import { designNamesFromJson } from "@/lib/product-design-names";
 import { productHasTag } from "@/lib/product-tags";
 
 function spotlightProductIdForTag(tag: Tag): string | null | undefined {
-  return tag.subCollectionSpotlightProductId ?? tag.dommeCollectionSpotlightProductId;
+  return tag.byItemSpotlightProductId;
 }
 
 function pickOneForTag(

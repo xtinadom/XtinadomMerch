@@ -15,13 +15,6 @@ enum Audience {
 
 enum FulfillmentType {
   printify
-  manual
-}
-
-/** Storefront “collection” routes: fans shop vs creator shop (product audience), not tag ownership. */
-enum CatalogGroup {
-  sub
-  domme
 }
 
 enum ListingRequestStatus {
@@ -44,12 +37,9 @@ model Tag {
   slug                              String    @unique
   name                              String
   sortOrder                         Int       @default(0)
-  /** Optional: “By Item” pick for Fans collection; product must have this tag and Sub or Both audience. */
-  subCollectionSpotlightProductId   String?
-  subCollectionSpotlightProduct     Product?  @relation("TagSubCollectionSpotlight", fields: [subCollectionSpotlightProductId], references: [id], onDelete: SetNull)
-  /** Optional: “By Item” pick for Creator collection; product must have this tag and Domme or Both audience. */
-  dommeCollectionSpotlightProductId String?
-  dommeCollectionSpotlightProduct   Product?  @relation("TagDommeCollectionSpotlight", fields: [dommeCollectionSpotlightProductId], references: [id], onDelete: SetNull)
+  /** Optional admin pick for “By Item” browse; product must have this tag. */
+  byItemSpotlightProductId String?
+  byItemSpotlightProduct   Product?  @relation("TagByItemSpotlight", fields: [byItemSpotlightProductId], references: [id], onDelete: SetNull)
   productTags                       ProductTag[]
   primaryProducts                   Product[] @relation("ProductPrimaryTag")
   createdAt                         DateTime  @default(now())
@@ -79,9 +69,8 @@ model Product {
   fulfillmentType     FulfillmentType
   primaryTagId        String?
   primaryTag          Tag?            @relation("ProductPrimaryTag", fields: [primaryTagId], references: [id], onDelete: SetNull)
-  tags                          ProductTag[]
-  tagSubCollectionSpotlights    Tag[]           @relation("TagSubCollectionSpotlight")
-  tagDommeCollectionSpotlights  Tag[]           @relation("TagDommeCollectionSpotlight")
+  tags                 ProductTag[]
+  tagByItemSpotlights  Tag[]           @relation("TagByItemSpotlight")
   checkoutTipEligible Boolean         @default(false)
   printifyProductId   String?
   printifyVariantId   String?

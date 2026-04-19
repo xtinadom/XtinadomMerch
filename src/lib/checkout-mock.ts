@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { FulfillmentType, OrderStatus } from "@/generated/prisma/enums";
+import { OrderStatus } from "@/generated/prisma/enums";
 
 /** Prefix for fake Stripe session ids when MOCK_CHECKOUT=1. */
 export const MOCK_SESSION_PREFIX = "mock_" as const;
@@ -17,7 +17,7 @@ export function parseMockOrderId(sessionId: string): string | null {
 const expectedMockSessionId = (orderId: string) => `${MOCK_SESSION_PREFIX}${orderId}`;
 
 /**
- * Marks a mock order paid and decrements manual inventory (mirrors webhook essentials).
+ * Marks a mock order paid (mirrors webhook order status transition).
  * Does not call Stripe or Printify.
  */
 export async function completeMockPaidOrder(
@@ -50,26 +50,6 @@ export async function completeMockPaidOrder(
     });
     if ((updated?.count ?? 0) === 0) return;
     transitioned = true;
-
-    for (const line of order.lines) {
-      if (
-        line.fulfillmentType === FulfillmentType.manual &&
-        line.product.trackInventory
-      ) {
-        const r = await tx.product.updateMany({
-          where: {
-            id: line.productId,
-            stockQuantity: { gte: line.quantity },
-          },
-          data: { stockQuantity: { decrement: line.quantity } },
-        });
-        if ((r?.count ?? 0) === 0) {
-          console.error(
-            `[mock checkout] Stock race for product ${line.productId} order ${orderId}`,
-          );
-        }
-      }
-    }
   });
 
   if (transitioned) return "paid";
