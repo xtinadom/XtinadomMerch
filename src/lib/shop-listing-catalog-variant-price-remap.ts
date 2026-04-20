@@ -71,6 +71,37 @@ function mapCatalogPricesToPrintifyVariantIds(
 }
 
 /**
+ * Pairs each Printify variant id to the matching admin baseline catalog variant id (same ordering rules as
+ * {@link mapCatalogPricesToPrintifyVariantIds}). Used to resolve fulfillment COGS when checkout stores Printify ids.
+ */
+export function buildPrintifyIdToCatalogVariantIdMap(
+  catalogVariants: { id: string; label: string }[],
+  printifyVariants: StoredPrintifyVariant[],
+): Map<string, string> {
+  const map = new Map<string, string>();
+  const usedPrintify = new Set<string>();
+  const mappedCatalogIds = new Set<string>();
+
+  for (const cv of catalogVariants) {
+    const match = printifyVariants.find(
+      (p) => !usedPrintify.has(p.id) && labelMatchesPrintifyTitle(cv.label, p.title),
+    );
+    if (match) {
+      map.set(match.id, cv.id);
+      usedPrintify.add(match.id);
+      mappedCatalogIds.add(cv.id);
+    }
+  }
+
+  const unmappedCatalog = catalogVariants.filter((cv) => !mappedCatalogIds.has(cv.id));
+  const unmappedPrintify = printifyVariants.filter((p) => !usedPrintify.has(p.id));
+  for (let i = 0; i < Math.min(unmappedCatalog.length, unmappedPrintify.length); i++) {
+    map.set(unmappedPrintify[i]!.id, unmappedCatalog[i]!.id);
+  }
+  return map;
+}
+
+/**
  * After Printify sync, rewrite `listingPrintifyVariantPrices` keys from admin-catalog variant ids → Printify variant ids
  * for consolidated “all variants” baseline listings.
  */

@@ -6,6 +6,8 @@ export type AdminCatalogVariant = {
   id: string;
   label: string;
   minPriceCents: number;
+  /** Fulfillment / COGS per unit (cents); retained by platform before marketplace fee. */
+  goodsServicesCostCents: number;
   exampleListingUrl: string;
   /** Optional storefront Product id (active Printify) when example URL / name match is not used. */
   platformProductId?: string;
@@ -65,6 +67,11 @@ export function parseAdminCatalogVariantsJson(raw: unknown): AdminCatalogVariant
     }
     const exampleListingUrl =
       typeof o.exampleListingUrl === "string" ? o.exampleListingUrl.trim() : "";
+    const gsRaw = o.goodsServicesCostCents;
+    let goodsServicesCostCents = 0;
+    if (typeof gsRaw === "number" && Number.isFinite(gsRaw)) {
+      goodsServicesCostCents = Math.max(0, Math.round(gsRaw));
+    }
     let platformProductId: string | undefined;
     const pidRaw = o.platformProductId;
     if (typeof pidRaw === "string" && pidRaw.trim()) {
@@ -74,6 +81,7 @@ export function parseAdminCatalogVariantsJson(raw: unknown): AdminCatalogVariant
       id,
       label,
       minPriceCents,
+      goodsServicesCostCents,
       exampleListingUrl,
       ...(platformProductId ? { platformProductId } : {}),
     });
@@ -85,6 +93,7 @@ export function normalizeNewVariants(
   input: {
     label: string;
     minPriceCents: number;
+    goodsServicesCostCents?: number;
     exampleListingUrl: string;
     platformProductId?: string;
   }[],
@@ -93,10 +102,15 @@ export function normalizeNewVariants(
     .filter((v) => v.label.trim().length > 0)
     .map((v) => {
       const pid = v.platformProductId?.trim();
+      const gs =
+        typeof v.goodsServicesCostCents === "number" && Number.isFinite(v.goodsServicesCostCents)
+          ? Math.max(0, Math.round(v.goodsServicesCostCents))
+          : 0;
       return {
         id: newRandomUuid(),
         label: v.label.trim(),
         minPriceCents: Math.max(0, Math.round(v.minPriceCents)),
+        goodsServicesCostCents: gs,
         exampleListingUrl: v.exampleListingUrl.trim(),
         ...(pid ? { platformProductId: pid } : {}),
       };
@@ -107,6 +121,7 @@ export function normalizeNewVariants(
 export type AdminCatalogVariantFormRow = {
   label: string;
   minPriceDollars: string;
+  goodsServicesCostDollars: string;
   exampleListingUrl: string;
   platformProductId: string;
 };
@@ -119,6 +134,7 @@ export function variantsToFormRows(variants: AdminCatalogVariant[]): AdminCatalo
   return variants.map((v) => ({
     label: v.label,
     minPriceDollars: dollarsStringFromCents(v.minPriceCents),
+    goodsServicesCostDollars: dollarsStringFromCents(v.goodsServicesCostCents ?? 0),
     exampleListingUrl: v.exampleListingUrl,
     platformProductId: v.platformProductId ?? "",
   }));
@@ -127,6 +143,7 @@ export function variantsToFormRows(variants: AdminCatalogVariant[]): AdminCatalo
 export type CatalogVariantPayloadRow = {
   label: string;
   minPriceDollars: string;
+  goodsServicesCostDollars: string;
   exampleListingUrl: string;
   platformProductId: string;
 };
@@ -142,6 +159,7 @@ export function validateCatalogVariantFormRows(rows: AdminCatalogVariantFormRow[
     .map((row) => ({
       label: row.label.trim(),
       minPriceDollars: row.minPriceDollars.trim(),
+      goodsServicesCostDollars: row.goodsServicesCostDollars.trim(),
       exampleListingUrl: row.exampleListingUrl.trim(),
       platformProductId: row.platformProductId.trim(),
     }))
@@ -149,6 +167,7 @@ export function validateCatalogVariantFormRows(rows: AdminCatalogVariantFormRow[
       (row) =>
         row.label.length > 0 ||
         row.minPriceDollars.length > 0 ||
+        row.goodsServicesCostDollars.length > 0 ||
         row.exampleListingUrl.length > 0 ||
         row.platformProductId.length > 0,
     );
@@ -161,6 +180,12 @@ export function validateCatalogVariantFormRows(rows: AdminCatalogVariantFormRow[
     if (!Number.isFinite(n) || n < 0) {
       return { ok: false, error: `Invalid minimum price for “${row.label}”.` };
     }
+    if (row.goodsServicesCostDollars.length > 0) {
+      const g = parseFloat(row.goodsServicesCostDollars.replace(/[^0-9.]/g, ""));
+      if (!Number.isFinite(g) || g < 0) {
+        return { ok: false, error: `Invalid goods/services cost for “${row.label}”.` };
+      }
+    }
   }
   return { ok: true, payload };
 }
@@ -171,8 +196,9 @@ export function validateCatalogVariantFormRows(rows: AdminCatalogVariantFormRow[
 export function validateItemLevelWhenNoVariants(
   exampleListingUrl: string,
   minPriceDollars: string,
+  itemGoodsServicesCostDollars = "",
 ):
-  | { ok: true; exampleListingUrl: string | null; minPriceCents: number }
+  | { ok: true; exampleListingUrl: string | null; minPriceCents: number; itemGoodsServicesCostCents: number }
   | { ok: false; error: string } {
   const url = exampleListingUrl.trim();
   const n = parseFloat(minPriceDollars.replace(/[^0-9.]/g, ""));
@@ -183,9 +209,22 @@ export function validateItemLevelWhenNoVariants(
         "Enter a valid minimum price in USD (required when the item has no variants).",
     };
   }
+  const gsRaw = itemGoodsServicesCostDollars.trim();
+  let itemGoodsServicesCostCents = 0;
+  if (gsRaw.length > 0) {
+    const gn = parseFloat(gsRaw.replace(/[^0-9.]/g, ""));
+    if (!Number.isFinite(gn) || gn < 0) {
+      return {
+        ok: false,
+        error: "Enter a valid goods/services cost in USD (or leave blank for none).",
+      };
+    }
+    itemGoodsServicesCostCents = Math.round(gn * 100);
+  }
   return {
     ok: true,
     exampleListingUrl: url ? url.slice(0, 2048) : null,
     minPriceCents: Math.round(n * 100),
+    itemGoodsServicesCostCents,
   };
 }

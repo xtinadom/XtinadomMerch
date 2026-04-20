@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useId } from "react";
 import { SHOP_ALL_ROUTE } from "@/lib/constants";
 import type { Tag } from "@/generated/prisma/client";
 import {
@@ -20,7 +20,9 @@ export function ShopTagMenu({
   shopSlug?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [tagQuery, setTagQuery] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const tagSearchId = useId();
   const tenant = shopSlug && shopSlug !== PLATFORM_SHOP_SLUG;
   const allHref = tenant ? shopAllProductsHref(shopSlug) : SHOP_ALL_ROUTE;
 
@@ -31,6 +33,18 @@ export function ShopTagMenu({
       ),
     [tags],
   );
+
+  const filteredTags = useMemo(() => {
+    const q = tagQuery.trim().toLowerCase();
+    if (!q) return sortedTags;
+    return sortedTags.filter(
+      (t) => t.name.toLowerCase().includes(q) || t.slug.toLowerCase().includes(q),
+    );
+  }, [sortedTags, tagQuery]);
+
+  useEffect(() => {
+    if (!open) setTagQuery("");
+  }, [open]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -73,19 +87,41 @@ export function ShopTagMenu({
             <p className="px-4 py-1 text-[10px] font-medium uppercase tracking-wide text-zinc-600">
               By tag
             </p>
+            <div className="px-3 pb-2 pt-0.5">
+              <label htmlFor={tagSearchId} className="sr-only">
+                Search tags
+              </label>
+              <input
+                id={tagSearchId}
+                type="search"
+                inputMode="search"
+                autoComplete="off"
+                spellCheck={false}
+                value={tagQuery}
+                onChange={(e) => setTagQuery(e.target.value)}
+                placeholder="Search tags…"
+                className="w-full rounded-md border border-zinc-700/90 bg-zinc-950 px-2.5 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              />
+            </div>
             <ul className="mt-0.5 space-y-0.5" role="group">
-              {sortedTags.map((t) => (
-                <li key={t.id} role="none">
-                  <Link
-                    role="menuitem"
-                    href={shopUniversalTagHref(shopSlug ?? PLATFORM_SHOP_SLUG, t.slug)}
-                    className="block py-1.5 pl-6 pr-4 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white"
-                    onClick={close}
-                  >
-                    {t.name}
-                  </Link>
+              {filteredTags.length === 0 ? (
+                <li role="none" className="px-4 py-2 text-sm text-zinc-500">
+                  {sortedTags.length === 0 ? "No tags yet." : "No tags match your search."}
                 </li>
-              ))}
+              ) : (
+                filteredTags.map((t) => (
+                  <li key={t.id} role="none">
+                    <Link
+                      role="menuitem"
+                      href={shopUniversalTagHref(shopSlug ?? PLATFORM_SHOP_SLUG, t.slug)}
+                      className="block py-1.5 pl-6 pr-4 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                      onClick={close}
+                    >
+                      {t.name}
+                    </Link>
+                  </li>
+                ))
+              )}
             </ul>
           </li>
         </ul>

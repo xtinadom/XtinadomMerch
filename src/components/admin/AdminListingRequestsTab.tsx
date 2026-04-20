@@ -44,7 +44,7 @@ export type ListingRequestTabRow = {
   listingOrdinal: number;
   /** Admin optional second storefront image (R2 WebP). */
   adminListingSecondaryImageUrl: string | null;
-  shop: { displayName: string; slug: string };
+  shop: { displayName: string; slug: string; listingFeeBonusFreeSlots?: number };
   product: {
     id: string;
     name: string;
@@ -430,9 +430,9 @@ const imageOkNeutralSubmitPending =
 /** Step 2: unselected “Image OK” toggle before affirming Printify save. */
 const imageOkNeutralToggle =
   "inline-flex min-h-[2rem] min-w-[7.5rem] items-center justify-center gap-1 rounded-full border border-zinc-600 bg-zinc-950/50 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 ring-1 ring-zinc-800 transition-all duration-200 ease-out hover:border-zinc-500 hover:bg-zinc-900/80 hover:text-zinc-300";
-/** Strong green “on” state so admins see clear feedback (shop stays “In review” via server status after step 1). */
-const imageOkAffirmedToggle =
-  "inline-flex min-h-[2rem] min-w-[9.5rem] items-center justify-center gap-1 rounded-full bg-emerald-600/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-50 ring-2 ring-emerald-400/90 shadow-[0_0_20px_-6px_rgba(52,211,153,0.75)] cursor-pointer transition-all duration-200 ease-out hover:bg-emerald-500/45 hover:ring-emerald-300";
+/** Green “passed” look for Step 2 — read-only once confirmed (not a button). */
+const imageOkPassedBadgeStatic =
+  "inline-flex min-h-[2rem] min-w-[9.5rem] items-center justify-center gap-1 rounded-full bg-emerald-600/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-50 ring-2 ring-emerald-400/90 shadow-[0_0_20px_-6px_rgba(52,211,153,0.75)] select-none";
 
 function ImageOkMarkButton() {
   const { pending } = useFormStatus();
@@ -565,8 +565,13 @@ function ListingRequestCard({
   const catalogPickEnabled = printifyCatalogPickList.length > 0;
 
   const [printifyProductId, setPrintifyProductId] = useState(() => r.listingPrintifyProductId ?? "");
-  /** Step 2 only: admin must click to affirm Image OK before Save Printify is enabled. */
-  const [printifyStepImageOk, setPrintifyStepImageOk] = useState(false);
+  /**
+   * Step 2 only: affirm Image OK before Save Printify. When the listing is already `images_ok`, the queue’s
+   * Step 1 (“Passes check?”) was submitted — keep this toggle green without asking again.
+   */
+  const [printifyStepImageOk, setPrintifyStepImageOk] = useState(
+    () => r.requestStatus === ListingRequestStatus.images_ok,
+  );
   const effectivePrintifyStepOk = suppressLegacyGroupPrintifyStep1Block
     ? (legacyGroupPrintifyStep1Ok ?? false)
     : printifyStepImageOk;
@@ -578,7 +583,11 @@ function ListingRequestCard({
 
   useEffect(() => {
     if (suppressLegacyGroupPrintifyStep1Block) return;
-    setPrintifyStepImageOk(false);
+    if (r.requestStatus === ListingRequestStatus.images_ok) {
+      setPrintifyStepImageOk(true);
+    } else if (r.requestStatus === ListingRequestStatus.submitted) {
+      setPrintifyStepImageOk(false);
+    }
   }, [r.id, r.requestStatus, suppressLegacyGroupPrintifyStep1Block]);
 
   useEffect(() => {
@@ -738,29 +747,29 @@ function ListingRequestCard({
               >
                 <div className="flex min-w-0 max-w-xs flex-col gap-1.5">
                   <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Image OK</span>
-                  <button
-                    type="button"
-                    onClick={() => setPrintifyStepImageOk((v) => !v)}
-                    aria-pressed={printifyStepImageOk}
-                    aria-describedby={`image-ok-step2-hint-${r.id}`}
-                    className={printifyStepImageOk ? imageOkAffirmedToggle : imageOkNeutralToggle}
-                    title={
-                      printifyStepImageOk
-                        ? "Click to clear passed check for this step (re-enable reject)"
-                        : "Click when reference images are acceptable — required before saving the Printify product"
-                    }
-                  >
-                    {printifyStepImageOk ? (
-                      <>
-                        <span className="text-emerald-200 drop-shadow-sm" aria-hidden>
-                          ✓
-                        </span>
-                        Passed check
-                      </>
-                    ) : (
-                      "Image OK"
-                    )}
-                  </button>
+                  {printifyStepImageOk ? (
+                    <div
+                      role="status"
+                      aria-describedby={`image-ok-step2-hint-${r.id}`}
+                      className={imageOkPassedBadgeStatic}
+                    >
+                      <span className="text-emerald-200 drop-shadow-sm" aria-hidden>
+                        ✓
+                      </span>
+                      Passed check
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setPrintifyStepImageOk(true)}
+                      aria-pressed={false}
+                      aria-describedby={`image-ok-step2-hint-${r.id}`}
+                      className={imageOkNeutralToggle}
+                      title="Click when reference images are acceptable — required before saving the Printify product"
+                    >
+                      Image OK
+                    </button>
+                  )}
                   <span id={`image-ok-live-${r.id}`} className="sr-only" aria-live="polite" aria-atomic="true">
                     {printifyStepImageOk
                       ? "Passed check. Reject is disabled. You can save the Printify product."

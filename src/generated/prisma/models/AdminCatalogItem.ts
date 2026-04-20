@@ -30,11 +30,13 @@ export type AggregateAdminCatalogItem = {
 export type AdminCatalogItemAvgAggregateOutputType = {
   sortOrder: number | null
   itemMinPriceCents: number | null
+  itemGoodsServicesCostCents: number | null
 }
 
 export type AdminCatalogItemSumAggregateOutputType = {
   sortOrder: number | null
   itemMinPriceCents: number | null
+  itemGoodsServicesCostCents: number | null
 }
 
 export type AdminCatalogItemMinAggregateOutputType = {
@@ -44,6 +46,7 @@ export type AdminCatalogItemMinAggregateOutputType = {
   itemPlatformProductId: string | null
   itemExampleListingUrl: string | null
   itemMinPriceCents: number | null
+  itemGoodsServicesCostCents: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -55,6 +58,7 @@ export type AdminCatalogItemMaxAggregateOutputType = {
   itemPlatformProductId: string | null
   itemExampleListingUrl: string | null
   itemMinPriceCents: number | null
+  itemGoodsServicesCostCents: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -67,6 +71,7 @@ export type AdminCatalogItemCountAggregateOutputType = {
   itemPlatformProductId: number
   itemExampleListingUrl: number
   itemMinPriceCents: number
+  itemGoodsServicesCostCents: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -76,11 +81,13 @@ export type AdminCatalogItemCountAggregateOutputType = {
 export type AdminCatalogItemAvgAggregateInputType = {
   sortOrder?: true
   itemMinPriceCents?: true
+  itemGoodsServicesCostCents?: true
 }
 
 export type AdminCatalogItemSumAggregateInputType = {
   sortOrder?: true
   itemMinPriceCents?: true
+  itemGoodsServicesCostCents?: true
 }
 
 export type AdminCatalogItemMinAggregateInputType = {
@@ -90,6 +97,7 @@ export type AdminCatalogItemMinAggregateInputType = {
   itemPlatformProductId?: true
   itemExampleListingUrl?: true
   itemMinPriceCents?: true
+  itemGoodsServicesCostCents?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -101,6 +109,7 @@ export type AdminCatalogItemMaxAggregateInputType = {
   itemPlatformProductId?: true
   itemExampleListingUrl?: true
   itemMinPriceCents?: true
+  itemGoodsServicesCostCents?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -113,6 +122,7 @@ export type AdminCatalogItemCountAggregateInputType = {
   itemPlatformProductId?: true
   itemExampleListingUrl?: true
   itemMinPriceCents?: true
+  itemGoodsServicesCostCents?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -212,6 +222,7 @@ export type AdminCatalogItemGroupByOutputType = {
   itemPlatformProductId: string | null
   itemExampleListingUrl: string | null
   itemMinPriceCents: number
+  itemGoodsServicesCostCents: number
   createdAt: Date
   updatedAt: Date
   _count: AdminCatalogItemCountAggregateOutputType | null
@@ -247,6 +258,7 @@ export type AdminCatalogItemWhereInput = {
   itemPlatformProductId?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
   itemExampleListingUrl?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
   itemMinPriceCents?: Prisma.IntFilter<"AdminCatalogItem"> | number
+  itemGoodsServicesCostCents?: Prisma.IntFilter<"AdminCatalogItem"> | number
   createdAt?: Prisma.DateTimeFilter<"AdminCatalogItem"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AdminCatalogItem"> | Date | string
   itemPlatformProduct?: Prisma.XOR<Prisma.ProductNullableScalarRelationFilter, Prisma.ProductWhereInput> | null
@@ -260,6 +272,7 @@ export type AdminCatalogItemOrderByWithRelationInput = {
   itemPlatformProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   itemExampleListingUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   itemMinPriceCents?: Prisma.SortOrder
+  itemGoodsServicesCostCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   itemPlatformProduct?: Prisma.ProductOrderByWithRelationInput
@@ -276,6 +289,7 @@ export type AdminCatalogItemWhereUniqueInput = Prisma.AtLeast<{
   itemPlatformProductId?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
   itemExampleListingUrl?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
   itemMinPriceCents?: Prisma.IntFilter<"AdminCatalogItem"> | number
+  itemGoodsServicesCostCents?: Prisma.IntFilter<"AdminCatalogItem"> | number
   createdAt?: Prisma.DateTimeFilter<"AdminCatalogItem"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AdminCatalogItem"> | Date | string
   itemPlatformProduct?: Prisma.XOR<Prisma.ProductNullableScalarRelationFilter, Prisma.ProductWhereInput> | null
@@ -289,6 +303,7 @@ export type AdminCatalogItemOrderByWithAggregationInput = {
   itemPlatformProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   itemExampleListingUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   itemMinPriceCents?: Prisma.SortOrder
+  itemGoodsServicesCostCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.AdminCatalogItemCountOrderByAggregateInput
@@ -309,6 +324,7 @@ export type AdminCatalogItemScalarWhereWithAggregatesInput = {
   itemPlatformProductId?: Prisma.StringNullableWithAggregatesFilter<"AdminCatalogItem"> | string | null
   itemExampleListingUrl?: Prisma.StringNullableWithAggregatesFilter<"AdminCatalogItem"> | string | null
   itemMinPriceCents?: Prisma.IntWithAggregatesFilter<"AdminCatalogItem"> | number
+  itemGoodsServicesCostCents?: Prisma.IntWithAggregatesFilter<"AdminCatalogItem"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AdminCatalogItem"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"AdminCatalogItem"> | Date | string
 }
@@ -320,6 +336,7 @@ export type AdminCatalogItemCreateInput = {
   variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: string | null
   itemMinPriceCents?: number
+  itemGoodsServicesCostCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   itemPlatformProduct?: Prisma.ProductCreateNestedOneWithoutAdminCatalogItemPlatformLinksInput
@@ -333,6 +350,7 @@ export type AdminCatalogItemUncheckedCreateInput = {
   itemPlatformProductId?: string | null
   itemExampleListingUrl?: string | null
   itemMinPriceCents?: number
+  itemGoodsServicesCostCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -344,6 +362,7 @@ export type AdminCatalogItemUpdateInput = {
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  itemGoodsServicesCostCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   itemPlatformProduct?: Prisma.ProductUpdateOneWithoutAdminCatalogItemPlatformLinksNestedInput
@@ -357,6 +376,7 @@ export type AdminCatalogItemUncheckedUpdateInput = {
   itemPlatformProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  itemGoodsServicesCostCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -369,6 +389,7 @@ export type AdminCatalogItemCreateManyInput = {
   itemPlatformProductId?: string | null
   itemExampleListingUrl?: string | null
   itemMinPriceCents?: number
+  itemGoodsServicesCostCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -380,6 +401,7 @@ export type AdminCatalogItemUpdateManyMutationInput = {
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  itemGoodsServicesCostCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -392,6 +414,7 @@ export type AdminCatalogItemUncheckedUpdateManyInput = {
   itemPlatformProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  itemGoodsServicesCostCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -414,6 +437,7 @@ export type AdminCatalogItemCountOrderByAggregateInput = {
   itemPlatformProductId?: Prisma.SortOrder
   itemExampleListingUrl?: Prisma.SortOrder
   itemMinPriceCents?: Prisma.SortOrder
+  itemGoodsServicesCostCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -421,6 +445,7 @@ export type AdminCatalogItemCountOrderByAggregateInput = {
 export type AdminCatalogItemAvgOrderByAggregateInput = {
   sortOrder?: Prisma.SortOrder
   itemMinPriceCents?: Prisma.SortOrder
+  itemGoodsServicesCostCents?: Prisma.SortOrder
 }
 
 export type AdminCatalogItemMaxOrderByAggregateInput = {
@@ -430,6 +455,7 @@ export type AdminCatalogItemMaxOrderByAggregateInput = {
   itemPlatformProductId?: Prisma.SortOrder
   itemExampleListingUrl?: Prisma.SortOrder
   itemMinPriceCents?: Prisma.SortOrder
+  itemGoodsServicesCostCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -441,6 +467,7 @@ export type AdminCatalogItemMinOrderByAggregateInput = {
   itemPlatformProductId?: Prisma.SortOrder
   itemExampleListingUrl?: Prisma.SortOrder
   itemMinPriceCents?: Prisma.SortOrder
+  itemGoodsServicesCostCents?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -448,6 +475,7 @@ export type AdminCatalogItemMinOrderByAggregateInput = {
 export type AdminCatalogItemSumOrderByAggregateInput = {
   sortOrder?: Prisma.SortOrder
   itemMinPriceCents?: Prisma.SortOrder
+  itemGoodsServicesCostCents?: Prisma.SortOrder
 }
 
 export type AdminCatalogItemCreateNestedManyWithoutItemPlatformProductInput = {
@@ -499,6 +527,7 @@ export type AdminCatalogItemCreateWithoutItemPlatformProductInput = {
   variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: string | null
   itemMinPriceCents?: number
+  itemGoodsServicesCostCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -510,6 +539,7 @@ export type AdminCatalogItemUncheckedCreateWithoutItemPlatformProductInput = {
   variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: string | null
   itemMinPriceCents?: number
+  itemGoodsServicesCostCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -551,6 +581,7 @@ export type AdminCatalogItemScalarWhereInput = {
   itemPlatformProductId?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
   itemExampleListingUrl?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
   itemMinPriceCents?: Prisma.IntFilter<"AdminCatalogItem"> | number
+  itemGoodsServicesCostCents?: Prisma.IntFilter<"AdminCatalogItem"> | number
   createdAt?: Prisma.DateTimeFilter<"AdminCatalogItem"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AdminCatalogItem"> | Date | string
 }
@@ -562,6 +593,7 @@ export type AdminCatalogItemCreateManyItemPlatformProductInput = {
   variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: string | null
   itemMinPriceCents?: number
+  itemGoodsServicesCostCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -573,6 +605,7 @@ export type AdminCatalogItemUpdateWithoutItemPlatformProductInput = {
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  itemGoodsServicesCostCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -584,6 +617,7 @@ export type AdminCatalogItemUncheckedUpdateWithoutItemPlatformProductInput = {
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  itemGoodsServicesCostCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -595,6 +629,7 @@ export type AdminCatalogItemUncheckedUpdateManyWithoutItemPlatformProductInput =
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  itemGoodsServicesCostCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -609,6 +644,7 @@ export type AdminCatalogItemSelect<ExtArgs extends runtime.Types.Extensions.Inte
   itemPlatformProductId?: boolean
   itemExampleListingUrl?: boolean
   itemMinPriceCents?: boolean
+  itemGoodsServicesCostCents?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   itemPlatformProduct?: boolean | Prisma.AdminCatalogItem$itemPlatformProductArgs<ExtArgs>
@@ -622,6 +658,7 @@ export type AdminCatalogItemSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   itemPlatformProductId?: boolean
   itemExampleListingUrl?: boolean
   itemMinPriceCents?: boolean
+  itemGoodsServicesCostCents?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   itemPlatformProduct?: boolean | Prisma.AdminCatalogItem$itemPlatformProductArgs<ExtArgs>
@@ -635,6 +672,7 @@ export type AdminCatalogItemSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   itemPlatformProductId?: boolean
   itemExampleListingUrl?: boolean
   itemMinPriceCents?: boolean
+  itemGoodsServicesCostCents?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   itemPlatformProduct?: boolean | Prisma.AdminCatalogItem$itemPlatformProductArgs<ExtArgs>
@@ -648,11 +686,12 @@ export type AdminCatalogItemSelectScalar = {
   itemPlatformProductId?: boolean
   itemExampleListingUrl?: boolean
   itemMinPriceCents?: boolean
+  itemGoodsServicesCostCents?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AdminCatalogItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sortOrder" | "name" | "variants" | "itemPlatformProductId" | "itemExampleListingUrl" | "itemMinPriceCents" | "createdAt" | "updatedAt", ExtArgs["result"]["adminCatalogItem"]>
+export type AdminCatalogItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sortOrder" | "name" | "variants" | "itemPlatformProductId" | "itemExampleListingUrl" | "itemMinPriceCents" | "itemGoodsServicesCostCents" | "createdAt" | "updatedAt", ExtArgs["result"]["adminCatalogItem"]>
 export type AdminCatalogItemInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   itemPlatformProduct?: boolean | Prisma.AdminCatalogItem$itemPlatformProductArgs<ExtArgs>
 }
@@ -673,7 +712,7 @@ export type $AdminCatalogItemPayload<ExtArgs extends runtime.Types.Extensions.In
     sortOrder: number
     name: string
     /**
-     * * JSON array: { id, label, minPriceCents, exampleListingUrl, platformProductId? }[]
+     * * JSON array: { id, label, minPriceCents, goodsServicesCostCents?, exampleListingUrl, platformProductId? }[]
      */
     variants: runtime.JsonValue
     /**
@@ -694,6 +733,12 @@ export type $AdminCatalogItemPayload<ExtArgs extends runtime.Types.Extensions.In
      *    * Set to 0 when the item has variants.
      */
     itemMinPriceCents: number
+    /**
+     * *
+     *    * When `variants` is empty: fulfillment / goods-and-services COGS (cents per unit) retained by the
+     *    * platform from the sale; distinct from the marketplace fee on the remainder.
+     */
+    itemGoodsServicesCostCents: number
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["adminCatalogItem"]>
@@ -1127,6 +1172,7 @@ export interface AdminCatalogItemFieldRefs {
   readonly itemPlatformProductId: Prisma.FieldRef<"AdminCatalogItem", 'String'>
   readonly itemExampleListingUrl: Prisma.FieldRef<"AdminCatalogItem", 'String'>
   readonly itemMinPriceCents: Prisma.FieldRef<"AdminCatalogItem", 'Int'>
+  readonly itemGoodsServicesCostCents: Prisma.FieldRef<"AdminCatalogItem", 'Int'>
   readonly createdAt: Prisma.FieldRef<"AdminCatalogItem", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"AdminCatalogItem", 'DateTime'>
 }

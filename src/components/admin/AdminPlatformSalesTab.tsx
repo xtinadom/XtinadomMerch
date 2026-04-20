@@ -17,6 +17,7 @@ type SalesLine = {
   quantity: number;
   unitPriceCents: number;
   productName: string;
+  goodsServicesCostCents: number;
   platformCutCents: number;
   shopCutCents: number;
   order: { id: string; createdAt: Date };
@@ -40,6 +41,7 @@ export function AdminPlatformSalesTab(props: {
         l.productName,
         String(l.quantity),
         String(merch),
+        String(l.goodsServicesCostCents),
         String(l.platformCutCents),
         String(l.shopCutCents),
         shopName,
@@ -50,7 +52,7 @@ export function AdminPlatformSalesTab(props: {
     })
     .join("\n");
   const csv =
-    "date,order_id,product,qty,merchandise_cents,platform_cut_cents,shop_cut_cents,shop_name,shop_slug\n" +
+    "date,order_id,product,qty,merchandise_cents,goods_services_cents,platform_fee_cents,shop_cut_cents,shop_name,shop_slug\n" +
     csvBody;
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
 
@@ -60,7 +62,8 @@ export function AdminPlatformSalesTab(props: {
         Platform sales (paid lines)
       </h2>
       <p className="mt-1 text-xs text-zinc-600">
-        Merchandise line totals and persisted revenue splits. Tips and shipping are not duplicated here.
+        Merchandise line totals and persisted splits (goods/services cost, platform fee, shop). Tips and shipping are
+        not duplicated here.
       </p>
       <form
         method="get"
@@ -106,14 +109,15 @@ export function AdminPlatformSalesTab(props: {
         </Link>
       </form>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[720px] border-collapse text-left text-xs">
+        <table className="w-full min-w-[860px] border-collapse text-left text-xs">
           <thead>
             <tr className="border-b border-zinc-800 text-zinc-500">
               <th className="py-2 pr-2 font-medium">Date</th>
               <th className="py-2 pr-2 font-medium">Product</th>
               <th className="py-2 pr-2 font-medium">Qty</th>
               <th className="py-2 pr-2 font-medium">Merch</th>
-              <th className="py-2 pr-2 font-medium">Platform</th>
+              <th className="py-2 pr-2 font-medium">G/S cost</th>
+              <th className="py-2 pr-2 font-medium">Plat. fee</th>
               <th className="py-2 pr-2 font-medium">Shop</th>
               <th className="py-2 font-medium">Shop name</th>
             </tr>
@@ -129,6 +133,7 @@ export function AdminPlatformSalesTab(props: {
                   <td className="py-2 pr-2">{l.productName}</td>
                   <td className="py-2 pr-2 tabular-nums">{l.quantity}</td>
                   <td className="py-2 pr-2 tabular-nums">{formatPrice(merch)}</td>
+                  <td className="py-2 pr-2 tabular-nums">{formatPrice(l.goodsServicesCostCents)}</td>
                   <td className="py-2 pr-2 tabular-nums">{formatPrice(l.platformCutCents)}</td>
                   <td className="py-2 pr-2 tabular-nums">{formatPrice(l.shopCutCents)}</td>
                   <td className="py-2 text-zinc-400">{l.shop?.displayName ?? "—"}</td>

@@ -388,6 +388,7 @@ export const ModelName = {
   ProductTag: 'ProductTag',
   Product: 'Product',
   Shop: 'Shop',
+  ShopListingSlotPromoRedemption: 'ShopListingSlotPromoRedemption',
   SupportThread: 'SupportThread',
   SupportMessage: 'SupportMessage',
   ShopOwnerNotice: 'ShopOwnerNotice',
@@ -417,7 +418,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tag" | "productTag" | "product" | "shop" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopAccountDeletionToken" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "comment"
+    modelProps: "tag" | "productTag" | "product" | "shop" | "shopListingSlotPromoRedemption" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopAccountDeletionToken" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "comment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -714,6 +715,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.ShopCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.ShopCountAggregateOutputType> | number
+        }
+      }
+    }
+    ShopListingSlotPromoRedemption: {
+      payload: Prisma.$ShopListingSlotPromoRedemptionPayload<ExtArgs>
+      fields: Prisma.ShopListingSlotPromoRedemptionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ShopListingSlotPromoRedemptionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopListingSlotPromoRedemptionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ShopListingSlotPromoRedemptionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopListingSlotPromoRedemptionPayload>
+        }
+        findFirst: {
+          args: Prisma.ShopListingSlotPromoRedemptionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopListingSlotPromoRedemptionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ShopListingSlotPromoRedemptionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopListingSlotPromoRedemptionPayload>
+        }
+        findMany: {
+          args: Prisma.ShopListingSlotPromoRedemptionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopListingSlotPromoRedemptionPayload>[]
+        }
+        create: {
+          args: Prisma.ShopListingSlotPromoRedemptionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopListingSlotPromoRedemptionPayload>
+        }
+        createMany: {
+          args: Prisma.ShopListingSlotPromoRedemptionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ShopListingSlotPromoRedemptionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopListingSlotPromoRedemptionPayload>[]
+        }
+        delete: {
+          args: Prisma.ShopListingSlotPromoRedemptionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopListingSlotPromoRedemptionPayload>
+        }
+        update: {
+          args: Prisma.ShopListingSlotPromoRedemptionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopListingSlotPromoRedemptionPayload>
+        }
+        deleteMany: {
+          args: Prisma.ShopListingSlotPromoRedemptionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ShopListingSlotPromoRedemptionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ShopListingSlotPromoRedemptionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopListingSlotPromoRedemptionPayload>[]
+        }
+        upsert: {
+          args: Prisma.ShopListingSlotPromoRedemptionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ShopListingSlotPromoRedemptionPayload>
+        }
+        aggregate: {
+          args: Prisma.ShopListingSlotPromoRedemptionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateShopListingSlotPromoRedemption>
+        }
+        groupBy: {
+          args: Prisma.ShopListingSlotPromoRedemptionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ShopListingSlotPromoRedemptionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ShopListingSlotPromoRedemptionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ShopListingSlotPromoRedemptionCountAggregateOutputType> | number
         }
       }
     }
@@ -1862,11 +1937,23 @@ export const ShopScalarFieldEnum = {
   accountDeletionEmailConfirmedAt: 'accountDeletionEmailConfirmedAt',
   homeFeaturedListingId: 'homeFeaturedListingId',
   itemGuidelinesAcknowledgedAt: 'itemGuidelinesAcknowledgedAt',
+  listingFeeBonusFreeSlots: 'listingFeeBonusFreeSlots',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type ShopScalarFieldEnum = (typeof ShopScalarFieldEnum)[keyof typeof ShopScalarFieldEnum]
+
+
+export const ShopListingSlotPromoRedemptionScalarFieldEnum = {
+  id: 'id',
+  shopId: 'shopId',
+  couponCodeNormalized: 'couponCodeNormalized',
+  slotsGranted: 'slotsGranted',
+  createdAt: 'createdAt'
+} as const
+
+export type ShopListingSlotPromoRedemptionScalarFieldEnum = (typeof ShopListingSlotPromoRedemptionScalarFieldEnum)[keyof typeof ShopListingSlotPromoRedemptionScalarFieldEnum]
 
 
 export const SupportThreadScalarFieldEnum = {
@@ -2024,6 +2111,7 @@ export const OrderLineScalarFieldEnum = {
   fulfillmentType: 'fulfillmentType',
   printifyProductId: 'printifyProductId',
   printifyVariantId: 'printifyVariantId',
+  goodsServicesCostCents: 'goodsServicesCostCents',
   platformCutCents: 'platformCutCents',
   shopCutCents: 'shopCutCents',
   createdAt: 'createdAt'
@@ -2065,6 +2153,7 @@ export const AdminCatalogItemScalarFieldEnum = {
   itemPlatformProductId: 'itemPlatformProductId',
   itemExampleListingUrl: 'itemExampleListingUrl',
   itemMinPriceCents: 'itemMinPriceCents',
+  itemGoodsServicesCostCents: 'itemGoodsServicesCostCents',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -2407,6 +2496,7 @@ export type GlobalOmitConfig = {
   productTag?: Prisma.ProductTagOmit
   product?: Prisma.ProductOmit
   shop?: Prisma.ShopOmit
+  shopListingSlotPromoRedemption?: Prisma.ShopListingSlotPromoRedemptionOmit
   supportThread?: Prisma.SupportThreadOmit
   supportMessage?: Prisma.SupportMessageOmit
   shopOwnerNotice?: Prisma.ShopOwnerNoticeOmit

@@ -55,6 +55,27 @@ function StepIcon({ done }: { done: boolean }) {
   );
 }
 
+/** Stripe Connect stays locked until these are all true — list only what is still missing (clearer than a generic wall of text). */
+function incompleteStripePrerequisitesSummary(steps: ShopSetupSteps): string {
+  const missing: string[] = [];
+  if (!steps.profile) missing.push("shop profile (display name)");
+  if (!steps.guidelines) missing.push("item guidelines");
+  if (!steps.emailVerified) missing.push("email verification");
+  if (!steps.listing) missing.push("a listing request");
+  if (missing.length === 0) {
+    return "Finish the remaining onboarding checklist items before starting Stripe Connect.";
+  }
+  if (missing.length === 1) {
+    return `Complete ${missing[0]} before starting Stripe Connect.`;
+  }
+  if (missing.length === 2) {
+    return `Complete ${missing[0]} and ${missing[1]} before starting Stripe Connect.`;
+  }
+  const last = missing[missing.length - 1]!;
+  const rest = missing.slice(0, -1).join(", ");
+  return `Complete ${rest}, and ${last} before starting Stripe Connect.`;
+}
+
 function StripeConnectSubmitButton({
   defaultLabel,
   formDisabled,
@@ -241,12 +262,13 @@ export function ShopSetupTabs(props: {
           >
             Stripe Connect
           </h3>
-          <p className="mt-1 text-xs text-zinc-500">Payouts setup — available after the checklist above is complete.</p>
+          <p className="mt-1 text-xs text-zinc-500">
+            Payouts setup — unlocks when every checklist row above shows a green check (except Stripe).
+          </p>
           <div className="mt-4 space-y-4 text-sm text-zinc-300">
             {!stripeConnectUnlocked ? (
               <p className="rounded-lg border border-amber-900/40 bg-amber-950/25 px-3 py-2 text-xs text-amber-200/90">
-                Complete shop profile (store name), item guidelines, email verification, and a listing request before
-                starting Stripe Connect.
+                {incompleteStripePrerequisitesSummary(steps)}
               </p>
             ) : null}
             <p>

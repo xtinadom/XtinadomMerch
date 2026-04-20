@@ -3,19 +3,24 @@
 export function AdminCatalogItemLevelFields({
   exampleListingUrl,
   minPriceDollars,
+  goodsServicesCostDollars,
   onChangeExampleListingUrl,
   onChangeMinPriceDollars,
+  onChangeGoodsServicesCostDollars,
 }: {
   exampleListingUrl: string;
   minPriceDollars: string;
+  goodsServicesCostDollars: string;
   onChangeExampleListingUrl: (v: string) => void;
   onChangeMinPriceDollars: (v: string) => void;
+  onChangeGoodsServicesCostDollars: (v: string) => void;
 }) {
   return (
     <div className="space-y-3 rounded border border-zinc-800/80 bg-zinc-950/40 p-3">
       <p className="text-[11px] text-zinc-500">
         No variants: minimum price is required. Example listing is optional (any URL or site path you want shop
-        owners to see as a reference).
+        owners to see as a reference). Goods/services cost is optional fulfillment COGS (per unit) retained by the
+        platform before the marketplace fee.
       </p>
       <label className="block min-w-0 text-[11px] text-zinc-500">
         Example listing (optional)
@@ -35,6 +40,17 @@ export function AdminCatalogItemLevelFields({
           inputMode="decimal"
           value={minPriceDollars}
           onChange={(e) => onChangeMinPriceDollars(e.target.value)}
+          className="mt-0.5 block w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-sm text-zinc-100"
+          placeholder="0.00"
+        />
+      </label>
+      <label className="block max-w-[10rem] text-[11px] text-zinc-500">
+        Goods/services cost (USD, optional)
+        <input
+          type="text"
+          inputMode="decimal"
+          value={goodsServicesCostDollars}
+          onChange={(e) => onChangeGoodsServicesCostDollars(e.target.value)}
           className="mt-0.5 block w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-sm text-zinc-100"
           placeholder="0.00"
         />

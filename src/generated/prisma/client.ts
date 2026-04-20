@@ -62,6 +62,11 @@ export type Product = Prisma.ProductModel
  */
 export type Shop = Prisma.ShopModel
 /**
+ * Model ShopListingSlotPromoRedemption
+ * * One promo code redemption per shop (normalized code).
+ */
+export type ShopListingSlotPromoRedemption = Prisma.ShopListingSlotPromoRedemptionModel
+/**
  * Model SupportThread
  * 
  */

@@ -374,7 +374,9 @@ async function tryExecuteAdminApproveListingRequest(
   const ordinal = await getListingOrdinal(listingId, listing.shopId);
   if (ordinal === null) return { ok: false, reason: "ordinal_missing" };
 
-  const feeCents = isPlatform ? 0 : listingFeeCentsForOrdinal(ordinal, listing.shop.slug);
+  const feeCents = isPlatform
+    ? 0
+    : listingFeeCentsForOrdinal(ordinal, listing.shop.slug, listing.shop.listingFeeBonusFreeSlots ?? 0);
   const alreadyPaid = listing.listingFeePaidAt != null;
 
   const requestImageUrls = shopListingRequestImageUrlStrings(listing.requestImages);

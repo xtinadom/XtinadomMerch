@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getShopOwnerSessionReadonly } from "@/lib/session";
-import { ListingRequestStatus, OrderStatus } from "@/generated/prisma/enums";
+import { FulfillmentType, ListingRequestStatus, OrderStatus } from "@/generated/prisma/enums";
 import {
   LISTING_FEE_CENTS,
   LISTING_FEE_FREE_SLOT_COUNT,
@@ -22,7 +23,11 @@ import {
   sanitizeShopListingOwnerSupplementImageUrlForDisplay,
 } from "@/lib/r2-upload";
 import { ensureBaselineAdminCatalogIfEmpty } from "@/lib/seed-baseline-admin-catalog";
-import { buildShopBaselineCatalogGroups } from "@/lib/shop-baseline-catalog";
+import { baselineGoodsServicesUnitCents } from "@/lib/baseline-goods-services-unit-cents";
+import {
+  buildShopBaselineCatalogGroups,
+  parseBaselinePick,
+} from "@/lib/shop-baseline-catalog";
 import {
   listingRejectionReasonTextForCard,
   resolveListingRejectionNoticeBody,
@@ -44,6 +49,7 @@ import {
 import { getStripeConnectBalanceUsdCents } from "@/lib/stripe-connect-balance";
 import { shopStripeConnectReadyForListingCharges } from "@/lib/shop-stripe-connect-gate";
 import { isMockCheckoutEnabled } from "@/lib/checkout-mock";
+import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +62,69 @@ function formatMoney(cents: number) {
     style: "currency",
     currency: "USD",
   }).format(cents / 100);
+}
+
+type AdminCatalogRowForDisplay = {
+  variants: unknown;
+  itemGoodsServicesCostCents: number;
+};
+
+/** Uses current admin baseline catalog + listing pick + Printify variant mapping (same as checkout). */
+function paidOrderLineGoodsServicesDisplayCents(
+  line: {
+    unitPriceCents: number;
+    quantity: number;
+    goodsServicesCostCents: number;
+    printifyVariantId: string | null;
+    shopListing: { baselineCatalogPickEncoded: string | null } | null;
+    product: { printifyVariants: unknown } | null;
+  },
+  adminCatalogById: Map<string, AdminCatalogRowForDisplay>,
+): number {
+  const pick = parseBaselinePick(line.shopListing?.baselineCatalogPickEncoded ?? "");
+  if (!pick) return line.goodsServicesCostCents;
+  const row = adminCatalogById.get(pick.itemId);
+  if (!row) return line.goodsServicesCostCents;
+  const unit = baselineGoodsServicesUnitCents({
+    baselineCatalogPickEncoded: line.shopListing?.baselineCatalogPickEncoded,
+    selectedVariantId: line.printifyVariantId,
+    catalogRow: row,
+    productPrintifyVariantsJson: line.product?.printifyVariants,
+  });
+  const merch = line.unitPriceCents * line.quantity;
+  return Math.min(merch, Math.max(0, unit) * line.quantity);
+}
+
+/** Per Printify variant id — unit COGS for profit estimates (same rules as checkout). */
+function listingGoodsServicesUnitCentsByPrintifyVariantId(
+  listing: {
+    baselineCatalogPickEncoded: string | null;
+    product: {
+      fulfillmentType: FulfillmentType;
+      printifyVariants: Prisma.JsonValue | null;
+      printifyVariantId: string | null;
+      priceCents: number;
+    };
+  },
+  adminCatalogById: Map<string, AdminCatalogRowForDisplay>,
+): Record<string, number> {
+  const pick = parseBaselinePick(listing.baselineCatalogPickEncoded ?? "");
+  const row = pick ? adminCatalogById.get(pick.itemId) : undefined;
+  const variants = getPrintifyVariantsForProduct(listing.product);
+  const out: Record<string, number> = {};
+  for (const v of variants) {
+    const unit =
+      row != null
+        ? baselineGoodsServicesUnitCents({
+            baselineCatalogPickEncoded: listing.baselineCatalogPickEncoded,
+            selectedVariantId: v.id,
+            catalogRow: row,
+            productPrintifyVariantsJson: listing.product.printifyVariants,
+          })
+        : 0;
+    out[v.id] = unit;
+  }
+  return out;
 }
 
 export default async function DashboardPage({ searchParams }: PageProps) {
@@ -143,31 +212,49 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     select: {
       id: true,
       createdAt: true,
-      totalCents: true,
       lines: {
         select: {
           productName: true,
           quantity: true,
           unitPriceCents: true,
+          goodsServicesCostCents: true,
           platformCutCents: true,
           shopCutCents: true,
+          printifyVariantId: true,
+          shopListing: {
+            select: { baselineCatalogPickEncoded: true },
+          },
+          product: {
+            select: { printifyVariants: true },
+          },
         },
       },
     },
   });
 
   const isPlatform = shop.slug === PLATFORM_SHOP_SLUG;
+  const showDemoPurchaseButton =
+    !isPlatform && process.env.SHOP_DEMO_PURCHASE_BUTTON === "1";
   const shopStripeConnectReadyForCharges = shopStripeConnectReadyForListingCharges(shop);
   const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
   const mockListingFeeCheckout = !isPlatform && isMockCheckoutEnabled();
+  const bonusListingSlots = shop.listingFeeBonusFreeSlots ?? 0;
+  const totalFreeListingSlots = LISTING_FEE_FREE_SLOT_COUNT + bonusListingSlots;
   const listingFeePolicySummary =
     !isPlatform && isFounderUnlimitedFreeListingsShop(shop.slug)
       ? "As the founder shop, all your listings publish free (no publication fee)."
-      : `Your first ${LISTING_FEE_FREE_SLOT_COUNT} listings are free. Each additional listing costs ${formatMoney(LISTING_FEE_CENTS)} to publish.`;
+      : !isPlatform
+        ? `Your first ${totalFreeListingSlots} listings are free.${
+            bonusListingSlots > 0
+              ? " Your account includes extra free slots from an applied promo."
+              : ""
+          } Each additional listing costs ${formatMoney(LISTING_FEE_CENTS)} to publish.`
+        : "";
   const paidListingFeeLabel = formatMoney(LISTING_FEE_CENTS);
   const firstListingPublicationFeeCents = listingFeeCentsForOrdinal(
     shop.listings.length + 1,
     shop.slug,
+    bonusListingSlots,
   );
   const firstListingPublicationFeeLabel =
     firstListingPublicationFeeCents > 0 ? formatMoney(firstListingPublicationFeeCents) : null;
@@ -193,11 +280,19 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           variants: true,
           itemExampleListingUrl: true,
           itemMinPriceCents: true,
+          itemGoodsServicesCostCents: true,
         },
       })
     : [];
 
   const catalogGroups = !isPlatform ? buildShopBaselineCatalogGroups(adminCatalogRows) : [];
+
+  const adminCatalogById = new Map<string, AdminCatalogRowForDisplay>(
+    adminCatalogRows.map((r) => [
+      r.id,
+      { variants: r.variants, itemGoodsServicesCostCents: r.itemGoodsServicesCostCents },
+    ]),
+  );
 
   const draftListingForRequestPrefill = !isPlatform
     ? shop.listings.find(
@@ -352,6 +447,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         listing.id,
       ),
       listingStorefrontCatalogImageUrls: listing.listingStorefrontCatalogImageUrls,
+      baselineCatalogPickEncoded: listing.baselineCatalogPickEncoded,
+      goodsServicesUnitCentsByPrintifyVariantId: listingGoodsServicesUnitCentsByPrintifyVariantId(
+        {
+          baselineCatalogPickEncoded: listing.baselineCatalogPickEncoded,
+          product: listing.product,
+        },
+        adminCatalogById,
+      ),
       listingPrintifyVariantId: listing.listingPrintifyVariantId,
       listingPrintifyVariantPrices: listing.listingPrintifyVariantPrices,
       requestItemName: listing.requestItemName,
@@ -485,6 +588,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         draftListingRequestPrefill={draftListingRequestPrefill}
         groupedListingSections={groupedListingSections}
         listingTabCounts={listingTabCounts}
+        listingFeeBonusFreeSlots={bonusListingSlots}
+        showListingSlotPromoRedeem={
+          !isPlatform && !isFounderUnlimitedFreeListingsShop(shop.slug)
+        }
         setup={
           !isPlatform
             ? {
@@ -527,12 +634,22 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         mockListingFeeCheckout={mockListingFeeCheckout}
         shopStripeConnectReadyForCharges={shopStripeConnectReadyForCharges}
         stripePublishableKey={stripePublishableKey}
+        showDemoPurchaseButton={showDemoPurchaseButton}
         listings={listingRows}
         paidOrders={paidOrders.map((o) => ({
           id: o.id,
           createdAt: o.createdAt.toISOString(),
-          totalCents: o.totalCents,
-          lines: o.lines,
+          lines: o.lines.map((l) => ({
+            productName: l.productName,
+            quantity: l.quantity,
+            unitPriceCents: l.unitPriceCents,
+            goodsServicesCostCents: paidOrderLineGoodsServicesDisplayCents(
+              l,
+              adminCatalogById,
+            ),
+            platformCutCents: l.platformCutCents,
+            shopCutCents: l.shopCutCents,
+          })),
         }))}
         notifications={
           !isPlatform

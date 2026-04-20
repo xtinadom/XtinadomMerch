@@ -40,13 +40,26 @@ export function shopListingMaxPriceUsdLabel(): string {
   }).format(SHOP_LISTING_MAX_PRICE_CENTS / 100);
 }
 
+/** Total fee-free listing ordinals for a non-founder shop (base free count + promo bonus). */
+export function listingFeeFreeSlotCap(shopSlug: string, bonusFreeSlots: number): number {
+  if (isFounderUnlimitedFreeListingsShop(shopSlug)) {
+    return LISTING_FEE_FREE_SLOT_COUNT;
+  }
+  return LISTING_FEE_FREE_SLOT_COUNT + Math.max(0, Math.floor(bonusFreeSlots));
+}
+
 /** Fee in cents for the Nth listing in a shop (1 = oldest), after free slots. */
-export function listingFeeCentsForOrdinal(ordinal1Based: number, shopSlug?: string): number {
+export function listingFeeCentsForOrdinal(
+  ordinal1Based: number,
+  shopSlug?: string,
+  bonusFreeSlots = 0,
+): number {
   if (shopSlug && isFounderUnlimitedFreeListingsShop(shopSlug)) {
     return 0;
   }
   if (ordinal1Based <= 0) return LISTING_FEE_CENTS;
-  return ordinal1Based <= LISTING_FEE_FREE_SLOT_COUNT ? 0 : LISTING_FEE_CENTS;
+  const cap = LISTING_FEE_FREE_SLOT_COUNT + Math.max(0, Math.floor(bonusFreeSlots));
+  return ordinal1Based <= cap ? 0 : LISTING_FEE_CENTS;
 }
 
 /** Listing id prefix used in SQL migration (`sl_` || productId). */

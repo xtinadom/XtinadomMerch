@@ -29,11 +29,13 @@ export type AggregateShop = {
 export type ShopAvgAggregateOutputType = {
   editorialPriority: number | null
   totalSalesCents: number | null
+  listingFeeBonusFreeSlots: number | null
 }
 
 export type ShopSumAggregateOutputType = {
   editorialPriority: number | null
   totalSalesCents: number | null
+  listingFeeBonusFreeSlots: number | null
 }
 
 export type ShopMinAggregateOutputType = {
@@ -55,6 +57,7 @@ export type ShopMinAggregateOutputType = {
   accountDeletionEmailConfirmedAt: Date | null
   homeFeaturedListingId: string | null
   itemGuidelinesAcknowledgedAt: Date | null
+  listingFeeBonusFreeSlots: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -78,6 +81,7 @@ export type ShopMaxAggregateOutputType = {
   accountDeletionEmailConfirmedAt: Date | null
   homeFeaturedListingId: string | null
   itemGuidelinesAcknowledgedAt: Date | null
+  listingFeeBonusFreeSlots: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -102,6 +106,7 @@ export type ShopCountAggregateOutputType = {
   accountDeletionEmailConfirmedAt: number
   homeFeaturedListingId: number
   itemGuidelinesAcknowledgedAt: number
+  listingFeeBonusFreeSlots: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -111,11 +116,13 @@ export type ShopCountAggregateOutputType = {
 export type ShopAvgAggregateInputType = {
   editorialPriority?: true
   totalSalesCents?: true
+  listingFeeBonusFreeSlots?: true
 }
 
 export type ShopSumAggregateInputType = {
   editorialPriority?: true
   totalSalesCents?: true
+  listingFeeBonusFreeSlots?: true
 }
 
 export type ShopMinAggregateInputType = {
@@ -137,6 +144,7 @@ export type ShopMinAggregateInputType = {
   accountDeletionEmailConfirmedAt?: true
   homeFeaturedListingId?: true
   itemGuidelinesAcknowledgedAt?: true
+  listingFeeBonusFreeSlots?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -160,6 +168,7 @@ export type ShopMaxAggregateInputType = {
   accountDeletionEmailConfirmedAt?: true
   homeFeaturedListingId?: true
   itemGuidelinesAcknowledgedAt?: true
+  listingFeeBonusFreeSlots?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -184,6 +193,7 @@ export type ShopCountAggregateInputType = {
   accountDeletionEmailConfirmedAt?: true
   homeFeaturedListingId?: true
   itemGuidelinesAcknowledgedAt?: true
+  listingFeeBonusFreeSlots?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -295,6 +305,7 @@ export type ShopGroupByOutputType = {
   accountDeletionEmailConfirmedAt: Date | null
   homeFeaturedListingId: string | null
   itemGuidelinesAcknowledgedAt: Date | null
+  listingFeeBonusFreeSlots: number
   createdAt: Date
   updatedAt: Date
   _count: ShopCountAggregateOutputType | null
@@ -342,6 +353,7 @@ export type ShopWhereInput = {
   accountDeletionEmailConfirmedAt?: Prisma.DateTimeNullableFilter<"Shop"> | Date | string | null
   homeFeaturedListingId?: Prisma.StringNullableFilter<"Shop"> | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.DateTimeNullableFilter<"Shop"> | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFilter<"Shop"> | number
   createdAt?: Prisma.DateTimeFilter<"Shop"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Shop"> | Date | string
   homeFeaturedListing?: Prisma.XOR<Prisma.ShopListingNullableScalarRelationFilter, Prisma.ShopListingWhereInput> | null
@@ -351,6 +363,7 @@ export type ShopWhereInput = {
   orders?: Prisma.OrderListRelationFilter
   orderLines?: Prisma.OrderLineListRelationFilter
   supportThread?: Prisma.XOR<Prisma.SupportThreadNullableScalarRelationFilter, Prisma.SupportThreadWhereInput> | null
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionListRelationFilter
 }
 
 export type ShopOrderByWithRelationInput = {
@@ -373,6 +386,7 @@ export type ShopOrderByWithRelationInput = {
   accountDeletionEmailConfirmedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   homeFeaturedListingId?: Prisma.SortOrderInput | Prisma.SortOrder
   itemGuidelinesAcknowledgedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  listingFeeBonusFreeSlots?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   homeFeaturedListing?: Prisma.ShopListingOrderByWithRelationInput
@@ -382,6 +396,7 @@ export type ShopOrderByWithRelationInput = {
   orders?: Prisma.OrderOrderByRelationAggregateInput
   orderLines?: Prisma.OrderLineOrderByRelationAggregateInput
   supportThread?: Prisma.SupportThreadOrderByWithRelationInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionOrderByRelationAggregateInput
 }
 
 export type ShopWhereUniqueInput = Prisma.AtLeast<{
@@ -407,6 +422,7 @@ export type ShopWhereUniqueInput = Prisma.AtLeast<{
   accountDeletionRequestedAt?: Prisma.DateTimeNullableFilter<"Shop"> | Date | string | null
   accountDeletionEmailConfirmedAt?: Prisma.DateTimeNullableFilter<"Shop"> | Date | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.DateTimeNullableFilter<"Shop"> | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFilter<"Shop"> | number
   createdAt?: Prisma.DateTimeFilter<"Shop"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Shop"> | Date | string
   homeFeaturedListing?: Prisma.XOR<Prisma.ShopListingNullableScalarRelationFilter, Prisma.ShopListingWhereInput> | null
@@ -416,6 +432,7 @@ export type ShopWhereUniqueInput = Prisma.AtLeast<{
   orders?: Prisma.OrderListRelationFilter
   orderLines?: Prisma.OrderLineListRelationFilter
   supportThread?: Prisma.XOR<Prisma.SupportThreadNullableScalarRelationFilter, Prisma.SupportThreadWhereInput> | null
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionListRelationFilter
 }, "id" | "slug" | "stripeConnectAccountId" | "homeFeaturedListingId">
 
 export type ShopOrderByWithAggregationInput = {
@@ -438,6 +455,7 @@ export type ShopOrderByWithAggregationInput = {
   accountDeletionEmailConfirmedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   homeFeaturedListingId?: Prisma.SortOrderInput | Prisma.SortOrder
   itemGuidelinesAcknowledgedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  listingFeeBonusFreeSlots?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ShopCountOrderByAggregateInput
@@ -470,6 +488,7 @@ export type ShopScalarWhereWithAggregatesInput = {
   accountDeletionEmailConfirmedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Shop"> | Date | string | null
   homeFeaturedListingId?: Prisma.StringNullableWithAggregatesFilter<"Shop"> | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Shop"> | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntWithAggregatesFilter<"Shop"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Shop"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Shop"> | Date | string
 }
@@ -493,6 +512,7 @@ export type ShopCreateInput = {
   accountDeletionRequestedAt?: Date | string | null
   accountDeletionEmailConfirmedAt?: Date | string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   homeFeaturedListing?: Prisma.ShopListingCreateNestedOneWithoutShopHomeFeaturedInput
@@ -502,6 +522,7 @@ export type ShopCreateInput = {
   orders?: Prisma.OrderCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionCreateNestedManyWithoutShopInput
 }
 
 export type ShopUncheckedCreateInput = {
@@ -524,6 +545,7 @@ export type ShopUncheckedCreateInput = {
   accountDeletionEmailConfirmedAt?: Date | string | null
   homeFeaturedListingId?: string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   users?: Prisma.ShopUserUncheckedCreateNestedManyWithoutShopInput
@@ -532,6 +554,7 @@ export type ShopUncheckedCreateInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadUncheckedCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedCreateNestedManyWithoutShopInput
 }
 
 export type ShopUpdateInput = {
@@ -553,6 +576,7 @@ export type ShopUpdateInput = {
   accountDeletionRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   homeFeaturedListing?: Prisma.ShopListingUpdateOneWithoutShopHomeFeaturedNestedInput
@@ -562,6 +586,7 @@ export type ShopUpdateInput = {
   orders?: Prisma.OrderUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUpdateManyWithoutShopNestedInput
 }
 
 export type ShopUncheckedUpdateInput = {
@@ -584,6 +609,7 @@ export type ShopUncheckedUpdateInput = {
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   homeFeaturedListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   users?: Prisma.ShopUserUncheckedUpdateManyWithoutShopNestedInput
@@ -592,6 +618,7 @@ export type ShopUncheckedUpdateInput = {
   orders?: Prisma.OrderUncheckedUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUncheckedUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedUpdateManyWithoutShopNestedInput
 }
 
 export type ShopCreateManyInput = {
@@ -614,6 +641,7 @@ export type ShopCreateManyInput = {
   accountDeletionEmailConfirmedAt?: Date | string | null
   homeFeaturedListingId?: string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -637,6 +665,7 @@ export type ShopUpdateManyMutationInput = {
   accountDeletionRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -661,6 +690,7 @@ export type ShopUncheckedUpdateManyInput = {
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   homeFeaturedListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -685,6 +715,7 @@ export type ShopCountOrderByAggregateInput = {
   accountDeletionEmailConfirmedAt?: Prisma.SortOrder
   homeFeaturedListingId?: Prisma.SortOrder
   itemGuidelinesAcknowledgedAt?: Prisma.SortOrder
+  listingFeeBonusFreeSlots?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -692,6 +723,7 @@ export type ShopCountOrderByAggregateInput = {
 export type ShopAvgOrderByAggregateInput = {
   editorialPriority?: Prisma.SortOrder
   totalSalesCents?: Prisma.SortOrder
+  listingFeeBonusFreeSlots?: Prisma.SortOrder
 }
 
 export type ShopMaxOrderByAggregateInput = {
@@ -713,6 +745,7 @@ export type ShopMaxOrderByAggregateInput = {
   accountDeletionEmailConfirmedAt?: Prisma.SortOrder
   homeFeaturedListingId?: Prisma.SortOrder
   itemGuidelinesAcknowledgedAt?: Prisma.SortOrder
+  listingFeeBonusFreeSlots?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -736,6 +769,7 @@ export type ShopMinOrderByAggregateInput = {
   accountDeletionEmailConfirmedAt?: Prisma.SortOrder
   homeFeaturedListingId?: Prisma.SortOrder
   itemGuidelinesAcknowledgedAt?: Prisma.SortOrder
+  listingFeeBonusFreeSlots?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -743,6 +777,7 @@ export type ShopMinOrderByAggregateInput = {
 export type ShopSumOrderByAggregateInput = {
   editorialPriority?: Prisma.SortOrder
   totalSalesCents?: Prisma.SortOrder
+  listingFeeBonusFreeSlots?: Prisma.SortOrder
 }
 
 export type ShopScalarRelationFilter = {
@@ -765,6 +800,20 @@ export type NullableIntFieldUpdateOperationsInput = {
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
+}
+
+export type ShopCreateNestedOneWithoutListingSlotPromoRedemptionsInput = {
+  create?: Prisma.XOR<Prisma.ShopCreateWithoutListingSlotPromoRedemptionsInput, Prisma.ShopUncheckedCreateWithoutListingSlotPromoRedemptionsInput>
+  connectOrCreate?: Prisma.ShopCreateOrConnectWithoutListingSlotPromoRedemptionsInput
+  connect?: Prisma.ShopWhereUniqueInput
+}
+
+export type ShopUpdateOneRequiredWithoutListingSlotPromoRedemptionsNestedInput = {
+  create?: Prisma.XOR<Prisma.ShopCreateWithoutListingSlotPromoRedemptionsInput, Prisma.ShopUncheckedCreateWithoutListingSlotPromoRedemptionsInput>
+  connectOrCreate?: Prisma.ShopCreateOrConnectWithoutListingSlotPromoRedemptionsInput
+  upsert?: Prisma.ShopUpsertWithoutListingSlotPromoRedemptionsInput
+  connect?: Prisma.ShopWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ShopUpdateToOneWithWhereWithoutListingSlotPromoRedemptionsInput, Prisma.ShopUpdateWithoutListingSlotPromoRedemptionsInput>, Prisma.ShopUncheckedUpdateWithoutListingSlotPromoRedemptionsInput>
 }
 
 export type ShopCreateNestedOneWithoutSupportThreadInput = {
@@ -887,6 +936,146 @@ export type ShopUpdateOneWithoutOrderLinesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ShopUpdateToOneWithWhereWithoutOrderLinesInput, Prisma.ShopUpdateWithoutOrderLinesInput>, Prisma.ShopUncheckedUpdateWithoutOrderLinesInput>
 }
 
+export type ShopCreateWithoutListingSlotPromoRedemptionsInput = {
+  id?: string
+  slug: string
+  displayName: string
+  profileImageUrl?: string | null
+  bio?: string | null
+  welcomeMessage?: string | null
+  socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  active?: boolean
+  stripeConnectAccountId?: string | null
+  connectChargesEnabled?: boolean
+  payoutsEnabled?: boolean
+  editorialPriority?: number | null
+  editorialPinnedUntil?: Date | string | null
+  totalSalesCents?: number
+  ownerPausedShopAt?: Date | string | null
+  accountDeletionRequestedAt?: Date | string | null
+  accountDeletionEmailConfirmedAt?: Date | string | null
+  itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  homeFeaturedListing?: Prisma.ShopListingCreateNestedOneWithoutShopHomeFeaturedInput
+  users?: Prisma.ShopUserCreateNestedManyWithoutShopInput
+  listings?: Prisma.ShopListingCreateNestedManyWithoutShopInput
+  ownerNotices?: Prisma.ShopOwnerNoticeCreateNestedManyWithoutShopInput
+  orders?: Prisma.OrderCreateNestedManyWithoutShopInput
+  orderLines?: Prisma.OrderLineCreateNestedManyWithoutShopInput
+  supportThread?: Prisma.SupportThreadCreateNestedOneWithoutShopInput
+}
+
+export type ShopUncheckedCreateWithoutListingSlotPromoRedemptionsInput = {
+  id?: string
+  slug: string
+  displayName: string
+  profileImageUrl?: string | null
+  bio?: string | null
+  welcomeMessage?: string | null
+  socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  active?: boolean
+  stripeConnectAccountId?: string | null
+  connectChargesEnabled?: boolean
+  payoutsEnabled?: boolean
+  editorialPriority?: number | null
+  editorialPinnedUntil?: Date | string | null
+  totalSalesCents?: number
+  ownerPausedShopAt?: Date | string | null
+  accountDeletionRequestedAt?: Date | string | null
+  accountDeletionEmailConfirmedAt?: Date | string | null
+  homeFeaturedListingId?: string | null
+  itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  users?: Prisma.ShopUserUncheckedCreateNestedManyWithoutShopInput
+  listings?: Prisma.ShopListingUncheckedCreateNestedManyWithoutShopInput
+  ownerNotices?: Prisma.ShopOwnerNoticeUncheckedCreateNestedManyWithoutShopInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutShopInput
+  orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutShopInput
+  supportThread?: Prisma.SupportThreadUncheckedCreateNestedOneWithoutShopInput
+}
+
+export type ShopCreateOrConnectWithoutListingSlotPromoRedemptionsInput = {
+  where: Prisma.ShopWhereUniqueInput
+  create: Prisma.XOR<Prisma.ShopCreateWithoutListingSlotPromoRedemptionsInput, Prisma.ShopUncheckedCreateWithoutListingSlotPromoRedemptionsInput>
+}
+
+export type ShopUpsertWithoutListingSlotPromoRedemptionsInput = {
+  update: Prisma.XOR<Prisma.ShopUpdateWithoutListingSlotPromoRedemptionsInput, Prisma.ShopUncheckedUpdateWithoutListingSlotPromoRedemptionsInput>
+  create: Prisma.XOR<Prisma.ShopCreateWithoutListingSlotPromoRedemptionsInput, Prisma.ShopUncheckedCreateWithoutListingSlotPromoRedemptionsInput>
+  where?: Prisma.ShopWhereInput
+}
+
+export type ShopUpdateToOneWithWhereWithoutListingSlotPromoRedemptionsInput = {
+  where?: Prisma.ShopWhereInput
+  data: Prisma.XOR<Prisma.ShopUpdateWithoutListingSlotPromoRedemptionsInput, Prisma.ShopUncheckedUpdateWithoutListingSlotPromoRedemptionsInput>
+}
+
+export type ShopUpdateWithoutListingSlotPromoRedemptionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.StringFieldUpdateOperationsInput | string
+  profileImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  editorialPriority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  editorialPinnedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totalSalesCents?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerPausedShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accountDeletionRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  homeFeaturedListing?: Prisma.ShopListingUpdateOneWithoutShopHomeFeaturedNestedInput
+  users?: Prisma.ShopUserUpdateManyWithoutShopNestedInput
+  listings?: Prisma.ShopListingUpdateManyWithoutShopNestedInput
+  ownerNotices?: Prisma.ShopOwnerNoticeUpdateManyWithoutShopNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutShopNestedInput
+  orderLines?: Prisma.OrderLineUpdateManyWithoutShopNestedInput
+  supportThread?: Prisma.SupportThreadUpdateOneWithoutShopNestedInput
+}
+
+export type ShopUncheckedUpdateWithoutListingSlotPromoRedemptionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.StringFieldUpdateOperationsInput | string
+  profileImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  editorialPriority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  editorialPinnedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totalSalesCents?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerPausedShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accountDeletionRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  homeFeaturedListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  users?: Prisma.ShopUserUncheckedUpdateManyWithoutShopNestedInput
+  listings?: Prisma.ShopListingUncheckedUpdateManyWithoutShopNestedInput
+  ownerNotices?: Prisma.ShopOwnerNoticeUncheckedUpdateManyWithoutShopNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutShopNestedInput
+  orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutShopNestedInput
+  supportThread?: Prisma.SupportThreadUncheckedUpdateOneWithoutShopNestedInput
+}
+
 export type ShopCreateWithoutSupportThreadInput = {
   id?: string
   slug: string
@@ -906,6 +1095,7 @@ export type ShopCreateWithoutSupportThreadInput = {
   accountDeletionRequestedAt?: Date | string | null
   accountDeletionEmailConfirmedAt?: Date | string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   homeFeaturedListing?: Prisma.ShopListingCreateNestedOneWithoutShopHomeFeaturedInput
@@ -914,6 +1104,7 @@ export type ShopCreateWithoutSupportThreadInput = {
   ownerNotices?: Prisma.ShopOwnerNoticeCreateNestedManyWithoutShopInput
   orders?: Prisma.OrderCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionCreateNestedManyWithoutShopInput
 }
 
 export type ShopUncheckedCreateWithoutSupportThreadInput = {
@@ -936,6 +1127,7 @@ export type ShopUncheckedCreateWithoutSupportThreadInput = {
   accountDeletionEmailConfirmedAt?: Date | string | null
   homeFeaturedListingId?: string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   users?: Prisma.ShopUserUncheckedCreateNestedManyWithoutShopInput
@@ -943,6 +1135,7 @@ export type ShopUncheckedCreateWithoutSupportThreadInput = {
   ownerNotices?: Prisma.ShopOwnerNoticeUncheckedCreateNestedManyWithoutShopInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedCreateNestedManyWithoutShopInput
 }
 
 export type ShopCreateOrConnectWithoutSupportThreadInput = {
@@ -980,6 +1173,7 @@ export type ShopUpdateWithoutSupportThreadInput = {
   accountDeletionRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   homeFeaturedListing?: Prisma.ShopListingUpdateOneWithoutShopHomeFeaturedNestedInput
@@ -988,6 +1182,7 @@ export type ShopUpdateWithoutSupportThreadInput = {
   ownerNotices?: Prisma.ShopOwnerNoticeUpdateManyWithoutShopNestedInput
   orders?: Prisma.OrderUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUpdateManyWithoutShopNestedInput
 }
 
 export type ShopUncheckedUpdateWithoutSupportThreadInput = {
@@ -1010,6 +1205,7 @@ export type ShopUncheckedUpdateWithoutSupportThreadInput = {
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   homeFeaturedListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   users?: Prisma.ShopUserUncheckedUpdateManyWithoutShopNestedInput
@@ -1017,6 +1213,7 @@ export type ShopUncheckedUpdateWithoutSupportThreadInput = {
   ownerNotices?: Prisma.ShopOwnerNoticeUncheckedUpdateManyWithoutShopNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedUpdateManyWithoutShopNestedInput
 }
 
 export type ShopCreateWithoutOwnerNoticesInput = {
@@ -1038,6 +1235,7 @@ export type ShopCreateWithoutOwnerNoticesInput = {
   accountDeletionRequestedAt?: Date | string | null
   accountDeletionEmailConfirmedAt?: Date | string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   homeFeaturedListing?: Prisma.ShopListingCreateNestedOneWithoutShopHomeFeaturedInput
@@ -1046,6 +1244,7 @@ export type ShopCreateWithoutOwnerNoticesInput = {
   orders?: Prisma.OrderCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionCreateNestedManyWithoutShopInput
 }
 
 export type ShopUncheckedCreateWithoutOwnerNoticesInput = {
@@ -1068,6 +1267,7 @@ export type ShopUncheckedCreateWithoutOwnerNoticesInput = {
   accountDeletionEmailConfirmedAt?: Date | string | null
   homeFeaturedListingId?: string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   users?: Prisma.ShopUserUncheckedCreateNestedManyWithoutShopInput
@@ -1075,6 +1275,7 @@ export type ShopUncheckedCreateWithoutOwnerNoticesInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadUncheckedCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedCreateNestedManyWithoutShopInput
 }
 
 export type ShopCreateOrConnectWithoutOwnerNoticesInput = {
@@ -1112,6 +1313,7 @@ export type ShopUpdateWithoutOwnerNoticesInput = {
   accountDeletionRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   homeFeaturedListing?: Prisma.ShopListingUpdateOneWithoutShopHomeFeaturedNestedInput
@@ -1120,6 +1322,7 @@ export type ShopUpdateWithoutOwnerNoticesInput = {
   orders?: Prisma.OrderUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUpdateManyWithoutShopNestedInput
 }
 
 export type ShopUncheckedUpdateWithoutOwnerNoticesInput = {
@@ -1142,6 +1345,7 @@ export type ShopUncheckedUpdateWithoutOwnerNoticesInput = {
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   homeFeaturedListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   users?: Prisma.ShopUserUncheckedUpdateManyWithoutShopNestedInput
@@ -1149,6 +1353,7 @@ export type ShopUncheckedUpdateWithoutOwnerNoticesInput = {
   orders?: Prisma.OrderUncheckedUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUncheckedUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedUpdateManyWithoutShopNestedInput
 }
 
 export type ShopCreateWithoutUsersInput = {
@@ -1170,6 +1375,7 @@ export type ShopCreateWithoutUsersInput = {
   accountDeletionRequestedAt?: Date | string | null
   accountDeletionEmailConfirmedAt?: Date | string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   homeFeaturedListing?: Prisma.ShopListingCreateNestedOneWithoutShopHomeFeaturedInput
@@ -1178,6 +1384,7 @@ export type ShopCreateWithoutUsersInput = {
   orders?: Prisma.OrderCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionCreateNestedManyWithoutShopInput
 }
 
 export type ShopUncheckedCreateWithoutUsersInput = {
@@ -1200,6 +1407,7 @@ export type ShopUncheckedCreateWithoutUsersInput = {
   accountDeletionEmailConfirmedAt?: Date | string | null
   homeFeaturedListingId?: string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   listings?: Prisma.ShopListingUncheckedCreateNestedManyWithoutShopInput
@@ -1207,6 +1415,7 @@ export type ShopUncheckedCreateWithoutUsersInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadUncheckedCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedCreateNestedManyWithoutShopInput
 }
 
 export type ShopCreateOrConnectWithoutUsersInput = {
@@ -1244,6 +1453,7 @@ export type ShopUpdateWithoutUsersInput = {
   accountDeletionRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   homeFeaturedListing?: Prisma.ShopListingUpdateOneWithoutShopHomeFeaturedNestedInput
@@ -1252,6 +1462,7 @@ export type ShopUpdateWithoutUsersInput = {
   orders?: Prisma.OrderUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUpdateManyWithoutShopNestedInput
 }
 
 export type ShopUncheckedUpdateWithoutUsersInput = {
@@ -1274,6 +1485,7 @@ export type ShopUncheckedUpdateWithoutUsersInput = {
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   homeFeaturedListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   listings?: Prisma.ShopListingUncheckedUpdateManyWithoutShopNestedInput
@@ -1281,6 +1493,7 @@ export type ShopUncheckedUpdateWithoutUsersInput = {
   orders?: Prisma.OrderUncheckedUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUncheckedUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedUpdateManyWithoutShopNestedInput
 }
 
 export type ShopCreateWithoutListingsInput = {
@@ -1302,6 +1515,7 @@ export type ShopCreateWithoutListingsInput = {
   accountDeletionRequestedAt?: Date | string | null
   accountDeletionEmailConfirmedAt?: Date | string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   homeFeaturedListing?: Prisma.ShopListingCreateNestedOneWithoutShopHomeFeaturedInput
@@ -1310,6 +1524,7 @@ export type ShopCreateWithoutListingsInput = {
   orders?: Prisma.OrderCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionCreateNestedManyWithoutShopInput
 }
 
 export type ShopUncheckedCreateWithoutListingsInput = {
@@ -1332,6 +1547,7 @@ export type ShopUncheckedCreateWithoutListingsInput = {
   accountDeletionEmailConfirmedAt?: Date | string | null
   homeFeaturedListingId?: string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   users?: Prisma.ShopUserUncheckedCreateNestedManyWithoutShopInput
@@ -1339,6 +1555,7 @@ export type ShopUncheckedCreateWithoutListingsInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadUncheckedCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedCreateNestedManyWithoutShopInput
 }
 
 export type ShopCreateOrConnectWithoutListingsInput = {
@@ -1365,6 +1582,7 @@ export type ShopCreateWithoutHomeFeaturedListingInput = {
   accountDeletionRequestedAt?: Date | string | null
   accountDeletionEmailConfirmedAt?: Date | string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   users?: Prisma.ShopUserCreateNestedManyWithoutShopInput
@@ -1373,6 +1591,7 @@ export type ShopCreateWithoutHomeFeaturedListingInput = {
   orders?: Prisma.OrderCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionCreateNestedManyWithoutShopInput
 }
 
 export type ShopUncheckedCreateWithoutHomeFeaturedListingInput = {
@@ -1394,6 +1613,7 @@ export type ShopUncheckedCreateWithoutHomeFeaturedListingInput = {
   accountDeletionRequestedAt?: Date | string | null
   accountDeletionEmailConfirmedAt?: Date | string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   users?: Prisma.ShopUserUncheckedCreateNestedManyWithoutShopInput
@@ -1402,6 +1622,7 @@ export type ShopUncheckedCreateWithoutHomeFeaturedListingInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadUncheckedCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedCreateNestedManyWithoutShopInput
 }
 
 export type ShopCreateOrConnectWithoutHomeFeaturedListingInput = {
@@ -1439,6 +1660,7 @@ export type ShopUpdateWithoutListingsInput = {
   accountDeletionRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   homeFeaturedListing?: Prisma.ShopListingUpdateOneWithoutShopHomeFeaturedNestedInput
@@ -1447,6 +1669,7 @@ export type ShopUpdateWithoutListingsInput = {
   orders?: Prisma.OrderUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUpdateManyWithoutShopNestedInput
 }
 
 export type ShopUncheckedUpdateWithoutListingsInput = {
@@ -1469,6 +1692,7 @@ export type ShopUncheckedUpdateWithoutListingsInput = {
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   homeFeaturedListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   users?: Prisma.ShopUserUncheckedUpdateManyWithoutShopNestedInput
@@ -1476,6 +1700,7 @@ export type ShopUncheckedUpdateWithoutListingsInput = {
   orders?: Prisma.OrderUncheckedUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUncheckedUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedUpdateManyWithoutShopNestedInput
 }
 
 export type ShopUpsertWithoutHomeFeaturedListingInput = {
@@ -1508,6 +1733,7 @@ export type ShopUpdateWithoutHomeFeaturedListingInput = {
   accountDeletionRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   users?: Prisma.ShopUserUpdateManyWithoutShopNestedInput
@@ -1516,6 +1742,7 @@ export type ShopUpdateWithoutHomeFeaturedListingInput = {
   orders?: Prisma.OrderUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUpdateManyWithoutShopNestedInput
 }
 
 export type ShopUncheckedUpdateWithoutHomeFeaturedListingInput = {
@@ -1537,6 +1764,7 @@ export type ShopUncheckedUpdateWithoutHomeFeaturedListingInput = {
   accountDeletionRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   users?: Prisma.ShopUserUncheckedUpdateManyWithoutShopNestedInput
@@ -1545,6 +1773,7 @@ export type ShopUncheckedUpdateWithoutHomeFeaturedListingInput = {
   orders?: Prisma.OrderUncheckedUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUncheckedUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedUpdateManyWithoutShopNestedInput
 }
 
 export type ShopCreateWithoutOrdersInput = {
@@ -1566,6 +1795,7 @@ export type ShopCreateWithoutOrdersInput = {
   accountDeletionRequestedAt?: Date | string | null
   accountDeletionEmailConfirmedAt?: Date | string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   homeFeaturedListing?: Prisma.ShopListingCreateNestedOneWithoutShopHomeFeaturedInput
@@ -1574,6 +1804,7 @@ export type ShopCreateWithoutOrdersInput = {
   ownerNotices?: Prisma.ShopOwnerNoticeCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionCreateNestedManyWithoutShopInput
 }
 
 export type ShopUncheckedCreateWithoutOrdersInput = {
@@ -1596,6 +1827,7 @@ export type ShopUncheckedCreateWithoutOrdersInput = {
   accountDeletionEmailConfirmedAt?: Date | string | null
   homeFeaturedListingId?: string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   users?: Prisma.ShopUserUncheckedCreateNestedManyWithoutShopInput
@@ -1603,6 +1835,7 @@ export type ShopUncheckedCreateWithoutOrdersInput = {
   ownerNotices?: Prisma.ShopOwnerNoticeUncheckedCreateNestedManyWithoutShopInput
   orderLines?: Prisma.OrderLineUncheckedCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadUncheckedCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedCreateNestedManyWithoutShopInput
 }
 
 export type ShopCreateOrConnectWithoutOrdersInput = {
@@ -1640,6 +1873,7 @@ export type ShopUpdateWithoutOrdersInput = {
   accountDeletionRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   homeFeaturedListing?: Prisma.ShopListingUpdateOneWithoutShopHomeFeaturedNestedInput
@@ -1648,6 +1882,7 @@ export type ShopUpdateWithoutOrdersInput = {
   ownerNotices?: Prisma.ShopOwnerNoticeUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUpdateManyWithoutShopNestedInput
 }
 
 export type ShopUncheckedUpdateWithoutOrdersInput = {
@@ -1670,6 +1905,7 @@ export type ShopUncheckedUpdateWithoutOrdersInput = {
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   homeFeaturedListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   users?: Prisma.ShopUserUncheckedUpdateManyWithoutShopNestedInput
@@ -1677,6 +1913,7 @@ export type ShopUncheckedUpdateWithoutOrdersInput = {
   ownerNotices?: Prisma.ShopOwnerNoticeUncheckedUpdateManyWithoutShopNestedInput
   orderLines?: Prisma.OrderLineUncheckedUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUncheckedUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedUpdateManyWithoutShopNestedInput
 }
 
 export type ShopCreateWithoutOrderLinesInput = {
@@ -1698,6 +1935,7 @@ export type ShopCreateWithoutOrderLinesInput = {
   accountDeletionRequestedAt?: Date | string | null
   accountDeletionEmailConfirmedAt?: Date | string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   homeFeaturedListing?: Prisma.ShopListingCreateNestedOneWithoutShopHomeFeaturedInput
@@ -1706,6 +1944,7 @@ export type ShopCreateWithoutOrderLinesInput = {
   ownerNotices?: Prisma.ShopOwnerNoticeCreateNestedManyWithoutShopInput
   orders?: Prisma.OrderCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionCreateNestedManyWithoutShopInput
 }
 
 export type ShopUncheckedCreateWithoutOrderLinesInput = {
@@ -1728,6 +1967,7 @@ export type ShopUncheckedCreateWithoutOrderLinesInput = {
   accountDeletionEmailConfirmedAt?: Date | string | null
   homeFeaturedListingId?: string | null
   itemGuidelinesAcknowledgedAt?: Date | string | null
+  listingFeeBonusFreeSlots?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   users?: Prisma.ShopUserUncheckedCreateNestedManyWithoutShopInput
@@ -1735,6 +1975,7 @@ export type ShopUncheckedCreateWithoutOrderLinesInput = {
   ownerNotices?: Prisma.ShopOwnerNoticeUncheckedCreateNestedManyWithoutShopInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutShopInput
   supportThread?: Prisma.SupportThreadUncheckedCreateNestedOneWithoutShopInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedCreateNestedManyWithoutShopInput
 }
 
 export type ShopCreateOrConnectWithoutOrderLinesInput = {
@@ -1772,6 +2013,7 @@ export type ShopUpdateWithoutOrderLinesInput = {
   accountDeletionRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   homeFeaturedListing?: Prisma.ShopListingUpdateOneWithoutShopHomeFeaturedNestedInput
@@ -1780,6 +2022,7 @@ export type ShopUpdateWithoutOrderLinesInput = {
   ownerNotices?: Prisma.ShopOwnerNoticeUpdateManyWithoutShopNestedInput
   orders?: Prisma.OrderUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUpdateManyWithoutShopNestedInput
 }
 
 export type ShopUncheckedUpdateWithoutOrderLinesInput = {
@@ -1802,6 +2045,7 @@ export type ShopUncheckedUpdateWithoutOrderLinesInput = {
   accountDeletionEmailConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   homeFeaturedListingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemGuidelinesAcknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingFeeBonusFreeSlots?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   users?: Prisma.ShopUserUncheckedUpdateManyWithoutShopNestedInput
@@ -1809,6 +2053,7 @@ export type ShopUncheckedUpdateWithoutOrderLinesInput = {
   ownerNotices?: Prisma.ShopOwnerNoticeUncheckedUpdateManyWithoutShopNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutShopNestedInput
   supportThread?: Prisma.SupportThreadUncheckedUpdateOneWithoutShopNestedInput
+  listingSlotPromoRedemptions?: Prisma.ShopListingSlotPromoRedemptionUncheckedUpdateManyWithoutShopNestedInput
 }
 
 
@@ -1822,6 +2067,7 @@ export type ShopCountOutputType = {
   ownerNotices: number
   orders: number
   orderLines: number
+  listingSlotPromoRedemptions: number
 }
 
 export type ShopCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1830,6 +2076,7 @@ export type ShopCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   ownerNotices?: boolean | ShopCountOutputTypeCountOwnerNoticesArgs
   orders?: boolean | ShopCountOutputTypeCountOrdersArgs
   orderLines?: boolean | ShopCountOutputTypeCountOrderLinesArgs
+  listingSlotPromoRedemptions?: boolean | ShopCountOutputTypeCountListingSlotPromoRedemptionsArgs
 }
 
 /**
@@ -1877,6 +2124,13 @@ export type ShopCountOutputTypeCountOrderLinesArgs<ExtArgs extends runtime.Types
   where?: Prisma.OrderLineWhereInput
 }
 
+/**
+ * ShopCountOutputType without action
+ */
+export type ShopCountOutputTypeCountListingSlotPromoRedemptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ShopListingSlotPromoRedemptionWhereInput
+}
+
 
 export type ShopSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1898,6 +2152,7 @@ export type ShopSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   accountDeletionEmailConfirmedAt?: boolean
   homeFeaturedListingId?: boolean
   itemGuidelinesAcknowledgedAt?: boolean
+  listingFeeBonusFreeSlots?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   homeFeaturedListing?: boolean | Prisma.Shop$homeFeaturedListingArgs<ExtArgs>
@@ -1907,6 +2162,7 @@ export type ShopSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   orders?: boolean | Prisma.Shop$ordersArgs<ExtArgs>
   orderLines?: boolean | Prisma.Shop$orderLinesArgs<ExtArgs>
   supportThread?: boolean | Prisma.Shop$supportThreadArgs<ExtArgs>
+  listingSlotPromoRedemptions?: boolean | Prisma.Shop$listingSlotPromoRedemptionsArgs<ExtArgs>
   _count?: boolean | Prisma.ShopCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["shop"]>
 
@@ -1930,6 +2186,7 @@ export type ShopSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   accountDeletionEmailConfirmedAt?: boolean
   homeFeaturedListingId?: boolean
   itemGuidelinesAcknowledgedAt?: boolean
+  listingFeeBonusFreeSlots?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   homeFeaturedListing?: boolean | Prisma.Shop$homeFeaturedListingArgs<ExtArgs>
@@ -1955,6 +2212,7 @@ export type ShopSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   accountDeletionEmailConfirmedAt?: boolean
   homeFeaturedListingId?: boolean
   itemGuidelinesAcknowledgedAt?: boolean
+  listingFeeBonusFreeSlots?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   homeFeaturedListing?: boolean | Prisma.Shop$homeFeaturedListingArgs<ExtArgs>
@@ -1980,11 +2238,12 @@ export type ShopSelectScalar = {
   accountDeletionEmailConfirmedAt?: boolean
   homeFeaturedListingId?: boolean
   itemGuidelinesAcknowledgedAt?: boolean
+  listingFeeBonusFreeSlots?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ShopOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "displayName" | "profileImageUrl" | "bio" | "welcomeMessage" | "socialLinks" | "active" | "stripeConnectAccountId" | "connectChargesEnabled" | "payoutsEnabled" | "editorialPriority" | "editorialPinnedUntil" | "totalSalesCents" | "ownerPausedShopAt" | "accountDeletionRequestedAt" | "accountDeletionEmailConfirmedAt" | "homeFeaturedListingId" | "itemGuidelinesAcknowledgedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["shop"]>
+export type ShopOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "displayName" | "profileImageUrl" | "bio" | "welcomeMessage" | "socialLinks" | "active" | "stripeConnectAccountId" | "connectChargesEnabled" | "payoutsEnabled" | "editorialPriority" | "editorialPinnedUntil" | "totalSalesCents" | "ownerPausedShopAt" | "accountDeletionRequestedAt" | "accountDeletionEmailConfirmedAt" | "homeFeaturedListingId" | "itemGuidelinesAcknowledgedAt" | "listingFeeBonusFreeSlots" | "createdAt" | "updatedAt", ExtArgs["result"]["shop"]>
 export type ShopInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   homeFeaturedListing?: boolean | Prisma.Shop$homeFeaturedListingArgs<ExtArgs>
   users?: boolean | Prisma.Shop$usersArgs<ExtArgs>
@@ -1993,6 +2252,7 @@ export type ShopInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   orders?: boolean | Prisma.Shop$ordersArgs<ExtArgs>
   orderLines?: boolean | Prisma.Shop$orderLinesArgs<ExtArgs>
   supportThread?: boolean | Prisma.Shop$supportThreadArgs<ExtArgs>
+  listingSlotPromoRedemptions?: boolean | Prisma.Shop$listingSlotPromoRedemptionsArgs<ExtArgs>
   _count?: boolean | Prisma.ShopCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ShopIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2012,6 +2272,7 @@ export type $ShopPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     orders: Prisma.$OrderPayload<ExtArgs>[]
     orderLines: Prisma.$OrderLinePayload<ExtArgs>[]
     supportThread: Prisma.$SupportThreadPayload<ExtArgs> | null
+    listingSlotPromoRedemptions: Prisma.$ShopListingSlotPromoRedemptionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2059,6 +2320,12 @@ export type $ShopPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
      * * Creator acknowledged item guidelines (dashboard onboarding).
      */
     itemGuidelinesAcknowledgedAt: Date | null
+    /**
+     * *
+     *    * Extra publication-fee-free slots beyond the platform default first-N free listings,
+     *    * granted by redeemed promo codes (`ShopListingSlotPromoRedemption`).
+     */
+    listingFeeBonusFreeSlots: number
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["shop"]>
@@ -2462,6 +2729,7 @@ export interface Prisma__ShopClient<T, Null = never, ExtArgs extends runtime.Typ
   orders<T extends Prisma.Shop$ordersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Shop$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   orderLines<T extends Prisma.Shop$orderLinesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Shop$orderLinesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   supportThread<T extends Prisma.Shop$supportThreadArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Shop$supportThreadArgs<ExtArgs>>): Prisma.Prisma__SupportThreadClient<runtime.Types.Result.GetResult<Prisma.$SupportThreadPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  listingSlotPromoRedemptions<T extends Prisma.Shop$listingSlotPromoRedemptionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Shop$listingSlotPromoRedemptionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ShopListingSlotPromoRedemptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2510,6 +2778,7 @@ export interface ShopFieldRefs {
   readonly accountDeletionEmailConfirmedAt: Prisma.FieldRef<"Shop", 'DateTime'>
   readonly homeFeaturedListingId: Prisma.FieldRef<"Shop", 'String'>
   readonly itemGuidelinesAcknowledgedAt: Prisma.FieldRef<"Shop", 'DateTime'>
+  readonly listingFeeBonusFreeSlots: Prisma.FieldRef<"Shop", 'Int'>
   readonly createdAt: Prisma.FieldRef<"Shop", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Shop", 'DateTime'>
 }
@@ -3068,6 +3337,30 @@ export type Shop$supportThreadArgs<ExtArgs extends runtime.Types.Extensions.Inte
    */
   include?: Prisma.SupportThreadInclude<ExtArgs> | null
   where?: Prisma.SupportThreadWhereInput
+}
+
+/**
+ * Shop.listingSlotPromoRedemptions
+ */
+export type Shop$listingSlotPromoRedemptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ShopListingSlotPromoRedemption
+   */
+  select?: Prisma.ShopListingSlotPromoRedemptionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ShopListingSlotPromoRedemption
+   */
+  omit?: Prisma.ShopListingSlotPromoRedemptionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ShopListingSlotPromoRedemptionInclude<ExtArgs> | null
+  where?: Prisma.ShopListingSlotPromoRedemptionWhereInput
+  orderBy?: Prisma.ShopListingSlotPromoRedemptionOrderByWithRelationInput | Prisma.ShopListingSlotPromoRedemptionOrderByWithRelationInput[]
+  cursor?: Prisma.ShopListingSlotPromoRedemptionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ShopListingSlotPromoRedemptionScalarFieldEnum | Prisma.ShopListingSlotPromoRedemptionScalarFieldEnum[]
 }
 
 /**

@@ -13,12 +13,13 @@ import {
 export async function syncFreeListingFeeWaivers(shopId: string): Promise<void> {
   const shop = await prisma.shop.findUnique({
     where: { id: shopId },
-    select: { slug: true },
+    select: { slug: true, listingFeeBonusFreeSlots: true },
   });
+  const bonus = Math.max(0, shop?.listingFeeBonusFreeSlots ?? 0);
   const maxFreeOrdinals =
     shop && isFounderUnlimitedFreeListingsShop(shop.slug)
       ? Number.POSITIVE_INFINITY
-      : LISTING_FEE_FREE_SLOT_COUNT;
+      : LISTING_FEE_FREE_SLOT_COUNT + bonus;
 
   const rows = await prisma.shopListing.findMany({
     where: { shopId },
@@ -64,6 +65,11 @@ export async function downgradeSubmittedToDraftIfListingFeeUnpaid(
   listingId: string,
 ): Promise<{ downgraded: boolean; message?: string }> {
   await syncFreeListingFeeWaivers(shopId);
+  const shopRow = await prisma.shop.findUnique({
+    where: { id: shopId },
+    select: { listingFeeBonusFreeSlots: true },
+  });
+  const bonus = Math.max(0, shopRow?.listingFeeBonusFreeSlots ?? 0);
   const row = await prisma.shopListing.findFirst({
     where: { id: listingId, shopId },
     select: { requestStatus: true, listingFeePaidAt: true },
@@ -73,7 +79,7 @@ export async function downgradeSubmittedToDraftIfListingFeeUnpaid(
   }
   const ordinal = await getListingOrdinal(listingId, shopId);
   if (ordinal === null) return { downgraded: false };
-  const fee = listingFeeCentsForOrdinal(ordinal, shopSlug);
+  const fee = listingFeeCentsForOrdinal(ordinal, shopSlug, bonus);
   if (fee <= 0 || row.listingFeePaidAt != null) {
     return { downgraded: false };
   }

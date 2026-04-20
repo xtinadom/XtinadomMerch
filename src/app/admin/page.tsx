@@ -316,6 +316,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         variants: true,
         itemExampleListingUrl: true,
         itemMinPriceCents: true,
+        itemGoodsServicesCostCents: true,
       },
     }),
   ]);
@@ -374,13 +375,21 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       listingFeePaidAt: r.listingFeePaidAt?.toISOString() ?? null,
       listingOrdinal: listingOrdinalById.get(r.id) ?? 1,
       adminListingSecondaryImageUrl: r.adminListingSecondaryImageUrl,
-      shop: { displayName: r.shop.displayName, slug: r.shop.slug },
+      shop: {
+        displayName: r.shop.displayName,
+        slug: r.shop.slug,
+        listingFeeBonusFreeSlots: r.shop.listingFeeBonusFreeSlots,
+      },
       product: r.product,
     }))
     .filter((r) => {
       if (r.requestStatus !== ListingRequestStatus.approved) return true;
       if (r.shop.slug === PLATFORM_SHOP_SLUG) return false;
-      const fee = listingFeeCentsForOrdinal(r.listingOrdinal, r.shop.slug);
+      const fee = listingFeeCentsForOrdinal(
+        r.listingOrdinal,
+        r.shop.slug,
+        r.shop.listingFeeBonusFreeSlots ?? 0,
+      );
       if (r.listingFeePaidAt != null || fee === 0) return false;
       return true;
     });
@@ -389,7 +398,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
   const creatorShops = await prisma.shop.findMany({
     where: { slug: { not: PLATFORM_SHOP_SLUG }, active: true },
-    select: { id: true, displayName: true, slug: true },
+    select: { id: true, displayName: true, slug: true, listingFeeBonusFreeSlots: true },
     orderBy: { displayName: "asc" },
   });
   const creatorShopIds = creatorShops.map((s) => s.id);
@@ -487,11 +496,12 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       ordinal1Based: number,
       listingId: string,
       listingFeePaidAt: Date | null,
+      listingFeeBonusFreeSlots: number,
     ): ShopWatchDetail["listingFeeKind"] => {
       if (SPECIAL_PROMOTION_FREE_LISTING_IDS.has(listingId)) {
         return "free_promo";
       }
-      const cents = listingFeeCentsForOrdinal(ordinal1Based, shopSlug);
+      const cents = listingFeeCentsForOrdinal(ordinal1Based, shopSlug, listingFeeBonusFreeSlots);
       if (cents === 0) {
         return isFounderUnlimitedFreeListingsShop(shopSlug) ? "free_promo" : "free_slot";
       }
@@ -520,7 +530,13 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
       for (const l of listings) {
         const ordinal = ordinalByListingId.get(l.id) ?? 1;
-        const listingFeeKind = listingFeeKindForShopWatch(shop.slug, ordinal, l.id, l.listingFeePaidAt);
+        const listingFeeKind = listingFeeKindForShopWatch(
+          shop.slug,
+          ordinal,
+          l.id,
+          l.listingFeePaidAt,
+          shop.listingFeeBonusFreeSlots ?? 0,
+        );
         const base: Omit<ShopWatchDetail, "rowKind"> = {
           listingId: l.id,
           productName: l.product.name,
@@ -599,7 +615,15 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
       const paidListingsCount = listings.reduce((acc, l) => {
         const ordinal = ordinalByListingId.get(l.id) ?? 1;
-        return listingFeeKindForShopWatch(shop.slug, ordinal, l.id, l.listingFeePaidAt) === "paid"
+        return (
+          listingFeeKindForShopWatch(
+            shop.slug,
+            ordinal,
+            l.id,
+            l.listingFeePaidAt,
+            shop.listingFeeBonusFreeSlots ?? 0,
+          ) === "paid"
+        )
           ? acc + 1
           : acc;
       }, 0);

@@ -210,7 +210,11 @@ export async function submitFirstListingSetup(
     where: { shopId: shop.id },
   });
   const nextListingOrdinal = existingListingCount + 1;
-  const publicationFeeCentsForRequest = listingFeeCentsForOrdinal(nextListingOrdinal, shop.slug);
+  const publicationFeeCentsForRequest = listingFeeCentsForOrdinal(
+    nextListingOrdinal,
+    shop.slug,
+    shop.listingFeeBonusFreeSlots ?? 0,
+  );
   if (publicationFeeCentsForRequest > 0) {
     if (String(formData.get("feeChargeAttestation") ?? "").trim() !== "1") {
       return {

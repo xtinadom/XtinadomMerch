@@ -11,6 +11,8 @@ export type ShopSetupCatalogOption = {
   minPriceCents: number;
   priceCents: number;
   exampleHref: string | null;
+  /** Unit goods/services (COGS) from admin baseline — used for estimated shop profit at list price. */
+  goodsServicesCostCents: number;
 };
 
 export type ShopSetupCatalogVariantLine = {
@@ -19,6 +21,7 @@ export type ShopSetupCatalogVariantLine = {
   minPriceCents: number;
   priceCents: number;
   exampleHref: string | null;
+  goodsServicesCostCents: number;
 };
 
 /** One admin item: either a single selectable row or a parent with nested variants. */
@@ -47,6 +50,7 @@ export function flattenShopBaselineCatalogGroups(groups: ShopSetupCatalogGroup[]
         minPriceCents: g.option.minPriceCents,
         priceCents: g.option.priceCents,
         exampleHref: g.option.exampleHref,
+        goodsServicesCostCents: g.option.goodsServicesCostCents,
       });
     } else {
       for (const v of g.variants) {
@@ -56,6 +60,7 @@ export function flattenShopBaselineCatalogGroups(groups: ShopSetupCatalogGroup[]
           minPriceCents: v.minPriceCents,
           priceCents: v.priceCents,
           exampleHref: v.exampleHref,
+          goodsServicesCostCents: v.goodsServicesCostCents,
         });
       }
     }
@@ -69,6 +74,7 @@ export type AdminBaselineRow = {
   variants: unknown;
   itemExampleListingUrl: string | null;
   itemMinPriceCents: number;
+  itemGoodsServicesCostCents: number;
 };
 
 export type ParsedBaselinePick =
@@ -130,6 +136,7 @@ export function buildShopBaselineCatalogGroups(items: AdminBaselineRow[]): ShopS
           minPriceCents: Math.max(0, item.itemMinPriceCents),
           priceCents: Math.max(0, item.itemMinPriceCents),
           exampleHref: exampleHrefFromAdminUrl(item.itemExampleListingUrl),
+          goodsServicesCostCents: Math.max(0, item.itemGoodsServicesCostCents),
         },
       });
     } else {
@@ -143,6 +150,7 @@ export function buildShopBaselineCatalogGroups(items: AdminBaselineRow[]): ShopS
           minPriceCents: Math.max(0, v.minPriceCents),
           priceCents: Math.max(0, v.minPriceCents),
           exampleHref: exampleHrefFromAdminUrl(v.exampleListingUrl),
+          goodsServicesCostCents: Math.max(0, v.goodsServicesCostCents ?? 0),
         })),
       });
     }

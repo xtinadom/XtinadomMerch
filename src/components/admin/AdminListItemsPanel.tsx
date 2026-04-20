@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
   adminDeleteCatalogItem,
+  adminUpdateCatalogGoodsServicesCost,
   adminUpdateCatalogItem,
   adminUpdateCatalogMinPrice,
 } from "@/actions/admin-catalog-items";
@@ -25,6 +26,7 @@ export type AdminListItemSerializable = {
   itemPlatformProductId: string | null;
   itemExampleListingUrl: string | null;
   itemMinPriceCents: number;
+  itemGoodsServicesCostCents: number;
 };
 
 function formatMoney(cents: number) {
@@ -140,6 +142,93 @@ function AdminMinPriceCell({
   );
 }
 
+function AdminGoodsServicesCostCell({
+  itemId,
+  variantId,
+  variantIndex,
+  goodsServicesCostCents,
+}: {
+  itemId: string;
+  variantId: string | null;
+  variantIndex: number;
+  goodsServicesCostCents: number;
+}) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  function save() {
+    const fd = new FormData();
+    fd.set("itemId", itemId);
+    fd.set("goodsServicesCostDollars", draft);
+    if (variantId) fd.set("variantId", variantId);
+    fd.set("variantIndex", String(variantIndex));
+    startTransition(async () => {
+      await adminUpdateCatalogGoodsServicesCost(fd);
+      setEditing(false);
+      router.refresh();
+    });
+  }
+
+  return (
+    <td className="p-3 whitespace-nowrap tabular-nums text-zinc-400">
+      {editing ? (
+        <div className="flex flex-col gap-1.5">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            autoFocus
+            disabled={pending}
+            className="w-[7rem] rounded border border-zinc-600 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-100"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                save();
+              }
+              if (e.key === "Escape") setEditing(false);
+            }}
+          />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={save}
+              disabled={pending}
+              className="text-[11px] text-blue-400/90 hover:underline disabled:opacity-50"
+            >
+              {pending ? "Saving…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              disabled={pending}
+              className="text-[11px] text-zinc-500 hover:underline disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1">
+          <span>{formatMoney(goodsServicesCostCents)}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(dollarsStringFromCents(goodsServicesCostCents));
+              setEditing(true);
+            }}
+            className="text-left text-[11px] text-blue-400/90 hover:underline"
+          >
+            Edit G/S cost
+          </button>
+        </div>
+      )}
+    </td>
+  );
+}
+
 function exampleLink(url: string) {
   const t = url.trim();
   if (!t) return null;
@@ -171,6 +260,7 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
   const [editVariants, setEditVariants] = useState<AdminCatalogVariantFormRow[]>([]);
   const [editItemExampleListingUrl, setEditItemExampleListingUrl] = useState("");
   const [editItemMinPriceDollars, setEditItemMinPriceDollars] = useState("");
+  const [editItemGoodsServicesCostDollars, setEditItemGoodsServicesCostDollars] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -181,6 +271,7 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
     setEditVariants(variantsToFormRows(item.variants));
     setEditItemExampleListingUrl(item.itemExampleListingUrl ?? "");
     setEditItemMinPriceDollars(dollarsStringFromCents(item.itemMinPriceCents));
+    setEditItemGoodsServicesCostDollars(dollarsStringFromCents(item.itemGoodsServicesCostCents));
     setEditError(null);
     setEditingId(itemId);
   }
@@ -191,13 +282,20 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
     setEditVariants([]);
     setEditItemExampleListingUrl("");
     setEditItemMinPriceDollars("");
+    setEditItemGoodsServicesCostDollars("");
     setEditError(null);
   }
 
   function addEditVariantRow() {
     setEditVariants((v) => [
       ...v,
-      { label: "", minPriceDollars: "", exampleListingUrl: "", platformProductId: "" },
+      {
+        label: "",
+        minPriceDollars: "",
+        goodsServicesCostDollars: "",
+        exampleListingUrl: "",
+        platformProductId: "",
+      },
     ]);
   }
 
@@ -227,6 +325,7 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
       const itemLevel = validateItemLevelWhenNoVariants(
         editItemExampleListingUrl,
         editItemMinPriceDollars,
+        editItemGoodsServicesCostDollars,
       );
       if (!itemLevel.ok) {
         setEditError(itemLevel.error);
@@ -239,6 +338,7 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
     fd.set("variantsJson", JSON.stringify(checked.payload));
     fd.set("itemExampleListingUrl", editItemExampleListingUrl);
     fd.set("itemMinPriceDollars", editItemMinPriceDollars);
+    fd.set("itemGoodsServicesCostDollars", editItemGoodsServicesCostDollars);
     startTransition(async () => {
       await adminUpdateCatalogItem(fd);
       cancelEdit();
@@ -255,6 +355,7 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
     rowSpan: number;
     variantIndex: number;
     variantId: string | null;
+    goodsServicesCostCents: number;
   }[] = [];
 
   for (const item of items) {
@@ -269,6 +370,7 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
         rowSpan: 1,
         variantIndex: 0,
         variantId: null,
+        goodsServicesCostCents: item.itemGoodsServicesCostCents,
       });
       continue;
     }
@@ -282,6 +384,7 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
         rowSpan: i === 0 ? variants.length : 0,
         variantIndex: i,
         variantId: v.id,
+        goodsServicesCostCents: v.goodsServicesCostCents ?? 0,
       });
     });
   }
@@ -318,8 +421,10 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
               <AdminCatalogItemLevelFields
                 exampleListingUrl={editItemExampleListingUrl}
                 minPriceDollars={editItemMinPriceDollars}
+                goodsServicesCostDollars={editItemGoodsServicesCostDollars}
                 onChangeExampleListingUrl={setEditItemExampleListingUrl}
                 onChangeMinPriceDollars={setEditItemMinPriceDollars}
+                onChangeGoodsServicesCostDollars={setEditItemGoodsServicesCostDollars}
               />
             ) : null}
             {editError ? (
@@ -349,13 +454,16 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
       ) : null}
 
       <div className="overflow-x-auto rounded-lg border border-zinc-800">
-        <table className="w-full min-w-[36rem] text-left text-xs">
+        <table className="w-full min-w-[44rem] text-left text-xs">
           <thead className="border-b border-zinc-800 bg-zinc-900/80 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
             <tr>
               <th className="p-3 font-medium">Item name</th>
               <th className="p-3 font-medium">Variant</th>
               <th className="p-3 font-medium">Example listing</th>
               <th className="p-3 font-medium whitespace-nowrap">Min price</th>
+              <th className="p-3 font-medium whitespace-nowrap" title="Goods/services fulfillment cost per unit">
+                G/S cost
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800/90 text-zinc-300">
@@ -396,6 +504,12 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
                   variantLabel={r.variantLabel}
                   minPriceCents={r.minPriceCents}
                   exampleUrl={r.exampleUrl}
+                />
+                <AdminGoodsServicesCostCell
+                  itemId={r.itemId}
+                  variantId={r.variantId}
+                  variantIndex={r.variantIndex}
+                  goodsServicesCostCents={r.goodsServicesCostCents}
                 />
               </tr>
             ))}

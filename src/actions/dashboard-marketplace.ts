@@ -376,7 +376,7 @@ export async function dashboardSubmitListingRequest(
   const feePaid = listingAfterSync?.listingFeePaidAt != null;
   const ordinal = await getListingOrdinal(listingId, shop.id);
   if (ordinal !== null) {
-    const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug);
+    const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug, shop.listingFeeBonusFreeSlots ?? 0);
     if (feeCents > 0 && !feePaid) {
       revalidatePath("/dashboard");
       if (!shopStripeConnectReadyForListingCharges(shop)) {
@@ -451,7 +451,7 @@ export async function dashboardPayListingFee(formData: FormData) {
 
   const ordinal = await getListingOrdinal(listingId, shop.id);
   if (ordinal === null) return;
-  const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug);
+  const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug, shop.listingFeeBonusFreeSlots ?? 0);
 
   if (feeCents === 0) {
     await fulfillListingFeeForShopListingIfUnpaid(listingId);
@@ -509,7 +509,7 @@ export async function startListingFeePaymentIntent(
 
   const ordinal = await getListingOrdinal(id, shop.id);
   if (ordinal === null) return { ok: false, error: "Listing not found." };
-  const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug);
+  const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug, shop.listingFeeBonusFreeSlots ?? 0);
   if (feeCents <= 0) return { ok: false, error: "No publication fee is due for this listing." };
 
   if (isMockCheckoutEnabled()) {
@@ -582,7 +582,7 @@ export async function finalizeListingFeePaymentIntent(
 
   const ordinal = await getListingOrdinal(listingId, shop.id);
   if (ordinal === null) return { ok: false, error: "Listing not found." };
-  const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug);
+  const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug, shop.listingFeeBonusFreeSlots ?? 0);
   if (feeCents <= 0) return { ok: false, error: "No fee is configured for this listing." };
   if (pi.amount !== feeCents) {
     return { ok: false, error: "Payment amount does not match the current publication fee." };

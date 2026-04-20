@@ -55,6 +55,7 @@ export const ModelName = {
   ProductTag: 'ProductTag',
   Product: 'Product',
   Shop: 'Shop',
+  ShopListingSlotPromoRedemption: 'ShopListingSlotPromoRedemption',
   SupportThread: 'SupportThread',
   SupportMessage: 'SupportMessage',
   ShopOwnerNotice: 'ShopOwnerNotice',
@@ -157,11 +158,23 @@ export const ShopScalarFieldEnum = {
   accountDeletionEmailConfirmedAt: 'accountDeletionEmailConfirmedAt',
   homeFeaturedListingId: 'homeFeaturedListingId',
   itemGuidelinesAcknowledgedAt: 'itemGuidelinesAcknowledgedAt',
+  listingFeeBonusFreeSlots: 'listingFeeBonusFreeSlots',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type ShopScalarFieldEnum = (typeof ShopScalarFieldEnum)[keyof typeof ShopScalarFieldEnum]
+
+
+export const ShopListingSlotPromoRedemptionScalarFieldEnum = {
+  id: 'id',
+  shopId: 'shopId',
+  couponCodeNormalized: 'couponCodeNormalized',
+  slotsGranted: 'slotsGranted',
+  createdAt: 'createdAt'
+} as const
+
+export type ShopListingSlotPromoRedemptionScalarFieldEnum = (typeof ShopListingSlotPromoRedemptionScalarFieldEnum)[keyof typeof ShopListingSlotPromoRedemptionScalarFieldEnum]
 
 
 export const SupportThreadScalarFieldEnum = {
@@ -319,6 +332,7 @@ export const OrderLineScalarFieldEnum = {
   fulfillmentType: 'fulfillmentType',
   printifyProductId: 'printifyProductId',
   printifyVariantId: 'printifyVariantId',
+  goodsServicesCostCents: 'goodsServicesCostCents',
   platformCutCents: 'platformCutCents',
   shopCutCents: 'shopCutCents',
   createdAt: 'createdAt'
@@ -360,6 +374,7 @@ export const AdminCatalogItemScalarFieldEnum = {
   itemPlatformProductId: 'itemPlatformProductId',
   itemExampleListingUrl: 'itemExampleListingUrl',
   itemMinPriceCents: 'itemMinPriceCents',
+  itemGoodsServicesCostCents: 'itemGoodsServicesCostCents',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

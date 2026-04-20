@@ -11,9 +11,9 @@ import {
 } from "@/actions/dashboard-marketplace";
 import { ListingFeeCardPay } from "@/components/dashboard/ListingFeeCardPay";
 import {
-  LISTING_FEE_FREE_SLOT_COUNT,
   isFounderUnlimitedFreeListingsShop,
   listingFeeCentsForOrdinal,
+  listingFeeFreeSlotCap,
 } from "@/lib/marketplace-constants";
 import {
   DashboardListingItemNameForm,
@@ -22,6 +22,8 @@ import {
   DashboardSubmitListingRequestForm,
   ListingStorefrontCatalogImagesForms,
 } from "@/components/dashboard/DashboardListingForms";
+import { ListingSlotPromoRedeemForm } from "@/components/dashboard/ListingSlotPromoRedeemForm";
+import { DemoShopPurchaseButton } from "@/components/dashboard/DemoShopPurchaseButton";
 import { ShopProfileSetupPanel } from "@/components/dashboard/ShopProfileSetupPanel";
 import {
   ShopSetupTabs,
@@ -80,6 +82,9 @@ export type DashboardListingRow = {
   rejectionReasonText: string | null;
   /** JSON string[] or null — which catalog URLs show on the public PDP. */
   listingStorefrontCatalogImageUrls: unknown;
+  baselineCatalogPickEncoded: string | null;
+  /** Per Printify variant id — unit COGS (admin baseline); used for estimated shop profit at list price. */
+  goodsServicesUnitCentsByPrintifyVariantId: Record<string, number>;
   listingPrintifyVariantId: string | null;
   listingPrintifyVariantPrices: unknown;
   product: {
@@ -98,11 +103,11 @@ export type DashboardListingRow = {
 export type DashboardPaidOrderRow = {
   id: string;
   createdAt: string;
-  totalCents: number;
   lines: Array<{
     productName: string;
     quantity: number;
     unitPriceCents: number;
+    goodsServicesCostCents: number;
     platformCutCents: number;
     shopCutCents: number;
   }>;
@@ -122,6 +127,41 @@ function formatNoticeWhen(iso: string) {
   } catch {
     return iso;
   }
+}
+
+/** Paid order timestamps from the server are ISO UTC; show calendar date only as MM/DD/YY. */
+function formatPaidOrderDate(iso: string) {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(d.getUTCDate()).padStart(2, "0");
+    const yy = String(d.getUTCFullYear()).slice(-2);
+    return `${mm}/${dd}/${yy}`;
+  } catch {
+    return iso;
+  }
+}
+
+function paidOrderDateTimeAttr(iso: string) {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  } catch {
+    return iso.slice(0, 10);
+  }
+}
+
+/** Sum of (sale − goods/services − platform fee) per line — matches the line breakdown above. */
+function paidOrderShopProfitCents(o: DashboardPaidOrderRow) {
+  return o.lines.reduce((sum, l) => {
+    const sale = l.unitPriceCents * l.quantity;
+    return sum + (sale - l.goodsServicesCostCents - l.platformCutCents);
+  }, 0);
 }
 
 function formatMoney(cents: number) {
@@ -172,6 +212,7 @@ function buildListingDerived(
   listing: DashboardListingRow,
   shopSlug: string,
   isPlatform: boolean,
+  listingFeeBonusFreeSlots: number,
 ) {
   const minCents = dashboardListingMinPriceHintCents(listing.product);
   const minLabel = formatMoney(minCents);
@@ -188,9 +229,10 @@ function buildListingDerived(
   const imagesDefault = Array.isArray(listing.requestImages)
     ? (listing.requestImages as string[]).join("\n")
     : "";
-  const feeCents = listingFeeCentsForOrdinal(listing.listingOrdinal, shopSlug);
+  const feeCents = listingFeeCentsForOrdinal(listing.listingOrdinal, shopSlug, listingFeeBonusFreeSlots);
   const isFreeListingSlot = feeCents === 0;
   const founderFreeShop = isFounderUnlimitedFreeListingsShop(shopSlug);
+  const freeSlotCap = listingFeeFreeSlotCap(shopSlug, listingFeeBonusFreeSlots);
   const dashboardBadge = listing.creatorRemovedFromShopAt
     ? {
         label: "Creator removed",
@@ -257,6 +299,7 @@ function buildListingDerived(
     feeCents,
     isFreeListingSlot,
     founderFreeShop,
+    freeSlotCap,
     dashboardBadge,
     canRemoveFromShop,
     showOwnerSupplementSection,
@@ -272,6 +315,7 @@ function ListingOptionPanel({
   isPlatform,
   paidListingFeeLabel,
   shopSlug,
+  listingFeeBonusFreeSlots,
   r2Configured,
   shopStripeConnectReadyForCharges,
   stripePublishableKey,
@@ -283,6 +327,7 @@ function ListingOptionPanel({
   isPlatform: boolean;
   paidListingFeeLabel: string;
   shopSlug: string;
+  listingFeeBonusFreeSlots: number;
   r2Configured: boolean;
   shopStripeConnectReadyForCharges: boolean;
   stripePublishableKey: string | null;
@@ -292,7 +337,7 @@ function ListingOptionPanel({
   /** Second+ option in a legacy group — add top divider. */
   stacked?: boolean;
 }) {
-  const d = buildListingDerived(listing, shopSlug, isPlatform);
+  const d = buildListingDerived(listing, shopSlug, isPlatform, listingFeeBonusFreeSlots);
   const {
     minLabel,
     listingLocked,
@@ -303,6 +348,7 @@ function ListingOptionPanel({
     feeCents,
     isFreeListingSlot,
     founderFreeShop,
+    freeSlotCap,
     canRemoveFromShop,
     showOwnerSupplementSection,
     canEditOwnerSupplement,
@@ -351,6 +397,7 @@ function ListingOptionPanel({
         priceDollarsFormatted={(listing.priceCents / 100).toFixed(2)}
         listingPriceCents={listing.priceCents}
         listingPrintifyVariantPrices={listing.listingPrintifyVariantPrices}
+        goodsServicesUnitCentsByPrintifyVariantId={listing.goodsServicesUnitCentsByPrintifyVariantId}
         product={{
           fulfillmentType: listing.product.fulfillmentType,
           priceCents: listing.product.priceCents,
@@ -403,7 +450,9 @@ function ListingOptionPanel({
           className="mt-3"
           onSubmit={(e) => {
             const ok = window.confirm(
-              `Are you sure you want to remove this listing from your shop? You cannot undo this action, and all listings after your first ${LISTING_FEE_FREE_SLOT_COUNT} will cost ${paidListingFeeLabel}.`,
+              founderFreeShop
+                ? `Are you sure you want to remove this listing from your shop? You cannot undo this action.`
+                : `Are you sure you want to remove this listing from your shop? You cannot undo this action, and all listings after your first ${freeSlotCap} will cost ${paidListingFeeLabel}.`,
             );
             if (!ok) e.preventDefault();
           }}
@@ -422,7 +471,7 @@ function ListingOptionPanel({
         <p className="mt-2 text-xs text-emerald-600/90">
           {founderFreeShop
             ? "No publication fee — founder shop (unlimited free listings)."
-            : `No publication fee — free listing (${listing.listingOrdinal} of ${LISTING_FEE_FREE_SLOT_COUNT}).`}
+            : `No publication fee — free listing (${listing.listingOrdinal} of ${freeSlotCap}).`}
         </p>
       ) : !isPlatform &&
         !listing.listingFeePaidAt &&
@@ -500,6 +549,7 @@ function ListingCard({
   isPlatform,
   paidListingFeeLabel,
   shopSlug,
+  listingFeeBonusFreeSlots,
   r2Configured,
   shopStripeConnectReadyForCharges,
   stripePublishableKey,
@@ -509,12 +559,18 @@ function ListingCard({
   isPlatform: boolean;
   paidListingFeeLabel: string;
   shopSlug: string;
+  listingFeeBonusFreeSlots: number;
   r2Configured: boolean;
   shopStripeConnectReadyForCharges: boolean;
   stripePublishableKey: string | null;
   mockListingFeeCheckout: boolean;
 }) {
-  const { dashboardBadge, fieldsReadOnly } = buildListingDerived(listing, shopSlug, isPlatform);
+  const { dashboardBadge, fieldsReadOnly } = buildListingDerived(
+    listing,
+    shopSlug,
+    isPlatform,
+    listingFeeBonusFreeSlots,
+  );
 
   return (
     <li className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 text-sm">
@@ -561,6 +617,7 @@ function ListingCard({
         isPlatform={isPlatform}
         paidListingFeeLabel={paidListingFeeLabel}
         shopSlug={shopSlug}
+        listingFeeBonusFreeSlots={listingFeeBonusFreeSlots}
         r2Configured={r2Configured}
         shopStripeConnectReadyForCharges={shopStripeConnectReadyForCharges}
         stripePublishableKey={stripePublishableKey}
@@ -627,6 +684,10 @@ export function DashboardMainTabs(props: {
   supportChat?: ReactNode | null;
   listingFeePolicySummary: string;
   paidListingFeeLabel: string;
+  /** Extra free publication slots from redeemed promo codes (non-founder creator shops). */
+  listingFeeBonusFreeSlots: number;
+  /** Show self-serve promo redeem UI on the Listings tab. */
+  showListingSlotPromoRedeem: boolean;
   isPlatform: boolean;
   listings: DashboardListingRow[];
   /** Server-built groups (live / request / removed) — legacy variant stubs merged for display. */
@@ -646,6 +707,8 @@ export function DashboardMainTabs(props: {
   shopStripeConnectReadyForCharges: boolean;
   /** Stripe.js publishable key for embedded listing fee card pay. */
   stripePublishableKey: string | null;
+  /** When true, show a gated demo control on the Orders tab (`SHOP_DEMO_PURCHASE_BUTTON=1`). */
+  showDemoPurchaseButton?: boolean;
 }) {
   const {
     initialTab: initialTabProp,
@@ -656,6 +719,8 @@ export function DashboardMainTabs(props: {
     supportChat,
     listingFeePolicySummary,
     paidListingFeeLabel,
+    listingFeeBonusFreeSlots,
+    showListingSlotPromoRedeem,
     isPlatform,
     listings,
     groupedListingSections,
@@ -665,6 +730,7 @@ export function DashboardMainTabs(props: {
     mockListingFeeCheckout,
     shopStripeConnectReadyForCharges,
     stripePublishableKey,
+    showDemoPurchaseButton = false,
   } = props;
 
   const hasSetup = setup != null;
@@ -787,7 +853,7 @@ export function DashboardMainTabs(props: {
             )
           : null}
         {canSupport ? tabBtn("support", "Support", supportTabId, supportPanelId) : null}
-        {tabBtn("orders", "Recent paid orders", ordersTabId, ordersPanelId)}
+        {tabBtn("orders", "Orders", ordersTabId, ordersPanelId)}
       </div>
 
       {hasSetup && setup ? (
@@ -876,6 +942,8 @@ export function DashboardMainTabs(props: {
           paid listings go live automatically. Platform catalog shop skips the fee.
         </p>
 
+        {showListingSlotPromoRedeem ? <ListingSlotPromoRedeemForm /> : null}
+
         {groupedRequest.length > 0 ? (
           <div className="mt-6">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
@@ -893,6 +961,7 @@ export function DashboardMainTabs(props: {
                   isPlatform={isPlatform}
                   paidListingFeeLabel={paidListingFeeLabel}
                   shopSlug={shopSlug}
+                  listingFeeBonusFreeSlots={listingFeeBonusFreeSlots}
                   r2Configured={r2Configured}
                   shopStripeConnectReadyForCharges={shopStripeConnectReadyForCharges}
                   stripePublishableKey={stripePublishableKey}
@@ -921,6 +990,7 @@ export function DashboardMainTabs(props: {
                   isPlatform={isPlatform}
                   paidListingFeeLabel={paidListingFeeLabel}
                   shopSlug={shopSlug}
+                  listingFeeBonusFreeSlots={listingFeeBonusFreeSlots}
                   r2Configured={r2Configured}
                   shopStripeConnectReadyForCharges={shopStripeConnectReadyForCharges}
                   stripePublishableKey={stripePublishableKey}
@@ -950,6 +1020,7 @@ export function DashboardMainTabs(props: {
                   isPlatform={isPlatform}
                   paidListingFeeLabel={paidListingFeeLabel}
                   shopSlug={shopSlug}
+                  listingFeeBonusFreeSlots={listingFeeBonusFreeSlots}
                   r2Configured={r2Configured}
                   shopStripeConnectReadyForCharges={shopStripeConnectReadyForCharges}
                   stripePublishableKey={stripePublishableKey}
@@ -1044,22 +1115,44 @@ export function DashboardMainTabs(props: {
         hidden={tab !== "orders"}
         className="pt-6"
       >
-        <p className="text-xs text-zinc-600">Newest first (up to 20). Line splits are totals for that line.</p>
+        <p className="text-xs text-zinc-600">
+          Newest first (up to 20). Each line is merchandise only. Shop Profit is the sum of each line’s sale minus
+          goods/services cost and platform fee. Shipping and tips are not included here.
+        </p>
+        {showDemoPurchaseButton ? <DemoShopPurchaseButton /> : null}
         <ul className="mt-4 space-y-3">
           {paidOrders.map((o) => (
             <li key={o.id} className="rounded-lg border border-zinc-800 p-3 text-xs text-zinc-400">
-              <div className="flex justify-between gap-2 text-zinc-300">
-                <span>{o.createdAt.slice(0, 19)}Z</span>
-                <span>{formatMoney(o.totalCents)}</span>
+              <time
+                dateTime={paidOrderDateTimeAttr(o.createdAt)}
+                className="block tabular-nums text-zinc-300"
+              >
+                {formatPaidOrderDate(o.createdAt)}
+              </time>
+              <div className="mt-2 flex items-start justify-between gap-4">
+                <ul className="min-w-0 flex-1 space-y-2 text-zinc-400">
+                  {o.lines.map((l, i) => (
+                    <li key={i} className="leading-snug">
+                      <div className="text-zinc-300">
+                        {l.productName} × {l.quantity}
+                      </div>
+                      <div className="mt-1 text-[11px] text-zinc-500 tabular-nums">
+                        Sale {formatMoney(l.unitPriceCents * l.quantity)} · Goods/services cost{" "}
+                        {formatMoney(l.goodsServicesCostCents)} · Platform fee {formatMoney(l.platformCutCents)}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <div
+                  className="flex shrink-0 flex-col items-end gap-1 text-right leading-snug text-zinc-300"
+                  title="Merchandise only: for each line, sale − goods/services − platform fee; Shop Profit is the sum. Excludes shipping and tips."
+                >
+                  <span className="text-zinc-500">Shop Profit</span>
+                  <span className="text-[11px] tabular-nums text-zinc-300">
+                    {formatMoney(paidOrderShopProfitCents(o))}
+                  </span>
+                </div>
               </div>
-              <ul className="mt-2 space-y-1">
-                {o.lines.map((l, i) => (
-                  <li key={i}>
-                    {l.productName} × {l.quantity} ({formatMoney(l.unitPriceCents * l.quantity)} merch) — shop{" "}
-                    {formatMoney(l.shopCutCents)} · platform {formatMoney(l.platformCutCents)}
-                  </li>
-                ))}
-              </ul>
             </li>
           ))}
         </ul>

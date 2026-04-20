@@ -12,7 +12,9 @@ import { FulfillmentType, OrderStatus } from "@/generated/prisma/enums";
 import { publicAppBaseUrl } from "@/lib/public-app-url";
 import { listingCartUnitCents } from "@/lib/listing-cart-price";
 import { listingStripeProductName } from "@/lib/listing-cart-stripe-name";
-import { splitLineRevenueMerchandiseCents } from "@/lib/marketplace-fee";
+import { baselineGoodsServicesUnitCents } from "@/lib/baseline-goods-services-unit-cents";
+import { splitMerchandiseLineForCheckoutCents } from "@/lib/marketplace-fee";
+import { parseBaselinePick } from "@/lib/shop-baseline-catalog";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
 import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
@@ -88,9 +90,26 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
     unitPriceCents: number;
     stripeProductName: string;
     orderPrintifyVariantId: string | null;
+    goodsServicesCostCents: number;
     platformCutCents: number;
     shopCutCents: number;
   }[] = [];
+
+  const baselineCatalogItemIds = new Set<string>();
+  for (const listing of listings) {
+    const pick = parseBaselinePick(listing.baselineCatalogPickEncoded ?? "");
+    if (pick && (pick.mode === "item" || pick.mode === "variant" || pick.mode === "allVariants")) {
+      baselineCatalogItemIds.add(pick.itemId);
+    }
+  }
+  const baselineCatalogRows =
+    baselineCatalogItemIds.size === 0
+      ? []
+      : await prisma.adminCatalogItem.findMany({
+          where: { id: { in: [...baselineCatalogItemIds] } },
+          select: { id: true, variants: true, itemGoodsServicesCostCents: true },
+        });
+  const baselineCatalogById = new Map(baselineCatalogRows.map((r) => [r.id, r]));
 
   for (const listing of listings) {
     const p = listing.product;
@@ -110,8 +129,20 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
     }
 
     const lineTotal = unitPriceCents * quantity;
-    const { platformCutCents, shopCutCents } =
-      splitLineRevenueMerchandiseCents(lineTotal);
+    const pick = parseBaselinePick(listing.baselineCatalogPickEncoded ?? "");
+    const catalogRow = pick ? baselineCatalogById.get(pick.itemId) : undefined;
+    const goodsUnit = baselineGoodsServicesUnitCents({
+      baselineCatalogPickEncoded: listing.baselineCatalogPickEncoded,
+      selectedVariantId: orderPrintifyVariantId,
+      catalogRow,
+      productPrintifyVariantsJson: p.printifyVariants,
+    });
+    const goodsLine = Math.min(lineTotal, Math.max(0, goodsUnit) * quantity);
+    const { goodsServicesCostCents, platformCutCents, shopCutCents } =
+      splitMerchandiseLineForCheckoutCents({
+        lineMerchandiseCents: lineTotal,
+        goodsServicesLineCents: goodsLine,
+      });
     subtotalCents += lineTotal;
     lineInputs.push({
       listing,
@@ -121,6 +152,7 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
       unitPriceCents,
       stripeProductName,
       orderPrintifyVariantId,
+      goodsServicesCostCents,
       platformCutCents,
       shopCutCents,
     });
@@ -192,6 +224,7 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
               unitPriceCents,
               stripeProductName,
               orderPrintifyVariantId,
+              goodsServicesCostCents,
               platformCutCents,
               shopCutCents,
             }) => ({
@@ -204,6 +237,7 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
               printifyVariantId: orderPrintifyVariantId,
               shopId,
               shopListingId: listing.id,
+              goodsServicesCostCents,
               platformCutCents,
               shopCutCents,
             }),
@@ -251,7 +285,7 @@ export async function startCheckout(formData: FormData): Promise<CheckoutResult>
     shopRecord?.stripeConnectAccountId &&
     shopRecord.connectChargesEnabled;
   const applicationFeeCents =
-    lineInputs.reduce((s, x) => s + x.platformCutCents, 0) + tipCents;
+    lineInputs.reduce((s, x) => s + x.platformCutCents + x.goodsServicesCostCents, 0) + tipCents;
 
   let checkoutSession;
   try {

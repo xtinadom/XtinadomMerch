@@ -11,6 +11,7 @@ import {
 } from "@/lib/shop-baseline-catalog";
 import type { DraftListingRequestPrefillPayload } from "@/lib/shop-baseline-draft-prefill";
 import { SHOP_LISTING_MAX_PRICE_CENTS, shopListingMaxPriceUsdLabel } from "@/lib/marketplace-constants";
+import { expectedShopProfitMerchandiseUnitCents } from "@/lib/marketplace-fee";
 
 const btnPrimary =
   "rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-white disabled:cursor-not-allowed";
@@ -27,13 +28,20 @@ function formatUsdFromCents(cents: number): string {
   }).format(Math.max(0, cents) / 100);
 }
 
-function listingProfitHint(priceDollarsStr: string, minPriceCents: number): string | null {
+function listingProfitHint(
+  priceDollarsStr: string,
+  minPriceCents: number,
+  goodsServicesUnitCents: number,
+): string | null {
   const parsed = parseFloat(priceDollarsStr.replace(/[^0-9.]/g, ""));
   if (!Number.isFinite(parsed) || parsed <= 0) return null;
   const cents = Math.round(parsed * 100);
   if (cents < minPriceCents) return null;
-  if (cents === minPriceCents) return "Est. profit: $5";
-  return "Est. profit: $5+";
+  const profit = expectedShopProfitMerchandiseUnitCents({
+    listPriceCents: cents,
+    goodsServicesUnitCents,
+  });
+  return `Est. profit: ${formatUsdFromCents(profit)}`;
 }
 
 function CatalogExampleLink({ href }: { href: string }) {
@@ -450,7 +458,11 @@ export function ShopFirstListingRequestPanel(props: {
                             className="mt-1 block w-full max-w-xs rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100"
                           />
                           {(() => {
-                            const h = listingProfitHint(listingPrice, g.option.minPriceCents);
+                            const h = listingProfitHint(
+                              listingPrice,
+                              g.option.minPriceCents,
+                              g.option.goodsServicesCostCents,
+                            );
                             return h ? (
                               <p className="mt-1.5 text-xs text-blue-400/90">{h}</p>
                             ) : null;
@@ -489,7 +501,11 @@ export function ShopFirstListingRequestPanel(props: {
                     <div className="divide-y divide-zinc-800/50 border-t border-zinc-800/60 py-1 pl-10 pr-3">
                       {g.variants.map((v) => {
                         const variantPriceStr = variantListingPrices[v.productId] ?? "";
-                        const profitHint = listingProfitHint(variantPriceStr, v.minPriceCents);
+                        const profitHint = listingProfitHint(
+                          variantPriceStr,
+                          v.minPriceCents,
+                          v.goodsServicesCostCents,
+                        );
                         return (
                           <div
                             key={v.productId}

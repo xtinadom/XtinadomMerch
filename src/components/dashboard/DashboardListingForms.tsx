@@ -24,8 +24,12 @@ import {
   type DashboardSubmitListingRequestResult,
   type ListingCatalogImagesFormState,
 } from "@/actions/dashboard-marketplace";
-import { parseListingPrintifyVariantPrices } from "@/lib/listing-printify-variant-prices";
+import {
+  parseListingPrintifyVariantPrices,
+} from "@/lib/listing-printify-variant-prices";
+import { printifyVariantShopFloorCents } from "@/lib/listing-cart-price";
 import { shopListingMaxPriceUsdLabel } from "@/lib/marketplace-constants";
+import { expectedShopProfitMerchandiseUnitCents } from "@/lib/marketplace-fee";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 
 const REQUEST_ITEM_NAME_MAX = 120;
@@ -146,6 +150,8 @@ type PriceFormProps = {
   priceDollarsFormatted: string;
   listingPriceCents: number;
   listingPrintifyVariantPrices: unknown;
+  /** Per Printify variant id — unit goods/services COGS from admin baseline (same split as orders Shop Profit). */
+  goodsServicesUnitCentsByPrintifyVariantId?: Record<string, number>;
   product: {
     fulfillmentType: FulfillmentType;
     priceCents: number;
@@ -177,6 +183,29 @@ function printifyListingIntentHint(
   );
 }
 
+function formatUsdFromCents(cents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(Math.max(0, cents) / 100);
+}
+
+function listingEstProfitLine(
+  priceDollarsStr: string,
+  minPriceCents: number,
+  goodsServicesUnitCents: number,
+): string | null {
+  const parsed = parseFloat(priceDollarsStr.replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  const cents = Math.round(parsed * 100);
+  if (cents < minPriceCents) return null;
+  const profit = expectedShopProfitMerchandiseUnitCents({
+    listPriceCents: cents,
+    goodsServicesUnitCents,
+  });
+  return `Est. profit: ${formatUsdFromCents(profit)}`;
+}
+
 function initialVariantDollarsById(
   listingPriceCents: number,
   listingPrintifyVariantPrices: unknown,
@@ -198,6 +227,7 @@ export function DashboardListingPriceForm({
   priceDollarsFormatted,
   listingPriceCents,
   listingPrintifyVariantPrices,
+  goodsServicesUnitCentsByPrintifyVariantId = {},
   product,
   readOnly = false,
 }: PriceFormProps) {
@@ -315,11 +345,19 @@ export function DashboardListingPriceForm({
           const cents =
             parseListingPrintifyVariantPrices(listingPrintifyVariantPrices)?.[v.id] ??
             listingPriceCents;
+          const floor = printifyVariantShopFloorCents(product, v.priceCents);
+          const gs = goodsServicesUnitCentsByPrintifyVariantId[v.id] ?? 0;
+          const profitLine = listingEstProfitLine((cents / 100).toFixed(2), floor, gs);
           return (
-            <p key={v.id} className="text-sm text-zinc-200">
-              <span className="text-zinc-500">{v.title}: </span>
-              <span className="font-mono">{(cents / 100).toFixed(2)}</span>
-            </p>
+            <div key={v.id} className="space-y-0.5">
+              <p className="text-sm text-zinc-200">
+                <span className="text-zinc-500">{v.title}: </span>
+                <span className="font-mono">{(cents / 100).toFixed(2)}</span>
+              </p>
+              {profitLine ? (
+                <p className="text-[11px] text-blue-400/90">{profitLine}</p>
+              ) : null}
+            </div>
           );
         })}
       </div>
@@ -327,11 +365,22 @@ export function DashboardListingPriceForm({
   }
 
   if (readOnly) {
+    const vs = printifyVariants;
+    const floor =
+      vs.length === 0
+        ? product.minPriceCents > 0
+          ? product.minPriceCents
+          : product.priceCents
+        : printifyVariantShopFloorCents(product, vs[0]!.priceCents);
+    const vid = vs[0]?.id;
+    const gs = vid != null ? (goodsServicesUnitCentsByPrintifyVariantId[vid] ?? 0) : 0;
+    const profitLine = listingEstProfitLine(price, floor, gs);
     return (
       <div className="mt-3">
         {printifyListingIntentHint(product, false)}
         <p className="text-xs text-zinc-500">Your price (USD)</p>
         <p className="mt-1 font-mono text-sm text-zinc-200">{price}</p>
+        {profitLine ? <p className="mt-1 text-[11px] text-blue-400/90">{profitLine}</p> : null}
       </div>
     );
   }
@@ -344,23 +393,31 @@ export function DashboardListingPriceForm({
         <p className="text-[11px] text-zinc-600">Maximum {shopListingMaxPriceUsdLabel()} per option.</p>
         <p className="text-xs text-zinc-500">Your price (USD) — each option</p>
         <ul className="space-y-2">
-          {printifyVariants.map((v) => (
-            <li key={v.id} className="flex flex-wrap items-end gap-2">
-              <label className="min-w-0 flex-1 text-xs text-zinc-500">
-                <span className="text-zinc-400">{v.title}</span>
-                <input
-                  type="text"
-                  value={variantDollars[v.id] ?? ""}
-                  autoComplete="off"
-                  onChange={(ev) => {
-                    setSaveError(null);
-                    setVariantDollars((s) => ({ ...s, [v.id]: ev.target.value }));
-                  }}
-                  className="mt-1 block w-full max-w-[10rem] rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-sm text-zinc-200"
-                />
-              </label>
-            </li>
-          ))}
+          {printifyVariants.map((v) => {
+            const floor = printifyVariantShopFloorCents(product, v.priceCents);
+            const gs = goodsServicesUnitCentsByPrintifyVariantId[v.id] ?? 0;
+            const profitLine = listingEstProfitLine(variantDollars[v.id] ?? "", floor, gs);
+            return (
+              <li key={v.id} className="space-y-0.5">
+                <label className="block min-w-0 max-w-[10rem] text-xs text-zinc-500">
+                  <span className="text-zinc-400">{v.title}</span>
+                  <input
+                    type="text"
+                    value={variantDollars[v.id] ?? ""}
+                    autoComplete="off"
+                    onChange={(ev) => {
+                      setSaveError(null);
+                      setVariantDollars((s) => ({ ...s, [v.id]: ev.target.value }));
+                    }}
+                    className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-sm text-zinc-200"
+                  />
+                </label>
+                {profitLine ? (
+                  <p className="text-[11px] text-blue-400/90">{profitLine}</p>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
         {saveError ? (
           <p className="text-xs leading-snug text-red-300/90" role="alert">
@@ -397,6 +454,21 @@ export function DashboardListingPriceForm({
         {label}
       </button>
       </div>
+      {(() => {
+        const vs = printifyVariants;
+        const floor =
+          vs.length === 0
+            ? product.minPriceCents > 0
+              ? product.minPriceCents
+              : product.priceCents
+            : printifyVariantShopFloorCents(product, vs[0]!.priceCents);
+        const vid = vs[0]?.id;
+        const gs = vid != null ? (goodsServicesUnitCentsByPrintifyVariantId[vid] ?? 0) : 0;
+        const profitLine = listingEstProfitLine(price, floor, gs);
+        return profitLine ? (
+          <p className="text-[11px] text-blue-400/90">{profitLine}</p>
+        ) : null;
+      })()}
       {saveError ? (
         <p className="text-xs leading-snug text-red-300/90" role="alert">
           {saveError}

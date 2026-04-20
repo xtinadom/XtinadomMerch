@@ -18,12 +18,19 @@ export function AdminListAddItemForm() {
   const [variants, setVariants] = useState<AdminCatalogVariantFormRow[]>([]);
   const [itemExampleListingUrl, setItemExampleListingUrl] = useState("");
   const [itemMinPriceDollars, setItemMinPriceDollars] = useState("");
+  const [itemGoodsServicesCostDollars, setItemGoodsServicesCostDollars] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   function addVariantRow() {
     setVariants((v) => [
       ...v,
-      { label: "", minPriceDollars: "", exampleListingUrl: "", platformProductId: "" },
+      {
+        label: "",
+        minPriceDollars: "",
+        goodsServicesCostDollars: "",
+        exampleListingUrl: "",
+        platformProductId: "",
+      },
     ]);
   }
 
@@ -49,7 +56,11 @@ export function AdminListAddItemForm() {
       return;
     }
     if (checked.payload.length === 0) {
-      const itemLevel = validateItemLevelWhenNoVariants(itemExampleListingUrl, itemMinPriceDollars);
+      const itemLevel = validateItemLevelWhenNoVariants(
+        itemExampleListingUrl,
+        itemMinPriceDollars,
+        itemGoodsServicesCostDollars,
+      );
       if (!itemLevel.ok) {
         setError(itemLevel.error);
         return;
@@ -61,6 +72,7 @@ export function AdminListAddItemForm() {
     fd.set("variantsJson", JSON.stringify(checked.payload));
     fd.set("itemExampleListingUrl", itemExampleListingUrl);
     fd.set("itemMinPriceDollars", itemMinPriceDollars);
+    fd.set("itemGoodsServicesCostDollars", itemGoodsServicesCostDollars);
 
     startTransition(async () => {
       await adminAddCatalogItem(fd);
@@ -68,6 +80,7 @@ export function AdminListAddItemForm() {
       setVariants([]);
       setItemExampleListingUrl("");
       setItemMinPriceDollars("");
+      setItemGoodsServicesCostDollars("");
       router.refresh();
     });
   }
@@ -104,8 +117,10 @@ export function AdminListAddItemForm() {
           <AdminCatalogItemLevelFields
             exampleListingUrl={itemExampleListingUrl}
             minPriceDollars={itemMinPriceDollars}
+            goodsServicesCostDollars={itemGoodsServicesCostDollars}
             onChangeExampleListingUrl={setItemExampleListingUrl}
             onChangeMinPriceDollars={setItemMinPriceDollars}
+            onChangeGoodsServicesCostDollars={setItemGoodsServicesCostDollars}
           />
         ) : null}
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useActionState, useState } from "react";
 import {
   dashboardCancelAccountDeletionRequest,
   dashboardCompleteAccountDeletionFormState,
@@ -35,8 +36,9 @@ export function ShopDangerZonePanel(props: {
     stripeConnectBalance,
   } = props;
 
+  const router = useRouter();
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
-  const [pending, start] = useTransition();
+  const [busy, setBusy] = useState(false);
   const [deleteState, deleteAction] = useActionState(
     dashboardCompleteAccountDeletionFormState,
     initialDeleteState,
@@ -52,13 +54,22 @@ export function ShopDangerZonePanel(props: {
       stripeConnectBalance.availableCents !== 0 ||
       stripeConnectBalance.pendingCents !== 0);
 
-  const run = async (fn: () => Promise<{ ok: true; message?: string } | { ok: false; error: string }>) => {
+  const run = (fn: () => Promise<{ ok: true; message?: string } | { ok: false; error: string }>) => {
     setMsg(null);
-    start(async () => {
-      const r = await fn();
-      if (r.ok) setMsg({ tone: "ok", text: r.message ?? "Saved." });
-      else setMsg({ tone: "err", text: r.error ?? "Something went wrong." });
-    });
+    setBusy(true);
+    void (async () => {
+      try {
+        const r = await fn();
+        if (r.ok) {
+          setMsg({ tone: "ok", text: r.message ?? "Saved." });
+          router.refresh();
+        } else setMsg({ tone: "err", text: r.error ?? "Something went wrong." });
+      } catch {
+        setMsg({ tone: "err", text: "Something went wrong. Try again." });
+      } finally {
+        setBusy(false);
+      }
+    })();
   };
 
   return (
@@ -90,20 +101,20 @@ export function ShopDangerZonePanel(props: {
             {!shopActive && manuallyPaused ? (
               <button
                 type="button"
-                disabled={pending}
+                disabled={busy}
                 onClick={() => run(dashboardUnpauseShop)}
                 className="rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-50"
               >
-                {pending ? "…" : "Unpause shop"}
+                {busy ? "…" : "Unpause shop"}
               </button>
             ) : shopActive ? (
               <button
                 type="button"
-                disabled={pending}
+                disabled={busy}
                 onClick={() => run(dashboardPauseShop)}
                 className="rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-50"
               >
-                {pending ? "…" : "Pause shop"}
+                {busy ? "…" : "Pause shop"}
               </button>
             ) : (
               <p className="text-xs text-zinc-500">
@@ -130,11 +141,11 @@ export function ShopDangerZonePanel(props: {
             </p>
             <button
               type="button"
-              disabled={pending}
+              disabled={busy}
               onClick={() => run(dashboardRequestAccountDeletion)}
               className="rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs font-medium text-red-100 hover:bg-red-950/60 disabled:opacity-50"
             >
-              {pending ? "…" : "Request account deletion (freeze shop + email)"}
+              {busy ? "…" : "Request account deletion (freeze shop + email)"}
             </button>
           </div>
         ) : (
@@ -146,11 +157,11 @@ export function ShopDangerZonePanel(props: {
             </p>
             <button
               type="button"
-              disabled={pending}
+              disabled={busy}
               onClick={() => run(dashboardCancelAccountDeletionRequest)}
               className="rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-50"
             >
-              {pending ? "…" : "Cancel deletion request"}
+              {busy ? "…" : "Cancel deletion request"}
             </button>
 
             {emailConfirmed ? (

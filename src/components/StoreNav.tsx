@@ -4,13 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { ShopTagMenu } from "@/components/ShopTagMenu";
 import { CartDrawer } from "@/components/CartDrawer";
-import { SHOP_ALL_ROUTE } from "@/lib/constants";
 import type { Tag } from "@/generated/prisma/client";
-import {
-  PLATFORM_SHOP_SLUG,
-  shopAllProductsHref,
-  shopCartHref,
-} from "@/lib/marketplace-constants";
+import { PLATFORM_SHOP_SLUG, shopCartHref } from "@/lib/marketplace-constants";
 
 type TagRow = Pick<Tag, "id" | "slug" | "name" | "sortOrder">;
 
@@ -40,7 +35,6 @@ export function StoreNav({
 }) {
   const [cartOpen, setCartOpen] = useState(false);
   const tenant = shopSlug && shopSlug !== PLATFORM_SHOP_SLUG;
-  const allHref = tenant ? shopAllProductsHref(shopSlug) : SHOP_ALL_ROUTE;
   const fullCartHref = shopCartHref(shopSlug ?? PLATFORM_SHOP_SLUG);
 
   return (
@@ -81,12 +75,6 @@ export function StoreNav({
               className="store-nav-link text-zinc-400 transition hover:text-white"
             >
               Shops
-            </Link>
-            <Link
-              href={allHref}
-              className="store-nav-link text-zinc-400 transition hover:text-white"
-            >
-              All products
             </Link>
             {showBrowseMenu ? <ShopTagMenu tags={tags} shopSlug={shopSlug} /> : null}
             <button

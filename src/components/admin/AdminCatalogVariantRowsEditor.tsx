@@ -34,7 +34,7 @@ export function AdminCatalogVariantRowsEditor({
       {variants.map((row, index) => (
         <div
           key={index}
-          className="grid gap-3 rounded border border-zinc-800/80 bg-zinc-950/40 p-3 sm:grid-cols-[1fr_7rem_1fr_auto]"
+          className="grid gap-3 rounded border border-zinc-800/80 bg-zinc-950/40 p-3 sm:grid-cols-[1fr_7rem_7rem_1fr_auto]"
         >
           <label className="block min-w-0 text-[11px] text-zinc-500">
             Variant name
@@ -55,6 +55,18 @@ export function AdminCatalogVariantRowsEditor({
               onChange={(e) => onChangeRow(index, { minPriceDollars: e.target.value })}
               className="mt-0.5 block w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-sm text-zinc-100"
               placeholder="0.00"
+            />
+          </label>
+          <label className="block text-[11px] text-zinc-500">
+            G/S cost (USD)
+            <input
+              type="text"
+              inputMode="decimal"
+              value={row.goodsServicesCostDollars}
+              onChange={(e) => onChangeRow(index, { goodsServicesCostDollars: e.target.value })}
+              className="mt-0.5 block w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-[11px] text-zinc-100"
+              placeholder="0"
+              title="Goods/services (fulfillment COGS per unit), optional"
             />
           </label>
           <label className="block min-w-0 text-[11px] text-zinc-500 sm:col-span-1">

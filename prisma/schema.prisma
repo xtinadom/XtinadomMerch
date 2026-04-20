@@ -127,8 +127,28 @@ model Shop {
   supportThread            SupportThread?
   /** Creator acknowledged item guidelines (dashboard onboarding). */
   itemGuidelinesAcknowledgedAt DateTime?
-  createdAt                DateTime       @default(now())
-  updatedAt                DateTime       @updatedAt
+  /**
+   * Extra publication-fee-free slots beyond the platform default first-N free listings,
+   * granted by redeemed promo codes (`ShopListingSlotPromoRedemption`).
+   */
+  listingFeeBonusFreeSlots       Int                            @default(0)
+  listingSlotPromoRedemptions    ShopListingSlotPromoRedemption[]
+  createdAt                      DateTime                       @default(now())
+  updatedAt                      DateTime                       @updatedAt
+}
+
+/** One promo code redemption per shop (normalized code). */
+model ShopListingSlotPromoRedemption {
+  id                   String   @id @default(cuid())
+  shopId               String
+  shop                 Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  /** Uppercase trimmed code (matches env coupon keys case-insensitively). */
+  couponCodeNormalized String
+  slotsGranted         Int
+  createdAt            DateTime @default(now())
+
+  @@unique([shopId, couponCodeNormalized])
+  @@index([couponCodeNormalized])
 }
 
 enum SupportMessageAuthor {
@@ -346,6 +366,9 @@ model OrderLine {
   fulfillmentType    FulfillmentType
   printifyProductId  String?
   printifyVariantId  String?
+  /** Fulfillment / COGS for this line (total cents), deducted before marketplace fee; retained by platform. */
+  goodsServicesCostCents Int        @default(0)
+  /** Marketplace fee (cents) on merchandise after goods/services cost. */
   platformCutCents   Int            @default(0)
   shopCutCents       Int            @default(0)
   createdAt          DateTime       @default(now())
@@ -388,7 +411,7 @@ model AdminCatalogItem {
   id        String   @id @default(cuid())
   sortOrder Int      @default(0)
   name      String
-  /** JSON array: { id, label, minPriceCents, exampleListingUrl, platformProductId? }[] */
+  /** JSON array: { id, label, minPriceCents, goodsServicesCostCents?, exampleListingUrl, platformProductId? }[] */
   variants  Json
   /**
    * When `variants` is empty: optional storefront Product id (active Printify) for shop catalog
@@ -406,6 +429,11 @@ model AdminCatalogItem {
    * Set to 0 when the item has variants.
    */
   itemMinPriceCents     Int     @default(0)
+  /**
+   * When `variants` is empty: fulfillment / goods-and-services COGS (cents per unit) retained by the
+   * platform from the sale; distinct from the marketplace fee on the remainder.
+   */
+  itemGoodsServicesCostCents Int @default(0)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }
