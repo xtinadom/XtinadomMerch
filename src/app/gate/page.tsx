@@ -1,14 +1,14 @@
-import { Suspense } from "react";
 import { GateClient } from "./GateClient";
 
-export default function GatePage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-zinc-950" aria-label="Loading" />
-      }
-    >
-      <GateClient />
-    </Suspense>
-  );
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function GatePage({ searchParams }: PageProps) {
+  const sp = await searchParams;
+  const raw = sp.from;
+  const redirectFrom =
+    typeof raw === "string" ? raw : Array.isArray(raw) ? (raw[0] ?? null) : null;
+
+  return <GateClient redirectFrom={redirectFrom} />;
 }

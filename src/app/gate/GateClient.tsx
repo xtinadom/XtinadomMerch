@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
 
 function safeRedirectPath(from: string | null): string {
   if (!from || !from.startsWith("/") || from.startsWith("//")) {
@@ -10,20 +9,23 @@ function safeRedirectPath(from: string | null): string {
   return from;
 }
 
-export function GateClient() {
-  const searchParams = useSearchParams();
+export function GateClient({ redirectFrom }: { redirectFrom: string | null }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  /** Hide password UI once auth succeeded; avoids a flash of the form while the document navigates. */
+  const [leaving, setLeaving] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setPending(true);
+    let success = false;
     try {
       const res = await fetch("/api/site-access", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ password }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -31,13 +33,29 @@ export function GateClient() {
         setError(data.error ?? "Could not sign in");
         return;
       }
-      const target = safeRedirectPath(searchParams.get("from"));
-      // Full navigation so the browser reliably applies Set-Cookie before the next request.
-      // Client router transitions can race the httpOnly gate cookie and bounce back to /gate.
-      window.location.assign(target);
+      success = true;
+      setLeaving(true);
+      const target = safeRedirectPath(redirectFrom);
+      const absolute = new URL(target, window.location.origin).href;
+      // Defer so the browser can apply Set-Cookie from the fetch response before the next document load.
+      window.setTimeout(() => {
+        window.location.replace(absolute);
+      }, 0);
     } finally {
-      setPending(false);
+      if (!success) setPending(false);
     }
+  }
+
+  if (leaving) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 px-4">
+        <div className="w-full max-w-sm text-center">
+          <p className="store-dimension-brand text-xs uppercase tracking-[0.2em] text-blue-400/80">XTINADOM</p>
+          <p className="mt-4 text-sm text-zinc-300">Opening the site…</p>
+          <p className="mt-2 text-xs text-zinc-600">If this screen stays up, refresh the page.</p>
+        </div>
+      </main>
+    );
   }
 
   return (
