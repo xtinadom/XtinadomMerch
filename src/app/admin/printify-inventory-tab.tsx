@@ -21,6 +21,7 @@ import { ListingGalleryEditor } from "@/components/admin/ListingGalleryEditor";
 import { SaveListingForm } from "@/components/admin/SaveListingForm";
 import { PrintifyCatalogSyncButtons } from "@/components/admin/PrintifyCatalogSyncButtons";
 import { PrintifyCatalogSortableTable } from "@/components/admin/PrintifyCatalogSortableTable";
+import { ADMIN_BACKEND_BASE_PATH } from "@/lib/admin-dashboard-urls";
 
 export type PrintifyInventoryTabProps = {
   products: (Product & {
@@ -210,7 +211,7 @@ export async function PrintifyInventoryTab({
         </h2>
         <p className="mt-1 text-xs text-zinc-600">
           Set token and shop in <code className="text-zinc-400">.env</code> (
-          <Link href="/admin?tab=printify-api" className="text-blue-400/90 hover:underline">
+          <Link href="/admin/backend?tab=printify-api" className="text-blue-400/90 hover:underline">
             Printify API
           </Link>
           ), sync, then use <strong className="font-medium text-zinc-500">Edit</strong> in the catalog to change a
@@ -483,7 +484,7 @@ export async function PrintifyInventoryTab({
                     disabled={!selectedListing.active}
                   />
                   <Link
-                    href="/admin?tab=printify"
+                    href={`${ADMIN_BACKEND_BASE_PATH}?tab=printify`}
                     className="rounded border border-zinc-600 bg-zinc-800/80 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800"
                   >
                     Close

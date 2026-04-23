@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateAdminViews } from "@/lib/revalidate-admin-views";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAdminSessionReadonly } from "@/lib/session";
@@ -47,7 +47,7 @@ export async function adminSupportSendMessage(formData: FormData) {
     data: { updatedAt: new Date() },
   });
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
 }
 
 export async function adminSupportMarkResolved(formData: FormData) {
@@ -68,7 +68,7 @@ export async function adminSupportMarkResolved(formData: FormData) {
     data: { resolvedAt: new Date(), updatedAt: new Date() },
   });
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
 }
 
 export async function adminSupportMarkUnresolved(formData: FormData) {
@@ -89,5 +89,5 @@ export async function adminSupportMarkUnresolved(formData: FormData) {
     data: { resolvedAt: null, updatedAt: new Date() },
   });
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
 }

@@ -7,6 +7,7 @@ import {
   PrintifyCatalogPublishToggleForm,
   PrintifyCatalogResyncForm,
 } from "@/components/admin/PrintifyInventoryCatalogActionForms";
+import { ADMIN_BACKEND_BASE_PATH } from "@/lib/admin-dashboard-urls";
 
 export type PrintifyCatalogTableRow = {
   printifyId: string;
@@ -159,7 +160,7 @@ export function PrintifyCatalogSortableTable({ rows }: { rows: PrintifyCatalogTa
                       <span className="min-w-0 text-zinc-300">{p.title}</span>
                       {p.listingProductId ? (
                         <Link
-                          href={`/admin?tab=printify&listing=${encodeURIComponent(p.listingProductId)}`}
+                          href={`${ADMIN_BACKEND_BASE_PATH}?tab=printify&listing=${encodeURIComponent(p.listingProductId)}`}
                           title="Admin storefront listing details"
                           className="shrink-0 pt-0.5 text-[10px] font-normal normal-case tracking-normal text-zinc-600 underline-offset-2 hover:text-zinc-400 hover:underline"
                         >

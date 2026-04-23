@@ -370,19 +370,6 @@ export function AdminShopWatchTab(props: {
           }
         />
       </div>
-      <p className="mt-4 text-xs text-zinc-600">
-        The table always lists every active creator shop. Use the filter to show or hide{" "}
-        <strong className="font-medium text-zinc-500">listing groups</strong> under each shop:{" "}
-        <strong className="font-medium text-zinc-500">Approved</strong> = the Live group (storefront-active plus
-        approved-but-not-live, e.g. fee pending); <strong className="font-medium text-zinc-500">Frozen</strong> = admin
-        freeze; <strong className="font-medium text-zinc-500">Removed</strong> = creator self-removals, formal admin
-        rejects, and Listing-requests <strong className="font-medium text-zinc-500">×</strong> removals (reason{" "}
-        <strong className="font-medium text-zinc-500">Other</strong>); <strong className="font-medium text-zinc-500">All</strong> also shows{" "}
-        <strong className="font-medium text-zinc-500">Requested</strong> (submitted) and pipeline rows (draft / Printify).{" "}
-        <strong className="font-medium text-zinc-500">Remove</strong> (Live group) hides an approved listing that is still
-        active on the shop from the public storefront (same as Freeze on Listing requests).{" "}
-        <strong className="font-medium text-zinc-500">delete</strong> applies to frozen and creator-removed listing rows only.
-      </p>
 
       <div
         className="mt-4 flex flex-wrap items-center gap-2"

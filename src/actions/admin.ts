@@ -3,6 +3,8 @@
 import { randomBytes } from "node:crypto";
 import { Buffer } from "node:buffer";
 import { revalidatePath } from "next/cache";
+import { revalidateAdminViews } from "@/lib/revalidate-admin-views";
+import { ADMIN_BACKEND_BASE_PATH } from "@/lib/admin-dashboard-urls";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
@@ -199,7 +201,7 @@ export async function updateProductDetails(
 
   await deleteListingImagesFromR2(removedImageUrls);
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidateShopSurface();
   revalidatePath("/product/" + previousSlug);
   if (slugNext !== previousSlug) {
@@ -207,7 +209,7 @@ export async function updateProductDetails(
   }
 
   redirect(
-    `/admin?saved=product&tab=printify&listing=${encodeURIComponent(productId)}`,
+    `${ADMIN_BACKEND_BASE_PATH}?saved=product&tab=printify&listing=${encodeURIComponent(productId)}`,
   );
 }
 
@@ -232,11 +234,11 @@ export async function updateProductPrintifyIds(
       trackInventory: false,
     },
   });
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidateShopSurface();
   revalidatePath("/product/" + product.slug);
   redirect(
-    `/admin?saved=product&tab=printify&listing=${encodeURIComponent(productId)}`,
+    `${ADMIN_BACKEND_BASE_PATH}?saved=product&tab=printify&listing=${encodeURIComponent(productId)}`,
   );
 }
 
@@ -536,7 +538,7 @@ async function processOnePrintifyCatalogProduct(
 }
 
 async function revalidatePrintifyDependentPaths(): Promise<void> {
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidateShopSurface();
   const allTags = await prisma.tag.findMany({ select: { slug: true } });
   for (const t of allTags) {
@@ -556,7 +558,7 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
 
   const shopId = process.env.PRINTIFY_SHOP_ID?.trim();
   if (!shopId) {
-    redirect("/admin?tab=printify&sync=err&reason=no_shop");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify&sync=err&reason=no_shop`);
   }
 
   const syncModeRaw = String(formData.get("syncMode") ?? "full");
@@ -616,7 +618,7 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
       ? `&fullSyncAt=${encodeURIComponent(new Date().toISOString())}`
       : "";
   redirect(
-    `/admin?tab=printify&sync=ok&syncMode=${syncMode}&updated=${updated}&created=${created}&skipped=${skipped}&removed=${removed}${fullSyncAtQuery}`,
+    `${ADMIN_BACKEND_BASE_PATH}?tab=printify&sync=ok&syncMode=${syncMode}&updated=${updated}&created=${created}&skipped=${skipped}&removed=${removed}${fullSyncAtQuery}`,
   );
 }
 
@@ -628,19 +630,19 @@ export async function resyncPrintifyCatalogProduct(formData: FormData): Promise<
 
   const printifyProductId = String(formData.get("printifyProductId") ?? "").trim();
   if (!printifyProductId) {
-    redirect("/admin?tab=printify&sync=err&reason=no_product");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify&sync=err&reason=no_product`);
   }
 
   const shopId = process.env.PRINTIFY_SHOP_ID?.trim();
   if (!shopId) {
-    redirect("/admin?tab=printify&sync=err&reason=no_shop");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify&sync=err&reason=no_shop`);
   }
 
   const noTagId = await resolveNoTagId();
 
   const p = await fetchPrintifyProductDetail(shopId, printifyProductId);
   if (!p) {
-    redirect("/admin?tab=printify&sync=err&reason=catalog_not_found");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify&sync=err&reason=catalog_not_found`);
   }
 
   const r = await processOnePrintifyCatalogProduct(p, "single", noTagId);
@@ -648,7 +650,7 @@ export async function resyncPrintifyCatalogProduct(formData: FormData): Promise<
   await revalidatePrintifyDependentPaths();
 
   redirect(
-    `/admin?tab=printify&sync=ok&syncMode=single&updated=${r.updated}&created=${r.created}&skipped=${r.skipped}&removed=${r.removed}&printifyId=${encodeURIComponent(printifyProductId)}`,
+    `${ADMIN_BACKEND_BASE_PATH}?tab=printify&sync=ok&syncMode=single&updated=${r.updated}&created=${r.created}&skipped=${r.skipped}&removed=${r.removed}&printifyId=${encodeURIComponent(printifyProductId)}`,
   );
 }
 
@@ -662,11 +664,11 @@ export async function adminPruneOrphanListingImagesR2(formData: FormData): Promi
   const dryRun = intent !== "delete";
 
   if (dryRun === false && formData.get("confirm") !== "on") {
-    redirect("/admin?tab=printify&r2Prune=err&r2PruneReason=confirm_required");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify&r2Prune=err&r2PruneReason=confirm_required`);
   }
 
   if (!isR2UploadConfigured()) {
-    redirect("/admin?tab=printify&r2Prune=err&r2PruneReason=no_r2");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify&r2Prune=err&r2PruneReason=no_r2`);
   }
 
   try {
@@ -679,12 +681,12 @@ export async function adminPruneOrphanListingImagesR2(formData: FormData): Promi
       r2Orphans: String(r.orphanKeyCount),
       r2Deleted: String(r.deletedCount),
     });
-    redirect(`/admin?${q.toString()}`);
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?${q.toString()}`);
   } catch (e) {
     unstable_rethrow(e);
     const msg = e instanceof Error ? e.message : String(e);
     redirect(
-      `/admin?tab=printify&r2Prune=err&r2PruneReason=${encodeURIComponent(msg.replace(/\s+/g, " ").slice(0, 240))}`,
+      `${ADMIN_BACKEND_BASE_PATH}?tab=printify&r2Prune=err&r2PruneReason=${encodeURIComponent(msg.replace(/\s+/g, " ").slice(0, 240))}`,
     );
   }
 }
@@ -698,21 +700,21 @@ export async function notifyPrintifyPublishingSucceeded(formData: FormData): Pro
   const printifyProductId = String(formData.get("printifyProductId") ?? "").trim();
   const shopId = process.env.PRINTIFY_SHOP_ID?.trim();
   if (!shopId) {
-    redirect("/admin?tab=printify&pub=err&pubReason=no_shop");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify&pub=err&pubReason=no_shop`);
   }
   if (!printifyProductId) {
-    redirect("/admin?tab=printify&pub=err&pubReason=no_product");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify&pub=err&pubReason=no_product`);
   }
 
   const r = await setPrintifyProductPublishingSucceeded(shopId, printifyProductId);
   if (!r.ok) {
     redirect(
-      `/admin?tab=printify&pub=err&pubReason=api&pubPid=${encodeURIComponent(printifyProductId)}&pubDetail=${encodeURIComponent(r.body.replace(/\s+/g, " ").slice(0, 280))}`,
+      `${ADMIN_BACKEND_BASE_PATH}?tab=printify&pub=err&pubReason=api&pubPid=${encodeURIComponent(printifyProductId)}&pubDetail=${encodeURIComponent(r.body.replace(/\s+/g, " ").slice(0, 280))}`,
     );
   }
 
   redirect(
-    `/admin?tab=printify&pub=ok&pubKind=succeeded&pubPid=${encodeURIComponent(printifyProductId)}`,
+    `${ADMIN_BACKEND_BASE_PATH}?tab=printify&pub=ok&pubKind=succeeded&pubPid=${encodeURIComponent(printifyProductId)}`,
   );
 }
 
@@ -725,21 +727,21 @@ export async function notifyPrintifyPublishingFailed(formData: FormData): Promis
   const printifyProductId = String(formData.get("printifyProductId") ?? "").trim();
   const shopId = process.env.PRINTIFY_SHOP_ID?.trim();
   if (!shopId) {
-    redirect("/admin?tab=printify&pub=err&pubReason=no_shop");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify&pub=err&pubReason=no_shop`);
   }
   if (!printifyProductId) {
-    redirect("/admin?tab=printify&pub=err&pubReason=no_product");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify&pub=err&pubReason=no_product`);
   }
 
   const r = await setPrintifyProductPublishingFailed(shopId, printifyProductId);
   if (!r.ok) {
     redirect(
-      `/admin?tab=printify&pub=err&pubReason=api&pubPid=${encodeURIComponent(printifyProductId)}&pubDetail=${encodeURIComponent(r.body.replace(/\s+/g, " ").slice(0, 280))}`,
+      `${ADMIN_BACKEND_BASE_PATH}?tab=printify&pub=err&pubReason=api&pubPid=${encodeURIComponent(printifyProductId)}&pubDetail=${encodeURIComponent(r.body.replace(/\s+/g, " ").slice(0, 280))}`,
     );
   }
 
   redirect(
-    `/admin?tab=printify&pub=ok&pubKind=failed&pubPid=${encodeURIComponent(printifyProductId)}`,
+    `${ADMIN_BACKEND_BASE_PATH}?tab=printify&pub=ok&pubKind=failed&pubPid=${encodeURIComponent(printifyProductId)}`,
   );
 }
 

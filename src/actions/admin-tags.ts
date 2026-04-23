@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { ADMIN_BACKEND_BASE_PATH } from "@/lib/admin-dashboard-urls";
+import { revalidateAdminViews } from "@/lib/revalidate-admin-views";
 import { prisma } from "@/lib/prisma";
 import { getAdminSessionReadonly } from "@/lib/session";
 import { Audience } from "@/generated/prisma/enums";
@@ -54,7 +56,7 @@ export async function adminCreateTag(
     data: { name, slug, sortOrder },
   });
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/shop/all");
   return { ok: true };
 }
@@ -130,7 +132,7 @@ export async function adminUpdateTag(
     },
   });
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/shop/all");
   for (const slugPart of [existing.slug, slug]) {
     revalidatePath(`/shop/tag/${slugPart}`);
@@ -160,7 +162,7 @@ export async function adminDeleteTag(
 
   await prisma.tag.delete({ where: { id } });
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/shop/all");
   revalidatePath(`/shop/tag/${existing.slug}`);
   return { ok: true };
@@ -169,31 +171,31 @@ export async function adminDeleteTag(
 export async function adminCreateTagForm(formData: FormData): Promise<void> {
   const r = await adminCreateTag(formData);
   if (!r.ok) {
-    redirect(`/admin?tab=tags&tag_err=${encodeURIComponent(r.error)}#tags`);
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=tags&tag_err=${encodeURIComponent(r.error)}#tags`);
   }
-  redirect("/admin?tab=tags&tag_saved=created#tags");
+  redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=tags&tag_saved=created#tags`);
 }
 
 export async function adminUpdateTagForm(formData: FormData): Promise<void> {
   const savedTagId = String(formData.get("tagId") ?? "").trim();
   const r = await adminUpdateTag(formData);
   if (!r.ok) {
-    redirect(`/admin?tab=tags&tag_err=${encodeURIComponent(r.error)}#tags`);
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=tags&tag_err=${encodeURIComponent(r.error)}#tags`);
   }
   const q = new URLSearchParams({
     tab: "tags",
     tag_saved: "updated",
     ...(savedTagId ? { saved_tag_id: savedTagId } : {}),
   });
-  redirect(`/admin?${q.toString()}#tags`);
+  redirect(`${ADMIN_BACKEND_BASE_PATH}?${q.toString()}#tags`);
 }
 
 export async function adminDeleteTagForm(formData: FormData): Promise<void> {
   const r = await adminDeleteTag(formData);
   if (!r.ok) {
-    redirect(`/admin?tab=tags&tag_err=${encodeURIComponent(r.error)}#tags`);
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=tags&tag_err=${encodeURIComponent(r.error)}#tags`);
   }
-  redirect("/admin?tab=tags&tag_saved=deleted#tags");
+  redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=tags&tag_saved=deleted#tags`);
 }
 
 export type AdminEnsureTagRow = {
@@ -248,7 +250,7 @@ export async function adminEnsureTagByName(
     data: { name, slug, sortOrder: 99 },
   });
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/shop/all");
 
   return {

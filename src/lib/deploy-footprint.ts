@@ -44,6 +44,55 @@ export async function getDirectoryTotalSizeBytes(dir: string): Promise<number | 
   return total;
 }
 
+/**
+ * Like {@link getDirectoryTotalSizeBytes} but does not recurse into immediate child directories of `dir`
+ * whose names are in `skipChildNames` (useful to skip `.next/cache` and `.next/dev` in one pass).
+ */
+export async function getDirectoryTotalSizeBytesSkippingDirectSubdirs(
+  dir: string,
+  skipChildNames: ReadonlySet<string>,
+): Promise<number | null> {
+  let st;
+  try {
+    st = await fs.stat(dir);
+  } catch {
+    return null;
+  }
+  if (!st.isDirectory()) return null;
+
+  let total = 0;
+  const pending: string[] = [dir];
+  while (pending.length) {
+    const current = pending.pop()!;
+    let entries;
+    try {
+      entries = await fs.readdir(current, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const ent of entries) {
+      const full = path.join(current, ent.name);
+      try {
+        if (ent.isDirectory()) {
+          if (current === dir && skipChildNames.has(ent.name)) {
+            continue;
+          }
+          pending.push(full);
+        } else if (ent.isFile()) {
+          const f = await fs.stat(full);
+          total += f.size;
+        } else if (ent.isSymbolicLink()) {
+          const f = await fs.stat(full);
+          if (f.isFile()) total += f.size;
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+  return total;
+}
+
 export function formatBytesForAdmin(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return "—";
   if (bytes < 1024) return `${bytes} B`;
@@ -74,19 +123,10 @@ export type AdminDeployFootprint = {
 };
 
 /** Dev-only directories under `.next` that inflate on-disk size but are not shipped like production output. */
-const NEXT_DEV_HEAVY_SUBDIRS = ["cache", "dev"] as const;
+const NEXT_DEV_HEAVY_SUBDIRS = new Set(["cache", "dev"]);
 
 async function getNextArtifactSizeBytesExcludingDevCaches(nextDir: string): Promise<number | null> {
-  const total = await getDirectoryTotalSizeBytes(nextDir);
-  if (total == null) return null;
-  let excluded = 0;
-  for (const name of NEXT_DEV_HEAVY_SUBDIRS) {
-    const sub = path.join(nextDir, name);
-    const s = await getDirectoryTotalSizeBytes(sub);
-    if (s != null) excluded += s;
-  }
-  const artifact = total - excluded;
-  return artifact >= 0 ? artifact : null;
+  return getDirectoryTotalSizeBytesSkippingDirectSubdirs(nextDir, NEXT_DEV_HEAVY_SUBDIRS);
 }
 
 /**
@@ -104,13 +144,18 @@ export async function getAdminDeployFootprint(): Promise<AdminDeployFootprint> {
     nextBuildDirPresent = false;
   }
 
-  const nextBuildBytes = nextBuildDirPresent
-    ? await getDirectoryTotalSizeBytes(nextDir)
-    : null;
-
   const nextBuildArtifactBytes = nextBuildDirPresent
     ? await getNextArtifactSizeBytesExcludingDevCaches(nextDir)
     : null;
+
+  /**
+   * Full `.next` size requires walking dev caches (huge under `next dev`). Skip that in development so
+   * admin pages (including lightweight tabs) stay responsive.
+   */
+  const nextBuildBytes =
+    nextBuildDirPresent && process.env.NODE_ENV !== "development"
+      ? await getDirectoryTotalSizeBytes(nextDir)
+      : null;
 
   return {
     nextBuildBytes,

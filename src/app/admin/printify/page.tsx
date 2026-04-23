@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { ADMIN_BACKEND_BASE_PATH } from "@/lib/admin-dashboard-urls";
 
 export const dynamic = "force-dynamic";
 
@@ -14,5 +15,5 @@ export default async function AdminPrintifyRedirect({ searchParams }: PageProps)
     if (typeof val === "string") params.set(key, val);
     else if (Array.isArray(val) && val[0]) params.set(key, val[0]);
   }
-  redirect(`/admin?${params.toString()}`);
+  redirect(`${ADMIN_BACKEND_BASE_PATH}?${params.toString()}`);
 }

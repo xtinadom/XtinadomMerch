@@ -28,10 +28,12 @@ export type AggregateShopListing = {
 
 export type ShopListingAvgAggregateOutputType = {
   priceCents: number | null
+  listingPublicationFeePaidCents: number | null
 }
 
 export type ShopListingSumAggregateOutputType = {
   priceCents: number | null
+  listingPublicationFeePaidCents: number | null
 }
 
 export type ShopListingMinAggregateOutputType = {
@@ -43,6 +45,7 @@ export type ShopListingMinAggregateOutputType = {
   featuredOnShop: boolean | null
   featuredForHome: boolean | null
   listingFeePaidAt: Date | null
+  listingPublicationFeePaidCents: number | null
   listingPrintifyProductId: string | null
   listingPrintifyVariantId: string | null
   listingPrintifyCatalogSyncedAt: Date | null
@@ -69,6 +72,7 @@ export type ShopListingMaxAggregateOutputType = {
   featuredOnShop: boolean | null
   featuredForHome: boolean | null
   listingFeePaidAt: Date | null
+  listingPublicationFeePaidCents: number | null
   listingPrintifyProductId: string | null
   listingPrintifyVariantId: string | null
   listingPrintifyCatalogSyncedAt: Date | null
@@ -95,6 +99,7 @@ export type ShopListingCountAggregateOutputType = {
   featuredOnShop: number
   featuredForHome: number
   listingFeePaidAt: number
+  listingPublicationFeePaidCents: number
   listingPrintifyProductId: number
   listingPrintifyVariantId: number
   listingPrintifyVariantPrices: number
@@ -119,10 +124,12 @@ export type ShopListingCountAggregateOutputType = {
 
 export type ShopListingAvgAggregateInputType = {
   priceCents?: true
+  listingPublicationFeePaidCents?: true
 }
 
 export type ShopListingSumAggregateInputType = {
   priceCents?: true
+  listingPublicationFeePaidCents?: true
 }
 
 export type ShopListingMinAggregateInputType = {
@@ -134,6 +141,7 @@ export type ShopListingMinAggregateInputType = {
   featuredOnShop?: true
   featuredForHome?: true
   listingFeePaidAt?: true
+  listingPublicationFeePaidCents?: true
   listingPrintifyProductId?: true
   listingPrintifyVariantId?: true
   listingPrintifyCatalogSyncedAt?: true
@@ -160,6 +168,7 @@ export type ShopListingMaxAggregateInputType = {
   featuredOnShop?: true
   featuredForHome?: true
   listingFeePaidAt?: true
+  listingPublicationFeePaidCents?: true
   listingPrintifyProductId?: true
   listingPrintifyVariantId?: true
   listingPrintifyCatalogSyncedAt?: true
@@ -186,6 +195,7 @@ export type ShopListingCountAggregateInputType = {
   featuredOnShop?: true
   featuredForHome?: true
   listingFeePaidAt?: true
+  listingPublicationFeePaidCents?: true
   listingPrintifyProductId?: true
   listingPrintifyVariantId?: true
   listingPrintifyVariantPrices?: true
@@ -302,6 +312,7 @@ export type ShopListingGroupByOutputType = {
   featuredOnShop: boolean
   featuredForHome: boolean
   listingFeePaidAt: Date | null
+  listingPublicationFeePaidCents: number | null
   listingPrintifyProductId: string | null
   listingPrintifyVariantId: string | null
   listingPrintifyVariantPrices: runtime.JsonValue | null
@@ -354,6 +365,7 @@ export type ShopListingWhereInput = {
   featuredOnShop?: Prisma.BoolFilter<"ShopListing"> | boolean
   featuredForHome?: Prisma.BoolFilter<"ShopListing"> | boolean
   listingFeePaidAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.IntNullableFilter<"ShopListing"> | number | null
   listingPrintifyProductId?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   listingPrintifyVariantId?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   listingPrintifyVariantPrices?: Prisma.JsonNullableFilter<"ShopListing">
@@ -388,6 +400,7 @@ export type ShopListingOrderByWithRelationInput = {
   featuredOnShop?: Prisma.SortOrder
   featuredForHome?: Prisma.SortOrder
   listingFeePaidAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  listingPublicationFeePaidCents?: Prisma.SortOrderInput | Prisma.SortOrder
   listingPrintifyProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   listingPrintifyVariantId?: Prisma.SortOrderInput | Prisma.SortOrder
   listingPrintifyVariantPrices?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -426,6 +439,7 @@ export type ShopListingWhereUniqueInput = Prisma.AtLeast<{
   featuredOnShop?: Prisma.BoolFilter<"ShopListing"> | boolean
   featuredForHome?: Prisma.BoolFilter<"ShopListing"> | boolean
   listingFeePaidAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.IntNullableFilter<"ShopListing"> | number | null
   listingPrintifyProductId?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   listingPrintifyVariantId?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   listingPrintifyVariantPrices?: Prisma.JsonNullableFilter<"ShopListing">
@@ -460,6 +474,7 @@ export type ShopListingOrderByWithAggregationInput = {
   featuredOnShop?: Prisma.SortOrder
   featuredForHome?: Prisma.SortOrder
   listingFeePaidAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  listingPublicationFeePaidCents?: Prisma.SortOrderInput | Prisma.SortOrder
   listingPrintifyProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   listingPrintifyVariantId?: Prisma.SortOrderInput | Prisma.SortOrder
   listingPrintifyVariantPrices?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -497,6 +512,7 @@ export type ShopListingScalarWhereWithAggregatesInput = {
   featuredOnShop?: Prisma.BoolWithAggregatesFilter<"ShopListing"> | boolean
   featuredForHome?: Prisma.BoolWithAggregatesFilter<"ShopListing"> | boolean
   listingFeePaidAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ShopListing"> | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.IntNullableWithAggregatesFilter<"ShopListing"> | number | null
   listingPrintifyProductId?: Prisma.StringNullableWithAggregatesFilter<"ShopListing"> | string | null
   listingPrintifyVariantId?: Prisma.StringNullableWithAggregatesFilter<"ShopListing"> | string | null
   listingPrintifyVariantPrices?: Prisma.JsonNullableWithAggregatesFilter<"ShopListing">
@@ -524,6 +540,7 @@ export type ShopListingCreateInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -558,6 +575,7 @@ export type ShopListingUncheckedCreateInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -588,6 +606,7 @@ export type ShopListingUpdateInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -622,6 +641,7 @@ export type ShopListingUncheckedUpdateInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -654,6 +674,7 @@ export type ShopListingCreateManyInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -681,6 +702,7 @@ export type ShopListingUpdateManyMutationInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -710,6 +732,7 @@ export type ShopListingUncheckedUpdateManyInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -759,6 +782,7 @@ export type ShopListingCountOrderByAggregateInput = {
   featuredOnShop?: Prisma.SortOrder
   featuredForHome?: Prisma.SortOrder
   listingFeePaidAt?: Prisma.SortOrder
+  listingPublicationFeePaidCents?: Prisma.SortOrder
   listingPrintifyProductId?: Prisma.SortOrder
   listingPrintifyVariantId?: Prisma.SortOrder
   listingPrintifyVariantPrices?: Prisma.SortOrder
@@ -781,6 +805,7 @@ export type ShopListingCountOrderByAggregateInput = {
 
 export type ShopListingAvgOrderByAggregateInput = {
   priceCents?: Prisma.SortOrder
+  listingPublicationFeePaidCents?: Prisma.SortOrder
 }
 
 export type ShopListingMaxOrderByAggregateInput = {
@@ -792,6 +817,7 @@ export type ShopListingMaxOrderByAggregateInput = {
   featuredOnShop?: Prisma.SortOrder
   featuredForHome?: Prisma.SortOrder
   listingFeePaidAt?: Prisma.SortOrder
+  listingPublicationFeePaidCents?: Prisma.SortOrder
   listingPrintifyProductId?: Prisma.SortOrder
   listingPrintifyVariantId?: Prisma.SortOrder
   listingPrintifyCatalogSyncedAt?: Prisma.SortOrder
@@ -818,6 +844,7 @@ export type ShopListingMinOrderByAggregateInput = {
   featuredOnShop?: Prisma.SortOrder
   featuredForHome?: Prisma.SortOrder
   listingFeePaidAt?: Prisma.SortOrder
+  listingPublicationFeePaidCents?: Prisma.SortOrder
   listingPrintifyProductId?: Prisma.SortOrder
   listingPrintifyVariantId?: Prisma.SortOrder
   listingPrintifyCatalogSyncedAt?: Prisma.SortOrder
@@ -837,6 +864,7 @@ export type ShopListingMinOrderByAggregateInput = {
 
 export type ShopListingSumOrderByAggregateInput = {
   priceCents?: Prisma.SortOrder
+  listingPublicationFeePaidCents?: Prisma.SortOrder
 }
 
 export type ShopListingCreateNestedManyWithoutProductInput = {
@@ -982,6 +1010,7 @@ export type ShopListingCreateWithoutProductInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1014,6 +1043,7 @@ export type ShopListingUncheckedCreateWithoutProductInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1075,6 +1105,7 @@ export type ShopListingScalarWhereInput = {
   featuredOnShop?: Prisma.BoolFilter<"ShopListing"> | boolean
   featuredForHome?: Prisma.BoolFilter<"ShopListing"> | boolean
   listingFeePaidAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.IntNullableFilter<"ShopListing"> | number | null
   listingPrintifyProductId?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   listingPrintifyVariantId?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   listingPrintifyVariantPrices?: Prisma.JsonNullableFilter<"ShopListing">
@@ -1102,6 +1133,7 @@ export type ShopListingCreateWithoutShopHomeFeaturedInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1135,6 +1167,7 @@ export type ShopListingUncheckedCreateWithoutShopHomeFeaturedInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1169,6 +1202,7 @@ export type ShopListingCreateWithoutShopInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1201,6 +1235,7 @@ export type ShopListingUncheckedCreateWithoutShopInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1252,6 +1287,7 @@ export type ShopListingUpdateWithoutShopHomeFeaturedInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1285,6 +1321,7 @@ export type ShopListingUncheckedUpdateWithoutShopHomeFeaturedInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1330,6 +1367,7 @@ export type ShopListingCreateWithoutRejectionNoticesInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1363,6 +1401,7 @@ export type ShopListingUncheckedCreateWithoutRejectionNoticesInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1408,6 +1447,7 @@ export type ShopListingUpdateWithoutRejectionNoticesInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1441,6 +1481,7 @@ export type ShopListingUncheckedUpdateWithoutRejectionNoticesInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1470,6 +1511,7 @@ export type ShopListingCreateWithoutOrderLinesInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1503,6 +1545,7 @@ export type ShopListingUncheckedCreateWithoutOrderLinesInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1548,6 +1591,7 @@ export type ShopListingUpdateWithoutOrderLinesInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1581,6 +1625,7 @@ export type ShopListingUncheckedUpdateWithoutOrderLinesInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1611,6 +1656,7 @@ export type ShopListingCreateManyProductInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1638,6 +1684,7 @@ export type ShopListingUpdateWithoutProductInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1670,6 +1717,7 @@ export type ShopListingUncheckedUpdateWithoutProductInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1701,6 +1749,7 @@ export type ShopListingUncheckedUpdateManyWithoutProductInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1729,6 +1778,7 @@ export type ShopListingCreateManyShopInput = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: Date | string | null
+  listingPublicationFeePaidCents?: number | null
   listingPrintifyProductId?: string | null
   listingPrintifyVariantId?: string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1756,6 +1806,7 @@ export type ShopListingUpdateWithoutShopInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1788,6 +1839,7 @@ export type ShopListingUncheckedUpdateWithoutShopInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1819,6 +1871,7 @@ export type ShopListingUncheckedUpdateManyWithoutShopInput = {
   featuredOnShop?: Prisma.BoolFieldUpdateOperationsInput | boolean
   featuredForHome?: Prisma.BoolFieldUpdateOperationsInput | boolean
   listingFeePaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listingPublicationFeePaidCents?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   listingPrintifyProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   listingPrintifyVariantPrices?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1888,6 +1941,7 @@ export type ShopListingSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: boolean
+  listingPublicationFeePaidCents?: boolean
   listingPrintifyProductId?: boolean
   listingPrintifyVariantId?: boolean
   listingPrintifyVariantPrices?: boolean
@@ -1923,6 +1977,7 @@ export type ShopListingSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: boolean
+  listingPublicationFeePaidCents?: boolean
   listingPrintifyProductId?: boolean
   listingPrintifyVariantId?: boolean
   listingPrintifyVariantPrices?: boolean
@@ -1954,6 +2009,7 @@ export type ShopListingSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: boolean
+  listingPublicationFeePaidCents?: boolean
   listingPrintifyProductId?: boolean
   listingPrintifyVariantId?: boolean
   listingPrintifyVariantPrices?: boolean
@@ -1985,6 +2041,7 @@ export type ShopListingSelectScalar = {
   featuredOnShop?: boolean
   featuredForHome?: boolean
   listingFeePaidAt?: boolean
+  listingPublicationFeePaidCents?: boolean
   listingPrintifyProductId?: boolean
   listingPrintifyVariantId?: boolean
   listingPrintifyVariantPrices?: boolean
@@ -2005,7 +2062,7 @@ export type ShopListingSelectScalar = {
   updatedAt?: boolean
 }
 
-export type ShopListingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "shopId" | "productId" | "priceCents" | "active" | "featuredOnShop" | "featuredForHome" | "listingFeePaidAt" | "listingPrintifyProductId" | "listingPrintifyVariantId" | "listingPrintifyVariantPrices" | "listingPrintifyCatalogSyncedAt" | "requestImages" | "ownerSupplementImageUrl" | "adminListingSecondaryImageUrl" | "listingStorefrontCatalogImageUrls" | "requestItemName" | "baselineCatalogPickEncoded" | "requestStatus" | "adminRemovedFromShopAt" | "creatorRemovedFromShopAt" | "hiddenStorefrontForAccountDeletionAt" | "removedFromListingRequestsAt" | "adminListingRemovalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["shopListing"]>
+export type ShopListingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "shopId" | "productId" | "priceCents" | "active" | "featuredOnShop" | "featuredForHome" | "listingFeePaidAt" | "listingPublicationFeePaidCents" | "listingPrintifyProductId" | "listingPrintifyVariantId" | "listingPrintifyVariantPrices" | "listingPrintifyCatalogSyncedAt" | "requestImages" | "ownerSupplementImageUrl" | "adminListingSecondaryImageUrl" | "listingStorefrontCatalogImageUrls" | "requestItemName" | "baselineCatalogPickEncoded" | "requestStatus" | "adminRemovedFromShopAt" | "creatorRemovedFromShopAt" | "hiddenStorefrontForAccountDeletionAt" | "removedFromListingRequestsAt" | "adminListingRemovalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["shopListing"]>
 export type ShopListingInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -2041,6 +2098,12 @@ export type $ShopListingPayload<ExtArgs extends runtime.Types.Extensions.Interna
     featuredOnShop: boolean
     featuredForHome: boolean
     listingFeePaidAt: Date | null
+    /**
+     * *
+     *    * USD cents recorded when the listing publication fee was satisfied (paid checkout, mock, or $0 free slot).
+     *    * Null on legacy rows before this column; admin may infer an amount from listing ordinal policy.
+     */
+    listingPublicationFeePaidCents: number | null
     /**
      * * Shop-specific Printify product id (admin); used for fulfillment instead of Product.printifyProductId when set.
      */
@@ -2550,6 +2613,7 @@ export interface ShopListingFieldRefs {
   readonly featuredOnShop: Prisma.FieldRef<"ShopListing", 'Boolean'>
   readonly featuredForHome: Prisma.FieldRef<"ShopListing", 'Boolean'>
   readonly listingFeePaidAt: Prisma.FieldRef<"ShopListing", 'DateTime'>
+  readonly listingPublicationFeePaidCents: Prisma.FieldRef<"ShopListing", 'Int'>
   readonly listingPrintifyProductId: Prisma.FieldRef<"ShopListing", 'String'>
   readonly listingPrintifyVariantId: Prisma.FieldRef<"ShopListing", 'String'>
   readonly listingPrintifyVariantPrices: Prisma.FieldRef<"ShopListing", 'Json'>

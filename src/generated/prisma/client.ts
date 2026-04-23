@@ -142,6 +142,13 @@ export type AdminCatalogItem = Prisma.AdminCatalogItemModel
  */
 export type AdminCatalogItemTag = Prisma.AdminCatalogItemTagModel
 /**
+ * Model SiteEmailTemplate
+ * *
+ *  * Optional overrides for automated site emails (admin → Email format tab).
+ *  * When a row is missing, built-in defaults from code are used.
+ */
+export type SiteEmailTemplate = Prisma.SiteEmailTemplateModel
+/**
  * Model Comment
  * * Free-form text rows (e.g. notes). Requires an id for Prisma; add rows via SQL or future UI.
  */

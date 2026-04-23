@@ -15,7 +15,7 @@ export type AdminCatalogVariant = {
 
 /**
  * Extract platform `Product.id` from admin / example URLs that include `listing=<id>`
- * (e.g. `/admin?tab=printify&listing=clxxx`).
+ * (e.g. `/admin/backend?tab=printify&listing=clxxx`).
  */
 export function parseProductIdFromListingExampleUrl(url: string): string | null {
   const t = url.trim();

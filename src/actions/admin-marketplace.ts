@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidateAdminViews } from "@/lib/revalidate-admin-views";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
@@ -149,7 +150,7 @@ export async function adminUpsertShopListingSecondaryImageForm(
     return { ok: false, error: `Upload failed: ${msg}` };
   }
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/dashboard");
   revalidatePath(`/s/${listing.shop.slug}`);
 
@@ -175,7 +176,7 @@ export async function adminClearShopListingSecondaryImage(formData: FormData): P
     data: { adminListingSecondaryImageUrl: null },
   });
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/dashboard");
   revalidatePath(`/s/${listing.shop.slug}`);
 }
@@ -198,7 +199,7 @@ export async function adminMarkListingImagesOk(formData: FormData) {
     select: { shop: { select: { slug: true } } },
   });
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/dashboard");
   revalidatePath(`/s/${row.shop.slug}`);
 }
@@ -230,7 +231,7 @@ export async function adminMarkLegacyVariantListingGroupImagesOk(formData: FormD
   );
 
   const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } });
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/dashboard");
   if (shop?.slug) revalidatePath(`/s/${shop.slug}`);
 }
@@ -295,7 +296,7 @@ export async function adminMarkPrintifyListingReady(formData: FormData) {
     listingPrintifyVariantId: printifyVariantId || null,
   });
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/shops");
   revalidatePath(`/s/${listing.shop.slug}`);
 }
@@ -403,6 +404,7 @@ async function tryExecuteAdminApproveListingRequest(
         requestStatus: ListingRequestStatus.approved,
         active: true,
         listingFeePaidAt: listing.listingFeePaidAt ?? new Date(),
+        listingPublicationFeePaidCents: listing.listingPublicationFeePaidCents ?? 0,
         requestImages: [],
       },
     });
@@ -475,7 +477,7 @@ export async function adminApproveListingRequest(formData: FormData): Promise<vo
     return;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/shops");
   revalidatePath("/dashboard");
   revalidatePath(`/s/${result.shopSlug}`);
@@ -516,7 +518,7 @@ export async function adminApproveListingRequestFormState(
     return { error: msg };
   }
 
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/shops");
   revalidatePath("/dashboard");
   revalidatePath(`/s/${result.shopSlug}`);
@@ -552,7 +554,7 @@ export async function adminApproveLegacyVariantListingGroup(formData: FormData):
   for (const slug of shopSlugs) {
     revalidatePath(`/s/${slug}`);
   }
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/shops");
   revalidatePath("/dashboard");
 }
@@ -585,7 +587,7 @@ export async function adminFreezeShopListing(formData: FormData) {
       body: `The platform froze “${listing.product.name}” — it is hidden from your public shop. Check the Listings tab or contact support if you have questions.`,
     },
   });
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/shops");
   revalidatePath("/dashboard");
 }
@@ -702,7 +704,7 @@ export async function adminRemoveListingFromRequestsQueue(formData: FormData) {
   const listingId = String(formData.get("listingId") ?? "").trim();
   if (!listingId) return;
   if (await executeRemoveListingFromRequestsQueueOnce(listingId)) {
-    revalidatePath("/admin");
+    revalidateAdminViews();
     revalidatePath("/shops");
     revalidatePath("/dashboard");
   }
@@ -729,7 +731,7 @@ export async function adminRemoveLegacyVariantListingGroupFromQueue(formData: Fo
     if (await executeRemoveListingFromRequestsQueueOnce(id)) any = true;
   }
   if (any) {
-    revalidatePath("/admin");
+    revalidateAdminViews();
     revalidatePath("/shops");
     revalidatePath("/dashboard");
   }
@@ -756,7 +758,7 @@ export async function adminUpdateListingRemovalNotes(formData: FormData) {
     where: { id: listingId },
     data: { adminListingRemovalNotes: notes.trim() ? notes : null },
   });
-  revalidatePath("/admin");
+  revalidateAdminViews();
 }
 
 /**
@@ -799,7 +801,7 @@ export async function adminDeleteListingRemovalRecord(formData: FormData) {
       ...(isRejected ? { requestStatus: ListingRequestStatus.draft } : {}),
     },
   });
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/shops");
   revalidatePath("/dashboard");
 }
@@ -841,7 +843,7 @@ export async function adminDeleteShopListingRecord(formData: FormData) {
   });
 
   await syncFreeListingFeeWaivers(listing.shopId);
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/shops");
   revalidatePath("/dashboard");
   revalidatePath(`/s/${listing.shop.slug}`);
@@ -908,7 +910,7 @@ export async function adminRejectListingRequest(formData: FormData): Promise<voi
       body: `The platform rejected your listing request for “${result.productName}”. ${detail} Open the Listings tab for status or contact support.`,
     },
   });
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/shops");
   revalidatePath("/dashboard");
 }
@@ -949,7 +951,7 @@ export async function adminRejectLegacyVariantListingGroup(formData: FormData): 
       body: `The platform rejected your multi-size listing request (${namesJoined}). ${detail} Open the Listings tab for status or contact support.`,
     },
   });
-  revalidatePath("/admin");
+  revalidateAdminViews();
   revalidatePath("/shops");
   revalidatePath("/dashboard");
 }

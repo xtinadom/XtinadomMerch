@@ -70,6 +70,7 @@ export const ModelName = {
   ProcessedStripeEvent: 'ProcessedStripeEvent',
   AdminCatalogItem: 'AdminCatalogItem',
   AdminCatalogItemTag: 'AdminCatalogItemTag',
+  SiteEmailTemplate: 'SiteEmailTemplate',
   Comment: 'Comment'
 } as const
 
@@ -272,6 +273,7 @@ export const ShopListingScalarFieldEnum = {
   featuredOnShop: 'featuredOnShop',
   featuredForHome: 'featuredForHome',
   listingFeePaidAt: 'listingFeePaidAt',
+  listingPublicationFeePaidCents: 'listingPublicationFeePaidCents',
   listingPrintifyProductId: 'listingPrintifyProductId',
   listingPrintifyVariantId: 'listingPrintifyVariantId',
   listingPrintifyVariantPrices: 'listingPrintifyVariantPrices',
@@ -390,6 +392,19 @@ export const AdminCatalogItemTagScalarFieldEnum = {
 } as const
 
 export type AdminCatalogItemTagScalarFieldEnum = (typeof AdminCatalogItemTagScalarFieldEnum)[keyof typeof AdminCatalogItemTagScalarFieldEnum]
+
+
+export const SiteEmailTemplateScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  subject: 'subject',
+  htmlBody: 'htmlBody',
+  textBody: 'textBody',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SiteEmailTemplateScalarFieldEnum = (typeof SiteEmailTemplateScalarFieldEnum)[keyof typeof SiteEmailTemplateScalarFieldEnum]
 
 
 export const CommentScalarFieldEnum = {

@@ -454,12 +454,16 @@ export async function dashboardPayListingFee(formData: FormData) {
   const feeCents = listingFeeCentsForOrdinal(ordinal, shop.slug, shop.listingFeeBonusFreeSlots ?? 0);
 
   if (feeCents === 0) {
-    await fulfillListingFeeForShopListingIfUnpaid(listingId);
+    await fulfillListingFeeForShopListingIfUnpaid(listingId, {
+      paidPublicationFeeCents: 0,
+    });
     redirect("/dashboard?fee=ok");
   }
 
   if (isMockCheckoutEnabled()) {
-    await fulfillListingFeeForShopListingIfUnpaid(listingId);
+    await fulfillListingFeeForShopListingIfUnpaid(listingId, {
+      paidPublicationFeeCents: feeCents,
+    });
     redirect("/dashboard?fee=ok");
   }
 
@@ -592,7 +596,9 @@ export async function finalizeListingFeePaymentIntent(
     return { ok: false, error: `Payment is not complete yet (status: ${pi.status}).` };
   }
 
-  await fulfillListingFeeForShopListingIfUnpaid(listingId);
+  await fulfillListingFeeForShopListingIfUnpaid(listingId, {
+    paidPublicationFeeCents: pi.amount,
+  });
   return { ok: true };
 }
 

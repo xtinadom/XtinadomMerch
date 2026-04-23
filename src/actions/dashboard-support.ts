@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidateAdminViews } from "@/lib/revalidate-admin-views";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getShopOwnerSession } from "@/lib/session";
@@ -46,5 +47,5 @@ export async function dashboardSupportSendMessage(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/admin");
+  revalidateAdminViews();
 }

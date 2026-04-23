@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { resolveMerchQuoteContactEmail } from "@/lib/site-email-template-service";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(200),
@@ -41,7 +42,11 @@ export async function submitMerchQuoteContact(
     };
   }
 
-  const text = `Merch website quote request\n\nName: ${name}\nEmail: ${email}\n\n${message}`;
+  const { subject, text } = await resolveMerchQuoteContactEmail({
+    name,
+    email,
+    message,
+  });
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -53,7 +58,7 @@ export async function submitMerchQuoteContact(
       from,
       to: [to],
       reply_to: email,
-      subject: `Merch website quote — ${name}`,
+      subject,
       text,
     }),
   });

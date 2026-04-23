@@ -1,8 +1,5 @@
 import { emailLinkOrigin } from "@/lib/public-app-url";
-import {
-  SHOP_ACCOUNT_DELETION_SUBJECT,
-  buildShopAccountDeletionConfirmHtml,
-} from "@/lib/shop-account-deletion-email-html";
+import { resolveShopAccountDeletionConfirmEmail } from "@/lib/site-email-template-service";
 
 type SendResult = { ok: true } | { ok: false; error: string };
 
@@ -47,6 +44,8 @@ export async function sendShopAccountDeletionConfirmEmail(
     };
   }
 
+  const { subject, html } = await resolveShopAccountDeletionConfirmEmail(url);
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -56,8 +55,8 @@ export async function sendShopAccountDeletionConfirmEmail(
     body: JSON.stringify({
       from,
       to: [toEmail],
-      subject: SHOP_ACCOUNT_DELETION_SUBJECT,
-      html: buildShopAccountDeletionConfirmHtml(url),
+      subject,
+      html,
     }),
   });
 

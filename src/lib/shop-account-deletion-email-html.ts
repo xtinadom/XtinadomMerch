@@ -1,8 +1,12 @@
+import {
+  SITE_EMAIL_ACTION_URL_PLACEHOLDER,
+  replaceActionUrlInHtmlTemplate,
+} from "@/lib/email-template-placeholders";
+
 export const SHOP_ACCOUNT_DELETION_SUBJECT = "Confirm account deletion";
 
-export function buildShopAccountDeletionConfirmHtml(confirmUrl: string): string {
-  const safe = confirmUrl.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  return `<!DOCTYPE html>
+/** Default full HTML document; `{{ACTION_URL}}` is replaced with the real confirm link when sending. */
+export const SHOP_ACCOUNT_DELETION_HTML_TEMPLATE = `<!DOCTYPE html>
 <html lang="en">
   <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
   <body style="margin:0;background:#0a0a0a;color:#e4e4e7;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;">
@@ -17,7 +21,7 @@ export function buildShopAccountDeletionConfirmHtml(confirmUrl: string): string 
               dashboard again removes the account automatically.
             </p>
             <p style="margin:0 0 20px;">
-              <a href="${safe}" style="display:inline-block;background:#e4e4e7;color:#18181b;text-decoration:none;font-weight:600;font-size:13px;padding:10px 16px;border-radius:8px;">
+              <a href="${SITE_EMAIL_ACTION_URL_PLACEHOLDER}" style="display:inline-block;background:#e4e4e7;color:#18181b;text-decoration:none;font-weight:600;font-size:13px;padding:10px 16px;border-radius:8px;">
                 Confirm deletion email
               </a>
             </p>
@@ -30,4 +34,11 @@ export function buildShopAccountDeletionConfirmHtml(confirmUrl: string): string 
     </table>
   </body>
 </html>`;
+
+export function renderShopAccountDeletionConfirmHtml(template: string, confirmUrl: string): string {
+  return replaceActionUrlInHtmlTemplate(template, confirmUrl);
+}
+
+export function buildShopAccountDeletionConfirmHtml(confirmUrl: string): string {
+  return renderShopAccountDeletionConfirmHtml(SHOP_ACCOUNT_DELETION_HTML_TEMPLATE, confirmUrl);
 }

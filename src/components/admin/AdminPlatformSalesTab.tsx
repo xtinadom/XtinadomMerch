@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { AdminPlatformSalesMergedLine } from "@/lib/admin-platform-sales-merged-lines";
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -12,27 +13,18 @@ function escapeCsvCell(v: string) {
   return v;
 }
 
-type SalesLine = {
-  id: string;
-  quantity: number;
-  unitPriceCents: number;
-  productName: string;
-  goodsServicesCostCents: number;
-  platformCutCents: number;
-  shopCutCents: number;
-  order: { id: string; createdAt: Date };
-  shop: { displayName: string; slug: string } | null;
-};
-
 export function AdminPlatformSalesTab(props: {
-  lines: SalesLine[];
+  lines: AdminPlatformSalesMergedLine[];
   salesFromValue: string;
   salesToValue: string;
 }) {
   const { lines, salesFromValue, salesToValue } = props;
   const csvBody = lines
     .map((l) => {
-      const merch = l.unitPriceCents * l.quantity;
+      const merch =
+        l.kind === "listing_publication_fee"
+          ? 0
+          : l.unitPriceCents * l.quantity;
       const shopName = l.shop?.displayName ?? "";
       const shopSlug = l.shop?.slug ?? "";
       return [
@@ -62,8 +54,8 @@ export function AdminPlatformSalesTab(props: {
         Platform sales (paid lines)
       </h2>
       <p className="mt-1 text-xs text-zinc-600">
-        Merchandise line totals and persisted splits (goods/services cost, platform fee, shop). Tips and shipping are
-        not duplicated here.
+        Paid storefront order lines (merchandise splits) plus listing publication fees (card / mock checkout).
+        Tips and shipping are not included. Publication fees are platform revenue (no shop merchandise split).
       </p>
       <form
         method="get"
@@ -124,7 +116,8 @@ export function AdminPlatformSalesTab(props: {
           </thead>
           <tbody>
             {lines.map((l) => {
-              const merch = l.unitPriceCents * l.quantity;
+              const isPubFee = l.kind === "listing_publication_fee";
+              const merch = isPubFee ? 0 : l.unitPriceCents * l.quantity;
               return (
                 <tr key={l.id} className="border-b border-zinc-900 text-zinc-300">
                   <td className="py-2 pr-2 font-mono text-[10px] text-zinc-500">
@@ -132,7 +125,9 @@ export function AdminPlatformSalesTab(props: {
                   </td>
                   <td className="py-2 pr-2">{l.productName}</td>
                   <td className="py-2 pr-2 tabular-nums">{l.quantity}</td>
-                  <td className="py-2 pr-2 tabular-nums">{formatPrice(merch)}</td>
+                  <td className="py-2 pr-2 tabular-nums">
+                    {isPubFee ? "—" : formatPrice(merch)}
+                  </td>
                   <td className="py-2 pr-2 tabular-nums">{formatPrice(l.goodsServicesCostCents)}</td>
                   <td className="py-2 pr-2 tabular-nums">{formatPrice(l.platformCutCents)}</td>
                   <td className="py-2 pr-2 tabular-nums">{formatPrice(l.shopCutCents)}</td>
@@ -144,7 +139,7 @@ export function AdminPlatformSalesTab(props: {
         </table>
       </div>
       {lines.length === 0 ? (
-        <p className="mt-4 text-sm text-zinc-600">No matching paid lines.</p>
+        <p className="mt-4 text-sm text-zinc-600">No matching paid lines or publication fees.</p>
       ) : null}
     </section>
   );

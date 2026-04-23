@@ -158,14 +158,14 @@ function AdminCatalogItemTagsEditor({
       {allTags.length === 0 ? (
         <p className="mt-3 text-[11px] text-amber-200/80">
           No tags exist yet — add some on the{" "}
-          <Link href="/admin?tab=tags" className="text-amber-100/90 underline-offset-2 hover:underline">
+          <Link href="/admin/backend?tab=tags" className="text-amber-100/90 underline-offset-2 hover:underline">
             Tags
           </Link>{" "}
           tab first.
         </p>
       ) : (
         <p className="mt-3 text-[11px] leading-snug text-zinc-600">
-          <Link href="/admin?tab=tags" className="text-blue-400/80 hover:underline">
+          <Link href="/admin/backend?tab=tags" className="text-blue-400/80 hover:underline">
             Create or rename tags
           </Link>{" "}
           on the Tags tab.

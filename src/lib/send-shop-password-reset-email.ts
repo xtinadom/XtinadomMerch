@@ -1,8 +1,5 @@
 import { emailLinkOrigin } from "@/lib/public-app-url";
-import {
-  SHOP_PASSWORD_RESET_EMAIL_SUBJECT,
-  buildShopPasswordResetEmailHtml,
-} from "@/lib/shop-password-reset-email-html";
+import { resolveShopPasswordResetEmail } from "@/lib/site-email-template-service";
 
 type SendResult = { ok: true } | { ok: false; error: string };
 
@@ -54,6 +51,8 @@ export async function sendShopPasswordResetEmail(
     `[shop-password-reset] Resend POST from=${JSON.stringify(from)} origin=${JSON.stringify(origin)} toDomain=${JSON.stringify(toEmail.includes("@") ? toEmail.split("@")[1] : "?")}`,
   );
 
+  const { subject, html } = await resolveShopPasswordResetEmail(url);
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -63,8 +62,8 @@ export async function sendShopPasswordResetEmail(
     body: JSON.stringify({
       from,
       to: [toEmail],
-      subject: SHOP_PASSWORD_RESET_EMAIL_SUBJECT,
-      html: buildShopPasswordResetEmailHtml(url),
+      subject,
+      html,
     }),
   });
 

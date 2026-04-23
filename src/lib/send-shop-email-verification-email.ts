@@ -1,8 +1,5 @@
 import { emailLinkOrigin } from "@/lib/public-app-url";
-import {
-  SHOP_EMAIL_VERIFICATION_SUBJECT,
-  buildShopEmailVerificationHtml,
-} from "@/lib/shop-email-verification-email-html";
+import { resolveShopEmailVerificationEmail } from "@/lib/site-email-template-service";
 
 type SendResult = { ok: true } | { ok: false; error: string };
 
@@ -47,6 +44,8 @@ export async function sendShopEmailVerificationEmail(
     };
   }
 
+  const { subject, html } = await resolveShopEmailVerificationEmail(url);
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -56,8 +55,8 @@ export async function sendShopEmailVerificationEmail(
     body: JSON.stringify({
       from,
       to: [toEmail],
-      subject: SHOP_EMAIL_VERIFICATION_SUBJECT,
-      html: buildShopEmailVerificationHtml(url),
+      subject,
+      html,
     }),
   });
 

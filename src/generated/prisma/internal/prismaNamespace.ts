@@ -403,6 +403,7 @@ export const ModelName = {
   ProcessedStripeEvent: 'ProcessedStripeEvent',
   AdminCatalogItem: 'AdminCatalogItem',
   AdminCatalogItemTag: 'AdminCatalogItemTag',
+  SiteEmailTemplate: 'SiteEmailTemplate',
   Comment: 'Comment'
 } as const
 
@@ -419,7 +420,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tag" | "productTag" | "product" | "shop" | "shopListingSlotPromoRedemption" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopAccountDeletionToken" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "adminCatalogItemTag" | "comment"
+    modelProps: "tag" | "productTag" | "product" | "shop" | "shopListingSlotPromoRedemption" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopAccountDeletionToken" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "adminCatalogItemTag" | "siteEmailTemplate" | "comment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1829,6 +1830,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SiteEmailTemplate: {
+      payload: Prisma.$SiteEmailTemplatePayload<ExtArgs>
+      fields: Prisma.SiteEmailTemplateFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SiteEmailTemplateFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SiteEmailTemplatePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SiteEmailTemplateFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SiteEmailTemplatePayload>
+        }
+        findFirst: {
+          args: Prisma.SiteEmailTemplateFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SiteEmailTemplatePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SiteEmailTemplateFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SiteEmailTemplatePayload>
+        }
+        findMany: {
+          args: Prisma.SiteEmailTemplateFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SiteEmailTemplatePayload>[]
+        }
+        create: {
+          args: Prisma.SiteEmailTemplateCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SiteEmailTemplatePayload>
+        }
+        createMany: {
+          args: Prisma.SiteEmailTemplateCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SiteEmailTemplateCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SiteEmailTemplatePayload>[]
+        }
+        delete: {
+          args: Prisma.SiteEmailTemplateDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SiteEmailTemplatePayload>
+        }
+        update: {
+          args: Prisma.SiteEmailTemplateUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SiteEmailTemplatePayload>
+        }
+        deleteMany: {
+          args: Prisma.SiteEmailTemplateDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SiteEmailTemplateUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SiteEmailTemplateUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SiteEmailTemplatePayload>[]
+        }
+        upsert: {
+          args: Prisma.SiteEmailTemplateUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SiteEmailTemplatePayload>
+        }
+        aggregate: {
+          args: Prisma.SiteEmailTemplateAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSiteEmailTemplate>
+        }
+        groupBy: {
+          args: Prisma.SiteEmailTemplateGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SiteEmailTemplateGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SiteEmailTemplateCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SiteEmailTemplateCountAggregateOutputType> | number
+        }
+      }
+    }
     Comment: {
       payload: Prisma.$CommentPayload<ExtArgs>
       fields: Prisma.CommentFieldRefs
@@ -2125,6 +2200,7 @@ export const ShopListingScalarFieldEnum = {
   featuredOnShop: 'featuredOnShop',
   featuredForHome: 'featuredForHome',
   listingFeePaidAt: 'listingFeePaidAt',
+  listingPublicationFeePaidCents: 'listingPublicationFeePaidCents',
   listingPrintifyProductId: 'listingPrintifyProductId',
   listingPrintifyVariantId: 'listingPrintifyVariantId',
   listingPrintifyVariantPrices: 'listingPrintifyVariantPrices',
@@ -2243,6 +2319,19 @@ export const AdminCatalogItemTagScalarFieldEnum = {
 } as const
 
 export type AdminCatalogItemTagScalarFieldEnum = (typeof AdminCatalogItemTagScalarFieldEnum)[keyof typeof AdminCatalogItemTagScalarFieldEnum]
+
+
+export const SiteEmailTemplateScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  subject: 'subject',
+  htmlBody: 'htmlBody',
+  textBody: 'textBody',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SiteEmailTemplateScalarFieldEnum = (typeof SiteEmailTemplateScalarFieldEnum)[keyof typeof SiteEmailTemplateScalarFieldEnum]
 
 
 export const CommentScalarFieldEnum = {
@@ -2595,6 +2684,7 @@ export type GlobalOmitConfig = {
   processedStripeEvent?: Prisma.ProcessedStripeEventOmit
   adminCatalogItem?: Prisma.AdminCatalogItemOmit
   adminCatalogItemTag?: Prisma.AdminCatalogItemTagOmit
+  siteEmailTemplate?: Prisma.SiteEmailTemplateOmit
   comment?: Prisma.CommentOmit
 }
 

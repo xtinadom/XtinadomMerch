@@ -31,7 +31,7 @@ export async function syncFreeListingFeeWaivers(shopId: string): Promise<void> {
     if (i + 1 <= maxFreeOrdinals && !rows[i].listingFeePaidAt) {
       await prisma.shopListing.update({
         where: { id: rows[i].id },
-        data: { listingFeePaidAt: now },
+        data: { listingFeePaidAt: now, listingPublicationFeePaidCents: 0 },
       });
     }
   }

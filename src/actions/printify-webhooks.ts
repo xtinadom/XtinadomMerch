@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { ADMIN_BACKEND_BASE_PATH } from "@/lib/admin-dashboard-urls";
 import { createPrintifyWebhook, listPrintifyWebhooks } from "@/lib/printify";
 import { webhookPublicBaseUrl } from "@/lib/public-app-url";
 import { getAdminSessionReadonly } from "@/lib/session";
@@ -19,13 +20,13 @@ export async function registerPrintifyStorefrontWebhook(): Promise<void> {
   const base = webhookPublicBaseUrl();
 
   if (!shopId) {
-    redirect("/admin?tab=printify-api&pfyHook=err&pfyHookReason=no_shop");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify-api&pfyHook=err&pfyHookReason=no_shop`);
   }
   if (!secret || secret.length < 16) {
-    redirect("/admin?tab=printify-api&pfyHook=err&pfyHookReason=no_secret");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify-api&pfyHook=err&pfyHookReason=no_secret`);
   }
   if (!base) {
-    redirect("/admin?tab=printify-api&pfyHook=err&pfyHookReason=no_public_url");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify-api&pfyHook=err&pfyHookReason=no_public_url`);
   }
 
   const url = `${base}/api/webhooks/printify`;
@@ -36,13 +37,13 @@ export async function registerPrintifyStorefrontWebhook(): Promise<void> {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     redirect(
-      `/admin?tab=printify-api&pfyHook=err&pfyHookReason=${encodeURIComponent(msg.slice(0, 240))}`,
+      `${ADMIN_BACKEND_BASE_PATH}?tab=printify-api&pfyHook=err&pfyHookReason=${encodeURIComponent(msg.slice(0, 240))}`,
     );
   }
 
   const already = existing.some((w) => w.topic === WEBHOOK_TOPIC && w.url === url);
   if (already) {
-    redirect("/admin?tab=printify-api&pfyHook=ok&pfyHookDetail=already");
+    redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify-api&pfyHook=ok&pfyHookDetail=already`);
   }
 
   const created = await createPrintifyWebhook(shopId, {
@@ -54,9 +55,9 @@ export async function registerPrintifyStorefrontWebhook(): Promise<void> {
   if (!created.ok) {
     const snippet = created.body.replace(/\s+/g, " ").slice(0, 240);
     redirect(
-      `/admin?tab=printify-api&pfyHook=err&pfyHookReason=${encodeURIComponent(`api_${created.status}: ${snippet}`)}`,
+      `${ADMIN_BACKEND_BASE_PATH}?tab=printify-api&pfyHook=err&pfyHookReason=${encodeURIComponent(`api_${created.status}: ${snippet}`)}`,
     );
   }
 
-  redirect("/admin?tab=printify-api&pfyHook=ok");
+  redirect(`${ADMIN_BACKEND_BASE_PATH}?tab=printify-api&pfyHook=ok`);
 }

@@ -8,7 +8,10 @@ import { activateProductWhenShopListingGoesLive } from "@/lib/shop-listing-publi
  * Idempotent: no-op if `listingFeePaidAt` is already set.
  * @returns true when this listing was updated (first time).
  */
-export async function fulfillListingFeeForShopListingIfUnpaid(listingId: string): Promise<boolean> {
+export async function fulfillListingFeeForShopListingIfUnpaid(
+  listingId: string,
+  options?: { paidPublicationFeeCents?: number },
+): Promise<boolean> {
   const row = await prisma.shopListing.findUnique({
     where: { id: listingId },
     select: {
@@ -33,6 +36,9 @@ export async function fulfillListingFeeForShopListingIfUnpaid(listingId: string)
     where: { id: listingId },
     data: {
       listingFeePaidAt: new Date(),
+      ...(options?.paidPublicationFeeCents !== undefined
+        ? { listingPublicationFeePaidCents: options.paidPublicationFeeCents }
+        : {}),
       ...(publishAfterFee ? { active: true } : {}),
     },
   });

@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { revalidateAdminViews } from "@/lib/revalidate-admin-views";
 import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -409,7 +410,7 @@ export async function submitFirstListingSetup(
   );
   revalidatePath("/dashboard");
   revalidatePath(`/s/${shop.slug}`);
-  revalidatePath("/admin");
+  revalidateAdminViews();
   if (gate.downgraded && gate.message) {
     return { ok: true, message: gate.message };
   }

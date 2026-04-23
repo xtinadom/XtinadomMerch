@@ -27,7 +27,21 @@ async function fulfillListingFeeCheckout(session: Stripe.Checkout.Session): Prom
   if (session.metadata?.kind !== "listing_fee") return false;
   const listingId = session.metadata.shopListingId;
   if (!listingId || typeof listingId !== "string") return true;
-  await fulfillListingFeeForShopListingIfUnpaid(listingId);
+  const fromTotal =
+    typeof session.amount_total === "number" && Number.isFinite(session.amount_total)
+      ? session.amount_total
+      : undefined;
+  const fromMeta = session.metadata?.feeCents
+    ? parseInt(String(session.metadata.feeCents), 10)
+    : NaN;
+  const paidPublicationFeeCents =
+    fromTotal ??
+    (Number.isFinite(fromMeta) ? fromMeta : undefined);
+  await fulfillListingFeeForShopListingIfUnpaid(listingId, {
+    ...(paidPublicationFeeCents !== undefined
+      ? { paidPublicationFeeCents }
+      : {}),
+  });
   return true;
 }
 
@@ -36,7 +50,11 @@ async function fulfillListingFeePaymentIntent(pi: Stripe.PaymentIntent): Promise
   const listingId = pi.metadata.shopListingId;
   if (!listingId || typeof listingId !== "string") return true;
   if (pi.status !== "succeeded") return true;
-  await fulfillListingFeeForShopListingIfUnpaid(listingId);
+  const paidPublicationFeeCents =
+    typeof pi.amount === "number" && Number.isFinite(pi.amount) ? pi.amount : undefined;
+  await fulfillListingFeeForShopListingIfUnpaid(listingId, {
+    ...(paidPublicationFeeCents !== undefined ? { paidPublicationFeeCents } : {}),
+  });
   return true;
 }
 

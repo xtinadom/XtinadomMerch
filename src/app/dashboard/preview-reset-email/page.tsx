@@ -2,10 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { emailLinkOrigin } from "@/lib/public-app-url";
 import {
-  SHOP_PASSWORD_RESET_EMAIL_SUBJECT,
   SHOP_PASSWORD_RESET_PREVIEW_DEMO_TOKEN,
-  buildShopPasswordResetEmailHtml,
 } from "@/lib/shop-password-reset-email-html";
+import { resolveShopPasswordResetEmail } from "@/lib/site-email-template-service";
 
 export const dynamic = "force-dynamic";
 
@@ -13,13 +12,13 @@ export const dynamic = "force-dynamic";
  * Browser preview of the password-reset email HTML (does not send mail).
  * Local: always. Production / Vercel Preview: set `ALLOW_EMAIL_PREVIEW=1` only if you need it.
  */
-export default function PreviewResetEmailPage() {
+export default async function PreviewResetEmailPage() {
   if (process.env.NODE_ENV !== "development" && process.env.ALLOW_EMAIL_PREVIEW !== "1") {
     notFound();
   }
 
   const demoUrl = `${emailLinkOrigin()}/dashboard/reset-password?t=${encodeURIComponent(SHOP_PASSWORD_RESET_PREVIEW_DEMO_TOKEN)}`;
-  const html = buildShopPasswordResetEmailHtml(demoUrl);
+  const { subject, html } = await resolveShopPasswordResetEmail(demoUrl);
   const from =
     process.env.SHOP_PASSWORD_RESET_EMAIL_FROM?.trim() ||
     "Xtinadom Merch <onboarding@resend.dev>";
@@ -34,7 +33,7 @@ export default function PreviewResetEmailPage() {
       <dl className="mt-6 space-y-3 text-sm">
         <div>
           <dt className="font-medium text-zinc-500">Subject</dt>
-          <dd className="mt-0.5 text-zinc-200">{SHOP_PASSWORD_RESET_EMAIL_SUBJECT}</dd>
+          <dd className="mt-0.5 text-zinc-200">{subject}</dd>
         </div>
         <div>
           <dt className="font-medium text-zinc-500">From (current env)</dt>

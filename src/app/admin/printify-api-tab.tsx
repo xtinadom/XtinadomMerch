@@ -7,6 +7,7 @@ import {
   listPrintifyWebhooks,
 } from "@/lib/printify";
 import { webhookPublicBaseUrl } from "@/lib/public-app-url";
+import { ADMIN_BACKEND_BASE_PATH } from "@/lib/admin-dashboard-urls";
 
 const PRINTIFY_ADMIN_HIDDEN_SHOP_IDS = new Set([24222433, 26248363]);
 
@@ -58,7 +59,7 @@ export async function PrintifyApiTab({ hookBanner }: PrintifyApiTabProps = {}) {
         <p className="mt-1 text-xs text-zinc-600">
           Environment variables and the shop list from the Printify API. Sync, catalog reference, and
           storefront listings are on the{" "}
-          <Link href="/admin?tab=printify" className="text-blue-400/90 hover:underline">
+          <Link href={`${ADMIN_BACKEND_BASE_PATH}?tab=printify`} className="text-blue-400/90 hover:underline">
             Printify items
           </Link>{" "}
           tab.
@@ -67,7 +68,7 @@ export async function PrintifyApiTab({ hookBanner }: PrintifyApiTabProps = {}) {
           <strong className="font-medium text-amber-500/95">API / custom storefront:</strong> Do not use Printify’s
           &quot;Publish&quot; button — it queues products forever. When a product is live here, use{" "}
           <strong className="font-medium text-amber-500/95">Toggle published</strong> on the{" "}
-          <Link href="/admin?tab=printify" className="text-blue-400/90 underline-offset-2 hover:underline">
+          <Link href={`${ADMIN_BACKEND_BASE_PATH}?tab=printify`} className="text-blue-400/90 underline-offset-2 hover:underline">
             Printify items
           </Link>{" "}
           catalog. To unstick a stuck queue, disconnect a channel in Printify’s help:{" "}

@@ -265,6 +265,11 @@ model ShopListing {
   featuredOnShop     Boolean                @default(false)
   featuredForHome    Boolean                @default(false)
   listingFeePaidAt   DateTime?
+  /**
+   * USD cents recorded when the listing publication fee was satisfied (paid checkout, mock, or $0 free slot).
+   * Null on legacy rows before this column; admin may infer an amount from listing ordinal policy.
+   */
+  listingPublicationFeePaidCents Int?
   /** Shop-specific Printify product id (admin); used for fulfillment instead of Product.printifyProductId when set. */
   listingPrintifyProductId  String?
   /** Shop-specific Printify variant id for default checkout line when set. */
@@ -453,6 +458,21 @@ model AdminCatalogItemTag {
   tag                Tag              @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([adminCatalogItemId, tagId])
+}
+
+/**
+ * Optional overrides for automated site emails (admin → Email format tab).
+ * When a row is missing, built-in defaults from code are used.
+ */
+model SiteEmailTemplate {
+  id        String   @id @default(cuid())
+  /** Stable key, e.g. `shop_dashboard_email_verification`. */
+  key       String   @unique
+  subject   String?  @db.Text
+  htmlBody  String?  @db.Text
+  textBody  String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /** Free-form text rows (e.g. notes). Requires an id for Prisma; add rows via SQL or future UI. */

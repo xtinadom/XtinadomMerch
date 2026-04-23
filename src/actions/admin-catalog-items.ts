@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateAdminViews } from "@/lib/revalidate-admin-views";
 import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -53,7 +53,7 @@ export async function adminAddCatalogItem(formData: FormData) {
       itemGoodsServicesCostCents: itemLevel.itemGoodsServicesCostCents,
     },
   });
-  revalidatePath("/admin");
+  revalidateAdminViews();
 }
 
 export async function adminUpdateCatalogItem(formData: FormData) {
@@ -77,7 +77,7 @@ export async function adminUpdateCatalogItem(formData: FormData) {
     },
   });
   if ((n?.count ?? 0) === 0) return;
-  revalidatePath("/admin");
+  revalidateAdminViews();
 }
 
 export async function adminDeleteCatalogItem(formData: FormData) {
@@ -85,7 +85,7 @@ export async function adminDeleteCatalogItem(formData: FormData) {
   const id = String(formData.get("itemId") ?? "").trim();
   if (!id) return;
   await prisma.adminCatalogItem.deleteMany({ where: { id } });
-  revalidatePath("/admin");
+  revalidateAdminViews();
 }
 
 export async function adminLinkCatalogItemTag(formData: FormData) {
@@ -106,7 +106,7 @@ export async function adminLinkCatalogItemTag(formData: FormData) {
     update: {},
   });
   await syncProductTagsFromAdminCatalogItemId(itemId);
-  revalidatePath("/admin");
+  revalidateAdminViews();
 }
 
 export async function adminUnlinkCatalogItemTag(formData: FormData) {
@@ -119,5 +119,5 @@ export async function adminUnlinkCatalogItemTag(formData: FormData) {
     where: { adminCatalogItemId: itemId, tagId },
   });
   await syncProductTagsFromAdminCatalogItemId(itemId);
-  revalidatePath("/admin");
+  revalidateAdminViews();
 }
