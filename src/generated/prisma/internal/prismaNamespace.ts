@@ -402,6 +402,7 @@ export const ModelName = {
   FulfillmentJob: 'FulfillmentJob',
   ProcessedStripeEvent: 'ProcessedStripeEvent',
   AdminCatalogItem: 'AdminCatalogItem',
+  AdminCatalogItemTag: 'AdminCatalogItemTag',
   Comment: 'Comment'
 } as const
 
@@ -418,7 +419,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tag" | "productTag" | "product" | "shop" | "shopListingSlotPromoRedemption" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopAccountDeletionToken" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "comment"
+    modelProps: "tag" | "productTag" | "product" | "shop" | "shopListingSlotPromoRedemption" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopAccountDeletionToken" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "adminCatalogItemTag" | "comment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1754,6 +1755,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    AdminCatalogItemTag: {
+      payload: Prisma.$AdminCatalogItemTagPayload<ExtArgs>
+      fields: Prisma.AdminCatalogItemTagFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AdminCatalogItemTagFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminCatalogItemTagPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AdminCatalogItemTagFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminCatalogItemTagPayload>
+        }
+        findFirst: {
+          args: Prisma.AdminCatalogItemTagFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminCatalogItemTagPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AdminCatalogItemTagFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminCatalogItemTagPayload>
+        }
+        findMany: {
+          args: Prisma.AdminCatalogItemTagFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminCatalogItemTagPayload>[]
+        }
+        create: {
+          args: Prisma.AdminCatalogItemTagCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminCatalogItemTagPayload>
+        }
+        createMany: {
+          args: Prisma.AdminCatalogItemTagCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AdminCatalogItemTagCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminCatalogItemTagPayload>[]
+        }
+        delete: {
+          args: Prisma.AdminCatalogItemTagDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminCatalogItemTagPayload>
+        }
+        update: {
+          args: Prisma.AdminCatalogItemTagUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminCatalogItemTagPayload>
+        }
+        deleteMany: {
+          args: Prisma.AdminCatalogItemTagDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AdminCatalogItemTagUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AdminCatalogItemTagUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminCatalogItemTagPayload>[]
+        }
+        upsert: {
+          args: Prisma.AdminCatalogItemTagUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminCatalogItemTagPayload>
+        }
+        aggregate: {
+          args: Prisma.AdminCatalogItemTagAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdminCatalogItemTag>
+        }
+        groupBy: {
+          args: Prisma.AdminCatalogItemTagGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminCatalogItemTagGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AdminCatalogItemTagCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminCatalogItemTagCountAggregateOutputType> | number
+        }
+      }
+    }
     Comment: {
       payload: Prisma.$CommentPayload<ExtArgs>
       fields: Prisma.CommentFieldRefs
@@ -2063,6 +2138,7 @@ export const ShopListingScalarFieldEnum = {
   requestStatus: 'requestStatus',
   adminRemovedFromShopAt: 'adminRemovedFromShopAt',
   creatorRemovedFromShopAt: 'creatorRemovedFromShopAt',
+  hiddenStorefrontForAccountDeletionAt: 'hiddenStorefrontForAccountDeletionAt',
   removedFromListingRequestsAt: 'removedFromListingRequestsAt',
   adminListingRemovalNotes: 'adminListingRemovalNotes',
   createdAt: 'createdAt',
@@ -2159,6 +2235,14 @@ export const AdminCatalogItemScalarFieldEnum = {
 } as const
 
 export type AdminCatalogItemScalarFieldEnum = (typeof AdminCatalogItemScalarFieldEnum)[keyof typeof AdminCatalogItemScalarFieldEnum]
+
+
+export const AdminCatalogItemTagScalarFieldEnum = {
+  adminCatalogItemId: 'adminCatalogItemId',
+  tagId: 'tagId'
+} as const
+
+export type AdminCatalogItemTagScalarFieldEnum = (typeof AdminCatalogItemTagScalarFieldEnum)[keyof typeof AdminCatalogItemTagScalarFieldEnum]
 
 
 export const CommentScalarFieldEnum = {
@@ -2510,6 +2594,7 @@ export type GlobalOmitConfig = {
   fulfillmentJob?: Prisma.FulfillmentJobOmit
   processedStripeEvent?: Prisma.ProcessedStripeEventOmit
   adminCatalogItem?: Prisma.AdminCatalogItemOmit
+  adminCatalogItemTag?: Prisma.AdminCatalogItemTagOmit
   comment?: Prisma.CommentOmit
 }
 

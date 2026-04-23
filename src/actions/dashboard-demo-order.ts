@@ -90,15 +90,13 @@ export async function simulateShopDemoPurchase(): Promise<SimulateShopDemoPurcha
 
     const quantity = 1;
     const lineMerchCents = unitPriceCents * quantity;
-    let catalogRow:
-      | { variants: unknown; itemGoodsServicesCostCents: number }
-      | undefined;
+    let catalogRow: { itemGoodsServicesCostCents: number } | undefined;
     const pick = parseBaselinePick(listing.baselineCatalogPickEncoded ?? "");
     if (pick) {
       catalogRow =
         (await prisma.adminCatalogItem.findUnique({
           where: { id: pick.itemId },
-          select: { variants: true, itemGoodsServicesCostCents: true },
+          select: { itemGoodsServicesCostCents: true },
         })) ?? undefined;
     }
     const goodsUnit = baselineGoodsServicesUnitCents({

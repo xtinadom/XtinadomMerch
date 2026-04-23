@@ -15,8 +15,6 @@ export type ShopSetupShopPayload = {
   stripeConnectAccountId: string | null;
   connectChargesEnabled: boolean;
   payoutsEnabled: boolean;
-  shopActive: boolean;
-  ownerPausedShopAt: string | null;
   accountDeletionRequestedAt: string | null;
   accountDeletionEmailConfirmedAt: string | null;
   /** Stripe USD cents when deletion email is confirmed (for gating final delete); null otherwise. */
@@ -164,11 +162,6 @@ export function ShopSetupTabs(props: {
       <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
         Onboarding
       </h2>
-      <p className="mt-1 text-xs text-zinc-600">
-        Finish each step below. Only <strong className="text-zinc-400">shop display name</strong> is required on the
-        Shop profile tab (username, welcome, photo, and socials are optional there). Stripe Connect unlocks after
-        profile, item guidelines, email verification, and a listing request are done.
-      </p>
 
       <nav
         className="mt-6 rounded-lg border border-zinc-800/80 bg-zinc-900/35 p-4"
@@ -262,9 +255,6 @@ export function ShopSetupTabs(props: {
           >
             Stripe Connect
           </h3>
-          <p className="mt-1 text-xs text-zinc-500">
-            Payouts setup — unlocks when every checklist row above shows a green check (except Stripe).
-          </p>
           <div className="mt-4 space-y-4 text-sm text-zinc-300">
             {!stripeConnectUnlocked ? (
               <p className="rounded-lg border border-amber-900/40 bg-amber-950/25 px-3 py-2 text-xs text-amber-200/90">
@@ -288,31 +278,6 @@ export function ShopSetupTabs(props: {
             </form>
           </div>
         </section>
-
-        <div className="border-t border-zinc-800 pt-6">
-          <p className="text-xs text-zinc-500">
-            Request a listing from the checklist above or the{" "}
-            <Link
-              href="/dashboard?dash=requestListing"
-              className="text-zinc-300 underline decoration-zinc-600 underline-offset-2 hover:text-zinc-100"
-            >
-              Request listing
-            </Link>{" "}
-            tab.
-          </p>
-          <p className="mt-3 text-xs text-zinc-500">
-            To <strong className="text-zinc-400">pause</strong> the shop,{" "}
-            <strong className="text-zinc-400">request account deletion</strong> (freeze + email), or{" "}
-            <strong className="text-zinc-400">permanently delete</strong> after confirmation, use the{" "}
-            <Link
-              href="/dashboard?dash=shopProfile"
-              className="text-zinc-300 underline decoration-zinc-600 underline-offset-2 hover:text-zinc-100"
-            >
-              Shop profile
-            </Link>{" "}
-            tab.
-          </p>
-        </div>
       </div>
     </section>
   );

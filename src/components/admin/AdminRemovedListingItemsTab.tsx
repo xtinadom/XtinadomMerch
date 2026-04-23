@@ -33,9 +33,9 @@ export function AdminRemovedListingItemsTab(props: { rows: RemovedListingRow[] }
       <p className="mt-1 text-xs text-zinc-600">
         Rows you removed from <span className="text-zinc-500">Listing requests</span>. Live listings were taken off the
         creator&apos;s shop unless they were already frozen. Pipeline requests were rejected for the creator. Use{" "}
-        <span className="text-zinc-500">delete</span> to clear the row from here and from Shop watch (same as Shop watch;
+        <span className="text-zinc-500">delete</span> to clear the row from here and from Shop Data (same as Shop Data;
         does not delete the listing record; approved rows can show again under Requests). Rejected listings without
-        removal timestamps reset to draft so they leave Shop watch history.
+        removal timestamps reset to draft so they leave Shop Data history.
       </p>
 
       {rows.length === 0 ? (

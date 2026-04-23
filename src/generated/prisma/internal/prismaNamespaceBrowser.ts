@@ -69,6 +69,7 @@ export const ModelName = {
   FulfillmentJob: 'FulfillmentJob',
   ProcessedStripeEvent: 'ProcessedStripeEvent',
   AdminCatalogItem: 'AdminCatalogItem',
+  AdminCatalogItemTag: 'AdminCatalogItemTag',
   Comment: 'Comment'
 } as const
 
@@ -284,6 +285,7 @@ export const ShopListingScalarFieldEnum = {
   requestStatus: 'requestStatus',
   adminRemovedFromShopAt: 'adminRemovedFromShopAt',
   creatorRemovedFromShopAt: 'creatorRemovedFromShopAt',
+  hiddenStorefrontForAccountDeletionAt: 'hiddenStorefrontForAccountDeletionAt',
   removedFromListingRequestsAt: 'removedFromListingRequestsAt',
   adminListingRemovalNotes: 'adminListingRemovalNotes',
   createdAt: 'createdAt',
@@ -380,6 +382,14 @@ export const AdminCatalogItemScalarFieldEnum = {
 } as const
 
 export type AdminCatalogItemScalarFieldEnum = (typeof AdminCatalogItemScalarFieldEnum)[keyof typeof AdminCatalogItemScalarFieldEnum]
+
+
+export const AdminCatalogItemTagScalarFieldEnum = {
+  adminCatalogItemId: 'adminCatalogItemId',
+  tagId: 'tagId'
+} as const
+
+export type AdminCatalogItemTagScalarFieldEnum = (typeof AdminCatalogItemTagScalarFieldEnum)[keyof typeof AdminCatalogItemTagScalarFieldEnum]
 
 
 export const CommentScalarFieldEnum = {

@@ -65,7 +65,6 @@ function formatMoney(cents: number) {
 }
 
 type AdminCatalogRowForDisplay = {
-  variants: unknown;
   itemGoodsServicesCostCents: number;
 };
 
@@ -277,7 +276,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         select: {
           id: true,
           name: true,
-          variants: true,
           itemExampleListingUrl: true,
           itemMinPriceCents: true,
           itemGoodsServicesCostCents: true,
@@ -288,10 +286,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const catalogGroups = !isPlatform ? buildShopBaselineCatalogGroups(adminCatalogRows) : [];
 
   const adminCatalogById = new Map<string, AdminCatalogRowForDisplay>(
-    adminCatalogRows.map((r) => [
-      r.id,
-      { variants: r.variants, itemGoodsServicesCostCents: r.itemGoodsServicesCostCents },
-    ]),
+    adminCatalogRows.map((r) => [r.id, { itemGoodsServicesCostCents: r.itemGoodsServicesCostCents }]),
   );
 
   const draftListingForRequestPrefill = !isPlatform
@@ -313,7 +308,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           draftListingForRequestPrefill.priceCents,
           draftListingForRequestPrefill.requestItemName,
           adminCatalogRows,
-          draftListingForRequestPrefill.listingPrintifyVariantPrices,
         )
       : null;
     const resolved =
@@ -324,7 +318,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         draftListingForRequestPrefill.priceCents,
         draftListingForRequestPrefill.requestItemName,
         adminCatalogRows,
-        draftListingForRequestPrefill.listingPrintifyVariantPrices,
       );
     if (resolved) {
       draftListingRequestPrefill = {
@@ -417,6 +410,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           createdAt: m.createdAt.toISOString(),
         })) ?? []
       }
+      resolvedAtIso={supportThreadRow?.resolvedAt?.toISOString() ?? null}
     />
   ) : null;
 
@@ -553,12 +547,19 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       ) : null}
       {!isPlatform && delConfirm === "ok" ? (
         <p className="mt-4 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
-          Account deletion email confirmed. Open the <strong className="text-emerald-100/90">Shop profile</strong> tab
-          and scroll to <strong className="text-emerald-100/90">Shop visibility &amp; account</strong> — when your
-          Stripe balance is zero you can permanently delete.
+          Account deletion email confirmed. Your stored photos and listing media for this step have been removed. Open
+          the <strong className="text-emerald-100/90">Shop profile</strong> tab and scroll to{" "}
+          <strong className="text-emerald-100/90">Shop visibility &amp; account</strong> — when your Stripe balance is
+          zero you can permanently delete your account.
         </p>
       ) : null}
-      {!isPlatform && delConfirm && delConfirm !== "ok" ? (
+      {!isPlatform && delConfirm === "purgeFailed" ? (
+        <p className="mt-4 rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-2 text-sm text-amber-200/90">
+          Your deletion email was confirmed, but we could not finish clearing your stored images from our servers. Try the
+          link again from email, reload this page later, or contact support.
+        </p>
+      ) : null}
+      {!isPlatform && delConfirm && delConfirm !== "ok" && delConfirm !== "purgeFailed" ? (
         <p className="mt-4 rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-2 text-sm text-amber-200/90">
           {delConfirm === "expired"
             ? "That account deletion link has expired. Request deletion again from the Shop profile tab to receive a new email."
@@ -605,8 +606,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                   stripeConnectAccountId: shop.stripeConnectAccountId,
                   connectChargesEnabled: shop.connectChargesEnabled,
                   payoutsEnabled: shop.payoutsEnabled,
-                  shopActive: shop.active,
-                  ownerPausedShopAt: shop.ownerPausedShopAt?.toISOString() ?? null,
                   accountDeletionRequestedAt: shop.accountDeletionRequestedAt?.toISOString() ?? null,
                   accountDeletionEmailConfirmedAt:
                     shop.accountDeletionEmailConfirmedAt?.toISOString() ?? null,

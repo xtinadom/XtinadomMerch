@@ -2,6 +2,16 @@ export type ListingSlotPromoRule = {
   slots: number;
   /** When set, cap total redemptions of this code across all shops. */
   maxRedemptions?: number;
+  /**
+   * When set, only this shop slug may redeem the code (case-insensitive).
+   * Other shops see “That code is not valid.”
+   */
+  allowedShopSlug?: string;
+  /**
+   * When true (requires `allowedShopSlug`), that shop may redeem the same code repeatedly
+   * for more bonus slots. Other behavior (max redemptions, etc.) unchanged.
+   */
+  unlimitedRedemptionsForAllowedShop?: boolean;
 };
 
 function parsePositiveInt(n: unknown): number | null {
@@ -25,15 +35,27 @@ function parseRule(value: unknown): ListingSlotPromoRule | null {
     const m = parsePositiveInt(maxRaw);
     if (m != null) maxRedemptions = m;
   }
-  return { slots, maxRedemptions };
+  const allowedRaw = o.allowedShopSlug;
+  let allowedShopSlug: string | undefined;
+  if (typeof allowedRaw === "string" && allowedRaw.trim()) {
+    allowedShopSlug = allowedRaw.trim().toLowerCase();
+  }
+  const unlimitedRedemptionsForAllowedShop = o.unlimitedRedemptionsForAllowedShop === true;
+  if (unlimitedRedemptionsForAllowedShop && !allowedShopSlug) {
+    return null;
+  }
+  return { slots, maxRedemptions, allowedShopSlug, unlimitedRedemptionsForAllowedShop };
 }
 
 /**
  * `LISTING_SLOT_PROMO_COUPONS_JSON` — object keyed by coupon string (matched case-insensitively).
- * Values: a positive integer (slot count) or `{ "slots": N, "maxRedemptions"?: M }`.
+ * Values: a positive integer (slot count) or an object with optional fields:
+ * `maxRedemptions`, `allowedShopSlug`, `unlimitedRedemptionsForAllowedShop`.
  *
  * @example
  * {"LAUNCH2026": 2, "PARTNER": {"slots": 5, "maxRedemptions": 20}}
+ * @example
+ * {"VIPXTINA": {"slots": 1, "allowedShopSlug": "goddess-xtina", "unlimitedRedemptionsForAllowedShop": true}}
  */
 export function parseListingSlotPromoCouponsFromEnv(): Map<string, ListingSlotPromoRule> {
   const raw = process.env.LISTING_SLOT_PROMO_COUPONS_JSON?.trim();

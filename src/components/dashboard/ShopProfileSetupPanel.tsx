@@ -62,25 +62,6 @@ function initialsFromDisplayName(name: string): string {
   return t.slice(0, 2).toUpperCase();
 }
 
-function StepIcon({ done }: { done: boolean }) {
-  if (done) {
-    return (
-      <span
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600/90 text-[10px] font-bold text-white"
-        aria-hidden
-      >
-        ✓
-      </span>
-    );
-  }
-  return (
-    <span
-      className="h-5 w-5 shrink-0 rounded-full border-2 border-zinc-600"
-      aria-hidden
-    />
-  );
-}
-
 function SocialGlyph({ platform }: { platform: ShopSocialKey }) {
   const common =
     "flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-zinc-800 text-[10px] font-semibold text-zinc-300";
@@ -96,13 +77,11 @@ function SocialGlyph({ platform }: { platform: ShopSocialKey }) {
 
 export function ShopProfileSetupPanel(props: {
   shop: ShopSetupShopPayload;
-  /** Matches dashboard “profile” setup step (photo / welcome / social). */
-  profileStepDone: boolean;
   r2Configured: boolean;
   /** When true, used inside dashboard tab panel (no top margin). */
   embedded?: boolean;
 }) {
-  const { shop, profileStepDone, r2Configured, embedded = false } = props;
+  const { shop, r2Configured, embedded = false } = props;
 
   const router = useRouter();
   const [message, setMessage] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
@@ -110,7 +89,6 @@ export function ShopProfileSetupPanel(props: {
   const [isProfilePending, startProfileTransition] = useTransition();
   const [isAvatarPending, startAvatarTransition] = useTransition();
 
-  const [shopUsername, setShopUsername] = useState(shop.shopSlug);
   const [displayName, setDisplayName] = useState(shop.displayName);
   const [welcomeMessage, setWelcomeMessage] = useState(shop.welcomeMessage ?? "");
   const [social, setSocial] = useState(() => socialRecordFromShop(shop.socialLinks));
@@ -124,7 +102,6 @@ export function ShopProfileSetupPanel(props: {
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setShopUsername(shop.shopSlug);
     setDisplayName(shop.displayName);
     setWelcomeMessage(shop.welcomeMessage ?? "");
     setSocial(socialRecordFromShop(shop.socialLinks));
@@ -143,14 +120,13 @@ export function ShopProfileSetupPanel(props: {
   );
 
   const profileDirty = useMemo(() => {
-    if (shopUsername.trim() !== shop.shopSlug.trim()) return true;
     if (displayName.trim() !== shop.displayName.trim()) return true;
     if (welcomeMessage.trim() !== (shop.welcomeMessage ?? "").trim()) return true;
     for (const k of SHOP_SOCIAL_KEYS) {
       if ((social[k] ?? "").trim() !== (baselineSocial[k] ?? "").trim()) return true;
     }
     return false;
-  }, [shopUsername, displayName, welcomeMessage, social, shop.shopSlug, shop.displayName, shop.welcomeMessage, baselineSocial]);
+  }, [displayName, welcomeMessage, social, shop.displayName, shop.welcomeMessage, baselineSocial]);
 
   useEffect(() => {
     if (profileDirty) setProfileSavedFlash(false);
@@ -231,10 +207,6 @@ export function ShopProfileSetupPanel(props: {
       className={`rounded-xl border border-zinc-800 bg-zinc-950/50 p-4 sm:p-6 ${embedded ? "mt-0" : "mt-8"}`}
     >
       <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Shop profile</h2>
-      <p className="mt-1 text-xs text-zinc-600">
-        Display name, welcome message, profile photo (compressed to at most 100 KiB), and optional
-        social links. Your public shop URL stays <span className="font-mono text-zinc-500">/s/{shop.shopSlug}</span>.
-      </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-4 rounded-lg border border-zinc-800/80 bg-zinc-900/40 px-4 py-3">
         {shop.profileImageUrl ? (
@@ -278,17 +250,6 @@ export function ShopProfileSetupPanel(props: {
           </p>
         ) : null}
 
-        <div className="flex items-center gap-3">
-          <StepIcon done={profileStepDone} />
-          <h3 className="text-sm font-semibold tracking-wide text-zinc-200">Profile details</h3>
-        </div>
-
-        <p className="text-xs text-zinc-500">
-          <strong className="text-zinc-400">Shop display name</strong> is the store name shown to customers (required).
-          <strong className="text-zinc-400"> Username</strong> is your public URL (<span className="font-mono">/s/…</span>
-          ); changing it breaks old links until you share the new one.
-        </p>
-
         <form
           className="space-y-4"
           onSubmit={(e) => {
@@ -297,17 +258,7 @@ export function ShopProfileSetupPanel(props: {
             void handleProfileSubmit(new FormData(e.currentTarget));
           }}
         >
-          <label className="block text-xs text-zinc-500">
-            Username (shop URL)
-            <input
-              name="shopUsername"
-              required
-              maxLength={80}
-              value={shopUsername}
-              onChange={(e) => setShopUsername(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100"
-            />
-          </label>
+          <input type="hidden" name="shopUsername" value={shop.shopSlug} />
           <label className="block text-xs text-zinc-500">
             Shop display name
             <input
@@ -476,9 +427,6 @@ export function ShopProfileSetupPanel(props: {
 
       <div className="mt-10 border-t border-zinc-800 pt-8">
         <ShopDangerZonePanel
-          shopSlug={shop.shopSlug}
-          shopActive={shop.shopActive}
-          ownerPausedShopAt={shop.ownerPausedShopAt}
           accountDeletionRequestedAt={shop.accountDeletionRequestedAt}
           accountDeletionEmailConfirmedAt={shop.accountDeletionEmailConfirmedAt}
           stripeConnectAccountId={shop.stripeConnectAccountId}

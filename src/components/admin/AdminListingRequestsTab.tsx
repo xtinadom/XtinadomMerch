@@ -1038,7 +1038,7 @@ function ListingRequestCard({
               <span className="font-medium text-zinc-400">Awaiting publication fee</span> — listing{" "}
               <span className="tabular-nums text-zinc-400">#{r.listingOrdinal}</span> requires payment before it can go
               live. After the creator pays (or free-slot waiver applies), this row leaves Listing requests and you can
-              follow it under <span className="text-zinc-400">Shop watch</span>.
+              follow it under <span className="text-zinc-400">Shop Data</span>.
             </p>
           )}
         </div>
@@ -1099,7 +1099,7 @@ export function AdminListingRequestsTab(props: {
         (optional second image) then approve or reject (one listing per catalog product).{" "}
         <strong className="font-medium text-zinc-500">Awaiting fee</strong>: approved listings that still need a paid
         publication fee (not in the free slots). Once the fee is recorded or the slot is free, the row leaves this tab
-        — use <strong className="font-medium text-zinc-500">Shop watch</strong> for live / frozen / removed listings.
+        — use <strong className="font-medium text-zinc-500">Shop Data</strong> for live / frozen / removed listings.
       </p>
 
       <div

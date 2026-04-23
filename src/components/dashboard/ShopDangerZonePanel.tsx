@@ -3,11 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 import {
-  dashboardCancelAccountDeletionRequest,
   dashboardCompleteAccountDeletionFormState,
-  dashboardPauseShop,
   dashboardRequestAccountDeletion,
-  dashboardUnpauseShop,
   type AccountDeletionFormState,
 } from "@/actions/dashboard-account-danger";
 
@@ -18,18 +15,12 @@ function formatUsd(cents: number): string {
 const initialDeleteState: AccountDeletionFormState = { error: null };
 
 export function ShopDangerZonePanel(props: {
-  shopSlug: string;
-  shopActive: boolean;
-  ownerPausedShopAt: string | null;
   accountDeletionRequestedAt: string | null;
   accountDeletionEmailConfirmedAt: string | null;
   stripeConnectAccountId: string | null;
   stripeConnectBalance: { availableCents: number; pendingCents: number } | null;
 }) {
   const {
-    shopSlug,
-    shopActive,
-    ownerPausedShopAt,
     accountDeletionRequestedAt,
     accountDeletionEmailConfirmedAt,
     stripeConnectAccountId,
@@ -46,7 +37,6 @@ export function ShopDangerZonePanel(props: {
 
   const deletionPending = Boolean(accountDeletionRequestedAt);
   const emailConfirmed = Boolean(accountDeletionEmailConfirmedAt);
-  const manuallyPaused = Boolean(ownerPausedShopAt);
 
   const balanceBlocks =
     Boolean(stripeConnectAccountId) &&
@@ -64,8 +54,16 @@ export function ShopDangerZonePanel(props: {
           setMsg({ tone: "ok", text: r.message ?? "Saved." });
           router.refresh();
         } else setMsg({ tone: "err", text: r.error ?? "Something went wrong." });
-      } catch {
-        setMsg({ tone: "err", text: "Something went wrong. Try again." });
+      } catch (e) {
+        console.error("[ShopDangerZonePanel]", e);
+        const detail =
+          process.env.NODE_ENV === "development" && e instanceof Error && e.message
+            ? ` ${e.message}`
+            : "";
+        setMsg({
+          tone: "err",
+          text: `Something went wrong. Try again.${detail}`,
+        });
       } finally {
         setBusy(false);
       }
@@ -77,77 +75,45 @@ export function ShopDangerZonePanel(props: {
       className="scroll-mt-4 rounded-lg border border-red-900/40 bg-red-950/15 p-4 sm:p-5"
       aria-labelledby="shop-danger-heading"
     >
-      <h3 id="shop-danger-heading" className="text-sm font-semibold tracking-wide text-red-200/95">
-        Shop visibility &amp; account
+      <h3 id="shop-danger-heading" className="text-xs font-semibold uppercase tracking-wide text-red-300/90">
+        Request account deletion
       </h3>
-      <p className="mt-1 text-xs text-zinc-500">
-        Pause hides your shop from browse and your storefront (<span className="font-mono text-zinc-500">/s/{shopSlug}</span>
-        ). Account deletion is a request: your shop freezes immediately, you confirm by email, and we remove the account
-        only when your Stripe Connect balance is zero (no pending or available payout funds).
-      </p>
 
       {msg ? (
         <p
-          className={`mt-3 text-xs ${msg.tone === "ok" ? "text-emerald-300/90" : "text-amber-200/90"}`}
+          className={`mt-3 text-xs ${msg.tone === "ok" ? "text-amber-200/90" : "text-amber-300/90"}`}
           role="status"
         >
           {msg.text}
         </p>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      {deletionPending ? (
+        <p className={`text-xs text-amber-200/85 ${msg ? "mt-3" : "mt-4"}`}>
+          {emailConfirmed
+            ? "Your confirmation link was used: listing images and profile photos are cleared from our storage, and listings are taken down. Finish below when your Stripe balance is zero."
+            : "Your shop is hidden from browse. Open the link in your confirmation email — that step removes your stored photos and listing media, then you can close the account when payouts are settled."}
+        </p>
+      ) : null}
+
+      <div className={msg || deletionPending ? "mt-6" : "mt-4"}>
         {!deletionPending ? (
           <>
-            {!shopActive && manuallyPaused ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => run(dashboardUnpauseShop)}
-                className="rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-50"
-              >
-                {busy ? "…" : "Unpause shop"}
-              </button>
-            ) : shopActive ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => run(dashboardPauseShop)}
-                className="rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-50"
-              >
-                {busy ? "…" : "Pause shop"}
-              </button>
-            ) : (
-              <p className="text-xs text-zinc-500">
-                Your shop is hidden. Use <strong className="text-zinc-400">Unpause</strong> after you cancel any
-                deletion request below.
-              </p>
-            )}
-          </>
-        ) : (
-          <p className="text-xs text-amber-200/85">
-            Shop is frozen for account deletion. Cancel the request below to restore access (unless you had paused the
-            shop separately before requesting deletion).
-          </p>
-        )}
-      </div>
-
-      <div className="mt-6 border-t border-red-900/30 pt-5">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-red-300/90">Request account deletion</h4>
-        {!deletionPending ? (
-          <div className="mt-2 space-y-2">
-            <p className="text-xs text-zinc-500">
-              We will email you a confirmation link. Until you confirm, you can still use the dashboard. After
-              confirmation, you can permanently delete once Stripe shows no funds owed to you.
+            <p className="mt-2 text-xs text-zinc-500">
+              We hide your shop first and email you a link. Opening that link removes your stored photos and listing
+              media; after that, when payouts are settled you can permanently delete the account here.
             </p>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => run(dashboardRequestAccountDeletion)}
-              className="rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs font-medium text-red-100 hover:bg-red-950/60 disabled:opacity-50"
-            >
-              {busy ? "…" : "Request account deletion (freeze shop + email)"}
-            </button>
-          </div>
+            <div className="mt-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => run(dashboardRequestAccountDeletion)}
+                className="rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs font-medium text-red-100 hover:bg-red-950/60 disabled:opacity-50"
+              >
+                {busy ? "…" : "Goodbye"}
+              </button>
+            </div>
+          </>
         ) : (
           <div className="mt-2 space-y-3">
             <p className="text-xs text-zinc-500">
@@ -155,14 +121,6 @@ export function ShopDangerZonePanel(props: {
                 ? "Email confirmed. When Stripe balance is zero, enter your password below to permanently delete."
                 : "Check your inbox for the confirmation link (expires in 24 hours)."}
             </p>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => run(dashboardCancelAccountDeletionRequest)}
-              className="rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-50"
-            >
-              {busy ? "…" : "Cancel deletion request"}
-            </button>
 
             {emailConfirmed ? (
               <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">

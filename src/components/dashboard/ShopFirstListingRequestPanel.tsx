@@ -4,11 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { submitFirstListingSetup, type ShopSetupActionResult } from "@/actions/dashboard-shop-setup";
-import {
-  encodeBaselinePickAllVariants,
-  flattenShopBaselineCatalogGroups,
-  type ShopSetupCatalogGroup,
-} from "@/lib/shop-baseline-catalog";
+import { flattenShopBaselineCatalogGroups, type ShopSetupCatalogGroup } from "@/lib/shop-baseline-catalog";
 import type { DraftListingRequestPrefillPayload } from "@/lib/shop-baseline-draft-prefill";
 import { SHOP_LISTING_MAX_PRICE_CENTS, shopListingMaxPriceUsdLabel } from "@/lib/marketplace-constants";
 import { expectedShopProfitMerchandiseUnitCents } from "@/lib/marketplace-fee";
@@ -78,7 +74,6 @@ function CatalogExampleLink({ href }: { href: string }) {
 
 export function ShopFirstListingRequestPanel(props: {
   catalogGroups: ShopSetupCatalogGroup[];
-  listingFeePolicySummary: string;
   r2Configured: boolean;
   listingPickerDiagnostics?: { adminCatalogItemCount: number };
   draftListingRequestPrefill?: DraftListingRequestPrefillPayload | null;
@@ -90,7 +85,6 @@ export function ShopFirstListingRequestPanel(props: {
 }) {
   const {
     catalogGroups,
-    listingFeePolicySummary,
     r2Configured,
     listingPickerDiagnostics,
     draftListingRequestPrefill = null,
@@ -105,7 +99,6 @@ export function ShopFirstListingRequestPanel(props: {
 
   const [listingProductId, setListingProductId] = useState("");
   const [listingPrice, setListingPrice] = useState("");
-  const [variantListingPrices, setVariantListingPrices] = useState<Record<string, string>>({});
   const [listingRequestItemName, setListingRequestItemName] = useState("");
   const [listingHasFile, setListingHasFile] = useState(false);
   const [listingArtworkPreviewUrl, setListingArtworkPreviewUrl] = useState<string | null>(null);
@@ -145,41 +138,18 @@ export function ShopFirstListingRequestPanel(props: {
     }
   }, [listingProductId, listingPrice, listingRequestItemName, listingHasFile]);
 
-  useEffect(() => {
-    setListingSavedFlash(false);
-  }, [variantListingPrices]);
-
-  useEffect(() => {
-    setVariantListingPrices((prev) => {
-      const out: Record<string, string> = {};
-      for (const g of catalogGroups) {
-        if (g.kind !== "variants") continue;
-        for (const v of g.variants) {
-          const prior = prev[v.productId];
-          out[v.productId] = prior !== undefined ? prior : (v.minPriceCents / 100).toFixed(2);
-        }
-      }
-      return out;
-    });
-  }, [catalogGroups]);
-
-  const selectionIsSingleItem = useMemo(
-    () =>
-      catalogGroups.some(
-        (g) => g.kind === "single" && g.option.productId === listingProductId,
-      ),
-    [catalogGroups, listingProductId],
-  );
+  const selectedCatalogGroup = useMemo(() => {
+    for (const g of catalogGroups) {
+      if (g.option.productId === listingProductId) return g;
+    }
+    return null;
+  }, [catalogGroups, listingProductId]);
 
   useEffect(() => {
     if (!listingProductId) {
       setListingPrice("");
       return;
     }
-    const isSingle = catalogGroups.some(
-      (g) => g.kind === "single" && g.option.productId === listingProductId,
-    );
-    if (!isSingle) return;
     const o = catalogOptions.find((x) => x.productId === listingProductId);
     if (!o) return;
     setListingPrice((prev) => {
@@ -192,7 +162,7 @@ export function ShopFirstListingRequestPanel(props: {
       if (cents > SHOP_LISTING_MAX_PRICE_CENTS) return (SHOP_LISTING_MAX_PRICE_CENTS / 100).toFixed(2);
       return prev;
     });
-  }, [listingProductId, catalogOptions, catalogGroups]);
+  }, [listingProductId, catalogOptions]);
 
   useEffect(() => {
     if (!draftListingRequestPrefill) {
@@ -215,47 +185,18 @@ export function ShopFirstListingRequestPanel(props: {
     if (p.listingPriceDollars != null) {
       setListingPrice(p.listingPriceDollars);
     }
-    if (p.variantPricesJson) {
-      setVariantListingPrices((prev) => ({ ...prev, ...p.variantPricesJson! }));
-    }
     setListingRequestItemName(p.requestItemName);
   }, [draftListingRequestPrefill, catalogGroups.length, listingProductId]);
 
   const listingPriceMeetsMinimum = useMemo(() => {
     if (!listingProductId) return false;
-    if (selectionIsSingleItem) {
-      const o = catalogOptions.find((x) => x.productId === listingProductId);
-      if (!o) return false;
-      const parsed = parseFloat(listingPrice.replace(/[^0-9.]/g, ""));
-      if (!Number.isFinite(parsed) || parsed <= 0) return false;
-      const cents = Math.round(parsed * 100);
-      return cents >= o.minPriceCents && cents <= SHOP_LISTING_MAX_PRICE_CENTS;
-    }
-    let variantGroup: Extract<ShopSetupCatalogGroup, { kind: "variants" }> | undefined;
-    for (const g of catalogGroups) {
-      if (g.kind !== "variants") continue;
-      if (encodeBaselinePickAllVariants(g.itemId) === listingProductId) {
-        variantGroup = g;
-        break;
-      }
-    }
-    if (!variantGroup) return false;
-    for (const v of variantGroup.variants) {
-      const str = variantListingPrices[v.productId] ?? "";
-      const parsed = parseFloat(str.replace(/[^0-9.]/g, ""));
-      if (!Number.isFinite(parsed) || parsed <= 0) return false;
-      const cents = Math.round(parsed * 100);
-      if (cents < v.minPriceCents || cents > SHOP_LISTING_MAX_PRICE_CENTS) return false;
-    }
-    return true;
-  }, [
-    listingProductId,
-    selectionIsSingleItem,
-    catalogOptions,
-    listingPrice,
-    catalogGroups,
-    variantListingPrices,
-  ]);
+    const o = catalogOptions.find((x) => x.productId === listingProductId);
+    if (!o) return false;
+    const parsed = parseFloat(listingPrice.replace(/[^0-9.]/g, ""));
+    if (!Number.isFinite(parsed) || parsed <= 0) return false;
+    const cents = Math.round(parsed * 100);
+    return cents >= o.minPriceCents && cents <= SHOP_LISTING_MAX_PRICE_CENTS;
+  }, [listingProductId, catalogOptions, listingPrice]);
 
   async function handleListingSubmit(fd: FormData) {
     setMessage(null);
@@ -273,7 +214,6 @@ export function ShopFirstListingRequestPanel(props: {
         setListingProductId("");
         setListingPrice("");
         setListingRequestItemName("");
-        setVariantListingPrices({});
         setListingHasFile(false);
         setListingArtworkPreviewUrl(null);
         if (listingFileRef.current) listingFileRef.current.value = "";
@@ -305,21 +245,7 @@ export function ShopFirstListingRequestPanel(props: {
       className={`space-y-4 text-sm text-zinc-300 ${embedded ? "" : "rounded-xl border border-zinc-800 bg-zinc-950/50 p-4 sm:p-6"}`}
     >
       <div>
-        <h3 className="text-base font-semibold text-zinc-100">Request a catalog listing</h3>
-        <p className="mt-1 text-xs leading-relaxed text-zinc-400">
-          Choose one of the items the platform allows under <strong className="text-zinc-300">Admin → List</strong>{" "}
-          (names, variants, example links, and minimum prices come straight from that list). Set your public price,
-          upload <strong className="text-zinc-500">print‑ready</strong> artwork, then submit. Admin reviews before it
-          goes live — usually <strong className="text-zinc-500">1–3 business days</strong>.
-        </p>
-        <p className="mt-2 text-xs text-zinc-500">
-          Uploads are stored as WebP for review and printing. Artwork must follow the{" "}
-          <Link href="/shop-regulations" className="text-blue-400/90 underline">
-            shop regulations
-          </Link>
-          . {listingFeePolicySummary} If a publication fee applies, pay it on the Listings tab before you submit for
-          admin review.
-        </p>
+        <h3 className="text-base font-semibold text-zinc-100">Request a product listing</h3>
         {draftListingRequestPrefill ? (
           <p className="mt-2 rounded-lg border border-sky-900/40 bg-sky-950/20 px-3 py-2 text-xs text-sky-200/90">
             Your draft listing is selected below — confirm prices and upload artwork to submit for review.
@@ -348,8 +274,7 @@ export function ShopFirstListingRequestPanel(props: {
               </>
             ) : (
               <>
-                Admin → List has rows but none could be loaded as choices — ensure each variant has a name and a valid
-                minimum price (or use item-level pricing when there are no variants).
+                Admin → List has rows but none could be loaded as choices — ensure each item has a valid minimum price.
               </>
             )
           ) : (
@@ -373,20 +298,7 @@ export function ShopFirstListingRequestPanel(props: {
             if (!listingCanSubmit || isListingPending) return;
             const fd = new FormData();
             fd.set("productId", listingProductId);
-            if (selectionIsSingleItem) {
-              fd.set("listingPriceDollars", listingPrice);
-            } else {
-              for (const g of catalogGroups) {
-                if (g.kind !== "variants") continue;
-                if (encodeBaselinePickAllVariants(g.itemId) !== listingProductId) continue;
-                const prices: Record<string, string> = {};
-                for (const v of g.variants) {
-                  prices[v.productId] = variantListingPrices[v.productId] ?? "";
-                }
-                fd.set("listingVariantPricesJson", JSON.stringify(prices));
-                break;
-              }
-            }
+            fd.set("listingPriceDollars", listingPrice);
             fd.set("requestItemName", listingRequestItemName.trim());
             const art = listingFileRef.current?.files?.[0];
             if (art) fd.set("listingArtwork", art);
@@ -395,11 +307,9 @@ export function ShopFirstListingRequestPanel(props: {
           }}
         >
           <div>
-            <p className="text-xs font-medium text-zinc-400">Allowed items (Admin → List)</p>
+            <p className="text-xs font-medium text-zinc-400">Item Catalogue</p>
             <p className="mt-1 text-[11px] leading-relaxed text-zinc-600">
-              Minimums are shown on each line; maximum list price is {shopListingMaxPriceUsdLabel()} per option. Select the
-              main product name. If it has options (sizes, etc.), set a list price for every option — one submission is one
-              listing and one admin approval; sizes are options on that item, not separate listings.
+              Select a base item your design will be printed on.
             </p>
             <ul
               className="mt-2 h-[350px] divide-y divide-zinc-800/80 overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950/40"
@@ -407,80 +317,7 @@ export function ShopFirstListingRequestPanel(props: {
               aria-label="Items from admin catalog"
             >
               {catalogGroups.map((g) => {
-                if (g.kind === "single") {
-                  const selected = listingProductId === g.option.productId;
-                  return (
-                    <li key={g.itemId}>
-                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-3 py-2.5">
-                        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-sm text-zinc-200">
-                          <input
-                            type="radio"
-                            name="catalogProductPick"
-                            value={g.option.productId}
-                            checked={selected}
-                            onChange={() => setListingProductId(g.option.productId)}
-                            className="shrink-0 border-zinc-600 bg-zinc-900 text-blue-600"
-                          />
-                          <span className="min-w-0 truncate">{g.itemName}</span>
-                        </label>
-                        <span className="shrink-0 text-xs tabular-nums text-zinc-500">
-                          Min {formatUsdFromCents(g.option.minPriceCents)}
-                        </span>
-                        {g.option.exampleHref ? (
-                          <CatalogExampleLink href={g.option.exampleHref} />
-                        ) : (
-                          <span className="shrink-0 text-[11px] text-zinc-700">—</span>
-                        )}
-                      </div>
-                      {selected ? (
-                        <div className="border-t border-zinc-800/60 px-3 py-3 pl-10">
-                          <label
-                            className="block text-xs text-zinc-500"
-                            htmlFor={`listing-price-${g.itemId}`}
-                          >
-                            Your list price (USD)
-                          </label>
-                          <input
-                            id={`listing-price-${g.itemId}`}
-                            type="text"
-                            inputMode="decimal"
-                            autoComplete="off"
-                            value={listingPrice}
-                            onChange={(e) => setListingPrice(e.target.value)}
-                            onBlur={() => {
-                              const minC = g.option.minPriceCents;
-                              const parsed = parseFloat(listingPrice.replace(/[^0-9.]/g, ""));
-                              let cents = Number.isFinite(parsed) ? Math.round(parsed * 100) : minC;
-                              if (cents < minC) cents = minC;
-                              if (cents > SHOP_LISTING_MAX_PRICE_CENTS) cents = SHOP_LISTING_MAX_PRICE_CENTS;
-                              setListingPrice((cents / 100).toFixed(2));
-                            }}
-                            className="mt-1 block w-full max-w-xs rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100"
-                          />
-                          {(() => {
-                            const h = listingProfitHint(
-                              listingPrice,
-                              g.option.minPriceCents,
-                              g.option.goodsServicesCostCents,
-                            );
-                            return h ? (
-                              <p className="mt-1.5 text-xs text-blue-400/90">{h}</p>
-                            ) : null;
-                          })()}
-                        </div>
-                      ) : null}
-                    </li>
-                  );
-                }
-                const variantMins = g.variants.map((v) => v.minPriceCents);
-                const minLow = Math.min(...variantMins);
-                const minHigh = Math.max(...variantMins);
-                const minRangeLabel =
-                  minLow === minHigh
-                    ? formatUsdFromCents(minLow)
-                    : `${formatUsdFromCents(minLow)} – ${formatUsdFromCents(minHigh)}`;
-                const groupPick = encodeBaselinePickAllVariants(g.itemId);
-                const groupSelected = listingProductId === groupPick;
+                const selected = listingProductId === g.option.productId;
                 return (
                   <li key={g.itemId}>
                     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-3 py-2.5">
@@ -488,92 +325,27 @@ export function ShopFirstListingRequestPanel(props: {
                         <input
                           type="radio"
                           name="catalogProductPick"
-                          value={groupPick}
-                          checked={groupSelected}
-                          onChange={() => setListingProductId(groupPick)}
+                          value={g.option.productId}
+                          checked={selected}
+                          onChange={() => setListingProductId(g.option.productId)}
                           className="shrink-0 border-zinc-600 bg-zinc-900 text-blue-600"
                         />
-                        <span className="min-w-0 truncate font-medium">{g.itemName}</span>
+                        <span className="min-w-0 truncate">{g.itemName}</span>
                       </label>
-                      <span className="shrink-0 text-xs tabular-nums text-zinc-500">Min {minRangeLabel}</span>
-                      <span className="shrink-0 text-[11px] text-zinc-700">—</span>
-                    </div>
-                    <div className="divide-y divide-zinc-800/50 border-t border-zinc-800/60 py-1 pl-10 pr-3">
-                      {g.variants.map((v) => {
-                        const variantPriceStr = variantListingPrices[v.productId] ?? "";
-                        const profitHint = listingProfitHint(
-                          variantPriceStr,
-                          v.minPriceCents,
-                          v.goodsServicesCostCents,
-                        );
-                        return (
-                          <div
-                            key={v.productId}
-                            className="flex flex-wrap items-end gap-3 py-2.5 sm:flex-nowrap"
-                          >
-                            <span className="min-w-[5rem] pb-2 text-sm text-zinc-300">{v.variantLabel}</span>
-                            <span className="shrink-0 pb-2 text-xs tabular-nums text-zinc-500">
-                              Min {formatUsdFromCents(v.minPriceCents)}
-                            </span>
-                            {groupSelected ? (
-                              <div className="flex min-w-0 flex-1 flex-col gap-0.5 pb-0.5 sm:max-w-[11rem]">
-                                <label
-                                  className="text-[10px] font-medium uppercase tracking-wide text-zinc-600"
-                                  htmlFor={`variant-price-${v.productId}`}
-                                >
-                                  List price
-                                </label>
-                                <input
-                                  id={`variant-price-${v.productId}`}
-                                  type="text"
-                                  inputMode="decimal"
-                                  autoComplete="off"
-                                  value={variantPriceStr}
-                                  onChange={(e) =>
-                                    setVariantListingPrices((prev) => ({
-                                      ...prev,
-                                      [v.productId]: e.target.value,
-                                    }))
-                                  }
-                                  onBlur={() => {
-                                    const raw = variantListingPrices[v.productId] ?? "";
-                                    const parsed = parseFloat(raw.replace(/[^0-9.]/g, ""));
-                                    const minC = v.minPriceCents;
-                                    let cents = Number.isFinite(parsed) ? Math.round(parsed * 100) : minC;
-                                    if (cents < minC) cents = minC;
-                                    if (cents > SHOP_LISTING_MAX_PRICE_CENTS) cents = SHOP_LISTING_MAX_PRICE_CENTS;
-                                    setVariantListingPrices((prev) => ({
-                                      ...prev,
-                                      [v.productId]: (cents / 100).toFixed(2),
-                                    }));
-                                  }}
-                                  className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 font-mono text-xs text-zinc-100"
-                                />
-                                {profitHint ? (
-                                  <p className="text-[11px] text-blue-400/90">{profitHint}</p>
-                                ) : null}
-                              </div>
-                            ) : null}
-                            {v.exampleHref ? (
-                              <div className="flex shrink-0 items-center pb-2">
-                                <CatalogExampleLink href={v.exampleHref} />
-                              </div>
-                            ) : (
-                              <span className="shrink-0 pb-2 text-[11px] text-zinc-700">—</span>
-                            )}
-                          </div>
-                        );
-                      })}
+                      <span className="shrink-0 text-xs tabular-nums text-zinc-500">
+                        Min {formatUsdFromCents(g.option.minPriceCents)}
+                      </span>
+                      {g.option.exampleHref ? (
+                        <CatalogExampleLink href={g.option.exampleHref} />
+                      ) : (
+                        <span className="shrink-0 text-[11px] text-zinc-700">—</span>
+                      )}
                     </div>
                   </li>
                 );
               })}
             </ul>
           </div>
-          <p className="text-xs leading-relaxed text-zinc-600">
-            List prices must meet each line’s minimum and cannot exceed {shopListingMaxPriceUsdLabel()} per option.
-            Customers may add tips at checkout on eligible carts.
-          </p>
           <label className="block text-xs text-zinc-500" htmlFor="listing-request-item-name">
             Name item
             <input
@@ -588,6 +360,45 @@ export function ShopFirstListingRequestPanel(props: {
               className="mt-1 block w-full max-w-md rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600"
             />
           </label>
+          {selectedCatalogGroup ? (
+            <div>
+              <label
+                className="block text-xs text-zinc-500"
+                htmlFor={`listing-price-${selectedCatalogGroup.itemId}`}
+              >
+                Your list price (USD)
+              </label>
+              <input
+                id={`listing-price-${selectedCatalogGroup.itemId}`}
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                value={listingPrice}
+                onChange={(e) => setListingPrice(e.target.value)}
+                onBlur={() => {
+                  const minC = selectedCatalogGroup.option.minPriceCents;
+                  const parsed = parseFloat(listingPrice.replace(/[^0-9.]/g, ""));
+                  let cents = Number.isFinite(parsed) ? Math.round(parsed * 100) : minC;
+                  if (cents < minC) cents = minC;
+                  if (cents > SHOP_LISTING_MAX_PRICE_CENTS) cents = SHOP_LISTING_MAX_PRICE_CENTS;
+                  setListingPrice((cents / 100).toFixed(2));
+                }}
+                className="mt-1 block w-full max-w-xs rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100"
+              />
+              {(() => {
+                const h = listingProfitHint(
+                  listingPrice,
+                  selectedCatalogGroup.option.minPriceCents,
+                  selectedCatalogGroup.option.goodsServicesCostCents,
+                );
+                return h ? <p className="mt-1.5 text-xs text-blue-400/90">{h}</p> : null;
+              })()}
+              <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+                List prices must meet each line’s minimum and cannot exceed {shopListingMaxPriceUsdLabel()} per option.
+                Customers may add tips at checkout on eligible carts.
+              </p>
+            </div>
+          ) : null}
           <label className="block text-xs text-zinc-500">
             Artwork file (PNG or JPEG recommended)
             <input

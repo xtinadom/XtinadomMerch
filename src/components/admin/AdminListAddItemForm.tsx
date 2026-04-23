@@ -3,44 +3,17 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { adminAddCatalogItem } from "@/actions/admin-catalog-items";
-import type { AdminCatalogVariantFormRow } from "@/lib/admin-catalog-item";
-import {
-  validateCatalogVariantFormRows,
-  validateItemLevelWhenNoVariants,
-} from "@/lib/admin-catalog-item";
-import { AdminCatalogVariantRowsEditor } from "@/components/admin/AdminCatalogVariantRowsEditor";
+import { validateItemLevelWhenNoVariants } from "@/lib/admin-catalog-item";
 import { AdminCatalogItemLevelFields } from "@/components/admin/AdminCatalogItemLevelFields";
 
 export function AdminListAddItemForm() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [itemName, setItemName] = useState("");
-  const [variants, setVariants] = useState<AdminCatalogVariantFormRow[]>([]);
   const [itemExampleListingUrl, setItemExampleListingUrl] = useState("");
   const [itemMinPriceDollars, setItemMinPriceDollars] = useState("");
   const [itemGoodsServicesCostDollars, setItemGoodsServicesCostDollars] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  function addVariantRow() {
-    setVariants((v) => [
-      ...v,
-      {
-        label: "",
-        minPriceDollars: "",
-        goodsServicesCostDollars: "",
-        exampleListingUrl: "",
-        platformProductId: "",
-      },
-    ]);
-  }
-
-  function removeVariantRow(index: number) {
-    setVariants((v) => v.filter((_, i) => i !== index));
-  }
-
-  function updateVariant(index: number, patch: Partial<AdminCatalogVariantFormRow>) {
-    setVariants((v) => v.map((row, i) => (i === index ? { ...row, ...patch } : row)));
-  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,26 +23,18 @@ export function AdminListAddItemForm() {
       setError("Enter an item name.");
       return;
     }
-    const checked = validateCatalogVariantFormRows(variants);
-    if (!checked.ok) {
-      setError(checked.error);
+    const itemLevel = validateItemLevelWhenNoVariants(
+      itemExampleListingUrl,
+      itemMinPriceDollars,
+      itemGoodsServicesCostDollars,
+    );
+    if (!itemLevel.ok) {
+      setError(itemLevel.error);
       return;
-    }
-    if (checked.payload.length === 0) {
-      const itemLevel = validateItemLevelWhenNoVariants(
-        itemExampleListingUrl,
-        itemMinPriceDollars,
-        itemGoodsServicesCostDollars,
-      );
-      if (!itemLevel.ok) {
-        setError(itemLevel.error);
-        return;
-      }
     }
 
     const fd = new FormData();
     fd.set("itemName", name);
-    fd.set("variantsJson", JSON.stringify(checked.payload));
     fd.set("itemExampleListingUrl", itemExampleListingUrl);
     fd.set("itemMinPriceDollars", itemMinPriceDollars);
     fd.set("itemGoodsServicesCostDollars", itemGoodsServicesCostDollars);
@@ -77,7 +42,6 @@ export function AdminListAddItemForm() {
     startTransition(async () => {
       await adminAddCatalogItem(fd);
       setItemName("");
-      setVariants([]);
       setItemExampleListingUrl("");
       setItemMinPriceDollars("");
       setItemGoodsServicesCostDollars("");
@@ -89,8 +53,7 @@ export function AdminListAddItemForm() {
     <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
       <h3 className="text-xs font-medium uppercase tracking-wide text-zinc-500">List item</h3>
       <p className="mt-1 text-xs text-zinc-600">
-        Item name is required. If the item has no variants, set a minimum price below (example listing optional).
-        Otherwise add variant rows for sizes, colors, etc.
+        Item name and minimum list price are required. Example listing URL and goods/services cost are optional.
       </p>
       <form onSubmit={submit} className="mt-4 space-y-4">
         <label className="block text-xs text-zinc-500">
@@ -106,23 +69,14 @@ export function AdminListAddItemForm() {
           />
         </label>
 
-        <AdminCatalogVariantRowsEditor
-          variants={variants}
-          onAddRow={addVariantRow}
-          onRemoveRow={removeVariantRow}
-          onChangeRow={updateVariant}
+        <AdminCatalogItemLevelFields
+          exampleListingUrl={itemExampleListingUrl}
+          minPriceDollars={itemMinPriceDollars}
+          goodsServicesCostDollars={itemGoodsServicesCostDollars}
+          onChangeExampleListingUrl={setItemExampleListingUrl}
+          onChangeMinPriceDollars={setItemMinPriceDollars}
+          onChangeGoodsServicesCostDollars={setItemGoodsServicesCostDollars}
         />
-
-        {variants.length === 0 ? (
-          <AdminCatalogItemLevelFields
-            exampleListingUrl={itemExampleListingUrl}
-            minPriceDollars={itemMinPriceDollars}
-            goodsServicesCostDollars={itemGoodsServicesCostDollars}
-            onChangeExampleListingUrl={setItemExampleListingUrl}
-            onChangeMinPriceDollars={setItemMinPriceDollars}
-            onChangeGoodsServicesCostDollars={setItemGoodsServicesCostDollars}
-          />
-        ) : null}
 
         {error ? (
           <p className="text-xs text-amber-200/90" role="alert">

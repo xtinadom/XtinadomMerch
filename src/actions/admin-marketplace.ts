@@ -760,10 +760,10 @@ export async function adminUpdateListingRemovalNotes(formData: FormData) {
 }
 
 /**
- * Clears removal audit fields so the listing drops off **Removed items** and **Shop watch** (same action from either tab).
+ * Clears removal audit fields so the listing drops off **Removed items** and **Shop Data** (same action from either tab).
  * Clears admin freeze, creator self-remove, listing-requests queue timestamp, and internal removal notes.
  * If the listing is **rejected** but has no removal audit (typical after “Reject” on listing requests), sets
- * `requestStatus` back to **draft** so it leaves Shop watch history and the creator can edit and resubmit.
+ * `requestStatus` back to **draft** so it leaves Shop Data history and the creator can edit and resubmit.
  * Does not delete the listing row; does not change `active` except indirectly when combined with other workflows.
  */
 export async function adminDeleteListingRemovalRecord(formData: FormData) {

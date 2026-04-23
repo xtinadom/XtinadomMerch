@@ -15,7 +15,7 @@ export const LISTING_FEE_FREE_SLOT_COUNT = 3;
 
 /**
  * Shop listing ids that were published at no fee outside the normal first-N free slots
- * (comps, one-off promos). Admin Shop watch shows these with ":)" instead of "--".
+ * (comps, one-off promos). Admin Shop Data shows these with ":)" instead of "--".
  * Founder unlimited-free shop does not need ids listed here.
  */
 export const SPECIAL_PROMOTION_FREE_LISTING_IDS = new Set<string>([]);

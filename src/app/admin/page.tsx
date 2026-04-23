@@ -72,6 +72,53 @@ function priceInputValue(cents: number): string {
   return (cents / 100).toFixed(2);
 }
 
+type AdminProductWithTags = Prisma.ProductGetPayload<{
+  include: { primaryTag: true; tags: { include: { tag: true } } };
+}>;
+
+type AdminOrderWithLines = Prisma.OrderGetPayload<{
+  include: { lines: true; fulfillmentJobs: true };
+}>;
+
+type AdminPlatformSalesLine = Prisma.OrderLineGetPayload<{
+  include: {
+    order: { select: { id: true; createdAt: true } };
+    shop: { select: { displayName: true; slug: true } };
+  };
+}>;
+
+type AdminListingRequestShopListing = Prisma.ShopListingGetPayload<{
+  include: {
+    shop: true;
+    product: {
+      select: {
+        id: true;
+        name: true;
+        slug: true;
+        fulfillmentType: true;
+        imageUrl: true;
+        imageGallery: true;
+      };
+    };
+  };
+}>;
+
+type AdminRemovedShopListingLoaded = Prisma.ShopListingGetPayload<{
+  include: {
+    shop: true;
+    product: {
+      select: {
+        id: true;
+        name: true;
+        slug: true;
+        fulfillmentType: true;
+        imageUrl: true;
+        imageGallery: true;
+      };
+    };
+  };
+}>;
+
 type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function AdminDashboardPage({ searchParams }: PageProps) {
@@ -134,6 +181,20 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       ...(salesOrderCreatedAt ? { createdAt: salesOrderCreatedAt } : {}),
     },
   };
+
+  /** Queue rows for listing-requests tab (badge uses count when another tab is active). */
+  const listingRequestTabPrismaWhere: Prisma.ShopListingWhereInput = {
+    removedFromListingRequestsAt: null,
+    requestStatus: {
+      in: [
+        ListingRequestStatus.submitted,
+        ListingRequestStatus.images_ok,
+        ListingRequestStatus.printify_item_created,
+        ListingRequestStatus.approved,
+      ],
+    },
+  };
+
   const sync = typeof sp.sync === "string" ? sp.sync : undefined;
   const syncUpdated = typeof sp.updated === "string" ? sp.updated : undefined;
   const syncCreated = typeof sp.created === "string" ? sp.created : undefined;
@@ -228,54 +289,116 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           }
         : undefined;
 
+  const loadProducts =
+    inventoryTab === "printify" || inventoryTab === "tags"
+      ? prisma.product.findMany({
+          orderBy: [{ name: "asc" }],
+          include: {
+            primaryTag: true,
+            tags: { include: { tag: true } },
+          },
+        })
+      : Promise.resolve([] as AdminProductWithTags[]);
+
+  const loadOrders =
+    inventoryTab === "orders"
+      ? prisma.order.findMany({
+          orderBy: { createdAt: "desc" },
+          take: 25,
+          include: {
+            lines: true,
+            fulfillmentJobs: true,
+          },
+        })
+      : Promise.resolve([] as AdminOrderWithLines[]);
+
+  const loadPlatformSalesLines =
+    inventoryTab === "sales"
+      ? prisma.orderLine.findMany({
+          where: platformSalesWhere,
+          orderBy: { order: { createdAt: "desc" } },
+          take: 500,
+          include: {
+            order: { select: { id: true, createdAt: true } },
+            shop: { select: { displayName: true, slug: true } },
+          },
+        })
+      : Promise.resolve([] as AdminPlatformSalesLine[]);
+
+  const loadRemovedRows =
+    inventoryTab === "removed"
+      ? prisma.shopListing.findMany({
+          where: { removedFromListingRequestsAt: { not: null } },
+          orderBy: { removedFromListingRequestsAt: "desc" },
+          include: {
+            shop: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                fulfillmentType: true,
+                imageUrl: true,
+                imageGallery: true,
+              },
+            },
+          },
+        })
+      : Promise.resolve([] as AdminRemovedShopListingLoaded[]);
+
   const [
+    adminTags,
+    productCount,
+    orderCount,
+    platformSalesLineCount,
+    listingRequestQueueCount,
+    removedListingCount,
+    adminListCount,
+    supportUnresolvedShopIds,
+    deployFootprint,
     products,
     orders,
-    adminTags,
     platformSalesLines,
-    listingRequestRows,
     removedListingRows,
-    adminCatalogRows,
   ] = await Promise.all([
-    prisma.product.findMany({
-      orderBy: [{ name: "asc" }],
-      include: {
-        primaryTag: true,
-        tags: { include: { tag: true } },
-      },
-    }),
-    prisma.order.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 25,
-      include: {
-        lines: true,
-        fulfillmentJobs: true,
-      },
-    }),
     prisma.tag.findMany({
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
-    prisma.orderLine.findMany({
-      where: platformSalesWhere,
-      orderBy: { order: { createdAt: "desc" } },
-      take: 500,
-      include: {
-        order: { select: { id: true, createdAt: true } },
-        shop: { select: { displayName: true, slug: true } },
-      },
-    }),
-    prisma.shopListing.findMany({
-      where: {
-        removedFromListingRequestsAt: null,
-        requestStatus: {
-          in: [
-            ListingRequestStatus.submitted,
-            ListingRequestStatus.images_ok,
-            ListingRequestStatus.printify_item_created,
-            ListingRequestStatus.approved,
-          ],
-        },
-      },
+    prisma.product.count(),
+    prisma.order.count(),
+    prisma.orderLine.count({ where: platformSalesWhere }),
+    prisma.shopListing.count({ where: listingRequestTabPrismaWhere }),
+    prisma.shopListing.count({ where: { removedFromListingRequestsAt: { not: null } } }),
+    prisma.adminCatalogItem.count(),
+    supportUnresolvedThreadShopIdsExcludingPlatform(),
+    getAdminDeployFootprint(),
+    loadProducts,
+    loadOrders,
+    loadPlatformSalesLines,
+    loadRemovedRows,
+  ]);
+
+  const removedListingTabRows: RemovedListingRow[] =
+    inventoryTab === "removed"
+      ? removedListingRows.map((r) => ({
+          id: r.id,
+          requestItemName: r.requestItemName,
+          removedFromListingRequestsAt: r.removedFromListingRequestsAt?.toISOString() ?? null,
+          adminListingRemovalNotes: r.adminListingRemovalNotes,
+          shop: { displayName: r.shop.displayName, slug: r.shop.slug },
+          product: {
+            id: r.product.id,
+            name: r.product.name,
+            slug: r.product.slug,
+            fulfillmentType: r.product.fulfillmentType,
+          },
+        }))
+      : [];
+
+  let listingRequestRows: AdminListingRequestShopListing[] = [];
+  if (inventoryTab === "requests") {
+    listingRequestRows = await prisma.shopListing.findMany({
+      where: listingRequestTabPrismaWhere,
       orderBy: { updatedAt: "desc" },
       include: {
         shop: true,
@@ -290,50 +413,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           },
         },
       },
-    }),
-    prisma.shopListing.findMany({
-      where: { removedFromListingRequestsAt: { not: null } },
-      orderBy: { removedFromListingRequestsAt: "desc" },
-      include: {
-        shop: true,
-        product: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            fulfillmentType: true,
-            imageUrl: true,
-            imageGallery: true,
-          },
-        },
-      },
-    }),
-    prisma.adminCatalogItem.findMany({
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      select: {
-        id: true,
-        name: true,
-        variants: true,
-        itemExampleListingUrl: true,
-        itemMinPriceCents: true,
-        itemGoodsServicesCostCents: true,
-      },
-    }),
-  ]);
-
-  const removedListingTabRows: RemovedListingRow[] = removedListingRows.map((r) => ({
-    id: r.id,
-    requestItemName: r.requestItemName,
-    removedFromListingRequestsAt: r.removedFromListingRequestsAt?.toISOString() ?? null,
-    adminListingRemovalNotes: r.adminListingRemovalNotes,
-    shop: { displayName: r.shop.displayName, slug: r.shop.slug },
-    product: {
-      id: r.product.id,
-      name: r.product.name,
-      slug: r.product.slug,
-      fulfillmentType: r.product.fulfillmentType,
-    },
-  }));
+    });
+  }
 
   const listingRequestShopIds = [...new Set(listingRequestRows.map((r) => r.shopId))];
   const ordinalListingRows =
@@ -358,7 +439,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     }
   }
 
-  /** Drop approved creator listings that are paid or in a free slot (they belong in Shop watch / dashboard only). */
+  /** Drop approved creator listings that are paid or in a free slot (they belong in Shop Data / dashboard only). */
   const listingRequestTabRows = listingRequestRows
     .map((r) => ({
       id: r.id,
@@ -394,17 +475,23 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       return true;
     });
 
-  const listingRequestTabBadgeCount = listingRequestTabRows.length;
-
-  const creatorShops = await prisma.shop.findMany({
-    where: { slug: { not: PLATFORM_SHOP_SLUG }, active: true },
-    select: { id: true, displayName: true, slug: true, listingFeeBonusFreeSlots: true },
-    orderBy: { displayName: "asc" },
-  });
-  const creatorShopIds = creatorShops.map((s) => s.id);
+  const listingRequestTabBadgeCount =
+    inventoryTab === "requests" ? listingRequestTabRows.length : listingRequestQueueCount;
 
   let shopWatchRows: ShopWatchRow[] = [];
-  if (creatorShopIds.length > 0) {
+  let creatorShops: { id: string; displayName: string; slug: string; listingFeeBonusFreeSlots: number | null }[] = [];
+  let creatorShopIds: string[] = [];
+
+  if (inventoryTab === "shop-watch") {
+    creatorShops = await prisma.shop.findMany({
+      where: { slug: { not: PLATFORM_SHOP_SLUG }, active: true },
+      select: { id: true, displayName: true, slug: true, listingFeeBonusFreeSlots: true },
+      orderBy: { displayName: "asc" },
+    });
+    creatorShopIds = creatorShops.map((s) => s.id);
+  }
+
+  if (inventoryTab === "shop-watch" && creatorShopIds.length > 0) {
     const [paidOrderRows, allCreatorListings, listingRejectionNotices] = await Promise.all([
       prisma.order.findMany({
         where: {
@@ -654,12 +741,32 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     );
   }
 
-  const shopWatchTabBadgeCount = shopWatchRows.filter(
-    (r) => r.frozenCount + r.removedCount > 0,
-  ).length;
+  let shopWatchTabBadgeCount = 0;
+  if (inventoryTab === "shop-watch") {
+    shopWatchTabBadgeCount = shopWatchRows.filter(
+      (r) => r.frozenCount + r.removedCount > 0,
+    ).length;
+  } else {
+    shopWatchTabBadgeCount = await prisma.shop.count({
+      where: {
+        slug: { not: PLATFORM_SHOP_SLUG },
+        listings: {
+          some: {
+            OR: [
+              { adminRemovedFromShopAt: { not: null } },
+              { creatorRemovedFromShopAt: { not: null } },
+            ],
+          },
+        },
+      },
+    });
+  }
 
-  const [creatorAccountCount, shopsWithListingCount, shopsWithPaidListingCount] =
-    await Promise.all([
+  let creatorAccountCount = 0;
+  let shopsWithListingCount = 0;
+  let shopsWithPaidListingCount = 0;
+  if (inventoryTab === "shop-watch") {
+    const counts = await Promise.all([
       prisma.shopUser.count({
         where: { shop: { slug: { not: PLATFORM_SHOP_SLUG } } },
       }),
@@ -676,10 +783,14 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         },
       }),
     ]);
+    creatorAccountCount = counts[0];
+    shopsWithListingCount = counts[1];
+    shopsWithPaidListingCount = counts[2];
+  }
 
   const printifyProducts = products;
 
-  /** Live Printify shop catalog (tab badge + listing-request ID picker). */
+  /** Live Printify shop catalog (Printify + Requests tabs only — avoids slow remote fetch on every admin load). */
   let printifyCatalogItemCount: number | null = null;
   let printifyCatalogPickList: {
     id: string;
@@ -687,7 +798,11 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     defaultVariantId: string | null;
   }[] = [];
   const printifyShopIdEnv = process.env.PRINTIFY_SHOP_ID?.trim() ?? "";
-  if (hasPrintifyApiToken() && printifyShopIdEnv) {
+  if (
+    hasPrintifyApiToken() &&
+    printifyShopIdEnv &&
+    (inventoryTab === "printify" || inventoryTab === "requests")
+  ) {
     try {
       const catalog = await fetchPrintifyCatalog(printifyShopIdEnv);
       printifyCatalogItemCount = catalog.length;
@@ -707,29 +822,30 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   }
 
   let printifyProductIdsMappedToShopListings: string[] = [];
-  try {
-    const mappedShopListingPrintifyRows = await prisma.shopListing.findMany({
-      where: { listingPrintifyProductId: { not: null } },
-      select: { listingPrintifyProductId: true },
-    });
-    printifyProductIdsMappedToShopListings = [
-      ...new Set(
-        mappedShopListingPrintifyRows
-          .map((row) => row.listingPrintifyProductId?.trim())
-          .filter((id): id is string => Boolean(id)),
-      ),
-    ];
-  } catch (e) {
-    console.error("[admin] printifyProductIdsMappedToShopListings query failed", e);
+  if (inventoryTab === "requests") {
+    try {
+      const mappedShopListingPrintifyRows = await prisma.shopListing.findMany({
+        where: { listingPrintifyProductId: { not: null } },
+        select: { listingPrintifyProductId: true },
+      });
+      printifyProductIdsMappedToShopListings = [
+        ...new Set(
+          mappedShopListingPrintifyRows
+            .map((row) => row.listingPrintifyProductId?.trim())
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+    } catch (e) {
+      console.error("[admin] printifyProductIdsMappedToShopListings query failed", e);
+    }
   }
 
-  const printifyTabBadgeCount = printifyCatalogItemCount ?? printifyProducts.length;
+  const printifyTabBadgeCount = printifyCatalogItemCount ?? productCount;
 
   const knownDesignNames = collectKnownDesignNamesFromProducts(products);
 
   const defaultCreateTagIds = adminTags[0] ? [adminTags[0].id] : [];
 
-  const supportUnresolvedShopIds = await supportUnresolvedThreadShopIdsExcludingPlatform();
   const supportUnresolvedCount = supportUnresolvedShopIds.size;
 
   let adminSupportThreads: AdminSupportThreadListRow[] = [];
@@ -747,11 +863,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             users: { take: 1, orderBy: { createdAt: "asc" }, select: { email: true } },
           },
         },
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { body: true },
-        },
       },
     });
     adminSupportThreads = threadsRaw.map((t) => ({
@@ -760,7 +871,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       shopSlug: t.shop.slug,
       ownerEmail: t.shop.users[0]?.email ?? "—",
       updatedAt: t.updatedAt.toISOString(),
-      lastPreview: t.messages[0]?.body?.slice(0, 160) ?? "",
       needsReply: supportUnresolvedShopIds.has(t.shopId),
     }));
 
@@ -798,8 +908,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     }
   }
 
-  const deployFootprint = await getAdminDeployFootprint();
-
   return (
     <div className="space-y-12">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -816,7 +924,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {products.length === 0 ? (
+      {productCount === 0 ? (
         <div
           role="status"
           className="rounded-lg border border-amber-900/45 bg-amber-950/25 px-4 py-3 text-sm text-amber-100/90"
@@ -867,14 +975,24 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         </h2>
         <dl className="mt-2 flex flex-wrap gap-x-8 gap-y-2">
           <div>
-            <dt className="text-zinc-600">Next.js build</dt>
+            <dt className="text-zinc-600">Next.js build (artifact size)</dt>
             <dd className="font-mono text-sm text-zinc-200">
               {deployFootprint.nextBuildDirPresent
-                ? deployFootprint.nextBuildBytes != null
-                  ? formatBytesForAdmin(deployFootprint.nextBuildBytes)
-                  : "`.next` present (size unavailable)"
+                ? deployFootprint.nextBuildArtifactBytes != null
+                  ? formatBytesForAdmin(deployFootprint.nextBuildArtifactBytes)
+                  : deployFootprint.nextBuildBytes != null
+                    ? formatBytesForAdmin(deployFootprint.nextBuildBytes)
+                    : "`.next` present (size unavailable)"
                 : "No `.next` folder at process cwd"}
             </dd>
+            {deployFootprint.nextBuildBytes != null &&
+            deployFootprint.nextBuildArtifactBytes != null &&
+            deployFootprint.nextBuildBytes !== deployFootprint.nextBuildArtifactBytes ? (
+              <dd className="mt-1 font-mono text-[10px] text-zinc-600">
+                Full <code className="text-zinc-500">.next</code> incl. dev caches:{" "}
+                {formatBytesForAdmin(deployFootprint.nextBuildBytes)}
+              </dd>
+            ) : null}
             <dd className="mt-0.5 max-w-full truncate font-mono text-[10px] text-zinc-600" title={deployFootprint.processCwd}>
               {deployFootprint.processCwd}
             </dd>
@@ -893,11 +1011,11 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           </div>
         </dl>
         <p className="mt-2 text-[11px] leading-relaxed text-zinc-600">
-          Total on-disk size of all files under <code className="text-zinc-500">.next</code> on the server running this
-          page (compiled routes, cache, and optional standalone output). It is not the git repo size and does not
-          include <code className="text-zinc-500">node_modules</code> or your source tree. Local dev without{" "}
-          <code className="text-zinc-500">next build</code> usually shows no <code className="text-zinc-500">.next</code>{" "}
-          until you build.
+          Primary figure excludes <code className="text-zinc-500">.next/cache</code> and{" "}
+          <code className="text-zinc-500">.next/dev</code> when present — closer to what a{" "}
+          <code className="text-zinc-500">next build</code> / production host keeps than the raw dev-server folder size.
+          It is not the git repo size and does not include <code className="text-zinc-500">node_modules</code>. When
+          caches exist locally, the secondary line shows full <code className="text-zinc-500">.next</code>.
         </p>
       </section>
 
@@ -930,7 +1048,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             }`}
           >
             Admin list
-            <span className="ml-1.5 tabular-nums text-zinc-500">({adminCatalogRows.length})</span>
+            <span className="ml-1.5 tabular-nums text-zinc-500">({adminListCount})</span>
           </Link>
           <Link
             href="/admin?tab=orders"
@@ -943,7 +1061,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             }`}
           >
             Orders
-            <span className="ml-1.5 tabular-nums text-zinc-500">({orders.length})</span>
+            <span className="ml-1.5 tabular-nums text-zinc-500">({orderCount})</span>
           </Link>
           <Link
             href="/admin?tab=sales"
@@ -956,7 +1074,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             }`}
           >
             Platform sales
-            <span className="ml-1.5 tabular-nums text-zinc-500">({platformSalesLines.length})</span>
+            <span className="ml-1.5 tabular-nums text-zinc-500">({platformSalesLineCount})</span>
           </Link>
           <Link
             href="/admin?tab=requests"
@@ -982,7 +1100,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             }`}
           >
             Removed items
-            <span className="ml-1.5 tabular-nums text-zinc-500">({removedListingTabRows.length})</span>
+            <span className="ml-1.5 tabular-nums text-zinc-500">({removedListingCount})</span>
           </Link>
           <Link
             href="/admin?tab=shop-watch"
@@ -994,7 +1112,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
             }`}
           >
-            Shop watch
+            Shop Data
             <span className="ml-1.5 tabular-nums text-zinc-500">({shopWatchTabBadgeCount})</span>
           </Link>
           <Link

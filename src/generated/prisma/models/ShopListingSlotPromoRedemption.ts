@@ -14,7 +14,10 @@ import type * as Prisma from "../internal/prismaNamespace"
 
 /**
  * Model ShopListingSlotPromoRedemption
- * * One promo code redemption per shop (normalized code).
+ * *
+ *  * Listing-slot promo redemption rows (see `LISTING_SLOT_PROMO_COUPONS_JSON`).
+ *  * Default coupons are one redemption per shop per code (enforced in app). Repeatable coupons
+ *  * for a specific shop create multiple rows with the same `(shopId, couponCodeNormalized)`.
  */
 export type ShopListingSlotPromoRedemptionModel = runtime.Types.Result.DefaultSelection<Prisma.$ShopListingSlotPromoRedemptionPayload>
 
@@ -230,7 +233,6 @@ export type ShopListingSlotPromoRedemptionOrderByWithRelationInput = {
 
 export type ShopListingSlotPromoRedemptionWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  shopId_couponCodeNormalized?: Prisma.ShopListingSlotPromoRedemptionShopIdCouponCodeNormalizedCompoundUniqueInput
   AND?: Prisma.ShopListingSlotPromoRedemptionWhereInput | Prisma.ShopListingSlotPromoRedemptionWhereInput[]
   OR?: Prisma.ShopListingSlotPromoRedemptionWhereInput[]
   NOT?: Prisma.ShopListingSlotPromoRedemptionWhereInput | Prisma.ShopListingSlotPromoRedemptionWhereInput[]
@@ -239,7 +241,7 @@ export type ShopListingSlotPromoRedemptionWhereUniqueInput = Prisma.AtLeast<{
   slotsGranted?: Prisma.IntFilter<"ShopListingSlotPromoRedemption"> | number
   createdAt?: Prisma.DateTimeFilter<"ShopListingSlotPromoRedemption"> | Date | string
   shop?: Prisma.XOR<Prisma.ShopScalarRelationFilter, Prisma.ShopWhereInput>
-}, "id" | "shopId_couponCodeNormalized">
+}, "id">
 
 export type ShopListingSlotPromoRedemptionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -328,11 +330,6 @@ export type ShopListingSlotPromoRedemptionListRelationFilter = {
 
 export type ShopListingSlotPromoRedemptionOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
-}
-
-export type ShopListingSlotPromoRedemptionShopIdCouponCodeNormalizedCompoundUniqueInput = {
-  shopId: string
-  couponCodeNormalized: string
 }
 
 export type ShopListingSlotPromoRedemptionCountOrderByAggregateInput = {

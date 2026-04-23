@@ -39,7 +39,10 @@ export type Product = Prisma.ProductModel
 export type Shop = Prisma.ShopModel
 /**
  * Model ShopListingSlotPromoRedemption
- * * One promo code redemption per shop (normalized code).
+ * *
+ *  * Listing-slot promo redemption rows (see `LISTING_SLOT_PROMO_COUPONS_JSON`).
+ *  * Default coupons are one redemption per shop per code (enforced in app). Repeatable coupons
+ *  * for a specific shop create multiple rows with the same `(shopId, couponCodeNormalized)`.
  */
 export type ShopListingSlotPromoRedemption = Prisma.ShopListingSlotPromoRedemptionModel
 /**
@@ -105,9 +108,15 @@ export type ProcessedStripeEvent = Prisma.ProcessedStripeEventModel
 /**
  * Model AdminCatalogItem
  * *
- *  * Manual admin reference catalog (Admin list tab): item name, variants, example listing URL, min price per variant.
+ *  * Manual admin reference catalog (Admin list tab): item name, example listing URL, min list price,
+ *  * optional goods/services COGS. `variants` JSON is legacy and cleared on save; item-level fields are authoritative.
  */
 export type AdminCatalogItem = Prisma.AdminCatalogItemModel
+/**
+ * Model AdminCatalogItemTag
+ * * Tags assigned to an admin baseline catalog item (Admin → List).
+ */
+export type AdminCatalogItemTag = Prisma.AdminCatalogItemTagModel
 /**
  * Model Comment
  * * Free-form text rows (e.g. notes). Requires an id for Prisma; add rows via SQL or future UI.

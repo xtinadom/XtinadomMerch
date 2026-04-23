@@ -29,8 +29,10 @@ async function requireShopOwner() {
 }
 
 /**
- * Redeems a server-configured listing-slot promo for the signed-in shop (one use per shop per code).
- * Configure coupons in `LISTING_SLOT_PROMO_COUPONS_JSON`.
+ * Redeems a server-configured listing-slot promo for the signed-in shop.
+ * Configure coupons in `LISTING_SLOT_PROMO_COUPONS_JSON` (see `ListingSlotPromoRule` in
+ * {@link parseListingSlotPromoCouponsFromEnv}): default is one redemption per shop per code;
+ * optional `allowedShopSlug` + `unlimitedRedemptionsForAllowedShop` allow repeat redemptions for that shop only.
  */
 export async function redeemListingSlotPromoCoupon(
   _prev: RedeemListingSlotPromoState,
@@ -60,15 +62,24 @@ export async function redeemListingSlotPromoCoupon(
     return { status: "error", message: "That code is not valid." };
   }
 
+  if (rule.allowedShopSlug != null && shop.slug.toLowerCase() !== rule.allowedShopSlug) {
+    return { status: "error", message: "That code is not valid." };
+  }
+
+  const allowRepeatSameShop = rule.unlimitedRedemptionsForAllowedShop === true;
+
   try {
     await prisma.$transaction(async (tx) => {
-      const existing = await tx.shopListingSlotPromoRedemption.findUnique({
-        where: {
-          shopId_couponCodeNormalized: { shopId: shop.id, couponCodeNormalized: normalized },
-        },
-      });
-      if (existing) {
-        throw new Error("already_redeemed");
+      if (!allowRepeatSameShop) {
+        const existing = await tx.shopListingSlotPromoRedemption.findFirst({
+          where: {
+            shopId: shop.id,
+            couponCodeNormalized: normalized,
+          },
+        });
+        if (existing) {
+          throw new Error("already_redeemed");
+        }
       }
 
       if (rule.maxRedemptions != null) {

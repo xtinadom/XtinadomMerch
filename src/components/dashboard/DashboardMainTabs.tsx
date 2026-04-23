@@ -885,7 +885,6 @@ export function DashboardMainTabs(props: {
           <ShopProfileSetupPanel
             key={setup.setupTabsKey}
             shop={setup.shop}
-            profileStepDone={setup.steps.profile}
             r2Configured={setup.r2Configured}
             embedded
           />
@@ -918,7 +917,6 @@ export function DashboardMainTabs(props: {
         >
           <ShopFirstListingRequestPanel
             catalogGroups={setup.catalogGroups}
-            listingFeePolicySummary={setup.listingFeePolicySummary}
             r2Configured={setup.r2Configured}
             listingPickerDiagnostics={setup.listingPickerDiagnostics}
             draftListingRequestPrefill={draftListingRequestPrefill}

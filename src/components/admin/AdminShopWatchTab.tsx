@@ -244,7 +244,7 @@ function StatBlock(props: { label: string; value: string | number; hint?: string
 export function AdminShopWatchTab(props: {
   rows: ShopWatchRow[];
   marketplaceStats: ShopWatchMarketplaceStats;
-  /** When opening `/admin?tab=shop-watch&watchShop=<id>`, expand that shop’s listing details. */
+  /** When opening Shop Data with `watchShop=<id>`, expand that shop’s listing details. */
   initialExpandedShopId?: string | null;
 }) {
   const { rows, marketplaceStats: stats, initialExpandedShopId = null } = props;
@@ -339,8 +339,8 @@ export function AdminShopWatchTab(props: {
       : "—";
 
   return (
-    <section aria-label="Shop watch">
-      <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Shop watch</h2>
+    <section aria-label="Shop Data">
+      <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Shop Data</h2>
       <div
         className="mt-3 flex flex-wrap gap-3 rounded-xl border border-zinc-800 bg-zinc-950/40 p-3"
         aria-label="Creator marketplace summary"

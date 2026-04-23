@@ -53,6 +53,7 @@ export type ShopListingMinAggregateOutputType = {
   requestStatus: $Enums.ListingRequestStatus | null
   adminRemovedFromShopAt: Date | null
   creatorRemovedFromShopAt: Date | null
+  hiddenStorefrontForAccountDeletionAt: Date | null
   removedFromListingRequestsAt: Date | null
   adminListingRemovalNotes: string | null
   createdAt: Date | null
@@ -78,6 +79,7 @@ export type ShopListingMaxAggregateOutputType = {
   requestStatus: $Enums.ListingRequestStatus | null
   adminRemovedFromShopAt: Date | null
   creatorRemovedFromShopAt: Date | null
+  hiddenStorefrontForAccountDeletionAt: Date | null
   removedFromListingRequestsAt: Date | null
   adminListingRemovalNotes: string | null
   createdAt: Date | null
@@ -106,6 +108,7 @@ export type ShopListingCountAggregateOutputType = {
   requestStatus: number
   adminRemovedFromShopAt: number
   creatorRemovedFromShopAt: number
+  hiddenStorefrontForAccountDeletionAt: number
   removedFromListingRequestsAt: number
   adminListingRemovalNotes: number
   createdAt: number
@@ -141,6 +144,7 @@ export type ShopListingMinAggregateInputType = {
   requestStatus?: true
   adminRemovedFromShopAt?: true
   creatorRemovedFromShopAt?: true
+  hiddenStorefrontForAccountDeletionAt?: true
   removedFromListingRequestsAt?: true
   adminListingRemovalNotes?: true
   createdAt?: true
@@ -166,6 +170,7 @@ export type ShopListingMaxAggregateInputType = {
   requestStatus?: true
   adminRemovedFromShopAt?: true
   creatorRemovedFromShopAt?: true
+  hiddenStorefrontForAccountDeletionAt?: true
   removedFromListingRequestsAt?: true
   adminListingRemovalNotes?: true
   createdAt?: true
@@ -194,6 +199,7 @@ export type ShopListingCountAggregateInputType = {
   requestStatus?: true
   adminRemovedFromShopAt?: true
   creatorRemovedFromShopAt?: true
+  hiddenStorefrontForAccountDeletionAt?: true
   removedFromListingRequestsAt?: true
   adminListingRemovalNotes?: true
   createdAt?: true
@@ -309,6 +315,7 @@ export type ShopListingGroupByOutputType = {
   requestStatus: $Enums.ListingRequestStatus
   adminRemovedFromShopAt: Date | null
   creatorRemovedFromShopAt: Date | null
+  hiddenStorefrontForAccountDeletionAt: Date | null
   removedFromListingRequestsAt: Date | null
   adminListingRemovalNotes: string | null
   createdAt: Date
@@ -360,6 +367,7 @@ export type ShopListingWhereInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFilter<"ShopListing"> | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   creatorRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   removedFromListingRequestsAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   adminListingRemovalNotes?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ShopListing"> | Date | string
@@ -393,6 +401,7 @@ export type ShopListingOrderByWithRelationInput = {
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrderInput | Prisma.SortOrder
   creatorRemovedFromShopAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  hiddenStorefrontForAccountDeletionAt?: Prisma.SortOrderInput | Prisma.SortOrder
   removedFromListingRequestsAt?: Prisma.SortOrderInput | Prisma.SortOrder
   adminListingRemovalNotes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -430,6 +439,7 @@ export type ShopListingWhereUniqueInput = Prisma.AtLeast<{
   requestStatus?: Prisma.EnumListingRequestStatusFilter<"ShopListing"> | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   creatorRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   removedFromListingRequestsAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   adminListingRemovalNotes?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ShopListing"> | Date | string
@@ -463,6 +473,7 @@ export type ShopListingOrderByWithAggregationInput = {
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrderInput | Prisma.SortOrder
   creatorRemovedFromShopAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  hiddenStorefrontForAccountDeletionAt?: Prisma.SortOrderInput | Prisma.SortOrder
   removedFromListingRequestsAt?: Prisma.SortOrderInput | Prisma.SortOrder
   adminListingRemovalNotes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -499,6 +510,7 @@ export type ShopListingScalarWhereWithAggregatesInput = {
   requestStatus?: Prisma.EnumListingRequestStatusWithAggregatesFilter<"ShopListing"> | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ShopListing"> | Date | string | null
   creatorRemovedFromShopAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ShopListing"> | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ShopListing"> | Date | string | null
   removedFromListingRequestsAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ShopListing"> | Date | string | null
   adminListingRemovalNotes?: Prisma.StringNullableWithAggregatesFilter<"ShopListing"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"ShopListing"> | Date | string
@@ -525,6 +537,7 @@ export type ShopListingCreateInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -558,6 +571,7 @@ export type ShopListingUncheckedCreateInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -587,6 +601,7 @@ export type ShopListingUpdateInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -620,6 +635,7 @@ export type ShopListingUncheckedUpdateInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -651,6 +667,7 @@ export type ShopListingCreateManyInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -677,6 +694,7 @@ export type ShopListingUpdateManyMutationInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -705,6 +723,7 @@ export type ShopListingUncheckedUpdateManyInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -753,6 +772,7 @@ export type ShopListingCountOrderByAggregateInput = {
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrder
   creatorRemovedFromShopAt?: Prisma.SortOrder
+  hiddenStorefrontForAccountDeletionAt?: Prisma.SortOrder
   removedFromListingRequestsAt?: Prisma.SortOrder
   adminListingRemovalNotes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -782,6 +802,7 @@ export type ShopListingMaxOrderByAggregateInput = {
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrder
   creatorRemovedFromShopAt?: Prisma.SortOrder
+  hiddenStorefrontForAccountDeletionAt?: Prisma.SortOrder
   removedFromListingRequestsAt?: Prisma.SortOrder
   adminListingRemovalNotes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -807,6 +828,7 @@ export type ShopListingMinOrderByAggregateInput = {
   requestStatus?: Prisma.SortOrder
   adminRemovedFromShopAt?: Prisma.SortOrder
   creatorRemovedFromShopAt?: Prisma.SortOrder
+  hiddenStorefrontForAccountDeletionAt?: Prisma.SortOrder
   removedFromListingRequestsAt?: Prisma.SortOrder
   adminListingRemovalNotes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -973,6 +995,7 @@ export type ShopListingCreateWithoutProductInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -1004,6 +1027,7 @@ export type ShopListingUncheckedCreateWithoutProductInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -1064,6 +1088,7 @@ export type ShopListingScalarWhereInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFilter<"ShopListing"> | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   creatorRemovedFromShopAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   removedFromListingRequestsAt?: Prisma.DateTimeNullableFilter<"ShopListing"> | Date | string | null
   adminListingRemovalNotes?: Prisma.StringNullableFilter<"ShopListing"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ShopListing"> | Date | string
@@ -1090,6 +1115,7 @@ export type ShopListingCreateWithoutShopHomeFeaturedInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -1122,6 +1148,7 @@ export type ShopListingUncheckedCreateWithoutShopHomeFeaturedInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -1155,6 +1182,7 @@ export type ShopListingCreateWithoutShopInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -1186,6 +1214,7 @@ export type ShopListingUncheckedCreateWithoutShopInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -1236,6 +1265,7 @@ export type ShopListingUpdateWithoutShopHomeFeaturedInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1268,6 +1298,7 @@ export type ShopListingUncheckedUpdateWithoutShopHomeFeaturedInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1312,6 +1343,7 @@ export type ShopListingCreateWithoutRejectionNoticesInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -1344,6 +1376,7 @@ export type ShopListingUncheckedCreateWithoutRejectionNoticesInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -1388,6 +1421,7 @@ export type ShopListingUpdateWithoutRejectionNoticesInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1420,6 +1454,7 @@ export type ShopListingUncheckedUpdateWithoutRejectionNoticesInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1448,6 +1483,7 @@ export type ShopListingCreateWithoutOrderLinesInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -1480,6 +1516,7 @@ export type ShopListingUncheckedCreateWithoutOrderLinesInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -1524,6 +1561,7 @@ export type ShopListingUpdateWithoutOrderLinesInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1556,6 +1594,7 @@ export type ShopListingUncheckedUpdateWithoutOrderLinesInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1585,6 +1624,7 @@ export type ShopListingCreateManyProductInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -1611,6 +1651,7 @@ export type ShopListingUpdateWithoutProductInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1642,6 +1683,7 @@ export type ShopListingUncheckedUpdateWithoutProductInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1672,6 +1714,7 @@ export type ShopListingUncheckedUpdateManyWithoutProductInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1699,6 +1742,7 @@ export type ShopListingCreateManyShopInput = {
   requestStatus?: $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Date | string | null
   creatorRemovedFromShopAt?: Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Date | string | null
   removedFromListingRequestsAt?: Date | string | null
   adminListingRemovalNotes?: string | null
   createdAt?: Date | string
@@ -1725,6 +1769,7 @@ export type ShopListingUpdateWithoutShopInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1756,6 +1801,7 @@ export type ShopListingUncheckedUpdateWithoutShopInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1786,6 +1832,7 @@ export type ShopListingUncheckedUpdateManyWithoutShopInput = {
   requestStatus?: Prisma.EnumListingRequestStatusFieldUpdateOperationsInput | $Enums.ListingRequestStatus
   adminRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creatorRemovedFromShopAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  hiddenStorefrontForAccountDeletionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   removedFromListingRequestsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   adminListingRemovalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1854,6 +1901,7 @@ export type ShopListingSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   requestStatus?: boolean
   adminRemovedFromShopAt?: boolean
   creatorRemovedFromShopAt?: boolean
+  hiddenStorefrontForAccountDeletionAt?: boolean
   removedFromListingRequestsAt?: boolean
   adminListingRemovalNotes?: boolean
   createdAt?: boolean
@@ -1888,6 +1936,7 @@ export type ShopListingSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   requestStatus?: boolean
   adminRemovedFromShopAt?: boolean
   creatorRemovedFromShopAt?: boolean
+  hiddenStorefrontForAccountDeletionAt?: boolean
   removedFromListingRequestsAt?: boolean
   adminListingRemovalNotes?: boolean
   createdAt?: boolean
@@ -1918,6 +1967,7 @@ export type ShopListingSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   requestStatus?: boolean
   adminRemovedFromShopAt?: boolean
   creatorRemovedFromShopAt?: boolean
+  hiddenStorefrontForAccountDeletionAt?: boolean
   removedFromListingRequestsAt?: boolean
   adminListingRemovalNotes?: boolean
   createdAt?: boolean
@@ -1948,13 +1998,14 @@ export type ShopListingSelectScalar = {
   requestStatus?: boolean
   adminRemovedFromShopAt?: boolean
   creatorRemovedFromShopAt?: boolean
+  hiddenStorefrontForAccountDeletionAt?: boolean
   removedFromListingRequestsAt?: boolean
   adminListingRemovalNotes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ShopListingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "shopId" | "productId" | "priceCents" | "active" | "featuredOnShop" | "featuredForHome" | "listingFeePaidAt" | "listingPrintifyProductId" | "listingPrintifyVariantId" | "listingPrintifyVariantPrices" | "listingPrintifyCatalogSyncedAt" | "requestImages" | "ownerSupplementImageUrl" | "adminListingSecondaryImageUrl" | "listingStorefrontCatalogImageUrls" | "requestItemName" | "baselineCatalogPickEncoded" | "requestStatus" | "adminRemovedFromShopAt" | "creatorRemovedFromShopAt" | "removedFromListingRequestsAt" | "adminListingRemovalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["shopListing"]>
+export type ShopListingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "shopId" | "productId" | "priceCents" | "active" | "featuredOnShop" | "featuredForHome" | "listingFeePaidAt" | "listingPrintifyProductId" | "listingPrintifyVariantId" | "listingPrintifyVariantPrices" | "listingPrintifyCatalogSyncedAt" | "requestImages" | "ownerSupplementImageUrl" | "adminListingSecondaryImageUrl" | "listingStorefrontCatalogImageUrls" | "requestItemName" | "baselineCatalogPickEncoded" | "requestStatus" | "adminRemovedFromShopAt" | "creatorRemovedFromShopAt" | "hiddenStorefrontForAccountDeletionAt" | "removedFromListingRequestsAt" | "adminListingRemovalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["shopListing"]>
 export type ShopListingInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -2046,6 +2097,13 @@ export type $ShopListingPayload<ExtArgs extends runtime.Types.Extensions.Interna
      * * Set when the shop owner hides this listing from their storefront.
      */
     creatorRemovedFromShopAt: Date | null
+    /**
+     * *
+     *    * When the owner requested account deletion while this listing was storefront-active (`active`),
+     *    * we set this timestamp and `active: false`. Cleared if they cancel the deletion request before
+     *    * confirming email (listings are reactivated).
+     */
+    hiddenStorefrontForAccountDeletionAt: Date | null
     /**
      * * Admin cleared this row from the Listing requests queue; see Removed items tab.
      */
@@ -2505,6 +2563,7 @@ export interface ShopListingFieldRefs {
   readonly requestStatus: Prisma.FieldRef<"ShopListing", 'ListingRequestStatus'>
   readonly adminRemovedFromShopAt: Prisma.FieldRef<"ShopListing", 'DateTime'>
   readonly creatorRemovedFromShopAt: Prisma.FieldRef<"ShopListing", 'DateTime'>
+  readonly hiddenStorefrontForAccountDeletionAt: Prisma.FieldRef<"ShopListing", 'DateTime'>
   readonly removedFromListingRequestsAt: Prisma.FieldRef<"ShopListing", 'DateTime'>
   readonly adminListingRemovalNotes: Prisma.FieldRef<"ShopListing", 'String'>
   readonly createdAt: Prisma.FieldRef<"ShopListing", 'DateTime'>

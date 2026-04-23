@@ -4,8 +4,11 @@ import {
   adminSupportMarkUnresolved,
   adminSupportSendMessage,
 } from "@/actions/admin-support";
+import { AdminSupportThreadStatusSubmitButton } from "@/components/admin/AdminSupportThreadStatusSubmitButton";
+import { SupportThreadResolvedMarkerRow } from "@/components/SupportThreadResolvedMarkerRow";
 import { SupportMessageAuthor } from "@/generated/prisma/enums";
 import { formatSupportMessageWhen } from "@/lib/format-support-message-when";
+import { mergeSupportChatTimeline } from "@/lib/support-chat-timeline";
 
 export type AdminSupportThreadListRow = {
   shopId: string;
@@ -13,7 +16,6 @@ export type AdminSupportThreadListRow = {
   shopSlug: string;
   ownerEmail: string;
   updatedAt: string;
-  lastPreview: string;
   /** True when the thread needs admin follow-up (never resolved, or creator posted after resolve). */
   needsReply: boolean;
 };
@@ -57,19 +59,27 @@ export function AdminSupportMessagesTab(props: {
             ) : (
               threads.map((t) => {
                 const active = selectedShopId === t.shopId;
+                const supportHref = `/admin?tab=support&supportShop=${encodeURIComponent(t.shopId)}`;
                 return (
-                  <li key={t.shopId}>
+                  <li key={t.shopId} className="group relative">
+                    <Link
+                      href={supportHref}
+                      className={`absolute inset-0 z-0 rounded-md transition ${
+                        active ? "" : "hover:bg-zinc-900/80"
+                      }`}
+                      aria-label={`Open support chat with ${t.shopDisplayName}`}
+                    />
                     <div
-                      className={`rounded-md px-2 py-2 text-left text-xs transition ${
+                      className={`pointer-events-none relative z-10 rounded-md px-2 py-2 text-left text-xs transition ${
                         active
                           ? "bg-zinc-800 text-zinc-100 ring-1 ring-zinc-600"
-                          : "text-zinc-400 hover:bg-zinc-900/80 hover:text-zinc-200"
+                          : "text-zinc-400 group-hover:text-zinc-200"
                       }`}
                     >
                       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                         <Link
                           href={`/admin?tab=shop-watch&watchShop=${encodeURIComponent(t.shopId)}`}
-                          className="font-medium text-zinc-200 underline-offset-2 hover:text-zinc-50 hover:underline"
+                          className="pointer-events-auto relative z-20 font-medium text-zinc-200 underline-offset-2 hover:text-zinc-50 hover:underline"
                         >
                           {t.shopDisplayName}
                         </Link>
@@ -82,40 +92,8 @@ export function AdminSupportMessagesTab(props: {
                             Resolved
                           </span>
                         )}
-                        <span className="select-none text-[10px] text-zinc-600" aria-hidden>
-                          ·
-                        </span>
-                        <Link
-                          href={`/admin?tab=support&supportShop=${encodeURIComponent(t.shopId)}`}
-                          className={`text-[11px] underline-offset-2 hover:underline ${
-                            active ? "text-zinc-200" : "text-zinc-500 hover:text-zinc-300"
-                          }`}
-                        >
-                          Support
-                        </Link>
-                        <span className="select-none text-[10px] text-zinc-600" aria-hidden>
-                          ·
-                        </span>
-                        <Link
-                          href={`/s/${encodeURIComponent(t.shopSlug)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[11px] text-blue-400/90 underline-offset-2 hover:text-blue-300 hover:underline"
-                        >
-                          Storefront
-                        </Link>
                       </div>
                       <p className="mt-0.5 font-mono text-[10px] text-zinc-600">/s/{t.shopSlug}</p>
-                      {t.lastPreview ? (
-                        <Link
-                          href={`/admin?tab=support&supportShop=${encodeURIComponent(t.shopId)}`}
-                          className={`mt-1 line-clamp-2 block text-[11px] hover:underline ${
-                            active ? "text-zinc-400" : "text-zinc-500 hover:text-zinc-400"
-                          }`}
-                        >
-                          {t.lastPreview}
-                        </Link>
-                      ) : null}
                     </div>
                   </li>
                 );
@@ -139,7 +117,7 @@ export function AdminSupportMessagesTab(props: {
                     href={`/admin?tab=shop-watch&watchShop=${encodeURIComponent(detail.shopId)}`}
                     className="text-zinc-300 underline-offset-2 hover:text-zinc-100 hover:underline"
                   >
-                    Shop watch
+                    Shop Data
                   </Link>
                   <span className="text-zinc-700" aria-hidden>
                     ·
@@ -184,33 +162,35 @@ export function AdminSupportMessagesTab(props: {
                     {detail.needsReply ? (
                       <form action={adminSupportMarkResolved}>
                         <input type="hidden" name="shopId" value={detail.shopId} />
-                        <button
-                          type="submit"
-                          className="rounded-lg border border-emerald-900/50 bg-emerald-950/35 px-3 py-1.5 text-xs font-medium text-emerald-100/90 hover:border-emerald-800/60 hover:bg-emerald-950/50"
-                        >
-                          Mark resolved
-                        </button>
+                        <AdminSupportThreadStatusSubmitButton
+                          idleLabel="Mark resolved"
+                          pendingLabel="Resolving…"
+                          className="rounded-lg border border-emerald-900/50 bg-emerald-950/35 px-3 py-1.5 text-xs font-medium text-emerald-100/90 hover:border-emerald-800/60 hover:bg-emerald-950/50 disabled:opacity-50"
+                        />
                       </form>
                     ) : (
                       <form action={adminSupportMarkUnresolved}>
                         <input type="hidden" name="shopId" value={detail.shopId} />
-                        <button
-                          type="submit"
-                          className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800"
-                        >
-                          Mark as open
-                        </button>
+                        <AdminSupportThreadStatusSubmitButton
+                          idleLabel="Mark as open"
+                          pendingLabel="Reopening…"
+                          className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800 disabled:opacity-50"
+                        />
                       </form>
                     )}
                   </div>
                 ) : null}
               </div>
               <div className="max-h-[min(26rem,50vh)] space-y-3 overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
-                {detail.messages.length === 0 ? (
+                {detail.messages.length === 0 && !detail.resolvedAtIso ? (
                   <p className="py-4 text-center text-xs text-zinc-500">No messages in this thread yet.</p>
                 ) : (
                   <ul className="flex flex-col gap-3">
-                    {detail.messages.map((m) => {
+                    {mergeSupportChatTimeline(detail.messages, detail.resolvedAtIso).map((item) => {
+                      if (item.kind === "resolved") {
+                        return <SupportThreadResolvedMarkerRow key={`resolved-${item.atIso}`} atIso={item.atIso} />;
+                      }
+                      const m = item.message;
                       const isAdmin = m.authorRole === SupportMessageAuthor.admin;
                       return (
                         <li key={m.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>

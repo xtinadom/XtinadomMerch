@@ -42,6 +42,7 @@ model Tag {
   byItemSpotlightProduct   Product?  @relation("TagByItemSpotlight", fields: [byItemSpotlightProductId], references: [id], onDelete: SetNull)
   productTags                       ProductTag[]
   primaryProducts                   Product[] @relation("ProductPrimaryTag")
+  adminCatalogItemTags              AdminCatalogItemTag[]
   createdAt                         DateTime  @default(now())
   updatedAt                         DateTime  @updatedAt
 }
@@ -137,7 +138,11 @@ model Shop {
   updatedAt                      DateTime                       @updatedAt
 }
 
-/** One promo code redemption per shop (normalized code). */
+/**
+ * Listing-slot promo redemption rows (see `LISTING_SLOT_PROMO_COUPONS_JSON`).
+ * Default coupons are one redemption per shop per code (enforced in app). Repeatable coupons
+ * for a specific shop create multiple rows with the same `(shopId, couponCodeNormalized)`.
+ */
 model ShopListingSlotPromoRedemption {
   id                   String   @id @default(cuid())
   shopId               String
@@ -147,7 +152,7 @@ model ShopListingSlotPromoRedemption {
   slotsGranted         Int
   createdAt            DateTime @default(now())
 
-  @@unique([shopId, couponCodeNormalized])
+  @@index([shopId, couponCodeNormalized])
   @@index([couponCodeNormalized])
 }
 
@@ -299,6 +304,12 @@ model ShopListing {
   adminRemovedFromShopAt DateTime?
   /** Set when the shop owner hides this listing from their storefront. */
   creatorRemovedFromShopAt DateTime?
+  /**
+   * When the owner requested account deletion while this listing was storefront-active (`active`),
+   * we set this timestamp and `active: false`. Cleared if they cancel the deletion request before
+   * confirming email (listings are reactivated).
+   */
+  hiddenStorefrontForAccountDeletionAt DateTime?
   /** Admin cleared this row from the Listing requests queue; see Removed items tab. */
   removedFromListingRequestsAt DateTime?
   /** Internal notes on a removed queue row (editable in admin). */
@@ -405,37 +416,43 @@ model ProcessedStripeEvent {
 }
 
 /**
- * Manual admin reference catalog (Admin list tab): item name, variants, example listing URL, min price per variant.
+ * Manual admin reference catalog (Admin list tab): item name, example listing URL, min list price,
+ * optional goods/services COGS. `variants` JSON is legacy and cleared on save; item-level fields are authoritative.
  */
 model AdminCatalogItem {
   id        String   @id @default(cuid())
   sortOrder Int      @default(0)
   name      String
-  /** JSON array: { id, label, minPriceCents, goodsServicesCostCents?, exampleListingUrl, platformProductId? }[] */
+  /** Legacy JSON array (unused for new rows; kept for DB compatibility). */
   variants  Json
   /**
-   * When `variants` is empty: optional storefront Product id (active Printify) for shop catalog
-   * resolution when there is no example URL / name match.
+   * Optional storefront Product id (active Printify) for shop catalog resolution when there is no
+   * example URL / name match.
    */
   itemPlatformProductId String?
   itemPlatformProduct   Product? @relation("AdminCatalogItemPlatformProduct", fields: [itemPlatformProductId], references: [id], onDelete: SetNull)
-  /**
-   * When `variants` is empty: optional example listing for the whole item.
-   * Cleared when the item has one or more variants.
-   */
+  /** Optional example listing for the item. */
   itemExampleListingUrl String? @db.VarChar(2048)
-  /**
-   * When `variants` is empty: minimum price in cents for the whole item (required on save).
-   * Set to 0 when the item has variants.
-   */
+  /** Minimum list price in cents for the item (required on save). */
   itemMinPriceCents     Int     @default(0)
   /**
-   * When `variants` is empty: fulfillment / goods-and-services COGS (cents per unit) retained by the
-   * platform from the sale; distinct from the marketplace fee on the remainder.
+   * Fulfillment / goods-and-services COGS (cents per unit) retained by the platform from the sale;
+   * distinct from the marketplace fee on the remainder.
    */
   itemGoodsServicesCostCents Int @default(0)
+  catalogTags           AdminCatalogItemTag[]
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+}
+
+/** Tags assigned to an admin baseline catalog item (Admin → List). */
+model AdminCatalogItemTag {
+  adminCatalogItemId String
+  tagId              String
+  adminCatalogItem   AdminCatalogItem @relation(fields: [adminCatalogItemId], references: [id], onDelete: Cascade)
+  tag                Tag              @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([adminCatalogItemId, tagId])
 }
 
 /** Free-form text rows (e.g. notes). Requires an id for Prisma; add rows via SQL or future UI. */

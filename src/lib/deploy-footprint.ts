@@ -61,12 +61,33 @@ export function formatBytesForAdmin(bytes: number): string {
 export type AdminDeployFootprint = {
   /** Sum of file sizes under `.next` at `process.cwd()`, if that folder exists. */
   nextBuildBytes: number | null;
+  /**
+   * Same tree as {@link AdminDeployFootprint.nextBuildBytes} minus `.next/cache` and `.next/dev` when present.
+   * Those folders are mainly local dev tooling; omitting them approximates production / `next build` artifact size.
+   */
+  nextBuildArtifactBytes: number | null;
   nextBuildDirPresent: boolean;
   processCwd: string;
   nodeEnv: string | undefined;
   vercelEnv: string | undefined;
   isVercel: boolean;
 };
+
+/** Dev-only directories under `.next` that inflate on-disk size but are not shipped like production output. */
+const NEXT_DEV_HEAVY_SUBDIRS = ["cache", "dev"] as const;
+
+async function getNextArtifactSizeBytesExcludingDevCaches(nextDir: string): Promise<number | null> {
+  const total = await getDirectoryTotalSizeBytes(nextDir);
+  if (total == null) return null;
+  let excluded = 0;
+  for (const name of NEXT_DEV_HEAVY_SUBDIRS) {
+    const sub = path.join(nextDir, name);
+    const s = await getDirectoryTotalSizeBytes(sub);
+    if (s != null) excluded += s;
+  }
+  const artifact = total - excluded;
+  return artifact >= 0 ? artifact : null;
+}
 
 /**
  * Footprint of the compiled Next.js app on the host serving the request (typically production build output).
@@ -87,8 +108,13 @@ export async function getAdminDeployFootprint(): Promise<AdminDeployFootprint> {
     ? await getDirectoryTotalSizeBytes(nextDir)
     : null;
 
+  const nextBuildArtifactBytes = nextBuildDirPresent
+    ? await getNextArtifactSizeBytesExcludingDevCaches(nextDir)
+    : null;
+
   return {
     nextBuildBytes,
+    nextBuildArtifactBytes,
     nextBuildDirPresent,
     processCwd,
     nodeEnv: process.env.NODE_ENV,

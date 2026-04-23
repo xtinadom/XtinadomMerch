@@ -2,31 +2,36 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   adminDeleteCatalogItem,
-  adminUpdateCatalogGoodsServicesCost,
+  adminLinkCatalogItemTag,
+  adminUnlinkCatalogItemTag,
   adminUpdateCatalogItem,
-  adminUpdateCatalogMinPrice,
 } from "@/actions/admin-catalog-items";
-import type { AdminCatalogVariant, AdminCatalogVariantFormRow } from "@/lib/admin-catalog-item";
-import {
-  dollarsStringFromCents,
-  validateCatalogVariantFormRows,
-  validateItemLevelWhenNoVariants,
-  variantsToFormRows,
-} from "@/lib/admin-catalog-item";
-import { AdminCatalogVariantRowsEditor } from "@/components/admin/AdminCatalogVariantRowsEditor";
+import { dollarsStringFromCents, validateItemLevelWhenNoVariants } from "@/lib/admin-catalog-item";
 import { AdminCatalogItemLevelFields } from "@/components/admin/AdminCatalogItemLevelFields";
+
+export type AdminListItemTag = {
+  id: string;
+  name: string;
+  slug: string;
+};
 
 export type AdminListItemSerializable = {
   id: string;
   name: string;
-  variants: AdminCatalogVariant[];
   itemPlatformProductId: string | null;
   itemExampleListingUrl: string | null;
   itemMinPriceCents: number;
   itemGoodsServicesCostCents: number;
+  tags: AdminListItemTag[];
+};
+
+export type AdminListTagOption = {
+  id: string;
+  name: string;
+  slug: string;
 };
 
 function formatMoney(cents: number) {
@@ -36,196 +41,137 @@ function formatMoney(cents: number) {
   }).format(cents / 100);
 }
 
-function minPriceDisplayText(r: {
-  variantLabel: string;
-  minPriceCents: number;
-  exampleUrl: string;
-}) {
-  if (r.variantLabel === "—") {
-    return r.minPriceCents === 0 && !r.exampleUrl.trim()
-      ? "—"
-      : formatMoney(r.minPriceCents);
-  }
-  return r.minPriceCents > 0 ? formatMoney(r.minPriceCents) : "—";
+function minPriceDisplayText(minPriceCents: number, exampleUrl: string) {
+  if (minPriceCents === 0 && !exampleUrl.trim()) return "—";
+  return formatMoney(minPriceCents);
 }
 
-function AdminMinPriceCell({
-  itemId,
-  variantId,
-  variantIndex,
-  variantLabel,
-  minPriceCents,
-  exampleUrl,
-}: {
-  itemId: string;
-  variantId: string | null;
-  variantIndex: number;
-  variantLabel: string;
-  minPriceCents: number;
-  exampleUrl: string;
-}) {
-  const router = useRouter();
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState("");
-  const [pending, startTransition] = useTransition();
-
-  function save() {
-    const fd = new FormData();
-    fd.set("itemId", itemId);
-    fd.set("minPriceDollars", draft);
-    if (variantId) fd.set("variantId", variantId);
-    fd.set("variantIndex", String(variantIndex));
-    startTransition(async () => {
-      await adminUpdateCatalogMinPrice(fd);
-      setEditing(false);
-      router.refresh();
-    });
-  }
-
-  const display = minPriceDisplayText({ variantLabel, minPriceCents, exampleUrl });
-
+function AdminCatalogItemTagsDisplayCell({ tags }: { tags: AdminListItemTag[] }) {
   return (
-    <td className="p-3 whitespace-nowrap tabular-nums text-zinc-400">
-      {editing ? (
-        <div className="flex flex-col gap-1.5">
-          <input
-            type="text"
-            inputMode="decimal"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            autoFocus
-            disabled={pending}
-            className="w-[7rem] rounded border border-zinc-600 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-100"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                save();
-              }
-              if (e.key === "Escape") setEditing(false);
-            }}
-          />
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={save}
-              disabled={pending}
-              className="text-[11px] text-blue-400/90 hover:underline disabled:opacity-50"
-            >
-              {pending ? "Saving…" : "Save"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditing(false)}
-              disabled={pending}
-              className="text-[11px] text-zinc-500 hover:underline disabled:opacity-50"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1">
-          <span>{display}</span>
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(dollarsStringFromCents(minPriceCents));
-              setEditing(true);
-            }}
-            className="text-left text-[11px] text-blue-400/90 hover:underline"
+    <td className="max-w-[14rem] p-3 align-top text-zinc-300">
+      <div className="flex flex-wrap gap-1.5">
+        {tags.map((t) => (
+          <span
+            key={t.id}
+            className="inline-flex max-w-full rounded-full border border-zinc-600 bg-zinc-900/80 px-2 py-0.5 text-[11px] text-zinc-200"
+            title={t.name}
           >
-            Edit min price
-          </button>
-        </div>
-      )}
+            <span className="min-w-0 truncate">{t.name}</span>
+          </span>
+        ))}
+        {tags.length === 0 ? <span className="text-[11px] text-zinc-600">—</span> : null}
+      </div>
     </td>
   );
 }
 
-function AdminGoodsServicesCostCell({
+function AdminCatalogItemTagsEditor({
   itemId,
-  variantId,
-  variantIndex,
-  goodsServicesCostCents,
+  linkedTags,
+  allTags,
 }: {
   itemId: string;
-  variantId: string | null;
-  variantIndex: number;
-  goodsServicesCostCents: number;
+  linkedTags: AdminListItemTag[];
+  allTags: AdminListTagOption[];
 }) {
   const router = useRouter();
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState("");
   const [pending, startTransition] = useTransition();
+  const [pick, setPick] = useState("");
 
-  function save() {
+  const linkedIds = new Set(linkedTags.map((t) => t.id));
+  const available = allTags.filter((t) => !linkedIds.has(t.id));
+
+  function addTag() {
+    if (!pick) return;
     const fd = new FormData();
     fd.set("itemId", itemId);
-    fd.set("goodsServicesCostDollars", draft);
-    if (variantId) fd.set("variantId", variantId);
-    fd.set("variantIndex", String(variantIndex));
+    fd.set("tagId", pick);
     startTransition(async () => {
-      await adminUpdateCatalogGoodsServicesCost(fd);
-      setEditing(false);
+      await adminLinkCatalogItemTag(fd);
+      setPick("");
+      router.refresh();
+    });
+  }
+
+  function removeTag(tagId: string) {
+    const fd = new FormData();
+    fd.set("itemId", itemId);
+    fd.set("tagId", tagId);
+    startTransition(async () => {
+      await adminUnlinkCatalogItemTag(fd);
       router.refresh();
     });
   }
 
   return (
-    <td className="p-3 whitespace-nowrap tabular-nums text-zinc-400">
-      {editing ? (
-        <div className="flex flex-col gap-1.5">
-          <input
-            type="text"
-            inputMode="decimal"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            autoFocus
-            disabled={pending}
-            className="w-[7rem] rounded border border-zinc-600 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-100"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                save();
-              }
-              if (e.key === "Escape") setEditing(false);
-            }}
-          />
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={save}
-              disabled={pending}
-              className="text-[11px] text-blue-400/90 hover:underline disabled:opacity-50"
-            >
-              {pending ? "Saving…" : "Save"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditing(false)}
-              disabled={pending}
-              className="text-[11px] text-zinc-500 hover:underline disabled:opacity-50"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1">
-          <span>{formatMoney(goodsServicesCostCents)}</span>
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(dollarsStringFromCents(goodsServicesCostCents));
-              setEditing(true);
-            }}
-            className="text-left text-[11px] text-blue-400/90 hover:underline"
+    <div className="mt-2 border-t border-zinc-800 pt-4">
+      <h4 className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Tags</h4>
+      <p className="mt-1 text-[11px] text-zinc-600">
+        Tags control storefront browse for baseline-linked listings. Changes save immediately.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {linkedTags.map((t) => (
+          <span
+            key={t.id}
+            className="inline-flex max-w-full items-center gap-1 rounded-full border border-zinc-600 bg-zinc-900/80 px-2 py-0.5 text-[11px] text-zinc-200"
           >
-            Edit G/S cost
-          </button>
-        </div>
+            <span className="min-w-0 truncate" title={t.name}>
+              {t.name}
+            </span>
+            <button
+              type="button"
+              disabled={pending}
+              title={`Remove “${t.name}” from this item`}
+              className="shrink-0 text-zinc-500 hover:text-rose-300 disabled:opacity-50"
+              onClick={() => removeTag(t.id)}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        {linkedTags.length === 0 ? <span className="text-[11px] text-zinc-600">No tags linked.</span> : null}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <select
+          value={pick}
+          onChange={(e) => setPick(e.target.value)}
+          disabled={pending || available.length === 0}
+          aria-label="Add tag to this catalog item"
+          className="min-w-0 max-w-xs flex-1 rounded border border-zinc-600 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-100"
+        >
+          <option value="">Add tag…</option>
+          {available.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={addTag}
+          disabled={pending || !pick}
+          className="shrink-0 rounded border border-zinc-600 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
+        >
+          Add tag
+        </button>
+      </div>
+      {allTags.length === 0 ? (
+        <p className="mt-3 text-[11px] text-amber-200/80">
+          No tags exist yet — add some on the{" "}
+          <Link href="/admin?tab=tags" className="text-amber-100/90 underline-offset-2 hover:underline">
+            Tags
+          </Link>{" "}
+          tab first.
+        </p>
+      ) : (
+        <p className="mt-3 text-[11px] leading-snug text-zinc-600">
+          <Link href="/admin?tab=tags" className="text-blue-400/80 hover:underline">
+            Create or rename tags
+          </Link>{" "}
+          on the Tags tab.
+        </p>
       )}
-    </td>
+    </div>
   );
 }
 
@@ -253,22 +199,67 @@ function exampleLink(url: string) {
   );
 }
 
-export function AdminListItemsPanel({ items }: { items: AdminListItemSerializable[] }) {
+export function AdminListItemsPanel({
+  items,
+  allTags,
+}: {
+  items: AdminListItemSerializable[];
+  allTags: AdminListTagOption[];
+}) {
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
-  const [editVariants, setEditVariants] = useState<AdminCatalogVariantFormRow[]>([]);
   const [editItemExampleListingUrl, setEditItemExampleListingUrl] = useState("");
   const [editItemMinPriceDollars, setEditItemMinPriceDollars] = useState("");
   const [editItemGoodsServicesCostDollars, setEditItemGoodsServicesCostDollars] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [deletePending, startDeleteTransition] = useTransition();
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{ itemId: string; itemName: string } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!deleteDialog) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !deletePending) setDeleteDialog(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [deleteDialog, deletePending]);
+
+  function openDeleteCatalogItemDialog(itemId: string, itemName: string) {
+    setDeleteDialog({ itemId, itemName });
+  }
+
+  function closeDeleteCatalogItemDialog() {
+    if (deletePending) return;
+    setDeleteDialog(null);
+  }
+
+  function confirmDeleteCatalogItemFromDialog() {
+    if (!deleteDialog || deletePending) return;
+    const { itemId } = deleteDialog;
+    const fd = new FormData();
+    fd.set("itemId", itemId);
+    setDeletingItemId(itemId);
+    startDeleteTransition(async () => {
+      try {
+        await adminDeleteCatalogItem(fd);
+        if (editingId === itemId) cancelEdit();
+        router.refresh();
+      } finally {
+        setDeletingItemId(null);
+        setDeleteDialog(null);
+      }
+    });
+  }
 
   function beginEditItem(itemId: string) {
     const item = items.find((x) => x.id === itemId);
     if (!item) return;
     setEditName(item.name);
-    setEditVariants(variantsToFormRows(item.variants));
     setEditItemExampleListingUrl(item.itemExampleListingUrl ?? "");
     setEditItemMinPriceDollars(dollarsStringFromCents(item.itemMinPriceCents));
     setEditItemGoodsServicesCostDollars(dollarsStringFromCents(item.itemGoodsServicesCostCents));
@@ -279,32 +270,10 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
   function cancelEdit() {
     setEditingId(null);
     setEditName("");
-    setEditVariants([]);
     setEditItemExampleListingUrl("");
     setEditItemMinPriceDollars("");
     setEditItemGoodsServicesCostDollars("");
     setEditError(null);
-  }
-
-  function addEditVariantRow() {
-    setEditVariants((v) => [
-      ...v,
-      {
-        label: "",
-        minPriceDollars: "",
-        goodsServicesCostDollars: "",
-        exampleListingUrl: "",
-        platformProductId: "",
-      },
-    ]);
-  }
-
-  function removeEditVariantRow(index: number) {
-    setEditVariants((v) => v.filter((_, i) => i !== index));
-  }
-
-  function updateEditVariant(index: number, patch: Partial<AdminCatalogVariantFormRow>) {
-    setEditVariants((v) => v.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   }
 
   function submitEdit(e: React.FormEvent) {
@@ -316,26 +285,18 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
       setEditError("Enter an item name.");
       return;
     }
-    const checked = validateCatalogVariantFormRows(editVariants);
-    if (!checked.ok) {
-      setEditError(checked.error);
+    const itemLevel = validateItemLevelWhenNoVariants(
+      editItemExampleListingUrl,
+      editItemMinPriceDollars,
+      editItemGoodsServicesCostDollars,
+    );
+    if (!itemLevel.ok) {
+      setEditError(itemLevel.error);
       return;
-    }
-    if (checked.payload.length === 0) {
-      const itemLevel = validateItemLevelWhenNoVariants(
-        editItemExampleListingUrl,
-        editItemMinPriceDollars,
-        editItemGoodsServicesCostDollars,
-      );
-      if (!itemLevel.ok) {
-        setEditError(itemLevel.error);
-        return;
-      }
     }
     const fd = new FormData();
     fd.set("itemId", editingId);
     fd.set("itemName", name);
-    fd.set("variantsJson", JSON.stringify(checked.payload));
     fd.set("itemExampleListingUrl", editItemExampleListingUrl);
     fd.set("itemMinPriceDollars", editItemMinPriceDollars);
     fd.set("itemGoodsServicesCostDollars", editItemGoodsServicesCostDollars);
@@ -343,49 +304,6 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
       await adminUpdateCatalogItem(fd);
       cancelEdit();
       router.refresh();
-    });
-  }
-
-  const flatRows: {
-    itemId: string;
-    itemName: string;
-    variantLabel: string;
-    minPriceCents: number;
-    exampleUrl: string;
-    rowSpan: number;
-    variantIndex: number;
-    variantId: string | null;
-    goodsServicesCostCents: number;
-  }[] = [];
-
-  for (const item of items) {
-    const variants = item.variants;
-    if (variants.length === 0) {
-      flatRows.push({
-        itemId: item.id,
-        itemName: item.name,
-        variantLabel: "—",
-        minPriceCents: item.itemMinPriceCents,
-        exampleUrl: item.itemExampleListingUrl ?? "",
-        rowSpan: 1,
-        variantIndex: 0,
-        variantId: null,
-        goodsServicesCostCents: item.itemGoodsServicesCostCents,
-      });
-      continue;
-    }
-    variants.forEach((v, i) => {
-      flatRows.push({
-        itemId: item.id,
-        itemName: item.name,
-        variantLabel: v.label,
-        minPriceCents: v.minPriceCents,
-        exampleUrl: v.exampleListingUrl,
-        rowSpan: i === 0 ? variants.length : 0,
-        variantIndex: i,
-        variantId: v.id,
-        goodsServicesCostCents: v.goodsServicesCostCents ?? 0,
-      });
     });
   }
 
@@ -411,28 +329,26 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
                 className="mt-1 block w-full max-w-xl rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-100"
               />
             </label>
-            <AdminCatalogVariantRowsEditor
-              variants={editVariants}
-              onAddRow={addEditVariantRow}
-              onRemoveRow={removeEditVariantRow}
-              onChangeRow={updateEditVariant}
+            <AdminCatalogItemLevelFields
+              exampleListingUrl={editItemExampleListingUrl}
+              minPriceDollars={editItemMinPriceDollars}
+              goodsServicesCostDollars={editItemGoodsServicesCostDollars}
+              onChangeExampleListingUrl={setEditItemExampleListingUrl}
+              onChangeMinPriceDollars={setEditItemMinPriceDollars}
+              onChangeGoodsServicesCostDollars={setEditItemGoodsServicesCostDollars}
             />
-            {editVariants.length === 0 ? (
-              <AdminCatalogItemLevelFields
-                exampleListingUrl={editItemExampleListingUrl}
-                minPriceDollars={editItemMinPriceDollars}
-                goodsServicesCostDollars={editItemGoodsServicesCostDollars}
-                onChangeExampleListingUrl={setEditItemExampleListingUrl}
-                onChangeMinPriceDollars={setEditItemMinPriceDollars}
-                onChangeGoodsServicesCostDollars={setEditItemGoodsServicesCostDollars}
-              />
-            ) : null}
             {editError ? (
               <p className="text-xs text-amber-200/90" role="alert">
                 {editError}
               </p>
             ) : null}
-            <div className="flex flex-wrap gap-2">
+            <AdminCatalogItemTagsEditor
+              key={editingId}
+              itemId={editingId}
+              linkedTags={editingItem.tags}
+              allTags={allTags}
+            />
+            <div className="mt-4 flex flex-wrap gap-2 border-t border-zinc-800 pt-4">
               <button
                 type="submit"
                 disabled={pending}
@@ -454,63 +370,56 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
       ) : null}
 
       <div className="overflow-x-auto rounded-lg border border-zinc-800">
-        <table className="w-full min-w-[44rem] text-left text-xs">
+        <table className="w-full min-w-[48rem] text-left text-xs">
           <thead className="border-b border-zinc-800 bg-zinc-900/80 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
             <tr>
               <th className="p-3 font-medium">Item name</th>
-              <th className="p-3 font-medium">Variant</th>
+              <th className="p-3 font-medium">Tags</th>
               <th className="p-3 font-medium">Example listing</th>
-              <th className="p-3 font-medium whitespace-nowrap">Min price</th>
               <th className="p-3 font-medium whitespace-nowrap" title="Goods/services fulfillment cost per unit">
                 G/S cost
               </th>
+              <th className="p-3 font-medium whitespace-nowrap">Min price</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800/90 text-zinc-300">
-            {flatRows.map((r, idx) => (
-              <tr key={`${r.itemId}-${r.variantIndex}-${idx}`} className="align-top">
-                {r.rowSpan > 0 ? (
-                  <td className="p-3 font-medium text-zinc-200" rowSpan={r.rowSpan}>
-                    <div>{r.itemName}</div>
-                    <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
-                      <button
-                        type="button"
-                        onClick={() => beginEditItem(r.itemId)}
-                        className="text-[11px] text-blue-400/90 hover:underline"
-                      >
-                        Edit item
-                      </button>
-                      <form action={adminDeleteCatalogItem}>
-                        <input type="hidden" name="itemId" value={r.itemId} />
-                        <button
-                          type="submit"
-                          className="text-[11px] text-blue-400/90 hover:underline"
-                          title="Delete this item and all its variants"
-                        >
-                          Delete item
-                        </button>
-                      </form>
-                    </div>
-                  </td>
-                ) : null}
-                <td className="p-3 text-zinc-400">{r.variantLabel}</td>
-                <td className="p-3 text-zinc-400">
-                  {r.exampleUrl ? exampleLink(r.exampleUrl) : <span className="text-zinc-600">—</span>}
+            {items.map((item) => (
+              <tr key={item.id} className="align-top">
+                <td className="p-3 font-medium text-zinc-200">
+                  <div>{item.name}</div>
+                  <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+                    <button
+                      type="button"
+                      onClick={() => beginEditItem(item.id)}
+                      className="text-[11px] text-blue-400/90 hover:underline"
+                    >
+                      Edit item
+                    </button>
+                    <button
+                      type="button"
+                      disabled={deletePending || deleteDialog !== null}
+                      onClick={() => openDeleteCatalogItemDialog(item.id, item.name)}
+                      className="text-[11px] text-blue-400/90 hover:underline disabled:opacity-50"
+                      title="Delete this catalog item"
+                    >
+                      {deletingItemId === item.id ? "Deleting…" : "Delete item"}
+                    </button>
+                  </div>
                 </td>
-                <AdminMinPriceCell
-                  itemId={r.itemId}
-                  variantId={r.variantId}
-                  variantIndex={r.variantIndex}
-                  variantLabel={r.variantLabel}
-                  minPriceCents={r.minPriceCents}
-                  exampleUrl={r.exampleUrl}
-                />
-                <AdminGoodsServicesCostCell
-                  itemId={r.itemId}
-                  variantId={r.variantId}
-                  variantIndex={r.variantIndex}
-                  goodsServicesCostCents={r.goodsServicesCostCents}
-                />
+                <AdminCatalogItemTagsDisplayCell tags={item.tags} />
+                <td className="p-3 text-zinc-400">
+                  {item.itemExampleListingUrl ? (
+                    exampleLink(item.itemExampleListingUrl)
+                  ) : (
+                    <span className="text-zinc-600">—</span>
+                  )}
+                </td>
+                <td className="p-3 whitespace-nowrap tabular-nums text-zinc-400">
+                  {formatMoney(item.itemGoodsServicesCostCents)}
+                </td>
+                <td className="p-3 whitespace-nowrap tabular-nums text-zinc-400">
+                  {minPriceDisplayText(item.itemMinPriceCents, item.itemExampleListingUrl ?? "")}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -519,6 +428,53 @@ export function AdminListItemsPanel({ items }: { items: AdminListItemSerializabl
 
       {items.length === 0 ? (
         <p className="mt-4 text-sm text-zinc-600">No items yet — use List item above.</p>
+      ) : null}
+
+      {deleteDialog ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="admin-delete-catalog-item-title"
+          onClick={closeDeleteCatalogItemDialog}
+        >
+          <div
+            className="max-w-md rounded-xl border border-zinc-700 bg-zinc-950 p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              id="admin-delete-catalog-item-title"
+              className="text-base font-semibold text-zinc-100"
+            >
+              Delete catalog item?
+            </h3>
+            <p className="mt-2 text-sm text-zinc-400">
+              This will remove{" "}
+              <span className="font-medium text-zinc-200">
+                “{(deleteDialog.itemName.trim() || "this item").slice(0, 200)}”
+              </span>{" "}
+              from the baseline list. This cannot be undone.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                disabled={deletePending}
+                onClick={closeDeleteCatalogItemDialog}
+                className="rounded-lg border border-zinc-600 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletePending}
+                onClick={confirmDeleteCatalogItemFromDialog}
+                className="rounded-lg border border-red-900/60 bg-red-950/50 px-4 py-2 text-sm font-medium text-red-100 hover:bg-red-950/70 disabled:opacity-50"
+              >
+                {deletePending ? "Deleting…" : "Delete item"}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </>
   );

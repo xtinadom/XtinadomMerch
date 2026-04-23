@@ -1,5 +1,7 @@
 import { dashboardSupportSendMessage } from "@/actions/dashboard-support";
+import { SupportThreadResolvedMarkerRow } from "@/components/SupportThreadResolvedMarkerRow";
 import { formatSupportMessageWhen } from "@/lib/format-support-message-when";
+import { mergeSupportChatTimeline } from "@/lib/support-chat-timeline";
 
 export type DashboardSupportMessageRow = {
   id: string;
@@ -10,8 +12,11 @@ export type DashboardSupportMessageRow = {
 
 export function DashboardSupportChatPanel(props: {
   messages: DashboardSupportMessageRow[];
+  /** When set, a subtle “Inquiry marked resolved” line is merged into the timeline (same as admin view). */
+  resolvedAtIso?: string | null;
 }) {
-  const { messages } = props;
+  const { messages, resolvedAtIso = null } = props;
+  const timeline = mergeSupportChatTimeline(messages, resolvedAtIso);
 
   return (
     <div className="space-y-4">
@@ -19,17 +24,18 @@ export function DashboardSupportChatPanel(props: {
         Message the platform. Your full conversation stays here; we reply when we can.
       </p>
       <div className="max-h-[min(28rem,55vh)] space-y-3 overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
-        {messages.length === 0 ? (
+        {messages.length === 0 && !resolvedAtIso ? (
           <p className="py-6 text-center text-sm text-zinc-500">No messages yet — say hello below.</p>
         ) : (
           <ul className="flex flex-col gap-3">
-            {messages.map((m) => {
+            {timeline.map((item) => {
+              if (item.kind === "resolved") {
+                return <SupportThreadResolvedMarkerRow key={`resolved-${item.atIso}`} atIso={item.atIso} />;
+              }
+              const m = item.message;
               const isCreator = m.authorRole === "creator";
               return (
-                <li
-                  key={m.id}
-                  className={`flex ${isCreator ? "justify-end" : "justify-start"}`}
-                >
+                <li key={m.id} className={`flex ${isCreator ? "justify-end" : "justify-start"}`}>
                   <div
                     className={`max-w-[min(100%,28rem)] rounded-lg px-3 py-2 text-sm leading-relaxed ${
                       isCreator

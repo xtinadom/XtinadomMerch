@@ -15,7 +15,8 @@ import type * as Prisma from "../internal/prismaNamespace"
 /**
  * Model AdminCatalogItem
  * *
- *  * Manual admin reference catalog (Admin list tab): item name, variants, example listing URL, min price per variant.
+ *  * Manual admin reference catalog (Admin list tab): item name, example listing URL, min list price,
+ *  * optional goods/services COGS. `variants` JSON is legacy and cleared on save; item-level fields are authoritative.
  */
 export type AdminCatalogItemModel = runtime.Types.Result.DefaultSelection<Prisma.$AdminCatalogItemPayload>
 
@@ -262,6 +263,7 @@ export type AdminCatalogItemWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"AdminCatalogItem"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AdminCatalogItem"> | Date | string
   itemPlatformProduct?: Prisma.XOR<Prisma.ProductNullableScalarRelationFilter, Prisma.ProductWhereInput> | null
+  catalogTags?: Prisma.AdminCatalogItemTagListRelationFilter
 }
 
 export type AdminCatalogItemOrderByWithRelationInput = {
@@ -276,6 +278,7 @@ export type AdminCatalogItemOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   itemPlatformProduct?: Prisma.ProductOrderByWithRelationInput
+  catalogTags?: Prisma.AdminCatalogItemTagOrderByRelationAggregateInput
 }
 
 export type AdminCatalogItemWhereUniqueInput = Prisma.AtLeast<{
@@ -293,6 +296,7 @@ export type AdminCatalogItemWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"AdminCatalogItem"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AdminCatalogItem"> | Date | string
   itemPlatformProduct?: Prisma.XOR<Prisma.ProductNullableScalarRelationFilter, Prisma.ProductWhereInput> | null
+  catalogTags?: Prisma.AdminCatalogItemTagListRelationFilter
 }, "id">
 
 export type AdminCatalogItemOrderByWithAggregationInput = {
@@ -340,6 +344,7 @@ export type AdminCatalogItemCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   itemPlatformProduct?: Prisma.ProductCreateNestedOneWithoutAdminCatalogItemPlatformLinksInput
+  catalogTags?: Prisma.AdminCatalogItemTagCreateNestedManyWithoutAdminCatalogItemInput
 }
 
 export type AdminCatalogItemUncheckedCreateInput = {
@@ -353,6 +358,7 @@ export type AdminCatalogItemUncheckedCreateInput = {
   itemGoodsServicesCostCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  catalogTags?: Prisma.AdminCatalogItemTagUncheckedCreateNestedManyWithoutAdminCatalogItemInput
 }
 
 export type AdminCatalogItemUpdateInput = {
@@ -366,6 +372,7 @@ export type AdminCatalogItemUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   itemPlatformProduct?: Prisma.ProductUpdateOneWithoutAdminCatalogItemPlatformLinksNestedInput
+  catalogTags?: Prisma.AdminCatalogItemTagUpdateManyWithoutAdminCatalogItemNestedInput
 }
 
 export type AdminCatalogItemUncheckedUpdateInput = {
@@ -379,6 +386,7 @@ export type AdminCatalogItemUncheckedUpdateInput = {
   itemGoodsServicesCostCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  catalogTags?: Prisma.AdminCatalogItemTagUncheckedUpdateManyWithoutAdminCatalogItemNestedInput
 }
 
 export type AdminCatalogItemCreateManyInput = {
@@ -478,6 +486,11 @@ export type AdminCatalogItemSumOrderByAggregateInput = {
   itemGoodsServicesCostCents?: Prisma.SortOrder
 }
 
+export type AdminCatalogItemScalarRelationFilter = {
+  is?: Prisma.AdminCatalogItemWhereInput
+  isNot?: Prisma.AdminCatalogItemWhereInput
+}
+
 export type AdminCatalogItemCreateNestedManyWithoutItemPlatformProductInput = {
   create?: Prisma.XOR<Prisma.AdminCatalogItemCreateWithoutItemPlatformProductInput, Prisma.AdminCatalogItemUncheckedCreateWithoutItemPlatformProductInput> | Prisma.AdminCatalogItemCreateWithoutItemPlatformProductInput[] | Prisma.AdminCatalogItemUncheckedCreateWithoutItemPlatformProductInput[]
   connectOrCreate?: Prisma.AdminCatalogItemCreateOrConnectWithoutItemPlatformProductInput | Prisma.AdminCatalogItemCreateOrConnectWithoutItemPlatformProductInput[]
@@ -520,6 +533,20 @@ export type AdminCatalogItemUncheckedUpdateManyWithoutItemPlatformProductNestedI
   deleteMany?: Prisma.AdminCatalogItemScalarWhereInput | Prisma.AdminCatalogItemScalarWhereInput[]
 }
 
+export type AdminCatalogItemCreateNestedOneWithoutCatalogTagsInput = {
+  create?: Prisma.XOR<Prisma.AdminCatalogItemCreateWithoutCatalogTagsInput, Prisma.AdminCatalogItemUncheckedCreateWithoutCatalogTagsInput>
+  connectOrCreate?: Prisma.AdminCatalogItemCreateOrConnectWithoutCatalogTagsInput
+  connect?: Prisma.AdminCatalogItemWhereUniqueInput
+}
+
+export type AdminCatalogItemUpdateOneRequiredWithoutCatalogTagsNestedInput = {
+  create?: Prisma.XOR<Prisma.AdminCatalogItemCreateWithoutCatalogTagsInput, Prisma.AdminCatalogItemUncheckedCreateWithoutCatalogTagsInput>
+  connectOrCreate?: Prisma.AdminCatalogItemCreateOrConnectWithoutCatalogTagsInput
+  upsert?: Prisma.AdminCatalogItemUpsertWithoutCatalogTagsInput
+  connect?: Prisma.AdminCatalogItemWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AdminCatalogItemUpdateToOneWithWhereWithoutCatalogTagsInput, Prisma.AdminCatalogItemUpdateWithoutCatalogTagsInput>, Prisma.AdminCatalogItemUncheckedUpdateWithoutCatalogTagsInput>
+}
+
 export type AdminCatalogItemCreateWithoutItemPlatformProductInput = {
   id?: string
   sortOrder?: number
@@ -530,6 +557,7 @@ export type AdminCatalogItemCreateWithoutItemPlatformProductInput = {
   itemGoodsServicesCostCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  catalogTags?: Prisma.AdminCatalogItemTagCreateNestedManyWithoutAdminCatalogItemInput
 }
 
 export type AdminCatalogItemUncheckedCreateWithoutItemPlatformProductInput = {
@@ -542,6 +570,7 @@ export type AdminCatalogItemUncheckedCreateWithoutItemPlatformProductInput = {
   itemGoodsServicesCostCents?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  catalogTags?: Prisma.AdminCatalogItemTagUncheckedCreateNestedManyWithoutAdminCatalogItemInput
 }
 
 export type AdminCatalogItemCreateOrConnectWithoutItemPlatformProductInput = {
@@ -586,6 +615,74 @@ export type AdminCatalogItemScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"AdminCatalogItem"> | Date | string
 }
 
+export type AdminCatalogItemCreateWithoutCatalogTagsInput = {
+  id?: string
+  sortOrder?: number
+  name: string
+  variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  itemExampleListingUrl?: string | null
+  itemMinPriceCents?: number
+  itemGoodsServicesCostCents?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  itemPlatformProduct?: Prisma.ProductCreateNestedOneWithoutAdminCatalogItemPlatformLinksInput
+}
+
+export type AdminCatalogItemUncheckedCreateWithoutCatalogTagsInput = {
+  id?: string
+  sortOrder?: number
+  name: string
+  variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  itemPlatformProductId?: string | null
+  itemExampleListingUrl?: string | null
+  itemMinPriceCents?: number
+  itemGoodsServicesCostCents?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type AdminCatalogItemCreateOrConnectWithoutCatalogTagsInput = {
+  where: Prisma.AdminCatalogItemWhereUniqueInput
+  create: Prisma.XOR<Prisma.AdminCatalogItemCreateWithoutCatalogTagsInput, Prisma.AdminCatalogItemUncheckedCreateWithoutCatalogTagsInput>
+}
+
+export type AdminCatalogItemUpsertWithoutCatalogTagsInput = {
+  update: Prisma.XOR<Prisma.AdminCatalogItemUpdateWithoutCatalogTagsInput, Prisma.AdminCatalogItemUncheckedUpdateWithoutCatalogTagsInput>
+  create: Prisma.XOR<Prisma.AdminCatalogItemCreateWithoutCatalogTagsInput, Prisma.AdminCatalogItemUncheckedCreateWithoutCatalogTagsInput>
+  where?: Prisma.AdminCatalogItemWhereInput
+}
+
+export type AdminCatalogItemUpdateToOneWithWhereWithoutCatalogTagsInput = {
+  where?: Prisma.AdminCatalogItemWhereInput
+  data: Prisma.XOR<Prisma.AdminCatalogItemUpdateWithoutCatalogTagsInput, Prisma.AdminCatalogItemUncheckedUpdateWithoutCatalogTagsInput>
+}
+
+export type AdminCatalogItemUpdateWithoutCatalogTagsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  itemGoodsServicesCostCents?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  itemPlatformProduct?: Prisma.ProductUpdateOneWithoutAdminCatalogItemPlatformLinksNestedInput
+}
+
+export type AdminCatalogItemUncheckedUpdateWithoutCatalogTagsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  itemPlatformProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  itemGoodsServicesCostCents?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type AdminCatalogItemCreateManyItemPlatformProductInput = {
   id?: string
   sortOrder?: number
@@ -608,6 +705,7 @@ export type AdminCatalogItemUpdateWithoutItemPlatformProductInput = {
   itemGoodsServicesCostCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  catalogTags?: Prisma.AdminCatalogItemTagUpdateManyWithoutAdminCatalogItemNestedInput
 }
 
 export type AdminCatalogItemUncheckedUpdateWithoutItemPlatformProductInput = {
@@ -620,6 +718,7 @@ export type AdminCatalogItemUncheckedUpdateWithoutItemPlatformProductInput = {
   itemGoodsServicesCostCents?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  catalogTags?: Prisma.AdminCatalogItemTagUncheckedUpdateManyWithoutAdminCatalogItemNestedInput
 }
 
 export type AdminCatalogItemUncheckedUpdateManyWithoutItemPlatformProductInput = {
@@ -635,6 +734,35 @@ export type AdminCatalogItemUncheckedUpdateManyWithoutItemPlatformProductInput =
 }
 
 
+/**
+ * Count Type AdminCatalogItemCountOutputType
+ */
+
+export type AdminCatalogItemCountOutputType = {
+  catalogTags: number
+}
+
+export type AdminCatalogItemCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  catalogTags?: boolean | AdminCatalogItemCountOutputTypeCountCatalogTagsArgs
+}
+
+/**
+ * AdminCatalogItemCountOutputType without action
+ */
+export type AdminCatalogItemCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AdminCatalogItemCountOutputType
+   */
+  select?: Prisma.AdminCatalogItemCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * AdminCatalogItemCountOutputType without action
+ */
+export type AdminCatalogItemCountOutputTypeCountCatalogTagsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AdminCatalogItemTagWhereInput
+}
+
 
 export type AdminCatalogItemSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -648,6 +776,8 @@ export type AdminCatalogItemSelect<ExtArgs extends runtime.Types.Extensions.Inte
   createdAt?: boolean
   updatedAt?: boolean
   itemPlatformProduct?: boolean | Prisma.AdminCatalogItem$itemPlatformProductArgs<ExtArgs>
+  catalogTags?: boolean | Prisma.AdminCatalogItem$catalogTagsArgs<ExtArgs>
+  _count?: boolean | Prisma.AdminCatalogItemCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["adminCatalogItem"]>
 
 export type AdminCatalogItemSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -694,6 +824,8 @@ export type AdminCatalogItemSelectScalar = {
 export type AdminCatalogItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sortOrder" | "name" | "variants" | "itemPlatformProductId" | "itemExampleListingUrl" | "itemMinPriceCents" | "itemGoodsServicesCostCents" | "createdAt" | "updatedAt", ExtArgs["result"]["adminCatalogItem"]>
 export type AdminCatalogItemInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   itemPlatformProduct?: boolean | Prisma.AdminCatalogItem$itemPlatformProductArgs<ExtArgs>
+  catalogTags?: boolean | Prisma.AdminCatalogItem$catalogTagsArgs<ExtArgs>
+  _count?: boolean | Prisma.AdminCatalogItemCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AdminCatalogItemIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   itemPlatformProduct?: boolean | Prisma.AdminCatalogItem$itemPlatformProductArgs<ExtArgs>
@@ -706,37 +838,34 @@ export type $AdminCatalogItemPayload<ExtArgs extends runtime.Types.Extensions.In
   name: "AdminCatalogItem"
   objects: {
     itemPlatformProduct: Prisma.$ProductPayload<ExtArgs> | null
+    catalogTags: Prisma.$AdminCatalogItemTagPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     sortOrder: number
     name: string
     /**
-     * * JSON array: { id, label, minPriceCents, goodsServicesCostCents?, exampleListingUrl, platformProductId? }[]
+     * * Legacy JSON array (unused for new rows; kept for DB compatibility).
      */
     variants: runtime.JsonValue
     /**
      * *
-     *    * When `variants` is empty: optional storefront Product id (active Printify) for shop catalog
-     *    * resolution when there is no example URL / name match.
+     *    * Optional storefront Product id (active Printify) for shop catalog resolution when there is no
+     *    * example URL / name match.
      */
     itemPlatformProductId: string | null
     /**
-     * *
-     *    * When `variants` is empty: optional example listing for the whole item.
-     *    * Cleared when the item has one or more variants.
+     * * Optional example listing for the item.
      */
     itemExampleListingUrl: string | null
     /**
-     * *
-     *    * When `variants` is empty: minimum price in cents for the whole item (required on save).
-     *    * Set to 0 when the item has variants.
+     * * Minimum list price in cents for the item (required on save).
      */
     itemMinPriceCents: number
     /**
      * *
-     *    * When `variants` is empty: fulfillment / goods-and-services COGS (cents per unit) retained by the
-     *    * platform from the sale; distinct from the marketplace fee on the remainder.
+     *    * Fulfillment / goods-and-services COGS (cents per unit) retained by the platform from the sale;
+     *    * distinct from the marketplace fee on the remainder.
      */
     itemGoodsServicesCostCents: number
     createdAt: Date
@@ -1136,6 +1265,7 @@ readonly fields: AdminCatalogItemFieldRefs;
 export interface Prisma__AdminCatalogItemClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   itemPlatformProduct<T extends Prisma.AdminCatalogItem$itemPlatformProductArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AdminCatalogItem$itemPlatformProductArgs<ExtArgs>>): Prisma.Prisma__ProductClient<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  catalogTags<T extends Prisma.AdminCatalogItem$catalogTagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AdminCatalogItem$catalogTagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AdminCatalogItemTagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1592,6 +1722,30 @@ export type AdminCatalogItem$itemPlatformProductArgs<ExtArgs extends runtime.Typ
    */
   include?: Prisma.ProductInclude<ExtArgs> | null
   where?: Prisma.ProductWhereInput
+}
+
+/**
+ * AdminCatalogItem.catalogTags
+ */
+export type AdminCatalogItem$catalogTagsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AdminCatalogItemTag
+   */
+  select?: Prisma.AdminCatalogItemTagSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AdminCatalogItemTag
+   */
+  omit?: Prisma.AdminCatalogItemTagOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AdminCatalogItemTagInclude<ExtArgs> | null
+  where?: Prisma.AdminCatalogItemTagWhereInput
+  orderBy?: Prisma.AdminCatalogItemTagOrderByWithRelationInput | Prisma.AdminCatalogItemTagOrderByWithRelationInput[]
+  cursor?: Prisma.AdminCatalogItemTagWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AdminCatalogItemTagScalarFieldEnum | Prisma.AdminCatalogItemTagScalarFieldEnum[]
 }
 
 /**

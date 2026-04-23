@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getShopOwnerSession } from "@/lib/session";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
@@ -11,6 +12,11 @@ import {
   getStripeConnectBalanceUsdCents,
 } from "@/lib/stripe-connect-balance";
 import { verifyShopPassword } from "@/lib/shop-password";
+import {
+  applyVerifiedAccountDeletionListingAndMediaCleanup,
+  hideShopForPendingAccountDeletion,
+  restoreListingsAfterAccountDeletionRequestCancel,
+} from "@/lib/shop-account-deletion-request-effects";
 
 async function requireShopOwnerRow() {
   const session = await getShopOwnerSession();
@@ -31,43 +37,20 @@ async function requireShopOwnerRow() {
 
 export type AccountDangerResult = { ok: true; message?: string } | { ok: false; error: string };
 
-export async function dashboardPauseShop(): Promise<AccountDangerResult> {
-  const user = await requireShopOwnerRow();
-  if (!user) return { ok: false, error: "Not available for this account." };
-
-  if (user.shop.accountDeletionRequestedAt) {
-    return {
-      ok: false,
-      error: "Cancel the account deletion request before using pause, or continue with deletion.",
-    };
+function accountDeletionFreezeErrorMessage(e: unknown): string {
+  if (e instanceof Error && /Unknown argument/i.test(e.message)) {
+    return "The Prisma client was generated before a schema change. Stop `next dev`, run `npx prisma generate`, delete the `.next` folder if needed, then start dev again.";
   }
-
-  await prisma.shop.update({
-    where: { id: user.shopId },
-    data: { active: false, ownerPausedShopAt: new Date() },
-  });
-  revalidatePath("/dashboard");
-  revalidatePath(`/s/${user.shop.slug}`);
-  revalidatePath("/shops");
-  return { ok: true, message: "Your shop is paused and hidden from browse and your storefront." };
-}
-
-export async function dashboardUnpauseShop(): Promise<AccountDangerResult> {
-  const user = await requireShopOwnerRow();
-  if (!user) return { ok: false, error: "Not available for this account." };
-
-  if (user.shop.accountDeletionRequestedAt) {
-    return { ok: false, error: "Cancel the account deletion request before reopening your shop." };
+  if (e instanceof Prisma.PrismaClientKnownRequestError) {
+    if (e.code === "P2022" || e.code === "P2021") {
+      return "We could not update your shop because the database is missing a recent change. From the repo root on the machine that uses this database, run: npx prisma migrate deploy — then try again.";
+    }
+    return `Could not save your deletion request (${e.code}). Check the database connection and that migrations are applied.`;
   }
-
-  await prisma.shop.update({
-    where: { id: user.shopId },
-    data: { active: true, ownerPausedShopAt: null },
-  });
-  revalidatePath("/dashboard");
-  revalidatePath(`/s/${user.shop.slug}`);
-  revalidatePath("/shops");
-  return { ok: true, message: "Your shop is visible again." };
+  if (e instanceof Error && e.message && process.env.NODE_ENV !== "production") {
+    return `Could not save your deletion request: ${e.message}`;
+  }
+  return "Could not save your deletion request. Try again in a moment or contact support.";
 }
 
 export async function dashboardRequestAccountDeletion(): Promise<AccountDangerResult> {
@@ -78,19 +61,17 @@ export async function dashboardRequestAccountDeletion(): Promise<AccountDangerRe
     return { ok: false, error: "A deletion request is already in progress." };
   }
 
+  try {
+    await hideShopForPendingAccountDeletion(user.shopId);
+  } catch (e) {
+    console.error("[dashboardRequestAccountDeletion] hide shop failed", e);
+    return { ok: false, error: accountDeletionFreezeErrorMessage(e) };
+  }
+
   const sent = await issueShopAccountDeletionTokenAndSend(user.id, user.email);
   if (!sent.ok) {
     return { ok: false, error: sent.error };
   }
-
-  await prisma.shop.update({
-    where: { id: user.shopId },
-    data: {
-      active: false,
-      accountDeletionRequestedAt: new Date(),
-      accountDeletionEmailConfirmedAt: null,
-    },
-  });
 
   revalidatePath("/dashboard");
   revalidatePath(`/s/${user.shop.slug}`);
@@ -98,7 +79,7 @@ export async function dashboardRequestAccountDeletion(): Promise<AccountDangerRe
   return {
     ok: true,
     message:
-      "Your shop is frozen. We sent a confirmation email — open the link to confirm, then you can permanently delete once your Stripe balance is zero.",
+      "Your shop is hidden from browse and we emailed you a confirmation link. After you open that link, your listing data and stored photos will be removed; then you can permanently delete once your Stripe balance is zero.",
   };
 }
 
@@ -110,9 +91,9 @@ export async function dashboardCancelAccountDeletionRequest(): Promise<AccountDa
     return { ok: false, error: "There is no pending deletion request." };
   }
 
-  const reopen =
-    user.shop.ownerPausedShopAt == null && user.shop.accountDeletionEmailConfirmedAt == null;
+  const reopen = user.shop.accountDeletionEmailConfirmedAt == null;
 
+  await restoreListingsAfterAccountDeletionRequestCancel(user.shopId);
   await prisma.shop.update({
     where: { id: user.shopId },
     data: {
@@ -125,7 +106,13 @@ export async function dashboardCancelAccountDeletionRequest(): Promise<AccountDa
   revalidatePath("/dashboard");
   revalidatePath(`/s/${user.shop.slug}`);
   revalidatePath("/shops");
-  return { ok: true, message: "Deletion request cancelled." };
+  return {
+    ok: true,
+    message:
+      reopen
+        ? "Deletion request cancelled. Your shop can appear on browse again. Listing photos removed from storage are not restored — re-upload if you need them."
+        : "Deletion request cancelled.",
+  };
 }
 
 /** Returns `ok: true` only when the shop row was deleted (caller should sign out + redirect). */
@@ -164,6 +151,8 @@ export async function dashboardTryCompleteAccountDeletion(
   }
 
   const shopId = user.shopId;
+  const shopSlug = user.shop.slug;
+
   const listings = await prisma.shopListing.findMany({
     where: { shopId },
     select: { productId: true },
@@ -185,6 +174,7 @@ export async function dashboardTryCompleteAccountDeletion(
   }
 
   revalidatePath("/shops");
+  revalidatePath(`/s/${shopSlug}`);
   return { ok: true };
 }
 

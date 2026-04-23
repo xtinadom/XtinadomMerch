@@ -1,9 +1,7 @@
-import { parseAdminCatalogVariantsJson } from "@/lib/admin-catalog-item";
-
 /** Picker / form value: opaque token, not a storefront Product id until submit. */
 const PICK_PREFIX = "ab|";
 
-/** One selectable line (single item or one variant under an item). */
+/** One selectable catalog line (one admin baseline item). */
 export type ShopSetupCatalogOption = {
   /** Baseline pick token (submitted as `productId`); server maps to a stub Product. */
   productId: string;
@@ -15,63 +13,30 @@ export type ShopSetupCatalogOption = {
   goodsServicesCostCents: number;
 };
 
-export type ShopSetupCatalogVariantLine = {
-  productId: string;
-  variantLabel: string;
-  minPriceCents: number;
-  priceCents: number;
-  exampleHref: string | null;
-  goodsServicesCostCents: number;
+/** One admin catalog item as a single selectable row. */
+export type ShopSetupCatalogGroup = {
+  itemId: string;
+  itemName: string;
+  option: Omit<ShopSetupCatalogOption, "label">;
 };
-
-/** One admin item: either a single selectable row or a parent with nested variants. */
-export type ShopSetupCatalogGroup =
-  | {
-      itemId: string;
-      itemName: string;
-      kind: "single";
-      option: Omit<ShopSetupCatalogOption, "label">;
-    }
-  | {
-      itemId: string;
-      itemName: string;
-      kind: "variants";
-      variants: ShopSetupCatalogVariantLine[];
-    };
 
 /** Flat list for resolving selection (price min, labels). */
 export function flattenShopBaselineCatalogGroups(groups: ShopSetupCatalogGroup[]): ShopSetupCatalogOption[] {
-  const out: ShopSetupCatalogOption[] = [];
-  for (const g of groups) {
-    if (g.kind === "single") {
-      out.push({
-        productId: g.option.productId,
-        label: g.itemName,
-        minPriceCents: g.option.minPriceCents,
-        priceCents: g.option.priceCents,
-        exampleHref: g.option.exampleHref,
-        goodsServicesCostCents: g.option.goodsServicesCostCents,
-      });
-    } else {
-      for (const v of g.variants) {
-        out.push({
-          productId: v.productId,
-          label: `${g.itemName} — ${v.variantLabel}`,
-          minPriceCents: v.minPriceCents,
-          priceCents: v.priceCents,
-          exampleHref: v.exampleHref,
-          goodsServicesCostCents: v.goodsServicesCostCents,
-        });
-      }
-    }
-  }
-  return out;
+  return groups.map((g) => ({
+    productId: g.option.productId,
+    label: g.itemName,
+    minPriceCents: g.option.minPriceCents,
+    priceCents: g.option.priceCents,
+    exampleHref: g.option.exampleHref,
+    goodsServicesCostCents: g.option.goodsServicesCostCents,
+  }));
 }
 
 export type AdminBaselineRow = {
   id: string;
   name: string;
-  variants: unknown;
+  /** @deprecated Legacy field; ignored for catalog display. */
+  variants?: unknown;
   itemExampleListingUrl: string | null;
   itemMinPriceCents: number;
   itemGoodsServicesCostCents: number;
@@ -86,11 +51,12 @@ export function encodeBaselinePickItem(itemId: string): string {
   return `${PICK_PREFIX}${itemId}|item`;
 }
 
+/** @deprecated Legacy encoded picks may still appear in the database. */
 export function encodeBaselinePickVariant(itemId: string, variantId: string): string {
   return `${PICK_PREFIX}${itemId}|var|${variantId}`;
 }
 
-/** Submit every variant under this admin item together (same artwork). */
+/** @deprecated Legacy encoded picks may still appear in the database. */
 export function encodeBaselinePickAllVariants(itemId: string): string {
   return `${PICK_PREFIX}${itemId}|all`;
 }
@@ -120,40 +86,22 @@ function exampleHrefFromAdminUrl(raw: string | null | undefined): string | null 
 }
 
 /**
- * Shop “Add to store” options grouped by admin item; variants nest under one parent name.
+ * Shop “Add to store” options: one row per admin catalog item (item-level pricing only).
  */
 export function buildShopBaselineCatalogGroups(items: AdminBaselineRow[]): ShopSetupCatalogGroup[] {
   const out: ShopSetupCatalogGroup[] = [];
   for (const item of items) {
-    const variants = parseAdminCatalogVariantsJson(item.variants);
-    if (variants.length === 0) {
-      out.push({
-        itemId: item.id,
-        itemName: item.name,
-        kind: "single",
-        option: {
-          productId: encodeBaselinePickItem(item.id),
-          minPriceCents: Math.max(0, item.itemMinPriceCents),
-          priceCents: Math.max(0, item.itemMinPriceCents),
-          exampleHref: exampleHrefFromAdminUrl(item.itemExampleListingUrl),
-          goodsServicesCostCents: Math.max(0, item.itemGoodsServicesCostCents),
-        },
-      });
-    } else {
-      out.push({
-        itemId: item.id,
-        itemName: item.name,
-        kind: "variants",
-        variants: variants.map((v) => ({
-          productId: encodeBaselinePickVariant(item.id, v.id),
-          variantLabel: v.label,
-          minPriceCents: Math.max(0, v.minPriceCents),
-          priceCents: Math.max(0, v.minPriceCents),
-          exampleHref: exampleHrefFromAdminUrl(v.exampleListingUrl),
-          goodsServicesCostCents: Math.max(0, v.goodsServicesCostCents ?? 0),
-        })),
-      });
-    }
+    out.push({
+      itemId: item.id,
+      itemName: item.name,
+      option: {
+        productId: encodeBaselinePickItem(item.id),
+        minPriceCents: Math.max(0, item.itemMinPriceCents),
+        priceCents: Math.max(0, item.itemMinPriceCents),
+        exampleHref: exampleHrefFromAdminUrl(item.itemExampleListingUrl),
+        goodsServicesCostCents: Math.max(0, item.itemGoodsServicesCostCents),
+      },
+    });
   }
   return out;
 }

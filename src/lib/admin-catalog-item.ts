@@ -89,109 +89,12 @@ export function parseAdminCatalogVariantsJson(raw: unknown): AdminCatalogVariant
   return out;
 }
 
-export function normalizeNewVariants(
-  input: {
-    label: string;
-    minPriceCents: number;
-    goodsServicesCostCents?: number;
-    exampleListingUrl: string;
-    platformProductId?: string;
-  }[],
-): AdminCatalogVariant[] {
-  return input
-    .filter((v) => v.label.trim().length > 0)
-    .map((v) => {
-      const pid = v.platformProductId?.trim();
-      const gs =
-        typeof v.goodsServicesCostCents === "number" && Number.isFinite(v.goodsServicesCostCents)
-          ? Math.max(0, Math.round(v.goodsServicesCostCents))
-          : 0;
-      return {
-        id: newRandomUuid(),
-        label: v.label.trim(),
-        minPriceCents: Math.max(0, Math.round(v.minPriceCents)),
-        goodsServicesCostCents: gs,
-        exampleListingUrl: v.exampleListingUrl.trim(),
-        ...(pid ? { platformProductId: pid } : {}),
-      };
-    });
-}
-
-/** Form state for one variant row (add / edit UI). */
-export type AdminCatalogVariantFormRow = {
-  label: string;
-  minPriceDollars: string;
-  goodsServicesCostDollars: string;
-  exampleListingUrl: string;
-  platformProductId: string;
-};
-
 export function dollarsStringFromCents(cents: number): string {
   return (Math.max(0, cents) / 100).toFixed(2);
 }
 
-export function variantsToFormRows(variants: AdminCatalogVariant[]): AdminCatalogVariantFormRow[] {
-  return variants.map((v) => ({
-    label: v.label,
-    minPriceDollars: dollarsStringFromCents(v.minPriceCents),
-    goodsServicesCostDollars: dollarsStringFromCents(v.goodsServicesCostCents ?? 0),
-    exampleListingUrl: v.exampleListingUrl,
-    platformProductId: v.platformProductId ?? "",
-  }));
-}
-
-export type CatalogVariantPayloadRow = {
-  label: string;
-  minPriceDollars: string;
-  goodsServicesCostDollars: string;
-  exampleListingUrl: string;
-  platformProductId: string;
-};
-
 /**
- * Validates non-empty variant rows (any field set requires label + valid USD price).
- * Returns JSON-ready rows for server actions (same shape as add/edit payloads).
- */
-export function validateCatalogVariantFormRows(rows: AdminCatalogVariantFormRow[]):
-  | { ok: true; payload: CatalogVariantPayloadRow[] }
-  | { ok: false; error: string } {
-  const payload = rows
-    .map((row) => ({
-      label: row.label.trim(),
-      minPriceDollars: row.minPriceDollars.trim(),
-      goodsServicesCostDollars: row.goodsServicesCostDollars.trim(),
-      exampleListingUrl: row.exampleListingUrl.trim(),
-      platformProductId: row.platformProductId.trim(),
-    }))
-    .filter(
-      (row) =>
-        row.label.length > 0 ||
-        row.minPriceDollars.length > 0 ||
-        row.goodsServicesCostDollars.length > 0 ||
-        row.exampleListingUrl.length > 0 ||
-        row.platformProductId.length > 0,
-    );
-
-  for (const row of payload) {
-    if (!row.label) {
-      return { ok: false, error: "Each variant needs a name." };
-    }
-    const n = parseFloat(row.minPriceDollars.replace(/[^0-9.]/g, ""));
-    if (!Number.isFinite(n) || n < 0) {
-      return { ok: false, error: `Invalid minimum price for “${row.label}”.` };
-    }
-    if (row.goodsServicesCostDollars.length > 0) {
-      const g = parseFloat(row.goodsServicesCostDollars.replace(/[^0-9.]/g, ""));
-      if (!Number.isFinite(g) || g < 0) {
-        return { ok: false, error: `Invalid goods/services cost for “${row.label}”.` };
-      }
-    }
-  }
-  return { ok: true, payload };
-}
-
-/**
- * When an item has no variants: minimum USD price is required; example listing URL is optional.
+ * Minimum USD list price is required; example listing URL is optional.
  */
 export function validateItemLevelWhenNoVariants(
   exampleListingUrl: string,
@@ -205,8 +108,7 @@ export function validateItemLevelWhenNoVariants(
   if (!Number.isFinite(n) || n < 0) {
     return {
       ok: false,
-      error:
-        "Enter a valid minimum price in USD (required when the item has no variants).",
+      error: "Enter a valid minimum price in USD.",
     };
   }
   const gsRaw = itemGoodsServicesCostDollars.trim();
