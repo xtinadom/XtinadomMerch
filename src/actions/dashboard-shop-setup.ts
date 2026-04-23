@@ -17,7 +17,10 @@ import {
   compressShopListingArtworkWebp,
   compressShopProfileImageWebp,
 } from "@/lib/shop-setup-image";
-import { shopSocialLinksFromFormData } from "@/lib/shop-social-links";
+import {
+  shopSocialLinksFormValidationError,
+  shopSocialLinksFromFormData,
+} from "@/lib/shop-social-links";
 import {
   PLATFORM_SHOP_SLUG,
   SHOP_LISTING_MAX_PRICE_CENTS,
@@ -99,6 +102,11 @@ export async function updateShopProfileSetup(
   }
   if (welcomeRaw.length > WELCOME_MAX) {
     return { ok: false, error: `Welcome message must be ${WELCOME_MAX} characters or fewer.` };
+  }
+
+  const socialFormErr = shopSocialLinksFormValidationError(formData);
+  if (socialFormErr) {
+    return { ok: false, error: socialFormErr };
   }
 
   const socialLinks = shopSocialLinksFromFormData(formData);

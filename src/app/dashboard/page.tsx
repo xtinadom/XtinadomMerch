@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getShopOwnerSessionReadonly } from "@/lib/session";
+import { getShopOwnerSession, getShopOwnerSessionReadonly } from "@/lib/session";
 import { FulfillmentType, ListingRequestStatus, OrderStatus } from "@/generated/prisma/enums";
 import {
   LISTING_FEE_CENTS,
@@ -13,6 +13,7 @@ import {
 } from "@/lib/marketplace-constants";
 import { syncFreeListingFeeWaivers } from "@/lib/listing-fee";
 import { getStripe } from "@/lib/stripe";
+import { dashboardTryCompleteAccountDeletion } from "@/actions/dashboard-account-danger";
 import { logoutShopOwner } from "@/actions/shop-auth";
 import { SiteLegalFooter } from "@/components/SiteLegalFooter";
 import { DashboardMainTabs } from "@/components/dashboard/DashboardMainTabs";
@@ -46,7 +47,7 @@ import {
   computeShopOnboardingSteps,
   countIncompleteOnboardingSteps,
 } from "@/lib/shop-onboarding-gate";
-import { getStripeConnectBalanceUsdCents } from "@/lib/stripe-connect-balance";
+import { connectBalanceBlocksDeletion, getStripeConnectBalanceUsdCents } from "@/lib/stripe-connect-balance";
 import { shopStripeConnectReadyForListingCharges } from "@/lib/shop-stripe-connect-gate";
 import { isMockCheckoutEnabled } from "@/lib/checkout-mock";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
@@ -390,8 +391,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         dashStr === "notifications" ||
         dashStr === "requestListing" ||
         dashStr === "support"
-      ? dashStr
-      : "setup";
+      ? dashStr === "setup" && incompleteSetupCount === 0
+        ? "listings"
+        : dashStr
+      : incompleteSetupCount > 0
+        ? "setup"
+        : "listings";
 
   const supportThreadRow = !isPlatform
     ? await prisma.supportThread.findUnique({
@@ -484,6 +489,20 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       ? await getStripeConnectBalanceUsdCents(shop.stripeConnectAccountId)
       : null;
 
+  if (
+    !isPlatform &&
+    shop.accountDeletionRequestedAt != null &&
+    shop.accountDeletionEmailConfirmedAt != null &&
+    !connectBalanceBlocksDeletion(stripeConnectBalance)
+  ) {
+    const r = await dashboardTryCompleteAccountDeletion();
+    if (r.ok) {
+      const session = await getShopOwnerSession();
+      session.destroy();
+      redirect("/?accountDeleted=1");
+    }
+  }
+
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-12">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -547,10 +566,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       ) : null}
       {!isPlatform && delConfirm === "ok" ? (
         <p className="mt-4 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
-          Account deletion email confirmed. Your stored photos and listing media for this step have been removed. Open
-          the <strong className="text-emerald-100/90">Shop profile</strong> tab and scroll to{" "}
-          <strong className="text-emerald-100/90">Shop visibility &amp; account</strong> — when your Stripe balance is
-          zero you can permanently delete your account.
+          Account deletion email confirmed. Your stored photos and listing media for this step have been removed. When
+          your Stripe Connect balance is zero, opening the shop dashboard again removes the account automatically.
         </p>
       ) : null}
       {!isPlatform && delConfirm === "purgeFailed" ? (

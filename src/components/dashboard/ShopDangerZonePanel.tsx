@@ -1,18 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import {
-  dashboardCompleteAccountDeletionFormState,
+  dashboardDevConfirmAccountDeletionEmail,
   dashboardRequestAccountDeletion,
-  type AccountDeletionFormState,
 } from "@/actions/dashboard-account-danger";
 
 function formatUsd(cents: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 }
-
-const initialDeleteState: AccountDeletionFormState = { error: null };
 
 export function ShopDangerZonePanel(props: {
   accountDeletionRequestedAt: string | null;
@@ -30,10 +27,6 @@ export function ShopDangerZonePanel(props: {
   const router = useRouter();
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [deleteState, deleteAction] = useActionState(
-    dashboardCompleteAccountDeletionFormState,
-    initialDeleteState,
-  );
 
   const deletionPending = Boolean(accountDeletionRequestedAt);
   const emailConfirmed = Boolean(accountDeletionEmailConfirmedAt);
@@ -91,7 +84,7 @@ export function ShopDangerZonePanel(props: {
       {deletionPending ? (
         <p className={`text-xs text-amber-200/85 ${msg ? "mt-3" : "mt-4"}`}>
           {emailConfirmed
-            ? "Your confirmation link was used: listing images and profile photos are cleared from our storage, and listings are taken down. Finish below when your Stripe balance is zero."
+            ? "Your confirmation link was used: listing images and profile photos are cleared from our storage, and listings are taken down. When your Stripe balance is zero, opening the dashboard again removes the account automatically."
             : "Your shop is hidden from browse. Open the link in your confirmation email — that step removes your stored photos and listing media, then you can close the account when payouts are settled."}
         </p>
       ) : null}
@@ -100,8 +93,7 @@ export function ShopDangerZonePanel(props: {
         {!deletionPending ? (
           <>
             <p className="mt-2 text-xs text-zinc-500">
-              We hide your shop first and email you a link. Opening that link removes your stored photos and listing
-              media; after that, when payouts are settled you can permanently delete the account here.
+              After verifying via the email link and having a zero Stripe balance, your account will be deleted. This cannot be undone!
             </p>
             <div className="mt-2">
               <button
@@ -118,9 +110,29 @@ export function ShopDangerZonePanel(props: {
           <div className="mt-2 space-y-3">
             <p className="text-xs text-zinc-500">
               {emailConfirmed
-                ? "Email confirmed. When Stripe balance is zero, enter your password below to permanently delete."
+                ? "Email confirmed. Withdraw or wait until Stripe shows $0.00 available and pending; the next dashboard load then signs you out and removes the shop."
                 : "Check your inbox for the confirmation link (expires in 24 hours)."}
             </p>
+
+            {process.env.NODE_ENV === "development" && deletionPending && !emailConfirmed ? (
+              <div className="rounded-lg border border-amber-800/50 bg-amber-950/20 p-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-amber-200/90">
+                  Local dev only
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  If email links do not work on localhost, use this to mark the deletion email confirmed (same DB +
+                  storage cleanup as the real link).
+                </p>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => run(dashboardDevConfirmAccountDeletionEmail)}
+                  className="mt-2 rounded border border-amber-700/60 px-3 py-1.5 text-xs font-medium text-amber-100 hover:bg-amber-950/40 disabled:opacity-50"
+                >
+                  {busy ? "…" : "Dev: confirm deletion email"}
+                </button>
+              </div>
+            ) : null}
 
             {emailConfirmed ? (
               <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
@@ -128,7 +140,8 @@ export function ShopDangerZonePanel(props: {
                 {stripeConnectAccountId ? (
                   stripeConnectBalance == null ? (
                     <p className="mt-1 text-xs text-amber-200/85">
-                      Could not load balance from Stripe. Try again later before deleting.
+                      Could not load balance from Stripe. Reload the dashboard later; we need a successful balance read
+                      before the account can close.
                     </p>
                   ) : (
                     <ul className="mt-1 list-inside list-disc text-xs text-zinc-400">
@@ -142,32 +155,13 @@ export function ShopDangerZonePanel(props: {
 
                 {balanceBlocks ? (
                   <p className="mt-2 text-xs text-amber-200/90">
-                    Withdraw or wait for payouts until both available and pending are $0.00, then try again.
+                    Withdraw or wait for payouts until both available and pending are $0.00. The next dashboard visit
+                    after that removes the account.
                   </p>
                 ) : (
-                  <form action={deleteAction} className="mt-3 space-y-2">
-                    <label className="block text-xs text-zinc-500">
-                      Account password
-                      <input
-                        type="password"
-                        name="password"
-                        required
-                        autoComplete="current-password"
-                        className="mt-1 w-full max-w-xs rounded border border-zinc-700 bg-zinc-950 px-2 py-1.5 text-sm text-zinc-200"
-                      />
-                    </label>
-                    {deleteState.error ? (
-                      <p className="text-xs text-amber-200/90" role="alert">
-                        {deleteState.error}
-                      </p>
-                    ) : null}
-                    <button
-                      type="submit"
-                      className="rounded-lg bg-red-900/50 px-3 py-2 text-xs font-semibold text-red-100 ring-1 ring-red-800/60 hover:bg-red-900/70"
-                    >
-                      Permanently delete account
-                    </button>
-                  </form>
+                  <p className="mt-2 text-xs text-zinc-400">
+                    Balance is clear. If this page does not redirect and sign you out within a moment, reload once.
+                  </p>
                 )}
               </div>
             ) : null}

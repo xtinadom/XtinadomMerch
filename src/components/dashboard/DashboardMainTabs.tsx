@@ -639,25 +639,35 @@ type TabId =
 
 function normalizeDashboardMainTab(
   i: TabId | undefined,
-  opts: { hasSetup: boolean; hasNotifications: boolean; canSupport: boolean },
+  opts: {
+    hasSetup: boolean;
+    showOnboardingTab: boolean;
+    hasNotifications: boolean;
+    canSupport: boolean;
+  },
 ): TabId {
-  const { hasSetup, hasNotifications, canSupport } = opts;
+  const { hasSetup, showOnboardingTab, hasNotifications, canSupport } = opts;
+  const defaultCreatorTab: TabId = showOnboardingTab ? "setup" : "listings";
+
   if (hasSetup) {
+    let t = i;
+    if (t === "setup" && !showOnboardingTab) t = defaultCreatorTab;
+
     if (
-      i === "listings" ||
-      i === "orders" ||
-      i === "setup" ||
-      i === "shopProfile" ||
-      i === "itemGuidelines" ||
-      i === "notifications" ||
-      i === "requestListing" ||
-      (i === "support" && canSupport)
+      t === "listings" ||
+      t === "orders" ||
+      t === "setup" ||
+      t === "shopProfile" ||
+      t === "itemGuidelines" ||
+      t === "notifications" ||
+      t === "requestListing" ||
+      (t === "support" && canSupport)
     ) {
-      if (i === "notifications" && !hasNotifications) return "setup";
-      if (i === "support" && !canSupport) return "setup";
-      return i;
+      if (t === "notifications" && !hasNotifications) return defaultCreatorTab;
+      if (t === "support" && !canSupport) return defaultCreatorTab;
+      return t;
     }
-    return "setup";
+    return defaultCreatorTab;
   }
   if (i === "orders") return "orders";
   if (i === "support" && canSupport) return "support";
@@ -734,16 +744,17 @@ export function DashboardMainTabs(props: {
   } = props;
 
   const hasSetup = setup != null;
+  const showOnboardingTab = Boolean(setup && setup.incompleteSetupCount > 0);
   const hasNotifications = Boolean(notifications);
   const canSupport = Boolean(supportChat);
-  const tabOpts = { hasSetup, hasNotifications, canSupport };
+  const tabOpts = { hasSetup, showOnboardingTab, hasNotifications, canSupport };
   const [tab, setTab] = useState<TabId>(() =>
     normalizeDashboardMainTab(initialTabProp, tabOpts),
   );
 
   useEffect(() => {
     setTab(normalizeDashboardMainTab(initialTabProp, tabOpts));
-  }, [initialTabProp, hasSetup, hasNotifications, canSupport]);
+  }, [initialTabProp, hasSetup, showOnboardingTab, hasNotifications, canSupport]);
 
   const baseId = useId();
   const setupTabId = `${baseId}-tab-setup`;
@@ -793,16 +804,14 @@ export function DashboardMainTabs(props: {
         role="tablist"
         aria-label="Shop dashboard"
       >
-        {hasSetup && setup ? (
+        {hasSetup && setup && showOnboardingTab ? (
           tabBtn(
             "setup",
             <span className="inline-flex items-center gap-2">
               Onboarding
-              {setup.incompleteSetupCount > 0 ? (
-                <span className="rounded-full bg-amber-900/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-amber-100">
-                  {setup.incompleteSetupCount}
-                </span>
-              ) : null}
+              <span className="rounded-full bg-amber-900/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-amber-100">
+                {setup.incompleteSetupCount}
+              </span>
             </span>,
             setupTabId,
             setupPanelId,
@@ -856,7 +865,7 @@ export function DashboardMainTabs(props: {
         {tabBtn("orders", "Orders", ordersTabId, ordersPanelId)}
       </div>
 
-      {hasSetup && setup ? (
+      {hasSetup && setup && showOnboardingTab ? (
         <div
           id={setupPanelId}
           role="tabpanel"

@@ -11,10 +11,10 @@ import {
   connectBalanceBlocksDeletion,
   getStripeConnectBalanceUsdCents,
 } from "@/lib/stripe-connect-balance";
-import { verifyShopPassword } from "@/lib/shop-password";
 import {
   applyVerifiedAccountDeletionListingAndMediaCleanup,
   hideShopForPendingAccountDeletion,
+  purgeShopUploadedMediaFromR2,
   restoreListingsAfterAccountDeletionRequestCancel,
 } from "@/lib/shop-account-deletion-request-effects";
 
@@ -79,7 +79,47 @@ export async function dashboardRequestAccountDeletion(): Promise<AccountDangerRe
   return {
     ok: true,
     message:
-      "Your shop is hidden from browse and we emailed you a confirmation link. After you open that link, your listing data and stored photos will be removed; then you can permanently delete once your Stripe balance is zero.",
+      "Your shop is hidden from browse and we emailed you a confirmation link. After you open that link, your listing data and stored photos will be removed; once your Stripe balance is zero, opening the dashboard again removes the account automatically.",
+  };
+}
+
+/**
+ * Development only: simulates the account-deletion confirmation email link when local mail is unavailable.
+ * Sets `accountDeletionEmailConfirmedAt`, then runs the same R2 purge + listing cleanup as the real confirm route.
+ */
+export async function dashboardDevConfirmAccountDeletionEmail(): Promise<AccountDangerResult> {
+  if (process.env.NODE_ENV !== "development") {
+    return { ok: false, error: "Only available in development." };
+  }
+  const user = await requireShopOwnerRow();
+  if (!user) return { ok: false, error: "Not available for this account." };
+
+  if (!user.shop.accountDeletionRequestedAt) {
+    return { ok: false, error: "Request account deletion first." };
+  }
+  if (user.shop.accountDeletionEmailConfirmedAt) {
+    return { ok: false, error: "Deletion email is already marked confirmed." };
+  }
+
+  try {
+    await prisma.shop.update({
+      where: { id: user.shopId },
+      data: { accountDeletionEmailConfirmedAt: new Date() },
+    });
+    await purgeShopUploadedMediaFromR2(user.shopId);
+    await applyVerifiedAccountDeletionListingAndMediaCleanup(user.shopId);
+  } catch (e) {
+    console.error("[dashboardDevConfirmAccountDeletionEmail]", e);
+    return { ok: false, error: accountDeletionFreezeErrorMessage(e) };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/s/${user.shop.slug}`);
+  revalidatePath("/shops");
+  return {
+    ok: true,
+    message:
+      "[Dev] Marked deletion email confirmed and ran the same cleanup as the real link. Continue with Stripe + permanent delete when ready.",
   };
 }
 
@@ -116,19 +156,12 @@ export async function dashboardCancelAccountDeletionRequest(): Promise<AccountDa
 }
 
 /** Returns `ok: true` only when the shop row was deleted (caller should sign out + redirect). */
-export async function dashboardTryCompleteAccountDeletion(
-  formData: FormData,
-): Promise<AccountDangerResult> {
+export async function dashboardTryCompleteAccountDeletion(): Promise<AccountDangerResult> {
   const user = await requireShopOwnerRow();
   if (!user) return { ok: false, error: "Not available for this account." };
 
   if (!user.shop.accountDeletionEmailConfirmedAt) {
     return { ok: false, error: "Confirm the deletion link in your email first." };
-  }
-
-  const password = String(formData.get("password") ?? "");
-  if (!password || !verifyShopPassword(password, user.passwordHash)) {
-    return { ok: false, error: "Enter your current account password to confirm." };
   }
 
   const balance = await getStripeConnectBalanceUsdCents(user.shop.stripeConnectAccountId);
@@ -176,19 +209,4 @@ export async function dashboardTryCompleteAccountDeletion(
   revalidatePath("/shops");
   revalidatePath(`/s/${shopSlug}`);
   return { ok: true };
-}
-
-export type AccountDeletionFormState = { error: string | null };
-
-export async function dashboardCompleteAccountDeletionFormState(
-  _prev: AccountDeletionFormState,
-  formData: FormData,
-): Promise<AccountDeletionFormState> {
-  const r = await dashboardTryCompleteAccountDeletion(formData);
-  if (!r.ok) {
-    return { error: r.error };
-  }
-  const session = await getShopOwnerSession();
-  session.destroy();
-  redirect("/?accountDeleted=1");
 }

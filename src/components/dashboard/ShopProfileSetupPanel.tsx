@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   updateShopProfileSetup,
@@ -32,6 +32,22 @@ function socialRecordFromShop(links: unknown): Record<ShopSocialKey, string> {
     ShopSocialKey,
     string
   >;
+}
+
+function buildShopProfileFormData(
+  shopSlug: string,
+  displayName: string,
+  welcomeMessage: string,
+  social: Record<ShopSocialKey, string>,
+): FormData {
+  const fd = new FormData();
+  fd.set("shopUsername", shopSlug);
+  fd.set("displayName", displayName.trim());
+  fd.set("welcomeMessage", welcomeMessage.trim());
+  for (const k of SHOP_SOCIAL_KEYS) {
+    fd.set(`social_${k}`, (social[k] ?? "").trim());
+  }
+  return fd;
 }
 
 const btnPrimary =
@@ -88,6 +104,7 @@ export function ShopProfileSetupPanel(props: {
 
   const [isProfilePending, startProfileTransition] = useTransition();
   const [isAvatarPending, startAvatarTransition] = useTransition();
+  const [isSocialSavePending, startSocialSaveTransition] = useTransition();
 
   const [displayName, setDisplayName] = useState(shop.displayName);
   const [welcomeMessage, setWelcomeMessage] = useState(shop.welcomeMessage ?? "");
@@ -145,7 +162,7 @@ export function ShopProfileSetupPanel(props: {
     startProfileTransition(async () => {
       const r: ShopSetupActionResult = await updateShopProfileSetup(fd);
       if (r.ok) {
-        setMessage({ tone: "ok", text: "Profile saved." });
+        setMessage(null);
         setProfileSavedFlash(true);
         window.setTimeout(() => setProfileSavedFlash(false), 2500);
         router.refresh();
@@ -155,12 +172,26 @@ export function ShopProfileSetupPanel(props: {
     });
   }
 
+  function persistSocialLinks(nextSocial: Record<ShopSocialKey, string>, prevSocial: Record<ShopSocialKey, string>) {
+    startSocialSaveTransition(async () => {
+      setMessage(null);
+      const r: ShopSetupActionResult = await updateShopProfileSetup(
+        buildShopProfileFormData(shop.shopSlug, displayName, welcomeMessage, nextSocial),
+      );
+      if (!r.ok) {
+        setSocial(prevSocial);
+        setMessage({ tone: "err", text: r.error });
+        return;
+      }
+      router.refresh();
+    });
+  }
+
   async function handleAvatarSubmit(fd: FormData) {
     setMessage(null);
     startAvatarTransition(async () => {
       const r: ShopSetupActionResult = await uploadShopProfileImageSetup(fd);
       if (r.ok) {
-        setMessage({ tone: "ok", text: "Profile photo updated." });
         setAvatarSavedFlash(true);
         window.setTimeout(() => setAvatarSavedFlash(false), 2500);
         if (avatarInputRef.current) avatarInputRef.current.value = "";
@@ -198,10 +229,6 @@ export function ShopProfileSetupPanel(props: {
         : btnSecondaryDisabled
       : btnSecondary;
 
-  const setSocialField = useCallback((key: ShopSocialKey, value: string) => {
-    setSocial((prev) => ({ ...prev, [key]: value }));
-  }, []);
-
   return (
     <section
       className={`rounded-xl border border-zinc-800 bg-zinc-950/50 p-4 sm:p-6 ${embedded ? "mt-0" : "mt-8"}`}
@@ -237,14 +264,10 @@ export function ShopProfileSetupPanel(props: {
       </div>
 
       <div className="mt-8 space-y-6 text-sm text-zinc-300">
-        {message ? (
+        {message?.tone === "err" ? (
           <p
-            className={
-              message.tone === "ok"
-                ? "rounded-lg border border-emerald-900/50 bg-emerald-950/25 px-3 py-2 text-xs text-emerald-200/90"
-                : "rounded-lg border border-amber-900/50 bg-amber-950/25 px-3 py-2 text-xs text-amber-200/90"
-            }
-            role="status"
+            className="rounded-lg border border-amber-900/50 bg-amber-950/25 px-3 py-2 text-xs text-amber-200/90"
+            role="alert"
           >
             {message.text}
           </p>
@@ -254,7 +277,7 @@ export function ShopProfileSetupPanel(props: {
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!profileDirty || isProfilePending) return;
+            if (!profileDirty || isProfilePending || isSocialSavePending) return;
             void handleProfileSubmit(new FormData(e.currentTarget));
           }}
         >
@@ -282,6 +305,16 @@ export function ShopProfileSetupPanel(props: {
               className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100"
             />
           </label>
+          {SHOP_SOCIAL_KEYS.map((key) => (
+            <input key={key} type="hidden" name={`social_${key}`} value={social[key] ?? ""} />
+          ))}
+          <button
+            type="submit"
+            disabled={!profileDirty || isProfilePending || isSocialSavePending}
+            className={profileBtnClass}
+          >
+            {profileBtnLabel}
+          </button>
           <div className="border-t border-zinc-800 pt-4">
             <p className="text-xs text-zinc-500">Profile photo</p>
             {shop.profileImageUrl ? (
@@ -330,10 +363,6 @@ export function ShopProfileSetupPanel(props: {
           </div>
           <div className="space-y-3 border-t border-zinc-800 pt-4">
             <p className="text-xs font-medium text-zinc-500">Social links (optional)</p>
-            <p className="text-[11px] text-zinc-600">
-              Choose a network, paste its URL, then add it. Only networks you add are shown on your
-              shop.
-            </p>
             <ul className="space-y-2">
               {SHOP_SOCIAL_KEYS.filter((key) => (social[key] ?? "").trim()).map((key) => (
                 <li
@@ -347,8 +376,15 @@ export function ShopProfileSetupPanel(props: {
                   </div>
                   <button
                     type="button"
-                    className="shrink-0 rounded border border-zinc-700 px-2 py-1 text-[11px] text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                    onClick={() => setSocialField(key, "")}
+                    disabled={isSocialSavePending}
+                    className="shrink-0 rounded border border-zinc-700 px-2 py-1 text-[11px] text-zinc-400 hover:border-zinc-500 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+                    onClick={() => {
+                      if (isSocialSavePending) return;
+                      const prevSocial = { ...social };
+                      const nextSocial = { ...social, [key]: "" };
+                      setSocial(nextSocial);
+                      persistSocialLinks(nextSocial, prevSocial);
+                    }}
                   >
                     Remove
                   </button>
@@ -360,8 +396,9 @@ export function ShopProfileSetupPanel(props: {
                 Network
                 <select
                   value={socialAddKey}
+                  disabled={isSocialSavePending}
                   onChange={(e) => setSocialAddKey((e.target.value || "") as "" | ShopSocialKey)}
-                  className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-2 text-sm text-zinc-200"
+                  className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-2 text-sm text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value="">Choose a network…</option>
                   {SHOP_SOCIAL_KEYS.map((key) => (
@@ -376,17 +413,28 @@ export function ShopProfileSetupPanel(props: {
                 <input
                   type="url"
                   value={socialAddUrl}
+                  disabled={isSocialSavePending}
                   onChange={(e) => setSocialAddUrl(e.target.value)}
+                  onBlur={() => {
+                    if (!socialAddKey || !socialAddUrl.trim()) {
+                      setSocialAddError(null);
+                      return;
+                    }
+                    setSocialAddError(socialLinkAddValidationMessage(socialAddKey, socialAddUrl));
+                  }}
                   placeholder="https://…"
-                  className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-2 font-mono text-xs text-zinc-200"
+                  aria-invalid={socialAddError ? true : undefined}
+                  className={`mt-1 block w-full rounded-lg border bg-zinc-900 px-2 py-2 font-mono text-xs text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    socialAddError ? "border-amber-700/80" : "border-zinc-700"
+                  }`}
                 />
               </label>
               <button
                 type="button"
                 className="rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
-                disabled={!socialAddKey || !socialAddUrl.trim()}
+                disabled={!socialAddKey || !socialAddUrl.trim() || isSocialSavePending}
                 onClick={() => {
-                  if (!socialAddKey || !socialAddUrl.trim()) return;
+                  if (!socialAddKey || !socialAddUrl.trim() || isSocialSavePending) return;
                   const err = socialLinkAddValidationMessage(socialAddKey, socialAddUrl);
                   if (err) {
                     setSocialAddError(err);
@@ -398,12 +446,15 @@ export function ShopProfileSetupPanel(props: {
                     return;
                   }
                   setSocialAddError(null);
-                  setSocialField(socialAddKey, stored);
+                  const prevSocial = { ...social };
+                  const nextSocial = { ...social, [socialAddKey]: stored };
+                  setSocial(nextSocial);
                   setSocialAddUrl("");
                   setSocialAddKey("");
+                  persistSocialLinks(nextSocial, prevSocial);
                 }}
               >
-                Add link
+                {isSocialSavePending ? "Saving…" : "Add link"}
               </button>
             </div>
             {socialAddError ? (
@@ -412,16 +463,6 @@ export function ShopProfileSetupPanel(props: {
               </p>
             ) : null}
           </div>
-          {SHOP_SOCIAL_KEYS.map((key) => (
-            <input key={key} type="hidden" name={`social_${key}`} value={social[key] ?? ""} />
-          ))}
-          <button
-            type="submit"
-            disabled={!profileDirty || isProfilePending}
-            className={profileBtnClass}
-          >
-            {profileBtnLabel}
-          </button>
         </form>
       </div>
 

@@ -13,7 +13,8 @@ export function buildShopAccountDeletionConfirmHtml(confirmUrl: string): string 
             <p style="margin:0 0 12px;font-size:14px;font-weight:600;color:#fafafa;">Confirm account deletion</p>
             <p style="margin:0 0 16px;font-size:13px;line-height:1.5;color:#a1a1aa;">
               Your shop was frozen when you requested deletion. Click the button below to confirm this email.
-              Your account can only be removed after any Stripe payout balance is zero.
+              After that step clears your stored media, when your Stripe payout balance is zero, opening your shop
+              dashboard again removes the account automatically.
             </p>
             <p style="margin:0 0 20px;">
               <a href="${safe}" style="display:inline-block;background:#e4e4e7;color:#18181b;text-decoration:none;font-weight:600;font-size:13px;padding:10px 16px;border-radius:8px;">

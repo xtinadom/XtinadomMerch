@@ -55,6 +55,14 @@ const PLATFORM_URL_HINT: Record<ShopSocialKey, string> = {
   instagram: "instagram.com",
 };
 
+const PLATFORM_NAME: Record<ShopSocialKey, string> = {
+  reddit: "Reddit",
+  x: "X",
+  bluesky: "Bluesky",
+  twitch: "Twitch",
+  instagram: "Instagram",
+};
+
 /** True when the URL’s host is that network (e.g. reddit.com), not another site. */
 export function socialUrlMatchesPlatform(key: ShopSocialKey, raw: string): boolean {
   const url = parseHttpsUrl(raw);
@@ -74,7 +82,7 @@ export function socialLinkAddValidationMessage(
     return "Enter a valid http(s) URL.";
   }
   if (!socialUrlMatchesPlatform(key, trimmed)) {
-    return `That link must be on ${PLATFORM_URL_HINT[key]} — it doesn’t match ${key}.`;
+    return `That URL is not on ${PLATFORM_URL_HINT[key]}, which is required for ${PLATFORM_NAME[key]}.`;
   }
   return null;
 }
@@ -94,6 +102,21 @@ export function shopSocialLinksFromFormData(formData: FormData): ShopSocialLinks
     if (u && socialUrlMatchesPlatform(key, v)) out[key] = u;
   }
   return out;
+}
+
+/**
+ * When any `social_*` field is non-empty but invalid or the host does not match that network,
+ * returns a user-facing error (for server-side profile save).
+ */
+export function shopSocialLinksFormValidationError(formData: FormData): string | null {
+  for (const key of SHOP_SOCIAL_KEYS) {
+    const v = String(formData.get(`social_${key}`) ?? "").trim();
+    if (!v) continue;
+    const msg = socialLinkAddValidationMessage(key, v);
+    if (msg) return msg;
+    if (!normalizedShopSocialUrl(v)) return "Enter a valid http(s) URL.";
+  }
+  return null;
 }
 
 export function parseShopSocialLinksJson(raw: unknown): ShopSocialLinksRecord {
