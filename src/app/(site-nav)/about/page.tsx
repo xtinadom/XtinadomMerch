@@ -7,13 +7,10 @@ export default function AboutPage() {
       <h1 className="text-2xl font-semibold text-zinc-50">About</h1>
       <div className="mt-6 space-y-4 text-sm leading-relaxed text-zinc-400">
         <p>
-          Creator Shops is a multi-vendor marketplace built on a shared catalog and unified fulfillment.
-          Independent creators operate their own storefronts while checkout and operations stay consistent
-          for buyers.
-        </p>
-        <p>
-          This page is placeholder copy. Replace it with your brand story, contact channels, and any
-          disclosures your counsel requires.
+          Xtinadom is a multi-vendor marketplace built on a shared catalog and unified fulfillment.
+          Independent creators operate their own storefronts while checkout, order fulfillment, and
+          operations are handled by the platform. This keeps the checkout experience safe and consistent for
+          buyers. All shop items are print on demand.
         </p>
       </div>
       <p className="mt-10">

@@ -104,7 +104,7 @@ model Shop {
   stripeConnectAccountId   String?        @unique
   connectChargesEnabled    Boolean        @default(false)
   payoutsEnabled           Boolean        @default(false)
-  /** Higher sorts first when browsing; null = organic only. */
+  /** Higher sorts first on home Top shops and /shops (with pin + sales); null = organic only. Paid boosts can reuse later. */
   editorialPriority        Int?
   editorialPinnedUntil     DateTime?
   /** Cached from paid orders for browse sort (webhook updates). */
@@ -458,6 +458,25 @@ model AdminCatalogItemTag {
   tag                Tag              @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([adminCatalogItemId, tagId])
+}
+
+/**
+ * Inbound mail captured from Resend (`email.received` webhook → Receiving API).
+ * Configure MX for your domain in Resend and point webhooks at `/api/webhooks/resend-inbound`.
+ */
+model AdminInboundEmail {
+  id            String   @id @default(cuid())
+  /** Resend received-email id (from webhook / Receiving API). */
+  resendEmailId String   @unique
+  fromAddress   String
+  toAddress     String
+  subject       String   @db.Text
+  textBody      String?  @db.Text
+  htmlBody      String?  @db.Text
+  receivedAt    DateTime
+  createdAt     DateTime @default(now())
+
+  @@index([receivedAt(sort: Desc)])
 }
 
 /**

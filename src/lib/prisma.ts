@@ -3,6 +3,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 import { runtimeDatabaseUrlFromEnv } from "@/lib/env-postgres-url";
 
+export type PrismaAdminInboundEmailDelegate = PrismaClient["adminInboundEmail"];
+
 /**
  * Bump when the Prisma schema (or generated client shape) changes so the cached `globalThis` client
  * is dropped — otherwise delegates like `adminCatalogItem` are missing (`findMany` of undefined) or
@@ -10,7 +12,7 @@ import { runtimeDatabaseUrlFromEnv } from "@/lib/env-postgres-url";
  * (or delete `.next`) if needed.
  */
 const PRISMA_SINGLETON_STAMP =
-  "postgres-adapter-v31-shop-listing-listing-publication-fee-paid-cents";
+  "postgres-adapter-v32-admin-inbound-email-delegate";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -58,4 +60,15 @@ if (globalForPrisma.prismaSingletonStamp !== PRISMA_SINGLETON_STAMP) {
 export const prisma = globalForPrisma.prisma ?? createPrisma();
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
+}
+
+/**
+ * `AdminInboundEmail` was added after some deploys; a long-lived Node process can still hold an older
+ * `PrismaClient` without this delegate. Use this helper instead of `prisma.adminInboundEmail` when the
+ * process might predate `PRISMA_SINGLETON_STAMP` bumps.
+ */
+export function prismaAdminInboundEmailOrNull(): PrismaAdminInboundEmailDelegate | null {
+  const delegate = (prisma as PrismaClient & { adminInboundEmail?: PrismaAdminInboundEmailDelegate })
+    .adminInboundEmail;
+  return delegate ?? null;
 }

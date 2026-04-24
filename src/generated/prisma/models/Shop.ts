@@ -2293,7 +2293,7 @@ export type $ShopPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     connectChargesEnabled: boolean
     payoutsEnabled: boolean
     /**
-     * * Higher sorts first when browsing; null = organic only.
+     * * Higher sorts first on home Top shops and /shops (with pin + sales); null = organic only. Paid boosts can reuse later.
      */
     editorialPriority: number | null
     editorialPinnedUntil: Date | null

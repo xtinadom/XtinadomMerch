@@ -118,6 +118,13 @@ export type AdminCatalogItem = Prisma.AdminCatalogItemModel
  */
 export type AdminCatalogItemTag = Prisma.AdminCatalogItemTagModel
 /**
+ * Model AdminInboundEmail
+ * *
+ *  * Inbound mail captured from Resend (`email.received` webhook → Receiving API).
+ *  * Configure MX for your domain in Resend and point webhooks at `/api/webhooks/resend-inbound`.
+ */
+export type AdminInboundEmail = Prisma.AdminInboundEmailModel
+/**
  * Model SiteEmailTemplate
  * *
  *  * Optional overrides for automated site emails (admin → Email format tab).

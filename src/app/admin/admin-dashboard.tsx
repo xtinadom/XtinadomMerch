@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { prisma, prismaAdminInboundEmailOrNull } from "@/lib/prisma";
 import { getAdminSessionReadonly } from "@/lib/session";
 import { logoutAdmin, updateProductDetails } from "@/actions/admin";
 import {
@@ -16,7 +16,7 @@ import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
 import { ProductDesignNameFields } from "@/components/admin/ProductDesignNameFields";
 import { ProductTagFields } from "@/components/admin/ProductTagFields";
 import { productHasTag, productTagIds } from "@/lib/product-tags";
-import { emailLinkOrigin } from "@/lib/public-app-url";
+import { emailLinkOrigin, publicAppBaseUrl } from "@/lib/public-app-url";
 import { buildAdminEmailFormatEntries } from "@/lib/site-email-template-service";
 import {
   ADMIN_BACKEND_BASE_PATH,
@@ -48,6 +48,7 @@ import {
   type ShopWatchDetail,
   type ShopWatchRow,
 } from "@/components/admin/AdminShopWatchTab";
+import { AdminShopHomeTopTab, type AdminShopHomeTopRow } from "@/components/admin/AdminShopHomeTopTab";
 import {
   listingRejectionReasonTextForCard,
   resolveListingRejectionNoticeBody,
@@ -59,12 +60,14 @@ import {
   type AdminSupportThreadListRow,
 } from "@/components/admin/AdminSupportMessagesTab";
 import { AdminEmailFormatTab } from "@/components/admin/AdminEmailFormatTab";
+import { AdminInboxTab, type AdminInboxRow } from "@/components/admin/AdminInboxTab";
 import {
   isFounderUnlimitedFreeListingsShop,
   listingFeeCentsForOrdinal,
   PLATFORM_SHOP_SLUG,
   SPECIAL_PROMOTION_FREE_LISTING_IDS,
 } from "@/lib/marketplace-constants";
+import { adminInboxEmailAddress } from "@/lib/admin-inbox-config";
 import { ensureBaselineAdminCatalogIfEmpty } from "@/lib/seed-baseline-admin-catalog";
 import { supportUnresolvedThreadShopIdsExcludingPlatform } from "@/lib/support-thread-unresolved";
 import { fetchPrintifyCatalog, hasPrintifyApiToken } from "@/lib/printify";
@@ -146,11 +149,19 @@ export async function AdminDashboardPageContent({
   const watchShopParam =
     typeof sp.watchShop === "string" && sp.watchShop.trim() ? sp.watchShop.trim() : undefined;
 
-  const mainTabLiterals = ["support", "requests", "shop-watch", "shop-leaderboard", "sales"] as const;
+  const mainTabLiterals = [
+    "support",
+    "requests",
+    "shop-watch",
+    "shop-leaderboard",
+    "home-top-shops",
+    "sales",
+  ] as const;
   const backendTabLiterals = [
     "admin-list",
     "printify",
     "removed",
+    "admin-inbox",
     "email-format",
     "tags",
     "printify-api",
@@ -218,6 +229,11 @@ export async function AdminDashboardPageContent({
   const basePath =
     adminSection === "main" ? ADMIN_MAIN_BASE_PATH : ADMIN_BACKEND_BASE_PATH;
 
+  const publicBaseTrim = publicAppBaseUrl()?.replace(/\/$/, "") ?? "";
+  const adminInboxWebhookEndpoint = publicBaseTrim
+    ? `${publicBaseTrim}/api/webhooks/resend-inbound`
+    : null;
+
   const siteEmailTemplateRows =
     adminSection === "backend" && inventoryTab === "email-format"
       ? await prisma.siteEmailTemplate.findMany({
@@ -237,6 +253,31 @@ export async function AdminDashboardPageContent({
   const emailFormatTabEntries =
     adminSection === "backend" && inventoryTab === "email-format"
       ? buildAdminEmailFormatEntries(siteEmailTemplateRows, emailLinkOrigin())
+      : [];
+
+  const adminInboundDelegate = prismaAdminInboundEmailOrNull();
+  const adminInboxCount =
+    adminSection === "backend" && adminInboundDelegate
+      ? await adminInboundDelegate.count()
+      : 0;
+
+  const adminInboxRowsLoaded: AdminInboxRow[] =
+    adminSection === "backend" && inventoryTab === "admin-inbox" && adminInboundDelegate
+      ? (
+          await adminInboundDelegate.findMany({
+            orderBy: { receivedAt: "desc" },
+            take: 200,
+          })
+        ).map((r) => ({
+          id: r.id,
+          resendEmailId: r.resendEmailId,
+          fromAddress: r.fromAddress,
+          toAddress: r.toAddress,
+          subject: r.subject,
+          textBody: r.textBody,
+          htmlBody: r.htmlBody,
+          receivedAt: r.receivedAt.toISOString(),
+        }))
       : [];
 
   const salesFromRaw = typeof sp.salesFrom === "string" ? sp.salesFrom : "";
@@ -510,6 +551,34 @@ export async function AdminDashboardPageContent({
       merchandiseCents: Number(r.merchandiseCents),
       shopCutCents: Number(r.shopCutCents),
       paidLineCount: Number(r.lineCount),
+    }));
+  }
+
+  let homeTopShopsAdminRows: AdminShopHomeTopRow[] = [];
+  if (adminSection === "main" && inventoryTab === "home-top-shops") {
+    const raw = await prisma.shop.findMany({
+      where: { slug: { not: PLATFORM_SHOP_SLUG } },
+      select: {
+        id: true,
+        slug: true,
+        displayName: true,
+        active: true,
+        totalSalesCents: true,
+        editorialPriority: true,
+        editorialPinnedUntil: true,
+        createdAt: true,
+      },
+      orderBy: { displayName: "asc" },
+    });
+    homeTopShopsAdminRows = raw.map((r) => ({
+      id: r.id,
+      slug: r.slug,
+      displayName: r.displayName,
+      active: r.active,
+      totalSalesCents: r.totalSalesCents,
+      editorialPriority: r.editorialPriority,
+      editorialPinnedUntil: r.editorialPinnedUntil?.toISOString() ?? null,
+      createdAt: r.createdAt.toISOString(),
     }));
   }
 
@@ -1239,6 +1308,18 @@ export async function AdminDashboardPageContent({
             <span className="ml-1.5 tabular-nums text-zinc-500">({shopLeaderboardShopCount})</span>
           </Link>
           <Link
+            href={`${basePath}?tab=home-top-shops`}
+            role="tab"
+            aria-selected={inventoryTab === "home-top-shops"}
+            className={`shrink-0 rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "home-top-shops"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Home top shops
+          </Link>
+          <Link
             href={`${basePath}?tab=sales`}
             role="tab"
             aria-selected={inventoryTab === "sales"}
@@ -1292,6 +1373,19 @@ export async function AdminDashboardPageContent({
           >
             Removed items
             <span className="ml-1.5 tabular-nums text-zinc-500">({removedListingCount})</span>
+          </Link>
+          <Link
+            href={`${basePath}?tab=admin-inbox`}
+            role="tab"
+            aria-selected={inventoryTab === "admin-inbox"}
+            className={`shrink-0 rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "admin-inbox"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Inbox
+            <span className="ml-1.5 tabular-nums text-zinc-500">({adminInboxCount})</span>
           </Link>
           <Link
             href={`${basePath}?tab=email-format`}
@@ -1365,6 +1459,8 @@ export async function AdminDashboardPageContent({
               salesFromValue={salesFromRaw}
               salesToValue={salesToRaw}
             />
+          ) : inventoryTab === "home-top-shops" ? (
+            <AdminShopHomeTopTab rows={homeTopShopsAdminRows} />
           ) : inventoryTab === "sales" ? (
             <AdminPlatformSalesTab
               lines={platformSalesTabLines}
@@ -1418,6 +1514,12 @@ export async function AdminDashboardPageContent({
             />
           ) : inventoryTab === "removed" ? (
             <AdminRemovedListingItemsTab rows={removedListingTabRows} />
+          ) : inventoryTab === "admin-inbox" ? (
+            <AdminInboxTab
+              rows={adminInboxRowsLoaded}
+              inboxAddress={adminInboxEmailAddress()}
+              webhookEndpoint={adminInboxWebhookEndpoint}
+            />
           ) : inventoryTab === "email-format" ? (
             <AdminEmailFormatTab entries={emailFormatTabEntries} />
           ) : inventoryTab === "tags" ? (

@@ -4,6 +4,10 @@ import { OrderStatus } from "@/generated/prisma/enums";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
 import type { ProductCardProduct } from "@/components/ProductCard";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
+import { sortShopsForBrowse } from "@/lib/shops-browse";
+
+const TOP_SHOPS_HOME_DEFAULT = 10;
+const TOP_SHOPS_HOME_FETCH_CAP = 250;
 
 const HOT_WINDOW_DAYS = 30;
 
@@ -36,6 +40,34 @@ export async function getFeaturedCreatorShopsForHome() {
     orderBy: [{ editorialPriority: "desc" }, { totalSalesCents: "desc" }],
     take: 8,
   });
+}
+
+/**
+ * Creator shops for the home “Top shops” strip: same ranking as /shops default (editorial pin,
+ * `editorialPriority`, then `totalSalesCents`). Admins influence order via those fields (+ paid
+ * promos later can reuse `editorialPriority`).
+ */
+export async function getTopShopsForHome(limit = TOP_SHOPS_HOME_DEFAULT) {
+  const raw = await prisma.shop.findMany({
+    where: {
+      active: true,
+      slug: { not: PLATFORM_SHOP_SLUG },
+    },
+    select: {
+      id: true,
+      slug: true,
+      displayName: true,
+      profileImageUrl: true,
+      bio: true,
+      totalSalesCents: true,
+      editorialPriority: true,
+      editorialPinnedUntil: true,
+      createdAt: true,
+    },
+    take: TOP_SHOPS_HOME_FETCH_CAP,
+  });
+  const sorted = sortShopsForBrowse(raw, "editorial");
+  return sorted.slice(0, limit);
 }
 
 /** Top-selling products (by paid order line quantity) in the last window; platform catalog listings. */

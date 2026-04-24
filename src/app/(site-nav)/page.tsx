@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { SHOP_ALL_ROUTE } from "@/lib/constants";
 import { FeaturedProductsCarousel } from "@/components/FeaturedProductsCarousel";
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { ProductCard } from "@/components/ProductCard";
@@ -7,6 +6,7 @@ import { SiteLegalFooter } from "@/components/SiteLegalFooter";
 import {
   getFeaturedCreatorShopsForHome,
   getHotListingProductsForHome,
+  getTopShopsForHome,
 } from "@/lib/marketplace-home";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
@@ -28,10 +28,12 @@ export default async function HomePage({ searchParams }: PageProps) {
         : undefined;
   let featuredShops: Awaited<ReturnType<typeof getFeaturedCreatorShopsForHome>>;
   let hotProducts: Awaited<ReturnType<typeof getHotListingProductsForHome>>;
+  let topShops: Awaited<ReturnType<typeof getTopShopsForHome>>;
   try {
-    [featuredShops, hotProducts] = await Promise.all([
+    [featuredShops, hotProducts, topShops] = await Promise.all([
       getFeaturedCreatorShopsForHome(),
       getHotListingProductsForHome(10),
+      getTopShopsForHome(10),
     ]);
   } catch (e) {
     return <ShopDataLoadError cause={e} />;
@@ -60,11 +62,16 @@ export default async function HomePage({ searchParams }: PageProps) {
   return (
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 py-10 sm:py-14">
       <header className="text-center">
-        <h1 className="store-dimension-page-title text-3xl text-zinc-50 sm:text-4xl">
-          Creator Shops
+        <h1 className="m-0">
+          <Link
+            href="/"
+            className="store-dimension-brand text-3xl font-semibold uppercase tracking-[0.2em] text-blue-400/80 transition hover:text-blue-300/90 sm:text-4xl"
+          >
+            XTINADOM
+          </Link>
         </h1>
         <p className="mx-auto mt-4 max-w-lg text-sm text-zinc-400">
-          Browse independent shops or open a shop — platform catalog and fulfillment stay unified.
+          A platform for creators to sell their brand&apos;s merchandise.
         </p>
       </header>
 
@@ -126,21 +133,49 @@ export default async function HomePage({ searchParams }: PageProps) {
         </section>
       ) : null}
 
+      {topShops.length > 0 ? (
+        <section className="mt-16 border-t border-zinc-800/80 pt-10">
+          <div className="text-center">
+            <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500 sm:text-base">
+              Top shops
+            </h2>
+          </div>
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+            {topShops.map((s) => (
+              <li key={s.id}>
+                <Link
+                  href={`/s/${s.slug}`}
+                  className="flex gap-3 rounded-xl border border-zinc-800 bg-zinc-950/50 p-3 transition hover:border-zinc-600"
+                >
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-zinc-900">
+                    {s.profileImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={s.profileImageUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-[10px] font-medium text-zinc-600">
+                        {s.displayName.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-zinc-100">{s.displayName}</p>
+                    {s.bio ? (
+                      <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-zinc-500">{s.bio}</p>
+                    ) : null}
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <div className="mt-16 border-t border-zinc-800/80 pt-10 text-center">
         <Link
-          href={SHOP_ALL_ROUTE}
+          href="/shops"
           className="text-sm text-zinc-500 underline decoration-zinc-700 underline-offset-4 transition hover:text-blue-400/90 hover:decoration-blue-400/50"
         >
-          View all products (platform catalog)
-        </Link>
-      </div>
-
-      <div className="mt-10 flex justify-center">
-        <Link
-          href="/shops"
-          className="rounded-2xl border border-blue-900/50 bg-gradient-to-b from-blue-950/40 to-zinc-950 px-8 py-5 text-center text-sm font-medium text-blue-100 transition hover:border-blue-700/60"
-        >
-          Browse Creator Shops
+          Browse all shops
         </Link>
       </div>
 

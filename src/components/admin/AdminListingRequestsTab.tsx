@@ -1093,14 +1093,6 @@ export function AdminListingRequestsTab(props: {
   return (
     <section aria-label="Listing requests">
       <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Listing requests</h2>
-      <p className="mt-1 text-xs text-zinc-600">
-        <strong className="font-medium text-zinc-500">New requests</strong>: submitted — image check (pass or fail /
-        reject); then Step 1 — Image Check + Step 2 — Printify Item Mapping (or reject); Step 3 — admin listing images
-        (optional second image) then approve or reject (one listing per catalog product).{" "}
-        <strong className="font-medium text-zinc-500">Awaiting fee</strong>: approved listings that still need a paid
-        publication fee (not in the free slots). Once the fee is recorded or the slot is free, the row leaves this tab
-        — use <strong className="font-medium text-zinc-500">Shop Data</strong> for live / frozen / removed listings.
-      </p>
 
       <div
         className="mt-4 flex flex-wrap items-center gap-2 border-b border-zinc-800 pb-3"

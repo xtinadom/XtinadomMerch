@@ -403,6 +403,7 @@ export const ModelName = {
   ProcessedStripeEvent: 'ProcessedStripeEvent',
   AdminCatalogItem: 'AdminCatalogItem',
   AdminCatalogItemTag: 'AdminCatalogItemTag',
+  AdminInboundEmail: 'AdminInboundEmail',
   SiteEmailTemplate: 'SiteEmailTemplate',
   Comment: 'Comment'
 } as const
@@ -420,7 +421,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tag" | "productTag" | "product" | "shop" | "shopListingSlotPromoRedemption" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopAccountDeletionToken" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "adminCatalogItemTag" | "siteEmailTemplate" | "comment"
+    modelProps: "tag" | "productTag" | "product" | "shop" | "shopListingSlotPromoRedemption" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopAccountDeletionToken" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "adminCatalogItemTag" | "adminInboundEmail" | "siteEmailTemplate" | "comment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1830,6 +1831,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    AdminInboundEmail: {
+      payload: Prisma.$AdminInboundEmailPayload<ExtArgs>
+      fields: Prisma.AdminInboundEmailFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AdminInboundEmailFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminInboundEmailPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AdminInboundEmailFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminInboundEmailPayload>
+        }
+        findFirst: {
+          args: Prisma.AdminInboundEmailFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminInboundEmailPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AdminInboundEmailFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminInboundEmailPayload>
+        }
+        findMany: {
+          args: Prisma.AdminInboundEmailFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminInboundEmailPayload>[]
+        }
+        create: {
+          args: Prisma.AdminInboundEmailCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminInboundEmailPayload>
+        }
+        createMany: {
+          args: Prisma.AdminInboundEmailCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AdminInboundEmailCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminInboundEmailPayload>[]
+        }
+        delete: {
+          args: Prisma.AdminInboundEmailDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminInboundEmailPayload>
+        }
+        update: {
+          args: Prisma.AdminInboundEmailUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminInboundEmailPayload>
+        }
+        deleteMany: {
+          args: Prisma.AdminInboundEmailDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AdminInboundEmailUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AdminInboundEmailUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminInboundEmailPayload>[]
+        }
+        upsert: {
+          args: Prisma.AdminInboundEmailUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminInboundEmailPayload>
+        }
+        aggregate: {
+          args: Prisma.AdminInboundEmailAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdminInboundEmail>
+        }
+        groupBy: {
+          args: Prisma.AdminInboundEmailGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminInboundEmailGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AdminInboundEmailCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminInboundEmailCountAggregateOutputType> | number
+        }
+      }
+    }
     SiteEmailTemplate: {
       payload: Prisma.$SiteEmailTemplatePayload<ExtArgs>
       fields: Prisma.SiteEmailTemplateFieldRefs
@@ -2321,6 +2396,21 @@ export const AdminCatalogItemTagScalarFieldEnum = {
 export type AdminCatalogItemTagScalarFieldEnum = (typeof AdminCatalogItemTagScalarFieldEnum)[keyof typeof AdminCatalogItemTagScalarFieldEnum]
 
 
+export const AdminInboundEmailScalarFieldEnum = {
+  id: 'id',
+  resendEmailId: 'resendEmailId',
+  fromAddress: 'fromAddress',
+  toAddress: 'toAddress',
+  subject: 'subject',
+  textBody: 'textBody',
+  htmlBody: 'htmlBody',
+  receivedAt: 'receivedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AdminInboundEmailScalarFieldEnum = (typeof AdminInboundEmailScalarFieldEnum)[keyof typeof AdminInboundEmailScalarFieldEnum]
+
+
 export const SiteEmailTemplateScalarFieldEnum = {
   id: 'id',
   key: 'key',
@@ -2684,6 +2774,7 @@ export type GlobalOmitConfig = {
   processedStripeEvent?: Prisma.ProcessedStripeEventOmit
   adminCatalogItem?: Prisma.AdminCatalogItemOmit
   adminCatalogItemTag?: Prisma.AdminCatalogItemTagOmit
+  adminInboundEmail?: Prisma.AdminInboundEmailOmit
   siteEmailTemplate?: Prisma.SiteEmailTemplateOmit
   comment?: Prisma.CommentOmit
 }

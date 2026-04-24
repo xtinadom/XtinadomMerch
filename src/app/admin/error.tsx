@@ -16,7 +16,9 @@ export default function AdminError({
 
   const msg = error.message ?? String(error);
   /** Query uses a field the loaded Prisma Client was not generated with (stale `.next` / dev server / singleton). */
-  const looksLikeStaleClient = /Unknown argument `/i.test(msg);
+  const looksLikeStaleClient =
+    /Unknown argument `/i.test(msg) ||
+    /Cannot read properties of undefined \(reading 'count'\)/i.test(msg);
   /** Postgres or migrations behind (missing column/table). */
   const looksLikeDb =
     !looksLikeStaleClient &&
@@ -28,7 +30,7 @@ export default function AdminError({
       <h2 className="text-base font-semibold text-red-50">Admin failed to load</h2>
       <p className="mt-2 text-red-200/80">
         {looksLikeStaleClient
-          ? "The running app is using an outdated Prisma Client (Turbopack cache or a long-lived dev process). Your schema already includes fields like `creatorRemovedFromShopAt`, but the generated client in memory does not."
+          ? "The running app is using an outdated Prisma Client (Turbopack cache, a long-lived dev process, or a cached `globalThis` Prisma singleton). The schema or generated client on disk is newer than what this Node process loaded (for example a new model delegate or field like `creatorRemovedFromShopAt`)."
           : looksLikeDb
             ? "The database does not match the current Prisma schema (for example a missing column from migration `20260415160000_shop_listing_creator_removed`). Apply pending migrations to that database, then reload."
             : "Something went wrong while loading this page. Check the server log for the stack trace."}
