@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   dashboardDevConfirmAccountDeletionEmail,
   dashboardRequestAccountDeletion,
+  dashboardResendAccountDeletionConfirmationEmail,
 } from "@/actions/dashboard-account-danger";
 
 function formatUsd(cents: number): string {
@@ -114,14 +115,28 @@ export function ShopDangerZonePanel(props: {
                 : "Check your inbox for the confirmation link (expires in 24 hours)."}
             </p>
 
+            {deletionPending && !emailConfirmed ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => run(dashboardResendAccountDeletionConfirmationEmail)}
+                className="rounded-lg border border-zinc-700/80 bg-zinc-900/50 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800/60 disabled:opacity-50"
+                aria-label="Resend account deletion confirmation email"
+              >
+                {busy ? "…" : "Resend email"}
+              </button>
+            ) : null}
+
             {process.env.NODE_ENV === "development" && deletionPending && !emailConfirmed ? (
               <div className="rounded-lg border border-amber-800/50 bg-amber-950/20 p-3">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-amber-200/90">
                   Local dev only
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">
-                  If email links do not work on localhost, use this to mark the deletion email confirmed (same DB +
-                  storage cleanup as the real link).
+                  Without <code className="text-zinc-400">RESEND_API_KEY</code>, local <code className="text-zinc-400">next dev</code> does not send
+                  mail — the confirmation URL is logged in that terminal as{" "}
+                  <code className="text-zinc-400">[shop-account-deletion]</code>. You can also use the button below to run the same DB + storage
+                  cleanup as opening the real link.
                 </p>
                 <button
                   type="button"

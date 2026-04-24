@@ -16,7 +16,7 @@ function resendUserFacingError(status: number, body: string): string {
   if (msg) {
     return `Email could not be sent (${status}): ${msg}`;
   }
-  return `Email could not be sent (HTTP ${status}).`;
+  return `Email could not be sent (HTTP ${status}). Check Vercel logs for [shop-account-deletion].`;
 }
 
 export async function sendShopAccountDeletionConfirmEmail(
@@ -46,6 +46,10 @@ export async function sendShopAccountDeletionConfirmEmail(
 
   const { subject, html } = await resolveShopAccountDeletionConfirmEmail(url);
 
+  console.info(
+    `[shop-account-deletion] Resend POST from=${JSON.stringify(from)} origin=${JSON.stringify(origin)} toDomain=${JSON.stringify(toEmail.includes("@") ? toEmail.split("@")[1] : "?")}`,
+  );
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -64,10 +68,21 @@ export async function sendShopAccountDeletionConfirmEmail(
   if (!res.ok) {
     console.error("[shop-account-deletion] Resend HTTP error", {
       status: res.status,
-      body: body.slice(0, 500),
+      body: body.slice(0, 2000),
     });
     return { ok: false, error: resendUserFacingError(res.status, body) };
   }
+
+  let emailId = "";
+  try {
+    const j = JSON.parse(body) as { id?: string };
+    if (typeof j?.id === "string") emailId = j.id;
+  } catch {
+    /* ignore */
+  }
+  console.info(
+    `[shop-account-deletion] Resend accepted email${emailId ? ` id=${emailId}` : ""} (track delivery in Resend → Emails / Logs)`,
+  );
 
   return { ok: true };
 }

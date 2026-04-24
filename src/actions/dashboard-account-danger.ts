@@ -61,6 +61,8 @@ export async function dashboardRequestAccountDeletion(): Promise<AccountDangerRe
     return { ok: false, error: "A deletion request is already in progress." };
   }
 
+  const shopWasActiveBeforeRequest = user.shop.active;
+
   try {
     await hideShopForPendingAccountDeletion(user.shopId);
   } catch (e) {
@@ -70,16 +72,61 @@ export async function dashboardRequestAccountDeletion(): Promise<AccountDangerRe
 
   const sent = await issueShopAccountDeletionTokenAndSend(user.id, user.email);
   if (!sent.ok) {
+    try {
+      await restoreListingsAfterAccountDeletionRequestCancel(user.shopId);
+      await prisma.shop.update({
+        where: { id: user.shopId },
+        data: {
+          accountDeletionRequestedAt: null,
+          accountDeletionEmailConfirmedAt: null,
+          active: shopWasActiveBeforeRequest,
+        },
+      });
+    } catch (rollbackErr) {
+      console.error("[dashboardRequestAccountDeletion] rollback after email send failed", rollbackErr);
+    }
+    revalidatePath("/dashboard");
+    revalidatePath(`/s/${user.shop.slug}`);
+    revalidatePath("/shops");
     return { ok: false, error: sent.error };
   }
 
   revalidatePath("/dashboard");
   revalidatePath(`/s/${user.shop.slug}`);
   revalidatePath("/shops");
+
+  let message =
+    "Your shop is hidden from browse and we emailed you a confirmation link. After you open that link, your listing data and stored photos will be removed; once your Stripe balance is zero, opening the dashboard again removes the account automatically.";
+  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY?.trim()) {
+    message +=
+      " Local dev: RESEND_API_KEY is not set, so no email was sent. In the terminal running `next dev`, find the line starting with `[shop-account-deletion]` for the confirmation URL, or use “Dev: confirm deletion email” in this panel.";
+  }
+
+  return { ok: true, message };
+}
+
+/** Send a fresh account-deletion confirmation email while a request is pending and email is not yet confirmed. */
+export async function dashboardResendAccountDeletionConfirmationEmail(): Promise<AccountDangerResult> {
+  const user = await requireShopOwnerRow();
+  if (!user) return { ok: false, error: "Not available for this account." };
+
+  if (!user.shop.accountDeletionRequestedAt) {
+    return { ok: false, error: "There is no pending deletion request." };
+  }
+  if (user.shop.accountDeletionEmailConfirmedAt) {
+    return { ok: false, error: "Deletion is already confirmed by email." };
+  }
+
+  const sent = await issueShopAccountDeletionTokenAndSend(user.id, user.email);
+  if (!sent.ok) {
+    return { ok: false, error: sent.error };
+  }
+
+  revalidatePath("/dashboard");
   return {
     ok: true,
     message:
-      "Your shop is hidden from browse and we emailed you a confirmation link. After you open that link, your listing data and stored photos will be removed; once your Stripe balance is zero, opening the dashboard again removes the account automatically.",
+      "Another confirmation email was sent. If nothing arrives in a few minutes, check spam, confirm Resend → Emails / Logs, and verify `SHOP_PASSWORD_RESET_EMAIL_FROM` or `SHOP_ACCOUNT_DELETION_EMAIL_FROM` uses a domain you verified in Resend.",
   };
 }
 

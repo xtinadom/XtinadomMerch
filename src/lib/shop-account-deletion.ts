@@ -11,23 +11,33 @@ export async function issueShopAccountDeletionTokenAndSend(
   shopUserId: string,
   email: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  await prisma.shopAccountDeletionToken.deleteMany({
-    where: { shopUserId, usedAt: null },
-  });
-
   const raw = newPasswordResetRawToken();
   const tokenHash = hashPasswordResetToken(raw);
   const expiresAt = new Date(Date.now() + DELETION_TOKEN_TTL_MS);
 
-  await prisma.shopAccountDeletionToken.create({
-    data: { shopUserId, tokenHash, expiresAt },
-  });
-
   const sent = await sendShopAccountDeletionConfirmEmail(email, raw);
   if (!sent.ok) {
-    await prisma.shopAccountDeletionToken.deleteMany({ where: { tokenHash } });
     return { ok: false, error: sent.error };
   }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.shopAccountDeletionToken.deleteMany({
+        where: { shopUserId, usedAt: null },
+      });
+      await tx.shopAccountDeletionToken.create({
+        data: { shopUserId, tokenHash, expiresAt },
+      });
+    });
+  } catch (e) {
+    console.error("[issueShopAccountDeletionTokenAndSend] token persist failed after Resend accepted", e);
+    return {
+      ok: false,
+      error:
+        "We could not save the confirmation token after sending mail. Use “Resend confirmation email” on the dashboard, or wait a moment and request deletion again.",
+    };
+  }
+
   return { ok: true };
 }
 
