@@ -151,6 +151,7 @@ export async function AdminDashboardPageContent({
 
   const mainTabLiterals = [
     "support",
+    "admin-inbox",
     "requests",
     "shop-watch",
     "shop-leaderboard",
@@ -161,7 +162,6 @@ export async function AdminDashboardPageContent({
     "admin-list",
     "printify",
     "removed",
-    "admin-inbox",
     "email-format",
     "tags",
     "printify-api",
@@ -257,12 +257,12 @@ export async function AdminDashboardPageContent({
 
   const adminInboundDelegate = prismaAdminInboundEmailOrNull();
   const adminInboxCount =
-    adminSection === "backend" && adminInboundDelegate
+    adminSection === "main" && adminInboundDelegate
       ? await adminInboundDelegate.count()
       : 0;
 
   const adminInboxRowsLoaded: AdminInboxRow[] =
-    adminSection === "backend" && inventoryTab === "admin-inbox" && adminInboundDelegate
+    adminSection === "main" && inventoryTab === "admin-inbox" && adminInboundDelegate
       ? (
           await adminInboundDelegate.findMany({
             orderBy: { receivedAt: "desc" },
@@ -1269,6 +1269,19 @@ export async function AdminDashboardPageContent({
             <span className="ml-1.5 tabular-nums text-zinc-500">({supportUnresolvedCount})</span>
           </Link>
           <Link
+            href={`${basePath}?tab=admin-inbox`}
+            role="tab"
+            aria-selected={inventoryTab === "admin-inbox"}
+            className={`shrink-0 rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "admin-inbox"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Inbox
+            <span className="ml-1.5 tabular-nums text-zinc-500">({adminInboxCount})</span>
+          </Link>
+          <Link
             href={`${basePath}?tab=requests`}
             role="tab"
             aria-selected={inventoryTab === "requests"}
@@ -1375,19 +1388,6 @@ export async function AdminDashboardPageContent({
             <span className="ml-1.5 tabular-nums text-zinc-500">({removedListingCount})</span>
           </Link>
           <Link
-            href={`${basePath}?tab=admin-inbox`}
-            role="tab"
-            aria-selected={inventoryTab === "admin-inbox"}
-            className={`shrink-0 rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
-              inventoryTab === "admin-inbox"
-                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
-                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
-            }`}
-          >
-            Inbox
-            <span className="ml-1.5 tabular-nums text-zinc-500">({adminInboxCount})</span>
-          </Link>
-          <Link
             href={`${basePath}?tab=email-format`}
             role="tab"
             aria-selected={inventoryTab === "email-format"}
@@ -1467,6 +1467,12 @@ export async function AdminDashboardPageContent({
               salesFromValue={salesFromRaw}
               salesToValue={salesToRaw}
             />
+          ) : inventoryTab === "admin-inbox" ? (
+            <AdminInboxTab
+              rows={adminInboxRowsLoaded}
+              inboxAddress={adminInboxEmailAddress()}
+              webhookEndpoint={adminInboxWebhookEndpoint}
+            />
           ) : null)
           : (
             inventoryTab === "admin-list" ? (
@@ -1514,12 +1520,6 @@ export async function AdminDashboardPageContent({
             />
           ) : inventoryTab === "removed" ? (
             <AdminRemovedListingItemsTab rows={removedListingTabRows} />
-          ) : inventoryTab === "admin-inbox" ? (
-            <AdminInboxTab
-              rows={adminInboxRowsLoaded}
-              inboxAddress={adminInboxEmailAddress()}
-              webhookEndpoint={adminInboxWebhookEndpoint}
-            />
           ) : inventoryTab === "email-format" ? (
             <AdminEmailFormatTab entries={emailFormatTabEntries} />
           ) : inventoryTab === "tags" ? (
