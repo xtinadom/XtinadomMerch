@@ -130,3 +130,27 @@ export function validateItemLevelWhenNoVariants(
     itemGoodsServicesCostCents,
   };
 }
+
+/**
+ * Optional artwork rules: free-text label + min long edge (px) for print/DPI gating. Blank min = no check.
+ */
+export function parseAdminCatalogArtworkRequirement(
+  itemImageRequirementLabel: string,
+  itemMinArtworkLongEdgePxRaw: string,
+):
+  | { ok: true; itemImageRequirementLabel: string | null; itemMinArtworkLongEdgePx: number | null }
+  | { ok: false; error: string } {
+  const label = itemImageRequirementLabel.trim().slice(0, 400) || null;
+  const t = itemMinArtworkLongEdgePxRaw.trim();
+  if (t.length === 0) {
+    return { ok: true, itemImageRequirementLabel: label, itemMinArtworkLongEdgePx: null };
+  }
+  const n = parseInt(t, 10);
+  if (!Number.isFinite(n) || n < 1 || n > 1_000_000) {
+    return {
+      ok: false,
+      error: "Min long edge (px) must be a whole number from 1 to 1000000, or left blank to skip a minimum.",
+    };
+  }
+  return { ok: true, itemImageRequirementLabel: label, itemMinArtworkLongEdgePx: n };
+}

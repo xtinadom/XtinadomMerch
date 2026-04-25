@@ -445,6 +445,16 @@ model AdminCatalogItem {
    * distinct from the marketplace fee on the remainder.
    */
   itemGoodsServicesCostCents Int @default(0)
+  /**
+   * Optional free-text shown on the listing request form (e.g. "12\" @ 300 DPI").
+   * Paired with {@link itemMinArtworkLongEdgePx} when set.
+   */
+  itemImageRequirementLabel  String?  @db.VarChar(400)
+  /**
+   * When set, listing artwork (longest edge, pixels) must be at least this value for print quality / DPI.
+   * Null = no client/server dimension check.
+   */
+  itemMinArtworkLongEdgePx     Int?
   catalogTags           AdminCatalogItemTag[]
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

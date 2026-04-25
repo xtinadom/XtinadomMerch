@@ -10,7 +10,9 @@ import {
   adminUpdateCatalogItem,
 } from "@/actions/admin-catalog-items";
 import { dollarsStringFromCents, validateItemLevelWhenNoVariants } from "@/lib/admin-catalog-item";
+import { AdminCatalogArtworkRequirementFields } from "@/components/admin/AdminCatalogArtworkRequirementFields";
 import { AdminCatalogItemLevelFields } from "@/components/admin/AdminCatalogItemLevelFields";
+import { parseAdminCatalogArtworkRequirement } from "@/lib/admin-catalog-item";
 
 export type AdminListItemTag = {
   id: string;
@@ -25,6 +27,8 @@ export type AdminListItemSerializable = {
   itemExampleListingUrl: string | null;
   itemMinPriceCents: number;
   itemGoodsServicesCostCents: number;
+  itemImageRequirementLabel: string | null;
+  itemMinArtworkLongEdgePx: number | null;
   tags: AdminListItemTag[];
 };
 
@@ -212,6 +216,8 @@ export function AdminListItemsPanel({
   const [editItemExampleListingUrl, setEditItemExampleListingUrl] = useState("");
   const [editItemMinPriceDollars, setEditItemMinPriceDollars] = useState("");
   const [editItemGoodsServicesCostDollars, setEditItemGoodsServicesCostDollars] = useState("");
+  const [editItemImageRequirementLabel, setEditItemImageRequirementLabel] = useState("");
+  const [editItemMinArtworkLongEdgePx, setEditItemMinArtworkLongEdgePx] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [deletePending, startDeleteTransition] = useTransition();
@@ -263,6 +269,10 @@ export function AdminListItemsPanel({
     setEditItemExampleListingUrl(item.itemExampleListingUrl ?? "");
     setEditItemMinPriceDollars(dollarsStringFromCents(item.itemMinPriceCents));
     setEditItemGoodsServicesCostDollars(dollarsStringFromCents(item.itemGoodsServicesCostCents));
+    setEditItemImageRequirementLabel(item.itemImageRequirementLabel ?? "");
+    setEditItemMinArtworkLongEdgePx(
+      item.itemMinArtworkLongEdgePx != null ? String(item.itemMinArtworkLongEdgePx) : "",
+    );
     setEditError(null);
     setEditingId(itemId);
   }
@@ -273,6 +283,8 @@ export function AdminListItemsPanel({
     setEditItemExampleListingUrl("");
     setEditItemMinPriceDollars("");
     setEditItemGoodsServicesCostDollars("");
+    setEditItemImageRequirementLabel("");
+    setEditItemMinArtworkLongEdgePx("");
     setEditError(null);
   }
 
@@ -294,12 +306,22 @@ export function AdminListItemsPanel({
       setEditError(itemLevel.error);
       return;
     }
+    const ar = parseAdminCatalogArtworkRequirement(
+      editItemImageRequirementLabel,
+      editItemMinArtworkLongEdgePx,
+    );
+    if (!ar.ok) {
+      setEditError(ar.error);
+      return;
+    }
     const fd = new FormData();
     fd.set("itemId", editingId);
     fd.set("itemName", name);
     fd.set("itemExampleListingUrl", editItemExampleListingUrl);
     fd.set("itemMinPriceDollars", editItemMinPriceDollars);
     fd.set("itemGoodsServicesCostDollars", editItemGoodsServicesCostDollars);
+    fd.set("itemImageRequirementLabel", editItemImageRequirementLabel);
+    fd.set("itemMinArtworkLongEdgePx", editItemMinArtworkLongEdgePx);
     startTransition(async () => {
       await adminUpdateCatalogItem(fd);
       cancelEdit();
@@ -336,6 +358,12 @@ export function AdminListItemsPanel({
               onChangeExampleListingUrl={setEditItemExampleListingUrl}
               onChangeMinPriceDollars={setEditItemMinPriceDollars}
               onChangeGoodsServicesCostDollars={setEditItemGoodsServicesCostDollars}
+            />
+            <AdminCatalogArtworkRequirementFields
+              imageRequirementLabel={editItemImageRequirementLabel}
+              minLongEdgePx={editItemMinArtworkLongEdgePx}
+              onChangeImageRequirementLabel={setEditItemImageRequirementLabel}
+              onChangeMinLongEdgePx={setEditItemMinArtworkLongEdgePx}
             />
             {editError ? (
               <p className="text-xs text-amber-200/90" role="alert">
@@ -380,6 +408,7 @@ export function AdminListItemsPanel({
                 G/S cost
               </th>
               <th className="p-3 font-medium whitespace-nowrap">Min price</th>
+              <th className="p-3 font-medium max-w-[12rem]">Artwork / DPI</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800/90 text-zinc-300">
@@ -419,6 +448,18 @@ export function AdminListItemsPanel({
                 </td>
                 <td className="p-3 whitespace-nowrap tabular-nums text-zinc-400">
                   {minPriceDisplayText(item.itemMinPriceCents, item.itemExampleListingUrl ?? "")}
+                </td>
+                <td className="max-w-[12rem] p-3 align-top text-zinc-400">
+                  {item.itemMinArtworkLongEdgePx != null && item.itemMinArtworkLongEdgePx > 0 ? (
+                    <div className="text-[11px] leading-relaxed">
+                      {item.itemImageRequirementLabel?.trim() ? (
+                        <p className="text-zinc-300">{item.itemImageRequirementLabel.trim()}</p>
+                      ) : null}
+                      <p className="mt-0.5 tabular-nums text-zinc-500">Min long edge: {item.itemMinArtworkLongEdgePx}px</p>
+                    </div>
+                  ) : (
+                    <span className="text-zinc-600">—</span>
+                  )}
                 </td>
               </tr>
             ))}

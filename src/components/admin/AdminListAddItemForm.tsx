@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { adminAddCatalogItem } from "@/actions/admin-catalog-items";
-import { validateItemLevelWhenNoVariants } from "@/lib/admin-catalog-item";
+import { AdminCatalogArtworkRequirementFields } from "@/components/admin/AdminCatalogArtworkRequirementFields";
 import { AdminCatalogItemLevelFields } from "@/components/admin/AdminCatalogItemLevelFields";
+import { parseAdminCatalogArtworkRequirement, validateItemLevelWhenNoVariants } from "@/lib/admin-catalog-item";
 
 export function AdminListAddItemForm() {
   const router = useRouter();
@@ -13,6 +14,8 @@ export function AdminListAddItemForm() {
   const [itemExampleListingUrl, setItemExampleListingUrl] = useState("");
   const [itemMinPriceDollars, setItemMinPriceDollars] = useState("");
   const [itemGoodsServicesCostDollars, setItemGoodsServicesCostDollars] = useState("");
+  const [itemImageRequirementLabel, setItemImageRequirementLabel] = useState("");
+  const [itemMinArtworkLongEdgePx, setItemMinArtworkLongEdgePx] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   function submit(e: React.FormEvent) {
@@ -32,12 +35,19 @@ export function AdminListAddItemForm() {
       setError(itemLevel.error);
       return;
     }
+    const ar = parseAdminCatalogArtworkRequirement(itemImageRequirementLabel, itemMinArtworkLongEdgePx);
+    if (!ar.ok) {
+      setError(ar.error);
+      return;
+    }
 
     const fd = new FormData();
     fd.set("itemName", name);
     fd.set("itemExampleListingUrl", itemExampleListingUrl);
     fd.set("itemMinPriceDollars", itemMinPriceDollars);
     fd.set("itemGoodsServicesCostDollars", itemGoodsServicesCostDollars);
+    fd.set("itemImageRequirementLabel", itemImageRequirementLabel);
+    fd.set("itemMinArtworkLongEdgePx", itemMinArtworkLongEdgePx);
 
     startTransition(async () => {
       await adminAddCatalogItem(fd);
@@ -45,6 +55,8 @@ export function AdminListAddItemForm() {
       setItemExampleListingUrl("");
       setItemMinPriceDollars("");
       setItemGoodsServicesCostDollars("");
+      setItemImageRequirementLabel("");
+      setItemMinArtworkLongEdgePx("");
       router.refresh();
     });
   }
@@ -76,6 +88,12 @@ export function AdminListAddItemForm() {
           onChangeExampleListingUrl={setItemExampleListingUrl}
           onChangeMinPriceDollars={setItemMinPriceDollars}
           onChangeGoodsServicesCostDollars={setItemGoodsServicesCostDollars}
+        />
+        <AdminCatalogArtworkRequirementFields
+          imageRequirementLabel={itemImageRequirementLabel}
+          minLongEdgePx={itemMinArtworkLongEdgePx}
+          onChangeImageRequirementLabel={setItemImageRequirementLabel}
+          onChangeMinLongEdgePx={setItemMinArtworkLongEdgePx}
         />
 
         {error ? (

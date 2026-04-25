@@ -37,6 +37,7 @@ import {
   type BaselineStubPick,
 } from "@/lib/shop-baseline-stub-product";
 import { downgradeSubmittedToDraftIfListingFeeUnpaid } from "@/lib/listing-fee";
+import { longEdgeLengthPxFromImageBuffer } from "@/lib/artwork-image-dimensions";
 import { syncProductTagsForNewBaselineListing } from "@/lib/baseline-listing-product-tags-sync";
 
 const WELCOME_MAX = 280;
@@ -212,10 +213,12 @@ export async function submitFirstListingSetup(
     };
   }
 
-  const existingListingCount = await prisma.shopListing.count({
-    where: { shopId: shop.id },
+  // Publication fees are based on *requests submitted*, not approvals.
+  // Drafts do not count toward the free-slot ordinal.
+  const existingSubmittedRequestCount = await prisma.shopListing.count({
+    where: { shopId: shop.id, requestStatus: { not: ListingRequestStatus.draft } },
   });
-  const nextListingOrdinal = existingListingCount + 1;
+  const nextListingOrdinal = existingSubmittedRequestCount + 1;
   const publicationFeeCentsForRequest = listingFeeCentsForOrdinal(
     nextListingOrdinal,
     shop.slug,
@@ -336,6 +339,32 @@ export async function submitFirstListingSetup(
   }
 
   const rawBuf = Buffer.from(await file.arrayBuffer());
+
+  if (baselinePick) {
+    const adminItem = await prisma.adminCatalogItem.findUnique({
+      where: { id: baselinePick.itemId },
+      select: { itemMinArtworkLongEdgePx: true, itemImageRequirementLabel: true },
+    });
+    if (adminItem?.itemMinArtworkLongEdgePx != null && adminItem.itemMinArtworkLongEdgePx > 0) {
+      const longEdge = await longEdgeLengthPxFromImageBuffer(rawBuf);
+      if (longEdge == null) {
+        return {
+          ok: false,
+          error: "Could not read image dimensions. Use a valid PNG or JPEG file.",
+        };
+      }
+      if (longEdge < adminItem.itemMinArtworkLongEdgePx) {
+        const note = adminItem.itemImageRequirementLabel?.trim();
+        return {
+          ok: false,
+          error: note
+            ? `This artwork does not meet the minimum resolution for this item (${note}). Longest edge is ${longEdge}px; at least ${adminItem.itemMinArtworkLongEdgePx}px is required.`
+            : `This artwork is too small. Longest edge is ${longEdge}px; this item requires at least ${adminItem.itemMinArtworkLongEdgePx}px on the longest edge.`,
+        };
+      }
+    }
+  }
+
   const webp = await compressShopListingArtworkWebp(rawBuf);
   if (!webp) {
     return {

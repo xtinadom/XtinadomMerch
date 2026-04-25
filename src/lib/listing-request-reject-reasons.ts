@@ -17,8 +17,8 @@ export function listingRejectionNoticeDetail(
   switch (reason) {
     case "regulations":
       return regulationsUrl
-        ? `Reason: Does not meet item regulations. Review requirements here: ${regulationsUrl}`
-        : "Reason: Does not meet item regulations. Review the shop regulations on the site before resubmitting.";
+        ? `Reason: Goes against item regulations. Review requirements [here](${regulationsUrl}).`
+        : "Reason: Goes against item regulations. Review the shop regulations on the site before resubmitting.";
     case "artwork":
       return "Reason: Artwork or file does not meet print-ready requirements (resolution, format, or content guidelines).";
     case "other":

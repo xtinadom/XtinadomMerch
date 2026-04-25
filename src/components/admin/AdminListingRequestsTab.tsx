@@ -409,9 +409,8 @@ function adminQueueStatusChipClass(status: ListingRequestStatus): string {
   switch (status) {
     case ListingRequestStatus.images_ok:
       return "bg-emerald-950/55 text-emerald-100 ring-2 ring-emerald-500/50 shadow-[0_0_14px_-5px_rgba(52,211,153,0.5)]";
-    case ListingRequestStatus.printify_item_created:
-      return "bg-violet-950/45 text-violet-100 ring-1 ring-violet-700/50";
     case ListingRequestStatus.submitted:
+    case ListingRequestStatus.printify_item_created:
       return "bg-amber-950/35 text-amber-100/95 ring-1 ring-amber-800/50";
     case ListingRequestStatus.approved:
       return "bg-emerald-950/40 text-emerald-100 ring-1 ring-emerald-800/50";

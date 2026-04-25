@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAdminSessionReadonly } from "@/lib/session";
-import { validateItemLevelWhenNoVariants } from "@/lib/admin-catalog-item";
+import {
+  parseAdminCatalogArtworkRequirement,
+  validateItemLevelWhenNoVariants,
+} from "@/lib/admin-catalog-item";
 import { syncProductTagsFromAdminCatalogItemId } from "@/lib/baseline-listing-product-tags-sync";
 
 const EMPTY_VARIANTS_JSON = [] as unknown as Prisma.InputJsonValue;
@@ -16,18 +19,32 @@ async function requireAdmin() {
 }
 
 function itemLevelFromFormWhenNoVariants(formData: FormData):
-  | { ok: true; itemExampleListingUrl: string | null; itemMinPriceCents: number; itemGoodsServicesCostCents: number }
+  | {
+      ok: true;
+      itemExampleListingUrl: string | null;
+      itemMinPriceCents: number;
+      itemGoodsServicesCostCents: number;
+      itemImageRequirementLabel: string | null;
+      itemMinArtworkLongEdgePx: number | null;
+    }
   | { ok: false } {
   const itemEx = String(formData.get("itemExampleListingUrl") ?? "");
   const itemPrice = String(formData.get("itemMinPriceDollars") ?? "");
   const itemGs = String(formData.get("itemGoodsServicesCostDollars") ?? "");
   const v = validateItemLevelWhenNoVariants(itemEx, itemPrice, itemGs);
   if (!v.ok) return { ok: false };
+  const ar = parseAdminCatalogArtworkRequirement(
+    String(formData.get("itemImageRequirementLabel") ?? ""),
+    String(formData.get("itemMinArtworkLongEdgePx") ?? ""),
+  );
+  if (!ar.ok) return { ok: false };
   return {
     ok: true,
     itemExampleListingUrl: v.exampleListingUrl,
     itemMinPriceCents: v.minPriceCents,
     itemGoodsServicesCostCents: v.itemGoodsServicesCostCents,
+    itemImageRequirementLabel: ar.itemImageRequirementLabel,
+    itemMinArtworkLongEdgePx: ar.itemMinArtworkLongEdgePx,
   };
 }
 
@@ -51,6 +68,8 @@ export async function adminAddCatalogItem(formData: FormData) {
       itemExampleListingUrl: itemLevel.itemExampleListingUrl,
       itemMinPriceCents: itemLevel.itemMinPriceCents,
       itemGoodsServicesCostCents: itemLevel.itemGoodsServicesCostCents,
+      itemImageRequirementLabel: itemLevel.itemImageRequirementLabel,
+      itemMinArtworkLongEdgePx: itemLevel.itemMinArtworkLongEdgePx,
     },
   });
   revalidateAdminViews();
@@ -74,6 +93,8 @@ export async function adminUpdateCatalogItem(formData: FormData) {
       itemExampleListingUrl: itemLevel.itemExampleListingUrl,
       itemMinPriceCents: itemLevel.itemMinPriceCents,
       itemGoodsServicesCostCents: itemLevel.itemGoodsServicesCostCents,
+      itemImageRequirementLabel: itemLevel.itemImageRequirementLabel,
+      itemMinArtworkLongEdgePx: itemLevel.itemMinArtworkLongEdgePx,
     },
   });
   if ((n?.count ?? 0) === 0) return;

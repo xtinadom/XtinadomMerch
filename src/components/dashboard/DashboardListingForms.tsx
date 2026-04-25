@@ -9,7 +9,6 @@ import {
   useRef,
   useState,
   useTransition,
-  type ReactNode,
 } from "react";
 import type { Prisma } from "@/generated/prisma/client";
 import { FulfillmentType } from "@/generated/prisma/enums";
@@ -28,7 +27,10 @@ import {
   parseListingPrintifyVariantPrices,
 } from "@/lib/listing-printify-variant-prices";
 import { printifyVariantShopFloorCents } from "@/lib/listing-cart-price";
-import { shopListingMaxPriceUsdLabel } from "@/lib/marketplace-constants";
+import {
+  SHOP_LISTING_MAX_PRICE_CENTS,
+  shopListingMaxPriceUsdLabel,
+} from "@/lib/marketplace-constants";
 import { expectedShopProfitMerchandiseUnitCents } from "@/lib/marketplace-fee";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 
@@ -42,6 +44,16 @@ const savingSave =
   "cursor-wait rounded bg-zinc-800/80 px-3 py-1 text-xs font-medium text-zinc-300";
 const savedSave =
   "cursor-default rounded border border-emerald-900/40 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-emerald-300/90";
+
+/** Matches {@link DashboardListingItemNameForm} input (`py-1.5 text-sm`). */
+const disabledSaveItemName =
+  "cursor-not-allowed rounded border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-sm font-medium text-zinc-500";
+const activeSaveItemName =
+  "rounded border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 hover:bg-zinc-700";
+const savingSaveItemName =
+  "cursor-wait rounded border border-zinc-600 bg-zinc-800/80 px-3 py-1.5 text-sm font-medium text-zinc-300";
+const savedSaveItemName =
+  "cursor-default rounded border border-emerald-900/40 bg-zinc-900/50 px-3 py-1.5 text-sm font-medium text-emerald-300/90";
 
 function effectiveItemDisplayName(
   requestItemName: string | null | undefined,
@@ -107,18 +119,25 @@ export function DashboardListingItemNameForm({
 
   const label = pending ? "Saving..." : savedFlash && !dirty ? "Saved" : "Save name";
   const btnClass = pending
-    ? savingSave
+    ? savingSaveItemName
     : !dirty
       ? savedFlash
-        ? savedSave
-        : disabledSave
-      : activeSave;
+        ? savedSaveItemName
+        : disabledSaveItemName
+      : activeSaveItemName;
 
   if (readOnly) {
+    const cat = catalogProductName.trim();
+    const primary = initial.trim();
+    const showCatalogSuffix = cat.length > 0 && cat !== primary;
     return (
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-zinc-500">Item name</p>
-        <p className="mt-1 text-sm font-medium text-zinc-200">{initial}</p>
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <p className="text-sm font-medium text-zinc-200">{initial}</p>
+          {showCatalogSuffix ? (
+            <span className="text-xs text-zinc-500">{catalogProductName}</span>
+          ) : null}
+        </div>
       </div>
     );
   }
@@ -168,19 +187,6 @@ function variantDollarsStableKey(obj: Record<string, string>): string {
   const sorted: Record<string, string> = {};
   for (const k of keys) sorted[k] = obj[k] ?? "";
   return JSON.stringify(sorted);
-}
-
-function printifyListingIntentHint(
-  _product: PriceFormProps["product"],
-  eachOptionSentence: boolean,
-): ReactNode {
-  return (
-    <p className="text-[11px] leading-relaxed text-zinc-600">
-      This is one listing in your shop for this item. Printify options (such as size) are part of this same listing,
-      not separate products.
-      {eachOptionSentence ? " Set your price for each option below." : null}
-    </p>
-  );
 }
 
 function formatUsdFromCents(cents: number): string {
@@ -339,8 +345,6 @@ export function DashboardListingPriceForm({
   if (readOnly && multiVariantPricing) {
     return (
       <div className="mt-3 space-y-2">
-        {printifyListingIntentHint(product, true)}
-        <p className="text-xs text-zinc-500">Your price (USD)</p>
         {printifyVariants.map((v) => {
           const cents =
             parseListingPrintifyVariantPrices(listingPrintifyVariantPrices)?.[v.id] ??
@@ -354,9 +358,7 @@ export function DashboardListingPriceForm({
                 <span className="text-zinc-500">{v.title}: </span>
                 <span className="font-mono">{(cents / 100).toFixed(2)}</span>
               </p>
-              {profitLine ? (
-                <p className="text-[11px] text-blue-400/90">{profitLine}</p>
-              ) : null}
+              <p className="text-[11px] text-blue-400/90">{profitLine ?? "Est. profit: —"}</p>
             </div>
           );
         })}
@@ -365,31 +367,13 @@ export function DashboardListingPriceForm({
   }
 
   if (readOnly) {
-    const vs = printifyVariants;
-    const floor =
-      vs.length === 0
-        ? product.minPriceCents > 0
-          ? product.minPriceCents
-          : product.priceCents
-        : printifyVariantShopFloorCents(product, vs[0]!.priceCents);
-    const vid = vs[0]?.id;
-    const gs = vid != null ? (goodsServicesUnitCentsByPrintifyVariantId[vid] ?? 0) : 0;
-    const profitLine = listingEstProfitLine(price, floor, gs);
-    return (
-      <div className="mt-3">
-        {printifyListingIntentHint(product, false)}
-        <p className="text-xs text-zinc-500">Your price (USD)</p>
-        <p className="mt-1 font-mono text-sm text-zinc-200">{price}</p>
-        {profitLine ? <p className="mt-1 text-[11px] text-blue-400/90">{profitLine}</p> : null}
-      </div>
-    );
+    return null;
   }
 
   if (multiVariantPricing) {
     return (
       <form onSubmit={onSubmitMulti} className="mt-3 space-y-3">
         <input type="hidden" name="listingId" value={listingId} />
-        {printifyListingIntentHint(product, true)}
         <p className="text-[11px] text-zinc-600">Maximum {shopListingMaxPriceUsdLabel()} per option.</p>
         <p className="text-xs text-zinc-500">Your price (USD) — each option</p>
         <ul className="space-y-2">
@@ -412,9 +396,7 @@ export function DashboardListingPriceForm({
                     className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-sm text-zinc-200"
                   />
                 </label>
-                {profitLine ? (
-                  <p className="text-[11px] text-blue-400/90">{profitLine}</p>
-                ) : null}
+                <p className="text-[11px] text-blue-400/90">{profitLine ?? "Est. profit: —"}</p>
               </li>
             );
           })}
@@ -431,28 +413,34 @@ export function DashboardListingPriceForm({
     );
   }
 
+  const enteredListPriceCents = (() => {
+    const parsed = parseFloat(price.replace(/[^0-9.]/g, ""));
+    if (!Number.isFinite(parsed) || parsed <= 0) return null;
+    return Math.round(parsed * 100);
+  })();
+  const showMaxListPriceCapHint =
+    enteredListPriceCents != null && enteredListPriceCents > SHOP_LISTING_MAX_PRICE_CENTS;
+
   return (
     <form onSubmit={onSubmitSingle} className="mt-3 space-y-2">
-      {printifyListingIntentHint(product, false)}
-      <p className="text-[11px] text-zinc-600">Maximum list price {shopListingMaxPriceUsdLabel()} per listing.</p>
       <div className="flex flex-wrap items-end gap-2">
-      <input type="hidden" name="listingId" value={listingId} />
-      <label className="text-xs text-zinc-500">
-        Your price (USD)
-        <input
-          type="text"
-          name="priceDollars"
-          value={price}
-          onChange={(ev) => {
-            setSaveError(null);
-            setPrice(ev.target.value);
-          }}
-          className="ml-2 w-28 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-zinc-200"
-        />
-      </label>
-      <button type="submit" disabled={!dirty || pending} className={btnClass}>
-        {label}
-      </button>
+        <input type="hidden" name="listingId" value={listingId} />
+        <label className="text-xs text-zinc-500">
+          Your price (USD)
+          <input
+            type="text"
+            name="priceDollars"
+            value={price}
+            onChange={(ev) => {
+              setSaveError(null);
+              setPrice(ev.target.value);
+            }}
+            className="ml-2 w-28 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-zinc-200"
+          />
+        </label>
+        <button type="submit" disabled={!dirty || pending} className={btnClass}>
+          {label}
+        </button>
       </div>
       {(() => {
         const vs = printifyVariants;
@@ -465,10 +453,13 @@ export function DashboardListingPriceForm({
         const vid = vs[0]?.id;
         const gs = vid != null ? (goodsServicesUnitCentsByPrintifyVariantId[vid] ?? 0) : 0;
         const profitLine = listingEstProfitLine(price, floor, gs);
-        return profitLine ? (
-          <p className="text-[11px] text-blue-400/90">{profitLine}</p>
-        ) : null;
+        return (
+          <p className="text-[11px] text-blue-400/90">{profitLine ?? "Est. profit: —"}</p>
+        );
       })()}
+      {showMaxListPriceCapHint ? (
+        <p className="text-[11px] text-zinc-600">Maximum list price {shopListingMaxPriceUsdLabel()} per listing.</p>
+      ) : null}
       {saveError ? (
         <p className="text-xs leading-snug text-red-300/90" role="alert">
           {saveError}
@@ -711,10 +702,11 @@ export function DashboardListingSupplementPhotoForm({
 
   return (
     <div className="mt-4 border-t border-zinc-800 pt-4">
-      <p className="text-xs font-medium text-zinc-500">Extra storefront photo (optional)</p>
+      <p className="text-xs font-medium text-zinc-500">Custom primary image (optional)</p>
       <p className="mt-1 text-[11px] text-zinc-600">
-        One image per listing, compressed to about 100 KiB. It is added after the main product
-        images from the catalog and platform admin. You cannot remove or replace those images here.
+        {
+          'One custom image per listing. We recommend a "context" photo, with the product photoshopped into a scene.'
+        }
       </p>
       {ownerSupplementImageUrl ? (
         <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -868,10 +860,21 @@ export function ListingStorefrontCatalogImagesForms({
       ? `${savedSave} w-full text-left sm:w-auto`
       : "w-full rounded border border-zinc-700/80 bg-transparent px-2 py-1.5 text-left text-[11px] text-zinc-500 hover:border-zinc-600 hover:text-zinc-300 sm:w-auto";
 
+  if (catalogUrls.length === 0) {
+    return (
+      <div className="mt-4 border-t border-zinc-800 pt-4">
+        <p className="text-xs font-medium text-zinc-500">Storefront catalog images</p>
+        <p className="mt-1 text-[11px] text-zinc-600">
+          Only one catalog image is available; it always appears on your product page.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-4 border-t border-zinc-800 pt-4">
-      <p className="sr-only">Storefront catalog images — toggle which photos appear on your public product page.</p>
-      <form onSubmit={handleSubset} className="space-y-3">
+      <p className="text-xs font-medium text-zinc-500">Storefront catalog images</p>
+      <form onSubmit={handleSubset} className="mt-2 space-y-3">
         <input type="hidden" name="listingId" value={listingId} />
         <input type="hidden" name="mode" value="subset" />
         <div className="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(5rem,1fr))]">

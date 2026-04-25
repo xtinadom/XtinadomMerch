@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
 import { submitFirstListingSetup, type ShopSetupActionResult } from "@/actions/dashboard-shop-setup";
+import { ItemGuidelinesPopup } from "@/components/ItemGuidelinesPopup";
+import { ListingSlotPromoRedeemForm } from "@/components/dashboard/ListingSlotPromoRedeemForm";
 import { flattenShopBaselineCatalogGroups, type ShopSetupCatalogGroup } from "@/lib/shop-baseline-catalog";
 import type { DraftListingRequestPrefillPayload } from "@/lib/shop-baseline-draft-prefill";
 import { SHOP_LISTING_MAX_PRICE_CENTS, shopListingMaxPriceUsdLabel } from "@/lib/marketplace-constants";
@@ -102,6 +104,8 @@ export function ShopFirstListingRequestPanel(props: {
   const [listingRequestItemName, setListingRequestItemName] = useState("");
   const [listingHasFile, setListingHasFile] = useState(false);
   const [listingArtworkPreviewUrl, setListingArtworkPreviewUrl] = useState<string | null>(null);
+  const [listingArtworkPixels, setListingArtworkPixels] = useState<{ w: number; h: number } | null>(null);
+  const [listingArtworkMeasureError, setListingArtworkMeasureError] = useState<string | null>(null);
   const [listingSavedFlash, setListingSavedFlash] = useState(false);
   const listingFileRef = useRef<HTMLInputElement>(null);
   const prefillAppliedListingIdRef = useRef<string | null>(null);
@@ -109,6 +113,8 @@ export function ShopFirstListingRequestPanel(props: {
   const [attestationOpen, setAttestationOpen] = useState(false);
   const [attestationChecked, setAttestationChecked] = useState(false);
   const [feeChargeConsentChecked, setFeeChargeConsentChecked] = useState(false);
+  const [guidelinesOpen, setGuidelinesOpen] = useState(false);
+  const listingRequestFormId = useId();
 
   useEffect(() => {
     if (attestationOpen) {
@@ -119,6 +125,7 @@ export function ShopFirstListingRequestPanel(props: {
 
   const publicationFeeConsentRequired = Boolean(publicationFeeLabel?.trim());
   const feeConsentOk = !publicationFeeConsentRequired || feeChargeConsentChecked;
+  const feeStripeConnectOk = !publicationFeeConsentRequired || stripeConnectReadyForPaidListings;
 
   const catalogOptions = useMemo(
     () => flattenShopBaselineCatalogGroups(catalogGroups),
@@ -126,8 +133,27 @@ export function ShopFirstListingRequestPanel(props: {
   );
 
   useEffect(() => {
-    if (!listingArtworkPreviewUrl) return;
+    if (!listingArtworkPreviewUrl) {
+      setListingArtworkPixels(null);
+      setListingArtworkMeasureError(null);
+      return;
+    }
+    setListingArtworkMeasureError(null);
+    setListingArtworkPixels(null);
+    const img = new Image();
+    img.onload = () => {
+      setListingArtworkPixels({ w: img.naturalWidth, h: img.naturalHeight });
+    };
+    img.onerror = () => {
+      setListingArtworkPixels(null);
+      setListingArtworkMeasureError(
+        "Could not read this image. Use a PNG or JPEG the browser can open.",
+      );
+    };
+    img.src = listingArtworkPreviewUrl;
     return () => {
+      img.onload = null;
+      img.onerror = null;
       URL.revokeObjectURL(listingArtworkPreviewUrl);
     };
   }, [listingArtworkPreviewUrl]);
@@ -198,6 +224,13 @@ export function ShopFirstListingRequestPanel(props: {
     return cents >= o.minPriceCents && cents <= SHOP_LISTING_MAX_PRICE_CENTS;
   }, [listingProductId, catalogOptions, listingPrice]);
 
+  /** True while the field value parses above the platform max (before blur clamps). */
+  const listingPriceOverMax = useMemo(() => {
+    const parsed = parseFloat(listingPrice.replace(/[^0-9.]/g, ""));
+    if (!Number.isFinite(parsed) || parsed <= 0) return false;
+    return Math.round(parsed * 100) > SHOP_LISTING_MAX_PRICE_CENTS;
+  }, [listingPrice]);
+
   async function handleListingSubmit(fd: FormData) {
     setMessage(null);
     startListingTransition(async () => {
@@ -225,20 +258,48 @@ export function ShopFirstListingRequestPanel(props: {
   }
 
   const listingRequestItemNameOk = listingRequestItemName.trim().length > 0;
+  const minArtworkLongEdge = selectedCatalogGroup?.option.minArtworkLongEdgePx ?? null;
+  const needsArtworkResolutionCheck = Boolean(
+    minArtworkLongEdge && minArtworkLongEdge > 0 && listingHasFile,
+  );
+  const artworkLongEdge = listingArtworkPixels
+    ? Math.max(listingArtworkPixels.w, listingArtworkPixels.h)
+    : null;
+  const listingArtworkResolutionError = (() => {
+    if (listingArtworkMeasureError) return listingArtworkMeasureError;
+    if (!needsArtworkResolutionCheck) return null;
+    if (artworkLongEdge == null) return null;
+    if (minArtworkLongEdge != null && minArtworkLongEdge > 0 && artworkLongEdge < minArtworkLongEdge) {
+      const note = selectedCatalogGroup?.option.imageRequirementLabel?.trim();
+      return `This file does not meet the minimum resolution for this item. Longest edge is ${artworkLongEdge}px; at least ${minArtworkLongEdge}px is required${note ? ` (${note})` : ""}.`;
+    }
+    return null;
+  })();
+  const listingArtworkResolutionPending =
+    needsArtworkResolutionCheck && artworkLongEdge == null && !listingArtworkMeasureError;
+
   const listingCanSubmit =
     Boolean(listingProductId) &&
     listingPriceMeetsMinimum &&
     listingRequestItemNameOk &&
-    listingHasFile;
+    listingHasFile &&
+    !listingArtworkResolutionError &&
+    !listingArtworkResolutionPending;
+  /** Form fields complete and Stripe ready when a publication fee would apply. */
+  const listingFormReady = listingCanSubmit && feeStripeConnectOk;
   const listingSubmitSubmittedFlash =
     listingSavedFlash && !listingCanSubmit && !isListingPending;
   const listingBtnClass = isListingPending
     ? btnPrimarySaving
-    : !listingCanSubmit
+    : !listingFormReady
       ? listingSavedFlash
         ? btnPrimarySaved
         : btnPrimaryDisabled
       : btnPrimary;
+  const isListingFormSubmitDisabled = !listingFormReady || isListingPending;
+  /** Lock catalog + listing fields when a fee applies but Stripe Connect is not ready, or while submitting. */
+  const freezeListingRequestFields =
+    isListingPending || (publicationFeeConsentRequired && !stripeConnectReadyForPaidListings);
 
   return (
     <div
@@ -251,17 +312,9 @@ export function ShopFirstListingRequestPanel(props: {
             Your draft listing is selected below — confirm prices and upload artwork to submit for review.
           </p>
         ) : null}
-        {publicationFeeConsentRequired && !stripeConnectReadyForPaidListings ? (
-          <p className="mt-2 rounded-lg border border-amber-900/45 bg-amber-950/25 px-3 py-2 text-xs text-amber-200/90">
-            This listing has a publication fee. Finish{" "}
-            <Link href="/dashboard?dash=setup" className="text-amber-100 underline-offset-2 hover:underline">
-              Stripe Connect
-            </Link>{" "}
-            on the Onboarding tab (charges and payouts enabled) before you can submit — you will also see a notice in
-            your Notifications tab.
-          </p>
-        ) : null}
       </div>
+
+      <ListingSlotPromoRedeemForm />
 
       {catalogGroups.length === 0 ? (
         <p className="text-xs text-amber-200/80">
@@ -290,22 +343,33 @@ export function ShopFirstListingRequestPanel(props: {
           R2 uploads are not configured — artwork upload is unavailable until the operator sets R2 keys.
         </p>
       ) : (
-        <form
-          className="space-y-4"
-          encType="multipart/form-data"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!listingCanSubmit || isListingPending) return;
-            const fd = new FormData();
-            fd.set("productId", listingProductId);
-            fd.set("listingPriceDollars", listingPrice);
-            fd.set("requestItemName", listingRequestItemName.trim());
-            const art = listingFileRef.current?.files?.[0];
-            if (art) fd.set("listingArtwork", art);
-            pendingListingFdRef.current = fd;
-            setAttestationOpen(true);
-          }}
-        >
+        <>
+          {publicationFeeConsentRequired && !stripeConnectReadyForPaidListings ? (
+            <p className="mt-2 rounded-lg border border-amber-900/45 bg-amber-950/25 px-3 py-2 text-xs text-amber-200/90">
+              Your next listing has a publication fee. Finish{" "}
+              <Link href="/dashboard?dash=setup" className="text-amber-100 underline-offset-2 hover:underline">
+                Stripe Connect on the Onboarding tab
+              </Link>.
+            </p>
+          ) : null}
+          <form
+            id={listingRequestFormId}
+            className={`space-y-4${freezeListingRequestFields ? " pointer-events-none opacity-45" : ""}`}
+            encType="multipart/form-data"
+            inert={freezeListingRequestFields ? true : undefined}
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!listingFormReady || isListingPending) return;
+              const fd = new FormData();
+              fd.set("productId", listingProductId);
+              fd.set("listingPriceDollars", listingPrice);
+              fd.set("requestItemName", listingRequestItemName.trim());
+              const art = listingFileRef.current?.files?.[0];
+              if (art) fd.set("listingArtwork", art);
+              pendingListingFdRef.current = fd;
+              setAttestationOpen(true);
+            }}
+          >
           <div>
             <p className="text-xs font-medium text-zinc-400">Item Catalogue</p>
             <p className="mt-1 text-[11px] leading-relaxed text-zinc-600">
@@ -327,6 +391,7 @@ export function ShopFirstListingRequestPanel(props: {
                           name="catalogProductPick"
                           value={g.option.productId}
                           checked={selected}
+                          disabled={freezeListingRequestFields}
                           onChange={() => setListingProductId(g.option.productId)}
                           className="shrink-0 border-zinc-600 bg-zinc-900 text-blue-600"
                         />
@@ -355,9 +420,10 @@ export function ShopFirstListingRequestPanel(props: {
               autoComplete="off"
               maxLength={120}
               value={listingRequestItemName}
+              disabled={freezeListingRequestFields}
               onChange={(e) => setListingRequestItemName(e.target.value)}
               placeholder="What you call this design or product"
-              className="mt-1 block w-full max-w-md rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600"
+              className="mt-1 block w-full max-w-md rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 disabled:cursor-not-allowed"
             />
           </label>
           {selectedCatalogGroup ? (
@@ -374,6 +440,7 @@ export function ShopFirstListingRequestPanel(props: {
                 inputMode="decimal"
                 autoComplete="off"
                 value={listingPrice}
+                disabled={freezeListingRequestFields}
                 onChange={(e) => setListingPrice(e.target.value)}
                 onBlur={() => {
                   const minC = selectedCatalogGroup.option.minPriceCents;
@@ -383,7 +450,7 @@ export function ShopFirstListingRequestPanel(props: {
                   if (cents > SHOP_LISTING_MAX_PRICE_CENTS) cents = SHOP_LISTING_MAX_PRICE_CENTS;
                   setListingPrice((cents / 100).toFixed(2));
                 }}
-                className="mt-1 block w-full max-w-xs rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100"
+                className="mt-1 block w-full max-w-xs rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100 disabled:cursor-not-allowed"
               />
               {(() => {
                 const h = listingProfitHint(
@@ -393,6 +460,11 @@ export function ShopFirstListingRequestPanel(props: {
                 );
                 return h ? <p className="mt-1.5 text-xs text-blue-400/90">{h}</p> : null;
               })()}
+              {listingPriceOverMax ? (
+                <p className="mt-1.5 text-xs text-amber-200/90" role="status">
+                  Maximum list price is {shopListingMaxPriceUsdLabel()} per item — lower the price to continue.
+                </p>
+              ) : null}
               <p className="mt-2 text-xs leading-relaxed text-zinc-600">
                 List prices must meet each line’s minimum and cannot exceed {shopListingMaxPriceUsdLabel()} per option.
                 Customers may add tips at checkout on eligible carts.
@@ -406,6 +478,7 @@ export function ShopFirstListingRequestPanel(props: {
               type="file"
               name="listingArtwork"
               accept="image/jpeg,image/png,image/webp"
+              disabled={freezeListingRequestFields}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 setListingHasFile(Boolean(file));
@@ -415,7 +488,7 @@ export function ShopFirstListingRequestPanel(props: {
                   setListingArtworkPreviewUrl(null);
                 }
               }}
-              className="mt-1 block w-full text-xs text-zinc-400 file:mr-2 file:rounded file:border-0 file:bg-zinc-800 file:px-2 file:py-1 file:text-zinc-200"
+              className="mt-1 block w-full text-xs text-zinc-400 file:mr-2 file:rounded file:border-0 file:bg-zinc-800 file:px-2 file:py-1 file:text-zinc-200 disabled:cursor-not-allowed"
             />
             {message ? (
               <p
@@ -438,12 +511,39 @@ export function ShopFirstListingRequestPanel(props: {
                   alt=""
                   className="max-h-40 max-w-full rounded-lg border border-zinc-700 bg-zinc-900 object-contain"
                 />
+                {selectedCatalogGroup &&
+                selectedCatalogGroup.option.minArtworkLongEdgePx != null &&
+                selectedCatalogGroup.option.minArtworkLongEdgePx > 0 ? (
+                  <p className="mt-1.5 text-[11px] text-zinc-500">
+                    {selectedCatalogGroup.option.imageRequirementLabel?.trim() ? (
+                      <span>
+                        {selectedCatalogGroup.option.imageRequirementLabel.trim()}{" "}
+                      </span>
+                    ) : null}
+                    Requires at least {selectedCatalogGroup.option.minArtworkLongEdgePx}px on the longest image edge.
+                    {artworkLongEdge != null ? (
+                      <span className="ml-1 tabular-nums text-zinc-400">
+                        (this file: {artworkLongEdge}px)
+                      </span>
+                    ) : null}
+                  </p>
+                ) : null}
+                {listingArtworkResolutionPending ? (
+                  <p className="mt-1.5 text-[11px] text-zinc-500">Reading image size…</p>
+                ) : null}
+                {listingArtworkResolutionError ? (
+                  <p className="mt-1.5 text-[11px] text-amber-200/90" role="alert">
+                    {listingArtworkResolutionError}
+                  </p>
+                ) : null}
               </div>
             ) : null}
           </label>
+          </form>
           <button
             type="submit"
-            disabled={!listingCanSubmit || isListingPending}
+            form={listingRequestFormId}
+            disabled={isListingFormSubmitDisabled}
             className={`inline-flex min-h-[2.5rem] items-center justify-center gap-2 ${listingBtnClass}`}
             aria-busy={isListingPending}
           >
@@ -472,10 +572,13 @@ export function ShopFirstListingRequestPanel(props: {
                 <span>Submitted</span>
               </>
             ) : (
-              <span>Submit for admin review</span>
+              <span>
+                Submit for review
+                {publicationFeeConsentRequired ? ` (${(publicationFeeLabel ?? "").trim()})` : ""}
+              </span>
             )}
           </button>
-        </form>
+        </>
       )}
 
       {attestationOpen ? (
@@ -504,7 +607,11 @@ export function ShopFirstListingRequestPanel(props: {
                 <Link
                   href="/dashboard?dash=itemGuidelines"
                   className="text-blue-400/90 underline underline-offset-2 hover:text-blue-300"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setGuidelinesOpen(true);
+                  }}
                 >
                   item guidelines
                 </Link>
@@ -537,11 +644,11 @@ export function ShopFirstListingRequestPanel(props: {
               </button>
               <button
                 type="button"
-                disabled={!attestationChecked || !feeConsentOk || isListingPending}
+                disabled={!attestationChecked || !feeConsentOk || !feeStripeConnectOk || isListingPending}
                 className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => {
                   const fd = pendingListingFdRef.current;
-                  if (!fd || !attestationChecked || !feeConsentOk) return;
+                  if (!fd || !attestationChecked || !feeConsentOk || !feeStripeConnectOk) return;
                   fd.set("guidelinesAttestation", "1");
                   if (publicationFeeConsentRequired) {
                     fd.set("feeChargeAttestation", "1");
@@ -551,12 +658,15 @@ export function ShopFirstListingRequestPanel(props: {
                   void handleListingSubmit(fd);
                 }}
               >
-                Submit for admin review
+                Submit for review
+                {publicationFeeConsentRequired ? ` (${(publicationFeeLabel ?? "").trim()})` : ""}
               </button>
             </div>
           </div>
         </div>
       ) : null}
+
+      <ItemGuidelinesPopup open={guidelinesOpen} onClose={() => setGuidelinesOpen(false)} />
     </div>
   );
 }

@@ -2,33 +2,64 @@
 
 import type { ReactNode } from "react";
 
-/** Renders notice copy with https URLs as links (same behavior as the notifications tab). */
+/** Inline `[here](url)` so only “here” is linked (e.g. listing rejection regulations line). */
 export function DashboardNoticeBody({ body, className }: { body: string; className?: string }) {
-  const parts = body.split(/(https?:\/\/[^\s]+)/g);
-  const nodes: ReactNode = parts.map((part, i) => {
-    if (/^https?:\/\//.test(part)) {
-      let label = part;
-      try {
-        const u = new URL(part);
-        if (u.pathname === "/shop-regulations" || u.pathname.endsWith("/shop-regulations")) {
-          label = "Shop regulations";
+  let keyCounter = 0;
+  const nextKey = () => `notice-${keyCounter++}`;
+
+  const linkifyPlainUrls = (text: string): ReactNode[] => {
+    const parts = text.split(/(https?:\/\/[^\s]+)/g);
+    return parts.map((part) => {
+      if (/^https?:\/\//.test(part)) {
+        let label = part;
+        try {
+          const u = new URL(part);
+          if (u.pathname === "/shop-regulations" || u.pathname.endsWith("/shop-regulations")) {
+            label = "Shop regulations";
+          }
+        } catch {
+          /* ignore */
         }
-      } catch {
-        /* ignore */
+        return (
+          <a
+            key={nextKey()}
+            href={part}
+            className="text-sky-400 underline underline-offset-2 hover:text-sky-300"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {label}
+          </a>
+        );
       }
-      return (
+      return <span key={nextKey()}>{part}</span>;
+    });
+  };
+
+  const linkifyHereMarkdown = (text: string): ReactNode[] => {
+    const out: ReactNode[] = [];
+    let last = 0;
+    const re = /\[here\]\((https?:\/\/[^)]+)\)/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      out.push(...linkifyPlainUrls(text.slice(last, m.index)));
+      out.push(
         <a
-          key={i}
-          href={part}
+          key={nextKey()}
+          href={m[1]}
           className="text-sky-400 underline underline-offset-2 hover:text-sky-300"
           target="_blank"
           rel="noopener noreferrer"
         >
-          {label}
-        </a>
+          here
+        </a>,
       );
+      last = m.index + m[0].length;
     }
-    return <span key={i}>{part}</span>;
-  });
-  return <span className={className}>{nodes}</span>;
+    out.push(...linkifyPlainUrls(text.slice(last)));
+    return out;
+  };
+
+  const rootClass = [className, "whitespace-pre-line"].filter(Boolean).join(" ");
+  return <span className={rootClass}>{linkifyHereMarkdown(body)}</span>;
 }

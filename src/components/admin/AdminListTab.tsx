@@ -27,6 +27,8 @@ export async function AdminListTab() {
     itemExampleListingUrl: item.itemExampleListingUrl,
     itemMinPriceCents: item.itemMinPriceCents,
     itemGoodsServicesCostCents: item.itemGoodsServicesCostCents,
+    itemImageRequirementLabel: item.itemImageRequirementLabel,
+    itemMinArtworkLongEdgePx: item.itemMinArtworkLongEdgePx,
     tags: item.catalogTags.map((ct) => ({
       id: ct.tag.id,
       name: ct.tag.name,

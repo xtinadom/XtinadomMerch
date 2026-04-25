@@ -11,6 +11,7 @@ import {
 } from "@/actions/dashboard-marketplace";
 import { ListingFeeCardPay } from "@/components/dashboard/ListingFeeCardPay";
 import {
+  LISTING_FEE_FREE_SLOT_COUNT,
   isFounderUnlimitedFreeListingsShop,
   listingFeeCentsForOrdinal,
   listingFeeFreeSlotCap,
@@ -52,7 +53,6 @@ export type DashboardSetupPanelProps = {
   steps: ShopSetupSteps;
   stripeConnectUnlocked: boolean;
   incompleteSetupCount: number;
-  listingFeePolicySummary: string;
   r2Configured: boolean;
   listingPickerDiagnostics?: { adminCatalogItemCount: number };
   /** When set, first listing request from onboarding is charged this publication fee (e.g. "$0.25"). */
@@ -78,6 +78,8 @@ export type DashboardListingRow = {
   creatorRemovedFromShopAt: string | null;
   /** 1-based order by shop creation time (oldest = 1). */
   listingOrdinal: number;
+  /** ISO timestamp — used for “Submitted MM/DD” and similar display. */
+  updatedAtIso: string;
   /** Extracted from the newest `listing_rejected` notice when status is rejected. */
   rejectionReasonText: string | null;
   /** JSON string[] or null — which catalog URLs show on the public PDP. */
@@ -171,22 +173,37 @@ function formatMoney(cents: number) {
   }).format(cents / 100);
 }
 
-function requestStatusDescription(status: ListingRequestStatus): string {
-  switch (status) {
+/** UTC calendar date as MM/DD for listing status lines. */
+function formatListingCalendarMd(iso: string): string {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(d.getUTCDate()).padStart(2, "0");
+    return `${mm}/${dd}`;
+  } catch {
+    return "";
+  }
+}
+
+function requestStatusDescription(listing: DashboardListingRow): string {
+  switch (listing.requestStatus) {
     case ListingRequestStatus.draft:
       return "Draft — finish artwork / URLs and submit when ready.";
-    case ListingRequestStatus.submitted:
-      return "Submitted — waiting for admin to run the image check.";
+    case ListingRequestStatus.submitted: {
+      const md = formatListingCalendarMd(listing.updatedAtIso);
+      return md ? `Submitted ${md}` : "Submitted";
+    }
     case ListingRequestStatus.images_ok:
       return "In review — image check passed; admin is linking Printify. Your listing badge stays In review until approval.";
     case ListingRequestStatus.printify_item_created:
       return "Printify item created — waiting for admin approval.";
     case ListingRequestStatus.approved:
-      return "Approved — goes live on your storefront once any publication fee for this slot is paid.";
+      return "";
     case ListingRequestStatus.rejected:
       return "Rejected — this listing cannot be edited. Contact support if you need help.";
     default:
-      return String(status);
+      return String(listing.requestStatus);
   }
 }
 
@@ -194,11 +211,9 @@ function statusBadgeClass(status: ListingRequestStatus, active: boolean): string
   if (active) return "bg-emerald-950/50 text-emerald-300/90 ring-emerald-800/50";
   switch (status) {
     case ListingRequestStatus.submitted:
-      return "bg-amber-950/40 text-amber-200/90 ring-amber-800/50";
     case ListingRequestStatus.images_ok:
-      return "bg-amber-950/40 text-amber-200/90 ring-amber-800/50";
     case ListingRequestStatus.printify_item_created:
-      return "bg-violet-950/40 text-violet-200/90 ring-violet-800/50";
+      return "bg-amber-950/40 text-amber-200/90 ring-amber-800/50";
     case ListingRequestStatus.approved:
       return "bg-sky-950/40 text-sky-200/90 ring-sky-800/50";
     case ListingRequestStatus.rejected:
@@ -286,8 +301,8 @@ function buildListingDerived(
   const savedCatalogSelection = parseListingStorefrontCatalogImageSelection(
     listing.listingStorefrontCatalogImageUrls,
   );
-  const showCatalogImagePicker =
-    showOwnerSupplementSection && canEditOwnerSupplement && catalogUrls.length > 0;
+  /** Catalog image toggles (or a single-line note when only one hero image exists). */
+  const showCatalogImagePicker = showOwnerSupplementSection && canEditOwnerSupplement;
 
   return {
     minLabel,
@@ -339,14 +354,11 @@ function ListingOptionPanel({
 }) {
   const d = buildListingDerived(listing, shopSlug, isPlatform, listingFeeBonusFreeSlots);
   const {
-    minLabel,
     listingLocked,
-    awaitingAdminReview,
     fieldsReadOnly,
     canSubmit,
     imagesDefault,
     feeCents,
-    isFreeListingSlot,
     founderFreeShop,
     freeSlotCap,
     canRemoveFromShop,
@@ -368,29 +380,6 @@ function ListingOptionPanel({
           <DashboardNoticeBody body={listing.rejectionReasonText} />
         </p>
       ) : null}
-      <p className="mt-1 text-xs text-zinc-600">
-        {variantLabel ? (
-          <>
-            Catalog stub {listing.product.slug} · min {minLabel}
-            {listing.requestItemName?.trim() ? (
-              <>
-                {" "}
-                · baseline: <span className="text-zinc-500">{listing.product.name}</span>
-              </>
-            ) : null}
-          </>
-        ) : (
-          <>
-            Catalog: {listing.product.slug} · min {minLabel}
-            {listing.requestItemName?.trim() ? (
-              <>
-                {" "}
-                · baseline name: <span className="text-zinc-500">{listing.product.name}</span>
-              </>
-            ) : null}
-          </>
-        )}
-      </p>
 
       <DashboardListingPriceForm
         listingId={listing.id}
@@ -467,13 +456,7 @@ function ListingOptionPanel({
         </form>
       ) : null}
 
-      {!isPlatform && isFreeListingSlot ? (
-        <p className="mt-2 text-xs text-emerald-600/90">
-          {founderFreeShop
-            ? "No publication fee — founder shop (unlimited free listings)."
-            : `No publication fee — free listing (${listing.listingOrdinal} of ${freeSlotCap}).`}
-        </p>
-      ) : !isPlatform &&
+      {!isPlatform &&
         !listing.listingFeePaidAt &&
         feeCents > 0 &&
         listing.creatorRemovedFromShopAt == null &&
@@ -513,10 +496,6 @@ function ListingOptionPanel({
             stripePublishableKey={stripePublishableKey}
           />
         )
-      ) : !isPlatform && listing.listingFeePaidAt ? (
-        <p className="mt-2 text-xs text-emerald-600/90">
-          Listing fee paid {listing.listingFeePaidAt.slice(0, 10)}
-        </p>
       ) : null}
 
       {canSubmit ? (
@@ -531,15 +510,7 @@ function ListingOptionPanel({
         <p className="mt-3 text-xs text-zinc-600">
           This listing can&apos;t be edited. Contact support if you need help.
         </p>
-      ) : awaitingAdminReview ? (
-        <p className="mt-3 text-xs text-zinc-600">
-          This request is with admin — name and price cannot be changed until the listing is approved.
-        </p>
-      ) : (
-        <p className="mt-3 text-xs text-zinc-600">
-          Request status: {listing.requestStatus} — contact support if you need changes.
-        </p>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -565,12 +536,16 @@ function ListingCard({
   stripePublishableKey: string | null;
   mockListingFeeCheckout: boolean;
 }) {
-  const { dashboardBadge, fieldsReadOnly } = buildListingDerived(
-    listing,
-    shopSlug,
-    isPlatform,
-    listingFeeBonusFreeSlots,
-  );
+  const { dashboardBadge, fieldsReadOnly, isFreeListingSlot, founderFreeShop, freeSlotCap } =
+    buildListingDerived(listing, shopSlug, isPlatform, listingFeeBonusFreeSlots);
+
+  const freeListingInline =
+    !isPlatform && isFreeListingSlot
+      ? founderFreeShop
+        ? "Free listing (unlimited)."
+        : `Free listing (${listing.listingOrdinal} of ${freeSlotCap}).`
+      : null;
+  const statusLine = requestStatusDescription(listing);
 
   return (
     <li className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 text-sm">
@@ -598,9 +573,21 @@ function ListingCard({
             </p>
           ) : null}
         </>
-      ) : (
-        <p className="mt-1 text-xs text-zinc-500">{requestStatusDescription(listing.requestStatus)}</p>
-      )}
+      ) : statusLine || freeListingInline ? (
+        <p className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs text-zinc-500">
+          {statusLine ? <span>{statusLine}</span> : null}
+          {statusLine && freeListingInline ? (
+            <>
+              <span className="text-zinc-600/40" aria-hidden>
+                ·
+              </span>
+              <span className="text-zinc-600">{freeListingInline}</span>
+            </>
+          ) : freeListingInline ? (
+            <span className="text-zinc-600">{freeListingInline}</span>
+          ) : null}
+        </p>
+      ) : null}
       {listing.creatorRemovedFromShopAt ? (
         <p className="mt-1 text-xs text-fuchsia-200/80">
           You removed this listing from your shop on {listing.creatorRemovedFromShopAt.slice(0, 10)}. It no longer
@@ -692,7 +679,6 @@ export function DashboardMainTabs(props: {
   } | null;
   /** Server-rendered support chat (creator shops only). */
   supportChat?: ReactNode | null;
-  listingFeePolicySummary: string;
   paidListingFeeLabel: string;
   /** Extra free publication slots from redeemed promo codes (non-founder creator shops). */
   listingFeeBonusFreeSlots: number;
@@ -727,7 +713,6 @@ export function DashboardMainTabs(props: {
     setup,
     notifications,
     supportChat,
-    listingFeePolicySummary,
     paidListingFeeLabel,
     listingFeeBonusFreeSlots,
     showListingSlotPromoRedeem,
@@ -941,14 +926,8 @@ export function DashboardMainTabs(props: {
         role="tabpanel"
         aria-labelledby={listingsTabId}
         hidden={tab !== "listings"}
-        className="pt-6"
+        className="pt-4"
       >
-        <p className="text-xs text-zinc-600">
-          Set your public price (at least the catalog minimum). {listingFeePolicySummary} If a publication fee
-          applies for your slot, pay it on this tab before you submit a draft for admin review; after approval,
-          paid listings go live automatically. Platform catalog shop skips the fee.
-        </p>
-
         {showListingSlotPromoRedeem ? <ListingSlotPromoRedeemForm /> : null}
 
         {groupedRequest.length > 0 ? (
@@ -956,10 +935,13 @@ export function DashboardMainTabs(props: {
             <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
               Listing requests & setup
             </h3>
-            <p className="mt-1 text-[11px] text-zinc-600">
-              Drafts, submitted requests, and inactive rows — pay fees, set pricing, and track status
-              here.
-            </p>
+            {!isPlatform ? (
+              <p className="mt-1 text-[11px] text-zinc-600">
+                {isFounderUnlimitedFreeListingsShop(shopSlug)
+                  ? "All your listings publish free."
+                  : `Your first ${LISTING_FEE_FREE_SLOT_COUNT} listings are free.`}
+              </p>
+            ) : null}
             <ul className="mt-3 space-y-6">
               {groupedRequest.map((g) => (
                 <ListingCard
@@ -1091,7 +1073,6 @@ export function DashboardMainTabs(props: {
                         Read {formatNoticeWhen(n.readAt)}
                       </span>
                     ) : null}
-                    <span className="font-mono text-[10px] text-zinc-600">{n.kind}</span>
                   </div>
                 </li>
               );

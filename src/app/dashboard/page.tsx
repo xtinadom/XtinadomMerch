@@ -6,7 +6,6 @@ import { getShopOwnerSession, getShopOwnerSessionReadonly } from "@/lib/session"
 import { FulfillmentType, ListingRequestStatus, OrderStatus } from "@/generated/prisma/enums";
 import {
   LISTING_FEE_CENTS,
-  LISTING_FEE_FREE_SLOT_COUNT,
   PLATFORM_SHOP_SLUG,
   isFounderUnlimitedFreeListingsShop,
   listingFeeCentsForOrdinal,
@@ -239,20 +238,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
   const mockListingFeeCheckout = !isPlatform && isMockCheckoutEnabled();
   const bonusListingSlots = shop.listingFeeBonusFreeSlots ?? 0;
-  const totalFreeListingSlots = LISTING_FEE_FREE_SLOT_COUNT + bonusListingSlots;
-  const listingFeePolicySummary =
-    !isPlatform && isFounderUnlimitedFreeListingsShop(shop.slug)
-      ? "As the founder shop, all your listings publish free (no publication fee)."
-      : !isPlatform
-        ? `Your first ${totalFreeListingSlots} listings are free.${
-            bonusListingSlots > 0
-              ? " Your account includes extra free slots from an applied promo."
-              : ""
-          } Each additional listing costs ${formatMoney(LISTING_FEE_CENTS)} to publish.`
-        : "";
   const paidListingFeeLabel = formatMoney(LISTING_FEE_CENTS);
+  const submittedRequestCount = shop.listings.filter(
+    (l) => l.requestStatus !== ListingRequestStatus.draft,
+  ).length;
   const firstListingPublicationFeeCents = listingFeeCentsForOrdinal(
-    shop.listings.length + 1,
+    submittedRequestCount + 1,
     shop.slug,
     bonusListingSlots,
   );
@@ -280,6 +271,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           itemExampleListingUrl: true,
           itemMinPriceCents: true,
           itemGoodsServicesCostCents: true,
+          itemImageRequirementLabel: true,
+          itemMinArtworkLongEdgePx: true,
         },
       })
     : [];
@@ -461,6 +454,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       adminRemovedFromShopAt: listing.adminRemovedFromShopAt?.toISOString() ?? null,
       creatorRemovedFromShopAt: listing.creatorRemovedFromShopAt?.toISOString() ?? null,
       listingOrdinal: listingOrdinalById.get(listing.id) ?? 1,
+      updatedAtIso: listing.updatedAt.toISOString(),
       rejectionReasonText,
       product: {
         name: listing.product.name,
@@ -633,7 +627,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 steps: setupSteps,
                 stripeConnectUnlocked,
                 incompleteSetupCount,
-                listingFeePolicySummary: listingFeePolicySummary,
                 r2Configured: isR2UploadConfigured(),
                 listingPickerDiagnostics: {
                   adminCatalogItemCount: adminCatalogRows.length,
@@ -643,7 +636,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
               }
             : null
         }
-        listingFeePolicySummary={listingFeePolicySummary}
         paidListingFeeLabel={paidListingFeeLabel}
         isPlatform={isPlatform}
         r2Configured={isR2UploadConfigured()}

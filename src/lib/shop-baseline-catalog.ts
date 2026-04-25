@@ -11,6 +11,10 @@ export type ShopSetupCatalogOption = {
   exampleHref: string | null;
   /** Unit goods/services (COGS) from admin baseline — used for estimated shop profit at list price. */
   goodsServicesCostCents: number;
+  /** Admin copy for print/DPI expectations; shown when {@link minArtworkLongEdgePx} is set. */
+  imageRequirementLabel: string | null;
+  /** When set, artwork longest edge (px) must be at least this value. */
+  minArtworkLongEdgePx: number | null;
 };
 
 /** One admin catalog item as a single selectable row. */
@@ -29,6 +33,8 @@ export function flattenShopBaselineCatalogGroups(groups: ShopSetupCatalogGroup[]
     priceCents: g.option.priceCents,
     exampleHref: g.option.exampleHref,
     goodsServicesCostCents: g.option.goodsServicesCostCents,
+    imageRequirementLabel: g.option.imageRequirementLabel,
+    minArtworkLongEdgePx: g.option.minArtworkLongEdgePx,
   }));
 }
 
@@ -40,6 +46,8 @@ export type AdminBaselineRow = {
   itemExampleListingUrl: string | null;
   itemMinPriceCents: number;
   itemGoodsServicesCostCents: number;
+  itemImageRequirementLabel: string | null;
+  itemMinArtworkLongEdgePx: number | null;
 };
 
 export type ParsedBaselinePick =
@@ -100,6 +108,11 @@ export function buildShopBaselineCatalogGroups(items: AdminBaselineRow[]): ShopS
         priceCents: Math.max(0, item.itemMinPriceCents),
         exampleHref: exampleHrefFromAdminUrl(item.itemExampleListingUrl),
         goodsServicesCostCents: Math.max(0, item.itemGoodsServicesCostCents),
+        imageRequirementLabel: item.itemImageRequirementLabel?.trim() || null,
+        minArtworkLongEdgePx:
+          item.itemMinArtworkLongEdgePx != null && item.itemMinArtworkLongEdgePx > 0
+            ? item.itemMinArtworkLongEdgePx
+            : null,
       },
     });
   }

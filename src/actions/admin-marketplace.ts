@@ -33,6 +33,7 @@ import {
   parseListingRejectReason,
 } from "@/lib/listing-request-reject-reasons";
 import { emailLinkOrigin, publicAppBaseUrl } from "@/lib/public-app-url";
+import { parseBaselinePick } from "@/lib/shop-baseline-catalog";
 
 async function requireAdmin() {
   const session = await getAdminSessionReadonly();
@@ -316,6 +317,29 @@ function parseLegacyGroupListingIdsJson(raw: unknown): string[] | null {
 type AdminApproveListingExecOk = { ok: true; shopSlug: string; shopId: string };
 type AdminApproveListingExecResult = AdminApproveListingExecOk | { ok: false; reason: string };
 
+/** Admin baseline catalog display name when the listing was created from a baseline pick; else storefront product name. */
+async function adminCatalogItemNameForApprovedNotice(
+  baselineCatalogPickEncoded: string | null | undefined,
+  productNameFallback: string,
+): Promise<string> {
+  const raw = baselineCatalogPickEncoded?.trim();
+  if (!raw) return productNameFallback;
+  const pick = parseBaselinePick(raw);
+  if (!pick || pick.mode === "allVariants") return productNameFallback;
+  const row = await prisma.adminCatalogItem.findUnique({
+    where: { id: pick.itemId },
+    select: { name: true },
+  });
+  const n = row?.name?.trim();
+  return n || productNameFallback;
+}
+
+function listingApprovedNoticeListingLabel(shopListingName: string, catalogItemName: string): string {
+  const shop = shopListingName.trim() || catalogItemName;
+  const cat = catalogItemName.trim() || shop;
+  return `“${shop}” (${cat})`;
+}
+
 /**
  * Core approve path (no `revalidatePath`). Used by single approve and legacy multi-size batch approve.
  */
@@ -380,6 +404,13 @@ async function tryExecuteAdminApproveListingRequest(
     : listingFeeCentsForOrdinal(ordinal, listing.shop.slug, listing.shop.listingFeeBonusFreeSlots ?? 0);
   const alreadyPaid = listing.listingFeePaidAt != null;
 
+  const catalogItemName = await adminCatalogItemNameForApprovedNotice(
+    listing.baselineCatalogPickEncoded,
+    product.name,
+  );
+  const shopListingName = listing.requestItemName?.trim() || catalogItemName;
+  const approvedListingLabel = listingApprovedNoticeListingLabel(shopListingName, catalogItemName);
+
   const requestImageUrls = shopListingRequestImageUrlStrings(listing.requestImages);
   await deleteShopListingRequestImagesFromR2(listing.shopId, requestImageUrls);
 
@@ -414,7 +445,7 @@ async function tryExecuteAdminApproveListingRequest(
       data: {
         shopId: listing.shopId,
         kind: "listing_approved",
-        body: `Your listing for “${product.name}” is approved and live in your shop.`,
+        body: `Your listing ${approvedListingLabel} is approved and live in your shop.`,
       },
     });
   } else if (alreadyPaid) {
@@ -431,7 +462,7 @@ async function tryExecuteAdminApproveListingRequest(
       data: {
         shopId: listing.shopId,
         kind: "listing_approved",
-        body: `Your listing for “${product.name}” is approved and live in your shop.`,
+        body: `Your listing ${approvedListingLabel} is approved and live in your shop.`,
       },
     });
   } else {
@@ -447,7 +478,7 @@ async function tryExecuteAdminApproveListingRequest(
       data: {
         shopId: listing.shopId,
         kind: "listing_approved_pay_fee",
-        body: `Your listing for “${product.name}” was approved. Pay the publication fee on the Listings tab to publish it in your shop.`,
+        body: `Your listing ${approvedListingLabel} was approved. Pay the publication fee on the Listings tab to publish it in your shop.`,
       },
     });
   }
@@ -849,7 +880,14 @@ export async function adminDeleteShopListingRecord(formData: FormData) {
   revalidatePath(`/s/${listing.shop.slug}`);
 }
 
-type AdminRejectListingExecOk = { ok: true; shopId: string; productName: string };
+type AdminRejectListingExecOk = {
+  ok: true;
+  shopId: string;
+  /** Shop-facing listing title (custom name or catalog product name). */
+  listingTitle: string;
+  /** Catalog / product line name shown in parentheses after the title. */
+  catalogTitle: string;
+};
 type AdminRejectListingExecResult = AdminRejectListingExecOk | { ok: false };
 
 async function tryExecuteAdminRejectListingWithoutNotice(
@@ -861,6 +899,7 @@ async function tryExecuteAdminRejectListingWithoutNotice(
       requestStatus: true,
       shopId: true,
       requestImages: true,
+      requestItemName: true,
       product: { select: { name: true } },
     },
   });
@@ -887,7 +926,9 @@ async function tryExecuteAdminRejectListingWithoutNotice(
       listingStorefrontCatalogImageUrls: Prisma.DbNull,
     },
   });
-  return { ok: true, shopId: listing.shopId, productName: listing.product.name };
+  const catalogTitle = listing.product.name;
+  const listingTitle = listing.requestItemName?.trim() || catalogTitle;
+  return { ok: true, shopId: listing.shopId, listingTitle, catalogTitle };
 }
 
 export async function adminRejectListingRequest(formData: FormData): Promise<void> {
@@ -907,7 +948,7 @@ export async function adminRejectListingRequest(formData: FormData): Promise<voi
       shopId: result.shopId,
       kind: "listing_rejected",
       relatedListingId: listingId,
-      body: `The platform rejected your listing request for “${result.productName}”. ${detail} Open the Listings tab for status or contact support.`,
+      body: `The platform rejected your listing request for "${result.listingTitle}" (${result.catalogTitle}).\n${detail}`,
     },
   });
   revalidateAdminViews();
@@ -932,23 +973,23 @@ export async function adminRejectLegacyVariantListingGroup(formData: FormData): 
   const shopId = rows[0]!.shopId;
   if (rows.some((r) => r.shopId !== shopId)) return;
 
-  const names: string[] = [];
+  const segments: string[] = [];
   for (const row of rows) {
     const result = await tryExecuteAdminRejectListingWithoutNotice(row.id);
     if (!result.ok) return;
-    names.push(result.productName);
+    segments.push(`"${result.listingTitle}" (${result.catalogTitle})`);
   }
 
   const base = (publicAppBaseUrl() ?? emailLinkOrigin()).replace(/\/$/, "");
   const regulationsUrl = `${base}/shop-regulations`;
   const detail = listingRejectionNoticeDetail(rejectReason, regulationsUrl);
-  const namesJoined = names.map((n) => `“${n}”`).join(", ");
+  const namesJoined = segments.join(", ");
   await prisma.shopOwnerNotice.create({
     data: {
       shopId,
       kind: "listing_rejected",
       relatedListingId: rows[0]!.id,
-      body: `The platform rejected your multi-size listing request (${namesJoined}). ${detail} Open the Listings tab for status or contact support.`,
+      body: `The platform rejected your multi-size listing request for ${namesJoined}.\n${detail}`,
     },
   });
   revalidateAdminViews();
