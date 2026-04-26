@@ -206,7 +206,7 @@ export async function getHotListingProductsForHome(
       product: {
         include: { primaryTag: true, tags: { include: { tag: true } } },
       },
-      shop: { select: { slug: true } },
+      shop: { select: { slug: true, displayName: true } },
     },
   });
   const byProduct = new Map<string, (typeof listings)[0]>();

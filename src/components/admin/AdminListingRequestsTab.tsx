@@ -7,6 +7,7 @@ import {
   useMemo,
   useState,
   type ChangeEvent,
+  type MouseEvent,
 } from "react";
 import { useFormStatus } from "react-dom";
 import type { Prisma } from "@/generated/prisma/client";
@@ -433,6 +434,29 @@ const imageOkNeutralToggle =
 const imageOkPassedBadgeStatic =
   "inline-flex min-h-[2rem] min-w-[9.5rem] items-center justify-center gap-1 rounded-full bg-emerald-600/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-50 ring-2 ring-emerald-400/90 shadow-[0_0_20px_-6px_rgba(52,211,153,0.75)] select-none";
 
+/** Dedupe repeated URLs in `requestImages` JSON (avoids stacked identical links / duplicate opens). */
+function dedupeRequestImageUrls(requestImages: unknown): string[] {
+  if (!Array.isArray(requestImages)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const x of requestImages) {
+    if (typeof x !== "string") continue;
+    const u = x.trim();
+    if (!u || seen.has(u)) continue;
+    seen.add(u);
+    out.push(u);
+  }
+  return out;
+}
+
+function openRequestImageInNewTab(e: MouseEvent<HTMLAnchorElement>, url: string) {
+  e.stopPropagation();
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  if (e.button !== 0) return;
+  e.preventDefault();
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 function ImageOkMarkButton() {
   const { pending } = useFormStatus();
   return (
@@ -544,7 +568,7 @@ function ListingRequestCard({
   /** When true, Step 2 Printify mapping is on the group card (not repeated per size row). */
   suppressLegacyGroupPrintifyStep2Block?: boolean;
 }) {
-  const imgs = Array.isArray(r.requestImages) ? (r.requestImages as string[]) : [];
+  const imgs = useMemo(() => dedupeRequestImageUrls(r.requestImages), [r.requestImages]);
   const isAwaitingImageReview = r.requestStatus === ListingRequestStatus.submitted;
   const isImagesOkStep = r.requestStatus === ListingRequestStatus.images_ok;
   const isPrintifyReady = r.requestStatus === ListingRequestStatus.printify_item_created;
@@ -653,13 +677,14 @@ function ListingRequestCard({
           ) : null}
           {imgs.length > 0 ? (
             <ul className="mt-2 list-inside list-disc text-xs text-zinc-500">
-              {imgs.map((u, i) => (
-                <li key={i} className="break-all">
+              {imgs.map((u) => (
+                <li key={u} className="break-all">
                   <a
                     href={u}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-400/90 underline decoration-blue-500/40 underline-offset-2 hover:text-blue-300"
+                    onClick={(e) => openRequestImageInNewTab(e, u)}
                   >
                     {u}
                   </a>

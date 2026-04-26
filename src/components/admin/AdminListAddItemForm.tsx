@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { adminAddCatalogItem } from "@/actions/admin-catalog-items";
 import { AdminCatalogArtworkRequirementFields } from "@/components/admin/AdminCatalogArtworkRequirementFields";
 import { AdminCatalogItemLevelFields } from "@/components/admin/AdminCatalogItemLevelFields";
-import { parseAdminCatalogArtworkRequirement, validateItemLevelWhenNoVariants } from "@/lib/admin-catalog-item";
+import { parseAdminCatalogItemArtworkForm, validateItemLevelWhenNoVariants } from "@/lib/admin-catalog-item";
 
 export function AdminListAddItemForm() {
   const router = useRouter();
@@ -16,7 +16,9 @@ export function AdminListAddItemForm() {
   const [itemMinPriceDollars, setItemMinPriceDollars] = useState("");
   const [itemGoodsServicesCostDollars, setItemGoodsServicesCostDollars] = useState("");
   const [itemImageRequirementLabel, setItemImageRequirementLabel] = useState("");
-  const [itemMinArtworkLongEdgePx, setItemMinArtworkLongEdgePx] = useState("");
+  const [itemPrintAreaWidthPx, setItemPrintAreaWidthPx] = useState("");
+  const [itemPrintAreaHeightPx, setItemPrintAreaHeightPx] = useState("");
+  const [itemMinArtworkDpi, setItemMinArtworkDpi] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   function submit(e: React.FormEvent) {
@@ -36,7 +38,12 @@ export function AdminListAddItemForm() {
       setError(itemLevel.error);
       return;
     }
-    const ar = parseAdminCatalogArtworkRequirement(itemImageRequirementLabel, itemMinArtworkLongEdgePx);
+    const ar = parseAdminCatalogItemArtworkForm(
+      itemImageRequirementLabel,
+      itemPrintAreaWidthPx,
+      itemPrintAreaHeightPx,
+      itemMinArtworkDpi,
+    );
     if (!ar.ok) {
       setError(ar.error);
       return;
@@ -49,7 +56,9 @@ export function AdminListAddItemForm() {
     fd.set("itemMinPriceDollars", itemMinPriceDollars);
     fd.set("itemGoodsServicesCostDollars", itemGoodsServicesCostDollars);
     fd.set("itemImageRequirementLabel", itemImageRequirementLabel);
-    fd.set("itemMinArtworkLongEdgePx", itemMinArtworkLongEdgePx);
+    fd.set("itemPrintAreaWidthPx", itemPrintAreaWidthPx);
+    fd.set("itemPrintAreaHeightPx", itemPrintAreaHeightPx);
+    fd.set("itemMinArtworkDpi", itemMinArtworkDpi);
 
     startTransition(async () => {
       await adminAddCatalogItem(fd);
@@ -59,7 +68,9 @@ export function AdminListAddItemForm() {
       setItemMinPriceDollars("");
       setItemGoodsServicesCostDollars("");
       setItemImageRequirementLabel("");
-      setItemMinArtworkLongEdgePx("");
+      setItemPrintAreaWidthPx("");
+      setItemPrintAreaHeightPx("");
+      setItemMinArtworkDpi("");
       router.refresh();
     });
   }
@@ -96,9 +107,13 @@ export function AdminListAddItemForm() {
         />
         <AdminCatalogArtworkRequirementFields
           imageRequirementLabel={itemImageRequirementLabel}
-          minLongEdgePx={itemMinArtworkLongEdgePx}
+          printAreaWidthPx={itemPrintAreaWidthPx}
+          printAreaHeightPx={itemPrintAreaHeightPx}
+          minArtworkDpi={itemMinArtworkDpi}
           onChangeImageRequirementLabel={setItemImageRequirementLabel}
-          onChangeMinLongEdgePx={setItemMinArtworkLongEdgePx}
+          onChangePrintAreaWidthPx={setItemPrintAreaWidthPx}
+          onChangePrintAreaHeightPx={setItemPrintAreaHeightPx}
+          onChangeMinArtworkDpi={setItemMinArtworkDpi}
         />
 
         {error ? (

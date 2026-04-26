@@ -6,7 +6,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAdminSessionReadonly } from "@/lib/session";
 import {
-  parseAdminCatalogArtworkRequirement,
+  parseAdminCatalogItemArtworkForm,
   validateItemLevelWhenNoVariants,
 } from "@/lib/admin-catalog-item";
 import { syncProductTagsFromAdminCatalogItemId } from "@/lib/baseline-listing-product-tags-sync";
@@ -25,7 +25,9 @@ function itemLevelFromFormWhenNoVariants(formData: FormData):
       itemMinPriceCents: number;
       itemGoodsServicesCostCents: number;
       itemImageRequirementLabel: string | null;
-      itemMinArtworkLongEdgePx: number | null;
+      itemPrintAreaWidthPx: number | null;
+      itemPrintAreaHeightPx: number | null;
+      itemMinArtworkDpi: number | null;
     }
   | { ok: false } {
   const itemEx = String(formData.get("itemExampleListingUrl") ?? "");
@@ -33,9 +35,11 @@ function itemLevelFromFormWhenNoVariants(formData: FormData):
   const itemGs = String(formData.get("itemGoodsServicesCostDollars") ?? "");
   const v = validateItemLevelWhenNoVariants(itemEx, itemPrice, itemGs);
   if (!v.ok) return { ok: false };
-  const ar = parseAdminCatalogArtworkRequirement(
+  const ar = parseAdminCatalogItemArtworkForm(
     String(formData.get("itemImageRequirementLabel") ?? ""),
-    String(formData.get("itemMinArtworkLongEdgePx") ?? ""),
+    String(formData.get("itemPrintAreaWidthPx") ?? ""),
+    String(formData.get("itemPrintAreaHeightPx") ?? ""),
+    String(formData.get("itemMinArtworkDpi") ?? ""),
   );
   if (!ar.ok) return { ok: false };
   return {
@@ -44,7 +48,9 @@ function itemLevelFromFormWhenNoVariants(formData: FormData):
     itemMinPriceCents: v.minPriceCents,
     itemGoodsServicesCostCents: v.itemGoodsServicesCostCents,
     itemImageRequirementLabel: ar.itemImageRequirementLabel,
-    itemMinArtworkLongEdgePx: ar.itemMinArtworkLongEdgePx,
+    itemPrintAreaWidthPx: ar.itemPrintAreaWidthPx,
+    itemPrintAreaHeightPx: ar.itemPrintAreaHeightPx,
+    itemMinArtworkDpi: ar.itemMinArtworkDpi,
   };
 }
 
@@ -69,12 +75,14 @@ export async function adminAddCatalogItem(formData: FormData) {
       sortOrder,
       storefrontDescription,
       variants: EMPTY_VARIANTS_JSON,
-      itemPlatformProductId: null,
       itemExampleListingUrl: itemLevel.itemExampleListingUrl,
       itemMinPriceCents: itemLevel.itemMinPriceCents,
       itemGoodsServicesCostCents: itemLevel.itemGoodsServicesCostCents,
       itemImageRequirementLabel: itemLevel.itemImageRequirementLabel,
-      itemMinArtworkLongEdgePx: itemLevel.itemMinArtworkLongEdgePx,
+      itemMinArtworkLongEdgePx: null,
+      itemPrintAreaWidthPx: itemLevel.itemPrintAreaWidthPx,
+      itemPrintAreaHeightPx: itemLevel.itemPrintAreaHeightPx,
+      itemMinArtworkDpi: itemLevel.itemMinArtworkDpi,
     },
   });
   revalidateAdminViews();
@@ -93,21 +101,29 @@ export async function adminUpdateCatalogItem(formData: FormData) {
     ? storefrontDescriptionRaw.trim().slice(0, 10_000)
     : null;
 
-  const n = await prisma.adminCatalogItem.updateMany({
-    where: { id },
-    data: {
-      name: name.slice(0, 300),
-      variants: EMPTY_VARIANTS_JSON,
-      itemPlatformProductId: null,
-      storefrontDescription,
-      itemExampleListingUrl: itemLevel.itemExampleListingUrl,
-      itemMinPriceCents: itemLevel.itemMinPriceCents,
-      itemGoodsServicesCostCents: itemLevel.itemGoodsServicesCostCents,
-      itemImageRequirementLabel: itemLevel.itemImageRequirementLabel,
-      itemMinArtworkLongEdgePx: itemLevel.itemMinArtworkLongEdgePx,
-    },
-  });
-  if ((n?.count ?? 0) === 0) return;
+  try {
+    await prisma.adminCatalogItem.update({
+      where: { id },
+      data: {
+        name: name.slice(0, 300),
+        variants: EMPTY_VARIANTS_JSON,
+        storefrontDescription,
+        itemExampleListingUrl: itemLevel.itemExampleListingUrl,
+        itemMinPriceCents: itemLevel.itemMinPriceCents,
+        itemGoodsServicesCostCents: itemLevel.itemGoodsServicesCostCents,
+        itemImageRequirementLabel: itemLevel.itemImageRequirementLabel,
+        itemMinArtworkLongEdgePx: null,
+        itemPrintAreaWidthPx: itemLevel.itemPrintAreaWidthPx,
+        itemPrintAreaHeightPx: itemLevel.itemPrintAreaHeightPx,
+        itemMinArtworkDpi: itemLevel.itemMinArtworkDpi,
+        /** FK scalars are not on `updateMany` mutation input; disconnect clears the link like `itemPlatformProductId: null`. */
+        itemPlatformProduct: { disconnect: true },
+      },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") return;
+    throw e;
+  }
   revalidateAdminViews();
 }
 

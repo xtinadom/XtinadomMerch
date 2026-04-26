@@ -84,14 +84,36 @@ export async function compressShopListingSupplementPhotoWebp(
   }
 }
 
+export type CompressShopListingArtworkOpts = {
+  /** When true, only rotate + WebP encode (no resize) so print-area pixel dimensions are preserved. */
+  preservePixelDimensions?: boolean;
+};
+
 /** Listing artwork for print review: high quality WebP, cap ~4 MiB. */
 export async function compressShopListingArtworkWebp(
   input: Buffer,
+  opts?: CompressShopListingArtworkOpts,
 ): Promise<Buffer | null> {
   if (input.length > LISTING_MAX_SOURCE_BYTES) return null;
   try {
     const meta = await sharp(input, { failOn: "none" }).metadata();
     if (meta.format === "svg") return null;
+
+    if (opts?.preservePixelDimensions) {
+      const tryEncodePreserve = async (quality: number) =>
+        sharp(input, { failOn: "none" })
+          .rotate()
+          .webp({ quality, effort: 4, smartSubsample: true })
+          .toBuffer();
+      let q = 94;
+      let buf = await tryEncodePreserve(q);
+      while (buf.length > LISTING_MAX_BYTES && q > 50) {
+        q -= 3;
+        buf = await tryEncodePreserve(Math.max(q, 50));
+      }
+      if (buf.length > LISTING_MAX_BYTES) return null;
+      return buf;
+    }
 
     const tryEncode = async (maxDim: number, quality: number) =>
       sharp(input, { failOn: "none" })

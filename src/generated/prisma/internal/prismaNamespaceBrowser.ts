@@ -389,6 +389,9 @@ export const AdminCatalogItemScalarFieldEnum = {
   itemGoodsServicesCostCents: 'itemGoodsServicesCostCents',
   itemImageRequirementLabel: 'itemImageRequirementLabel',
   itemMinArtworkLongEdgePx: 'itemMinArtworkLongEdgePx',
+  itemPrintAreaWidthPx: 'itemPrintAreaWidthPx',
+  itemPrintAreaHeightPx: 'itemPrintAreaHeightPx',
+  itemMinArtworkDpi: 'itemMinArtworkDpi',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

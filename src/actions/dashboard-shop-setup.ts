@@ -37,7 +37,8 @@ import {
   type BaselineStubPick,
 } from "@/lib/shop-baseline-stub-product";
 import { downgradeSubmittedToDraftIfListingFeeUnpaid } from "@/lib/listing-fee";
-import { longEdgeLengthPxFromImageBuffer } from "@/lib/artwork-image-dimensions";
+import { widthHeightPxFromImageBuffer } from "@/lib/artwork-image-dimensions";
+import { exportedImageMeetsPrintDimensions } from "@/lib/listing-artwork-print-area";
 import { syncProductTagsForNewBaselineListing } from "@/lib/baseline-listing-product-tags-sync";
 
 const WELCOME_MAX = 280;
@@ -340,37 +341,65 @@ export async function submitFirstListingSetup(
 
   const rawBuf = Buffer.from(await file.arrayBuffer());
 
+  let preserveListingArtworkPixels = false;
+  let printAreaW: number | null = null;
+  let printAreaH: number | null = null;
+
   if (baselinePick) {
     const adminItem = await prisma.adminCatalogItem.findUnique({
       where: { id: baselinePick.itemId },
-      select: { itemMinArtworkLongEdgePx: true, itemImageRequirementLabel: true },
+      select: {
+        itemImageRequirementLabel: true,
+        itemPrintAreaWidthPx: true,
+        itemPrintAreaHeightPx: true,
+      },
     });
-    if (adminItem?.itemMinArtworkLongEdgePx != null && adminItem.itemMinArtworkLongEdgePx > 0) {
-      const longEdge = await longEdgeLengthPxFromImageBuffer(rawBuf);
-      if (longEdge == null) {
+    const pw = adminItem?.itemPrintAreaWidthPx ?? null;
+    const ph = adminItem?.itemPrintAreaHeightPx ?? null;
+    const hasPrintArea = pw != null && ph != null && pw > 0 && ph > 0;
+
+    if (hasPrintArea) {
+      printAreaW = pw;
+      printAreaH = ph;
+      const dims = await widthHeightPxFromImageBuffer(rawBuf);
+      if (!dims) {
         return {
           ok: false,
           error: "Could not read image dimensions. Use a valid PNG or JPEG file.",
         };
       }
-      if (longEdge < adminItem.itemMinArtworkLongEdgePx) {
-        const note = adminItem.itemImageRequirementLabel?.trim();
+      if (!exportedImageMeetsPrintDimensions(dims.w, dims.h, pw, ph)) {
+        const note = adminItem?.itemImageRequirementLabel?.trim();
         return {
           ok: false,
           error: note
-            ? `This artwork does not meet the minimum resolution for this item (${note}). Longest edge is ${longEdge}px; at least ${adminItem.itemMinArtworkLongEdgePx}px is required.`
-            : `This artwork is too small. Longest edge is ${longEdge}px; this item requires at least ${adminItem.itemMinArtworkLongEdgePx}px on the longest edge.`,
+            ? `Artwork must be exactly ${pw}×${ph}px for this item (${note}). This file is ${dims.w}×${dims.h}px.`
+            : `Artwork must be exactly ${pw}×${ph}px for this item. This file is ${dims.w}×${dims.h}px.`,
         };
       }
+      preserveListingArtworkPixels = true;
     }
   }
 
-  const webp = await compressShopListingArtworkWebp(rawBuf);
+  const webp = await compressShopListingArtworkWebp(rawBuf, {
+    ...(preserveListingArtworkPixels ? { preservePixelDimensions: true } : {}),
+  });
   if (!webp) {
     return {
       ok: false,
       error: "Could not process that artwork. Use a PNG or JPEG under 20 MB.",
     };
+  }
+
+  if (printAreaW != null && printAreaH != null) {
+    const outDims = await widthHeightPxFromImageBuffer(webp);
+    if (!outDims || !exportedImageMeetsPrintDimensions(outDims.w, outDims.h, printAreaW, printAreaH)) {
+      return {
+        ok: false,
+        error:
+          "Artwork dimensions were lost during processing (file too large after WebP encode). Export a slightly smaller JPEG or PNG and try again.",
+      };
+    }
   }
 
   const key = `shops/${shop.id}/listing-request/${randomUUID()}.webp`;

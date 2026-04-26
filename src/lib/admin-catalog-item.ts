@@ -1,3 +1,5 @@
+import { parsePrintAreaDimensionPair } from "@/lib/listing-artwork-print-area";
+
 function newRandomUuid(): string {
   return globalThis.crypto.randomUUID();
 }
@@ -6,7 +8,7 @@ export type AdminCatalogVariant = {
   id: string;
   label: string;
   minPriceCents: number;
-  /** Fulfillment / COGS per unit (cents); retained by platform before marketplace fee. */
+  /** Fulfillment / COGS per unit (cents); retained by the platform before marketplace fee. */
   goodsServicesCostCents: number;
   exampleListingUrl: string;
   /** Optional storefront Product id (active Printify) when example URL / name match is not used. */
@@ -51,8 +53,8 @@ export function parseProductSlugFromExampleUrl(url: string): string | null {
 }
 
 export function parseAdminCatalogVariantsJson(raw: unknown): AdminCatalogVariant[] {
-  if (!Array.isArray(raw)) return [];
   const out: AdminCatalogVariant[] = [];
+  if (!Array.isArray(raw)) return out;
   for (const row of raw) {
     if (!row || typeof row !== "object") continue;
     const o = row as Record<string, unknown>;
@@ -131,26 +133,68 @@ export function validateItemLevelWhenNoVariants(
   };
 }
 
-/**
- * Optional artwork rules: free-text label + min long edge (px) for print/DPI gating. Blank min = no check.
- */
-export function parseAdminCatalogArtworkRequirement(
-  itemImageRequirementLabel: string,
-  itemMinArtworkLongEdgePxRaw: string,
-):
-  | { ok: true; itemImageRequirementLabel: string | null; itemMinArtworkLongEdgePx: number | null }
-  | { ok: false; error: string } {
-  const label = itemImageRequirementLabel.trim().slice(0, 400) || null;
-  const t = itemMinArtworkLongEdgePxRaw.trim();
-  if (t.length === 0) {
-    return { ok: true, itemImageRequirementLabel: label, itemMinArtworkLongEdgePx: null };
-  }
+export function parseAdminCatalogImageRequirementLabel(raw: string): string | null {
+  return raw.trim().slice(0, 400) || null;
+}
+
+export function parseAdminCatalogMinArtworkDpi(raw: string): { ok: true; value: number | null } | { ok: false; error: string } {
+  const t = raw.trim();
+  if (t.length === 0) return { ok: true, value: null };
   const n = parseInt(t, 10);
-  if (!Number.isFinite(n) || n < 1 || n > 1_000_000) {
+  if (!Number.isFinite(n) || n < 72 || n > 2400) {
     return {
       ok: false,
-      error: "Min long edge (px) must be a whole number from 1 to 1000000, or left blank to skip a minimum.",
+      error: "Minimum DPI must be a whole number from 72 to 2400, or left blank.",
     };
   }
-  return { ok: true, itemImageRequirementLabel: label, itemMinArtworkLongEdgePx: n };
+  return { ok: true, value: n };
+}
+
+/**
+ * Parses artwork note, optional print-area W×H, and optional minimum DPI (requires print area).
+ */
+export function parseAdminCatalogItemArtworkForm(
+  itemImageRequirementLabel: string,
+  itemPrintAreaWidthPxRaw: string,
+  itemPrintAreaHeightPxRaw: string,
+  itemMinArtworkDpiRaw: string,
+):
+  | {
+      ok: true;
+      itemImageRequirementLabel: string | null;
+      itemPrintAreaWidthPx: number | null;
+      itemPrintAreaHeightPx: number | null;
+      itemMinArtworkDpi: number | null;
+    }
+  | { ok: false; error: string } {
+  const label = parseAdminCatalogImageRequirementLabel(itemImageRequirementLabel);
+  const pr = parsePrintAreaDimensionPair(itemPrintAreaWidthPxRaw, itemPrintAreaHeightPxRaw);
+  if (!pr.ok) return pr;
+  const dpiParsed = parseAdminCatalogMinArtworkDpi(itemMinArtworkDpiRaw);
+  if (!dpiParsed.ok) return dpiParsed;
+
+  const hasPrint = pr.width != null && pr.height != null;
+  if (dpiParsed.value != null && !hasPrint) {
+    return {
+      ok: false,
+      error: "Set print area width and height (px) before setting a minimum DPI.",
+    };
+  }
+
+  if (hasPrint) {
+    return {
+      ok: true,
+      itemImageRequirementLabel: label,
+      itemPrintAreaWidthPx: pr.width,
+      itemPrintAreaHeightPx: pr.height,
+      itemMinArtworkDpi: dpiParsed.value,
+    };
+  }
+  return {
+    ok: true,
+    itemImageRequirementLabel: label,
+    itemPrintAreaWidthPx: null,
+    itemPrintAreaHeightPx: null,
+    itemMinArtworkDpi: null,
+  };
 }

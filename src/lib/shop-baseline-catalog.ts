@@ -11,10 +11,13 @@ export type ShopSetupCatalogOption = {
   exampleHref: string | null;
   /** Unit goods/services (COGS) from admin baseline — used for estimated shop profit at list price. */
   goodsServicesCostCents: number;
-  /** Admin copy for print/DPI expectations; shown when {@link minArtworkLongEdgePx} is set. */
+  /** Admin copy for print/DPI expectations. */
   imageRequirementLabel: string | null;
-  /** When set, artwork longest edge (px) must be at least this value. */
-  minArtworkLongEdgePx: number | null;
+  /** When both print dimensions set, listing artwork uses fixed-aspect crop and exact export size (px). */
+  printAreaWidthPx: number | null;
+  printAreaHeightPx: number | null;
+  /** When set with print area, crop must cover extra source pixels vs. 300 DPI template (see listing-artwork-print-area). */
+  minArtworkDpi: number | null;
 };
 
 /** One admin catalog item as a single selectable row. */
@@ -34,7 +37,9 @@ export function flattenShopBaselineCatalogGroups(groups: ShopSetupCatalogGroup[]
     exampleHref: g.option.exampleHref,
     goodsServicesCostCents: g.option.goodsServicesCostCents,
     imageRequirementLabel: g.option.imageRequirementLabel,
-    minArtworkLongEdgePx: g.option.minArtworkLongEdgePx,
+    printAreaWidthPx: g.option.printAreaWidthPx,
+    printAreaHeightPx: g.option.printAreaHeightPx,
+    minArtworkDpi: g.option.minArtworkDpi,
   }));
 }
 
@@ -47,7 +52,9 @@ export type AdminBaselineRow = {
   itemMinPriceCents: number;
   itemGoodsServicesCostCents: number;
   itemImageRequirementLabel: string | null;
-  itemMinArtworkLongEdgePx: number | null;
+  itemPrintAreaWidthPx: number | null;
+  itemPrintAreaHeightPx: number | null;
+  itemMinArtworkDpi: number | null;
 };
 
 export type ParsedBaselinePick =
@@ -109,10 +116,22 @@ export function buildShopBaselineCatalogGroups(items: AdminBaselineRow[]): ShopS
         exampleHref: exampleHrefFromAdminUrl(item.itemExampleListingUrl),
         goodsServicesCostCents: Math.max(0, item.itemGoodsServicesCostCents),
         imageRequirementLabel: item.itemImageRequirementLabel?.trim() || null,
-        minArtworkLongEdgePx:
-          item.itemMinArtworkLongEdgePx != null && item.itemMinArtworkLongEdgePx > 0
-            ? item.itemMinArtworkLongEdgePx
+        printAreaWidthPx:
+          item.itemPrintAreaWidthPx != null &&
+          item.itemPrintAreaHeightPx != null &&
+          item.itemPrintAreaWidthPx > 0 &&
+          item.itemPrintAreaHeightPx > 0
+            ? item.itemPrintAreaWidthPx
             : null,
+        printAreaHeightPx:
+          item.itemPrintAreaWidthPx != null &&
+          item.itemPrintAreaHeightPx != null &&
+          item.itemPrintAreaWidthPx > 0 &&
+          item.itemPrintAreaHeightPx > 0
+            ? item.itemPrintAreaHeightPx
+            : null,
+        minArtworkDpi:
+          item.itemMinArtworkDpi != null && item.itemMinArtworkDpi > 0 ? item.itemMinArtworkDpi : null,
       },
     });
   }

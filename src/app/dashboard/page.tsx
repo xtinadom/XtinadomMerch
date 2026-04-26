@@ -286,7 +286,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           itemMinPriceCents: true,
           itemGoodsServicesCostCents: true,
           itemImageRequirementLabel: true,
-          itemMinArtworkLongEdgePx: true,
+          itemPrintAreaWidthPx: true,
+          itemPrintAreaHeightPx: true,
+          itemMinArtworkDpi: true,
         },
       })
     : [];

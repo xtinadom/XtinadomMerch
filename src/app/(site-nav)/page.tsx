@@ -6,7 +6,7 @@ import { SiteLegalFooter } from "@/components/SiteLegalFooter";
 import {
   getFeaturedCreatorShopsForHome,
   getHomeHotCarouselProducts,
-  getTopShopsForHome,
+  getHotListingProductsForHome,
 } from "@/lib/marketplace-home";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
@@ -28,12 +28,12 @@ export default async function HomePage({ searchParams }: PageProps) {
         : undefined;
   let featuredShops: Awaited<ReturnType<typeof getFeaturedCreatorShopsForHome>>;
   let hotProducts: Awaited<ReturnType<typeof getHomeHotCarouselProducts>>;
-  let topShops: Awaited<ReturnType<typeof getTopShopsForHome>>;
+  let topItems: Awaited<ReturnType<typeof getHotListingProductsForHome>>;
   try {
-    [featuredShops, hotProducts, topShops] = await Promise.all([
+    [featuredShops, hotProducts, topItems] = await Promise.all([
       getFeaturedCreatorShopsForHome(),
       getHomeHotCarouselProducts(),
-      getTopShopsForHome(10),
+      getHotListingProductsForHome(10),
     ]);
   } catch (e) {
     return <ShopDataLoadError cause={e} />;
@@ -70,6 +70,9 @@ export default async function HomePage({ searchParams }: PageProps) {
             XTINADOM
           </Link>
         </h1>
+        <p className="mx-auto mt-4 max-w-lg text-center text-sm text-zinc-400">
+          A platform for creators, artists, and designers to sell their merchandise.
+        </p>
       </header>
 
       {accountDeleted === "1" ? (
@@ -130,37 +133,15 @@ export default async function HomePage({ searchParams }: PageProps) {
         </section>
       ) : null}
 
-      {topShops.length > 0 ? (
+      {topItems.length > 0 ? (
         <section className="mt-16 border-t border-zinc-800/80 pt-10 text-center">
           <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500 sm:text-base">
-            Top shops
+            Top items
           </h2>
           <ul className="mx-auto mt-6 flex max-w-5xl flex-wrap justify-center gap-4">
-            {topShops.map((s) => (
-              <li key={s.id} className="w-36 shrink-0 sm:w-40">
-                <Link
-                  href={`/s/${s.slug}`}
-                  className="flex aspect-square min-h-0 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-950/50 p-2.5 text-center transition hover:border-zinc-600 sm:gap-2 sm:p-3"
-                >
-                  <div className="aspect-square w-[40%] max-w-[4.5rem] shrink-0 overflow-hidden rounded-lg bg-zinc-900 sm:max-w-[5.5rem]">
-                    {s.profileImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={s.profileImageUrl} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs font-medium text-zinc-600">
-                        {s.displayName.slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  <p className="line-clamp-2 w-full min-w-0 text-xs font-medium text-zinc-100 sm:text-sm">
-                    {s.displayName}
-                  </p>
-                  {s.bio ? (
-                    <p className="line-clamp-2 w-full min-w-0 text-[10px] leading-snug text-zinc-500 sm:text-[11px]">
-                      {s.bio}
-                    </p>
-                  ) : null}
-                </Link>
+            {topItems.map((p) => (
+              <li key={p.id} className="flex w-[175px] shrink-0 justify-center">
+                <ProductCard product={p} showShopName />
               </li>
             ))}
           </ul>
@@ -175,10 +156,6 @@ export default async function HomePage({ searchParams }: PageProps) {
           Browse all shops
         </Link>
       </div>
-
-      <p className="mx-auto mt-6 max-w-lg text-center text-sm text-zinc-400">
-        A platform for creators, artists, and designers to sell their merchandise.
-      </p>
 
       <SiteLegalFooter />
     </main>

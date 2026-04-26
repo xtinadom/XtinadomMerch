@@ -2,7 +2,8 @@ export type ShopBrowseSort = "editorial" | "sales" | "new";
 
 export function parseShopBrowseSort(v: string | undefined): ShopBrowseSort {
   if (v === "sales" || v === "new" || v === "editorial") return v;
-  return "editorial";
+  /** Default: sales so “top shops” grids match revenue order unless a sort pill is chosen. */
+  return "sales";
 }
 
 type ShopBrowseRow = {

@@ -478,14 +478,23 @@ model AdminCatalogItem {
   itemGoodsServicesCostCents Int @default(0)
   /**
    * Optional free-text shown on the listing request form (e.g. "12\" @ 300 DPI").
-   * Paired with {@link itemMinArtworkLongEdgePx} when set.
    */
   itemImageRequirementLabel  String?  @db.VarChar(400)
   /**
-   * When set, listing artwork (longest edge, pixels) must be at least this value for print quality / DPI.
-   * Null = no client/server dimension check.
+   * Legacy longest-edge pixel minimum (no longer editable in admin; kept for DB compatibility).
    */
   itemMinArtworkLongEdgePx     Int?
+  /**
+   * Optional Printify print-area size in pixels (both set or both null). When set, listing artwork must
+   * match this aspect; optional {@link itemMinArtworkDpi} tightens minimum source resolution vs. reference DPI.
+   */
+  itemPrintAreaWidthPx  Int?
+  itemPrintAreaHeightPx Int?
+  /**
+   * When set with print area, crop must cover at least print dimensions scaled by (minDpi / 300)
+   * (reference: print W×H are assumed specified at 300 DPI).
+   */
+  itemMinArtworkDpi Int?
   catalogTags           AdminCatalogItemTag[]
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

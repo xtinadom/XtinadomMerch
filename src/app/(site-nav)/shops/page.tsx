@@ -21,7 +21,7 @@ type PageProps = {
 };
 
 function sortHref(next: ShopBrowseSort): string {
-  if (next === "editorial") return "/shops";
+  if (next === "sales") return "/shops";
   return `/shops?sort=${next}`;
 }
 
@@ -141,7 +141,7 @@ export default async function ShopsBrowsePage({ searchParams }: PageProps) {
       ) : null}
 
       <section className="mt-2">
-        <h2 className="mb-4 text-sm font-medium uppercase tracking-wide text-zinc-500">Browse</h2>
+        <h2 className="mb-4 text-sm font-medium uppercase tracking-wide text-zinc-500">Top shops</h2>
         {gridShops.length === 0 ? (
           <p className="text-sm text-zinc-600">
             No shops yet —{" "}

@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
 import { submitFirstListingSetup, type ShopSetupActionResult } from "@/actions/dashboard-shop-setup";
 import { ItemGuidelinesPopup } from "@/components/ItemGuidelinesPopup";
+import { ListingArtworkCropDialog } from "@/components/dashboard/ListingArtworkCropDialog";
 import { ListingSlotPromoRedeemForm } from "@/components/dashboard/ListingSlotPromoRedeemForm";
 import { flattenShopBaselineCatalogGroups, type ShopSetupCatalogGroup } from "@/lib/shop-baseline-catalog";
 import type { DraftListingRequestPrefillPayload } from "@/lib/shop-baseline-draft-prefill";
 import { SHOP_LISTING_MAX_PRICE_CENTS, shopListingMaxPriceUsdLabel } from "@/lib/marketplace-constants";
+import { exportedImageMeetsPrintDimensions } from "@/lib/listing-artwork-print-area";
 import { expectedShopProfitMerchandiseUnitCents } from "@/lib/marketplace-fee";
 
 const btnPrimary =
@@ -106,6 +108,9 @@ export function ShopFirstListingRequestPanel(props: {
   const [listingPrice, setListingPrice] = useState("");
   const [listingRequestItemName, setListingRequestItemName] = useState("");
   const [listingHasFile, setListingHasFile] = useState(false);
+  const [listingSubmitArtworkFile, setListingSubmitArtworkFile] = useState<File | null>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [cropSourceObjectUrl, setCropSourceObjectUrl] = useState<string | null>(null);
   const [listingArtworkPreviewUrl, setListingArtworkPreviewUrl] = useState<string | null>(null);
   const [listingArtworkPixels, setListingArtworkPixels] = useState<{ w: number; h: number } | null>(null);
   const [listingArtworkMeasureError, setListingArtworkMeasureError] = useState<string | null>(null);
@@ -173,6 +178,18 @@ export function ShopFirstListingRequestPanel(props: {
     }
     return null;
   }, [catalogGroups, listingProductId]);
+
+  useEffect(() => {
+    setListingSubmitArtworkFile(null);
+    setListingHasFile(false);
+    setListingArtworkPreviewUrl(null);
+    setCropDialogOpen(false);
+    setCropSourceObjectUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    if (listingFileRef.current) listingFileRef.current.value = "";
+  }, [listingProductId]);
 
   useEffect(() => {
     if (!listingProductId) {
@@ -251,6 +268,7 @@ export function ShopFirstListingRequestPanel(props: {
         setListingPrice("");
         setListingRequestItemName("");
         setListingHasFile(false);
+        setListingSubmitArtworkFile(null);
         setListingArtworkPreviewUrl(null);
         if (listingFileRef.current) listingFileRef.current.value = "";
         router.refresh();
@@ -261,31 +279,32 @@ export function ShopFirstListingRequestPanel(props: {
   }
 
   const listingRequestItemNameOk = listingRequestItemName.trim().length > 0;
-  const minArtworkLongEdge = selectedCatalogGroup?.option.minArtworkLongEdgePx ?? null;
-  const needsArtworkResolutionCheck = Boolean(
-    minArtworkLongEdge && minArtworkLongEdge > 0 && listingHasFile,
+  const printAreaW = selectedCatalogGroup?.option.printAreaWidthPx ?? null;
+  const printAreaH = selectedCatalogGroup?.option.printAreaHeightPx ?? null;
+  const requiresPrintCrop = Boolean(
+    printAreaW != null && printAreaH != null && printAreaW > 0 && printAreaH > 0,
   );
-  const artworkLongEdge = listingArtworkPixels
-    ? Math.max(listingArtworkPixels.w, listingArtworkPixels.h)
-    : null;
-  const listingArtworkResolutionError = (() => {
-    if (listingArtworkMeasureError) return listingArtworkMeasureError;
-    if (!needsArtworkResolutionCheck) return null;
-    if (artworkLongEdge == null) return null;
-    if (minArtworkLongEdge != null && minArtworkLongEdge > 0 && artworkLongEdge < minArtworkLongEdge) {
-      const note = selectedCatalogGroup?.option.imageRequirementLabel?.trim();
-      return `This file does not meet the minimum resolution for this item. Longest edge is ${artworkLongEdge}px; at least ${minArtworkLongEdge}px is required${note ? ` (${note})` : ""}.`;
+  const minArtworkDpi = selectedCatalogGroup?.option.minArtworkDpi ?? null;
+  const printExportDimensionsError = (() => {
+    if (!requiresPrintCrop || listingSubmitArtworkFile == null || !listingArtworkPixels) return null;
+    if (printAreaW == null || printAreaH == null) return null;
+    if (!exportedImageMeetsPrintDimensions(listingArtworkPixels.w, listingArtworkPixels.h, printAreaW, printAreaH)) {
+      return `Expected ${printAreaW}×${printAreaH}px after crop; this file is ${listingArtworkPixels.w}×${listingArtworkPixels.h}px.`;
     }
     return null;
   })();
-  const listingArtworkResolutionPending =
-    needsArtworkResolutionCheck && artworkLongEdge == null && !listingArtworkMeasureError;
+  const listingArtworkResolutionError = listingArtworkMeasureError ?? printExportDimensionsError;
+  const listingArtworkResolutionPending = Boolean(
+    listingArtworkPreviewUrl && !listingArtworkPixels && !listingArtworkMeasureError,
+  );
+
+  const hasArtworkReady = requiresPrintCrop ? listingSubmitArtworkFile != null : listingHasFile;
 
   const listingCanSubmit =
     Boolean(listingProductId) &&
     listingPriceMeetsMinimum &&
     listingRequestItemNameOk &&
-    listingHasFile &&
+    hasArtworkReady &&
     !listingArtworkResolutionError &&
     !listingArtworkResolutionPending;
   /** Form fields complete and Stripe ready when a publication fee would apply. */
@@ -367,7 +386,7 @@ export function ShopFirstListingRequestPanel(props: {
               fd.set("productId", listingProductId);
               fd.set("listingPriceDollars", listingPrice);
               fd.set("requestItemName", listingRequestItemName.trim());
-              const art = listingFileRef.current?.files?.[0];
+              const art = listingSubmitArtworkFile ?? listingFileRef.current?.files?.[0];
               if (art) fd.set("listingArtwork", art);
               pendingListingFdRef.current = fd;
               setAttestationOpen(true);
@@ -484,15 +503,35 @@ export function ShopFirstListingRequestPanel(props: {
               disabled={freezeListingRequestFields}
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                setListingHasFile(Boolean(file));
-                if (file && file.type.startsWith("image/")) {
-                  setListingArtworkPreviewUrl(URL.createObjectURL(file));
-                } else {
+                setListingSubmitArtworkFile(null);
+                if (!file || !file.type.startsWith("image/")) {
+                  setListingHasFile(false);
                   setListingArtworkPreviewUrl(null);
+                  return;
                 }
+                const pw = selectedCatalogGroup?.option.printAreaWidthPx ?? null;
+                const ph = selectedCatalogGroup?.option.printAreaHeightPx ?? null;
+                const needCrop = pw != null && ph != null && pw > 0 && ph > 0;
+                if (needCrop) {
+                  setCropSourceObjectUrl((prev) => {
+                    if (prev) URL.revokeObjectURL(prev);
+                    return URL.createObjectURL(file);
+                  });
+                  setCropDialogOpen(true);
+                  setListingHasFile(false);
+                  setListingArtworkPreviewUrl(null);
+                  return;
+                }
+                setListingHasFile(true);
+                setListingArtworkPreviewUrl(URL.createObjectURL(file));
               }}
               className="mt-1 block w-full text-xs text-zinc-400 file:mr-2 file:rounded file:border-0 file:bg-zinc-800 file:px-2 file:py-1 file:text-zinc-200 disabled:cursor-not-allowed"
             />
+            {requiresPrintCrop && !listingSubmitArtworkFile ? (
+              <p className="mt-2 text-[11px] text-zinc-500">
+                After you choose an image, a crop window opens. You must complete cropping before you can submit.
+              </p>
+            ) : null}
             {message ? (
               <p
                 className={
@@ -514,19 +553,16 @@ export function ShopFirstListingRequestPanel(props: {
                   alt=""
                   className="max-h-40 max-w-full rounded-lg border border-zinc-700 bg-zinc-900 object-contain"
                 />
-                {selectedCatalogGroup &&
-                selectedCatalogGroup.option.minArtworkLongEdgePx != null &&
-                selectedCatalogGroup.option.minArtworkLongEdgePx > 0 ? (
+                {requiresPrintCrop && printAreaW != null && printAreaH != null ? (
                   <p className="mt-1.5 text-[11px] text-zinc-500">
-                    {selectedCatalogGroup.option.imageRequirementLabel?.trim() ? (
-                      <span>
-                        {selectedCatalogGroup.option.imageRequirementLabel.trim()}{" "}
-                      </span>
+                    {selectedCatalogGroup?.option.imageRequirementLabel?.trim() ? (
+                      <span>{selectedCatalogGroup.option.imageRequirementLabel.trim()} </span>
                     ) : null}
-                    Requires at least {selectedCatalogGroup.option.minArtworkLongEdgePx}px on the longest image edge.
-                    {artworkLongEdge != null ? (
-                      <span className="ml-1 tabular-nums text-zinc-400">
-                        (this file: {artworkLongEdge}px)
+                    Print file must be exactly {printAreaW}×{printAreaH}px after cropping.
+                    {minArtworkDpi != null && minArtworkDpi > 0 ? (
+                      <span className="mt-1 block">
+                        Minimum effective DPI: {minArtworkDpi} (vs. 300 DPI template — crop step enforces enough
+                        source pixels).
                       </span>
                     ) : null}
                   </p>
@@ -667,6 +703,35 @@ export function ShopFirstListingRequestPanel(props: {
             </div>
           </div>
         </div>
+      ) : null}
+
+      {cropDialogOpen && cropSourceObjectUrl && printAreaW != null && printAreaH != null ? (
+        <ListingArtworkCropDialog
+          open={cropDialogOpen}
+          imageUrl={cropSourceObjectUrl}
+          printWidthPx={printAreaW}
+          printHeightPx={printAreaH}
+          minArtworkDpi={minArtworkDpi}
+          onClose={() => {
+            setCropDialogOpen(false);
+            setCropSourceObjectUrl((prev) => {
+              if (prev) URL.revokeObjectURL(prev);
+              return null;
+            });
+            if (listingFileRef.current) listingFileRef.current.value = "";
+          }}
+          onComplete={(file) => {
+            setCropDialogOpen(false);
+            setCropSourceObjectUrl((prev) => {
+              if (prev) URL.revokeObjectURL(prev);
+              return null;
+            });
+            setListingSubmitArtworkFile(file);
+            setListingHasFile(true);
+            setListingArtworkPreviewUrl(URL.createObjectURL(file));
+            if (listingFileRef.current) listingFileRef.current.value = "";
+          }}
+        />
       ) : null}
 
       <ItemGuidelinesPopup open={guidelinesOpen} onClose={() => setGuidelinesOpen(false)} />

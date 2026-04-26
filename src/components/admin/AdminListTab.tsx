@@ -29,7 +29,9 @@ export async function AdminListTab() {
     itemMinPriceCents: item.itemMinPriceCents,
     itemGoodsServicesCostCents: item.itemGoodsServicesCostCents,
     itemImageRequirementLabel: item.itemImageRequirementLabel,
-    itemMinArtworkLongEdgePx: item.itemMinArtworkLongEdgePx,
+    itemPrintAreaWidthPx: item.itemPrintAreaWidthPx,
+    itemPrintAreaHeightPx: item.itemPrintAreaHeightPx,
+    itemMinArtworkDpi: item.itemMinArtworkDpi,
     tags: item.catalogTags.map((ct) => ({
       id: ct.tag.id,
       name: ct.tag.name,
