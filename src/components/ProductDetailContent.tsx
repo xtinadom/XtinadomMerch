@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ProductAddToCartForm } from "@/components/ProductAddToCartForm";
-import { getShippingFlatCents } from "@/lib/shipping";
 import { productImageUrlsForShopListing } from "@/lib/product-media";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { PrintifyVariantAddToCart } from "@/components/PrintifyVariantAddToCart";
@@ -10,15 +9,14 @@ import { SHOP_ALL_ROUTE } from "@/lib/constants";
 import type { StorefrontProduct } from "@/lib/product-storefront";
 import { PLATFORM_SHOP_SLUG, shopAllProductsHref, shopUniversalTagHref } from "@/lib/marketplace-constants";
 
+const SHOP_NAME_LINK_CLASS =
+  "store-dimension-brand text-sm uppercase tracking-[0.2em] text-blue-400/80 transition hover:text-blue-300/90 sm:text-base";
+
 function formatPrice(cents: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
   }).format(cents / 100);
-}
-
-function stockLabel(): string {
-  return "In stock";
 }
 
 export function ProductDetailContent({
@@ -29,11 +27,18 @@ export function ProductDetailContent({
   ownerSupplementImageUrl,
   listingStorefrontCatalogImageUrls,
   printifyVariantShopPriceCentsById,
+  adminCatalogStorefrontDescription,
+  /** Shop listing’s item name (`requestItemName`); falls back to `product.name` when missing. */
+  listingItemName,
+  /** Admin List item `name`; falls back to linked rows on `product` when omitted. */
+  adminCatalogItemName,
+  /** Shop owner one-line pitch (`ShopListing.storefrontItemBlurb`, max tweet length). */
+  storefrontItemBlurb,
 }: {
   product: StorefrontProduct;
   variant: "page" | "modal";
   /** When set, cart + breadcrumbs target this shop slug (`/s/...`). */
-  tenant?: { shopSlug: string; listingPriceCents: number };
+  tenant?: { shopSlug: string; listingPriceCents: number; shopDisplayName: string };
   /** Per-variant shop unit prices (cents) for multi-variant Printify picker; from listing row. */
   printifyVariantShopPriceCentsById?: Record<string, number>;
   /** Optional admin-set listing image (tenant PDP only). */
@@ -42,12 +47,31 @@ export function ProductDetailContent({
   ownerSupplementImageUrl?: string | null;
   /** Catalog image subset for this shop listing; undefined = all catalog images. */
   listingStorefrontCatalogImageUrls?: string[];
+  /**
+   * Admin List “Storefront description” (resolved server-side). When set, used before
+   * `Product.description`. Omit for legacy callers that only pass `product`.
+   */
+  adminCatalogStorefrontDescription?: string;
+  listingItemName?: string | null;
+  adminCatalogItemName?: string | null;
+  storefrontItemBlurb?: string | null;
 }) {
   const shopSlug = tenant?.shopSlug ?? PLATFORM_SHOP_SLUG;
+  const displayItemName = listingItemName?.trim() || product.name;
+  const catalogNameFromProduct =
+    product.adminCatalogItemPlatformLinks?.map((x) => x.name?.trim()).find(Boolean) ?? null;
+  const resolvedAdminCatalogItemName =
+    adminCatalogItemName?.trim() || catalogNameFromProduct || null;
+  const showAdminCatalogSubtitle =
+    resolvedAdminCatalogItemName != null &&
+    resolvedAdminCatalogItemName.toLowerCase() !== displayItemName.trim().toLowerCase();
+  const adminCatalogSubtitle = showAdminCatalogSubtitle ? (
+    <p className="mt-1 text-[11px] font-normal leading-snug text-zinc-500 sm:text-xs">
+      {resolvedAdminCatalogItemName}
+    </p>
+  ) : null;
   const displayPriceCents = tenant?.listingPriceCents ?? product.priceCents;
 
-  const availability = stockLabel();
-  const shippingCents = getShippingFlatCents();
   const images = productImageUrlsForShopListing(product, {
     adminListingSecondaryImageUrl,
     ownerSupplementImageUrl,
@@ -56,27 +80,31 @@ export function ProductDetailContent({
   const printifyVariants = getPrintifyVariantsForProduct(product);
   const multiPrintify = printifyVariants.length > 1;
 
+  const adminFromProductOnly =
+    (product.adminCatalogItemPlatformLinks ?? [])
+      .map((x) => x.storefrontDescription?.trim() || "")
+      .filter(Boolean)
+      .join("\n\n") || "";
+  const adminPart =
+    adminCatalogStorefrontDescription !== undefined
+      ? adminCatalogStorefrontDescription
+      : adminFromProductOnly;
+  const description = adminPart.trim() || product.description?.trim() || "";
+  const blurbText = storefrontItemBlurb?.trim() || "";
+
   const primary = product.primaryTag;
   const allProductsHref =
     shopSlug === PLATFORM_SHOP_SLUG ? SHOP_ALL_ROUTE : shopAllProductsHref(shopSlug);
-  const tagHref =
-    primary != null ? shopUniversalTagHref(shopSlug, primary.slug) : allProductsHref;
-
-  const breadcrumb = (
+  const breadcrumb = primary ? (
     <p className="store-kicker mb-8 text-zinc-500">
-      <Link href={allProductsHref} className="hover:text-blue-400/90">
-        All products
+      <Link
+        href={shopUniversalTagHref(shopSlug, primary.slug)}
+        className="hover:text-blue-400/90"
+      >
+        {primary.name}
       </Link>
-      {primary ? (
-        <>
-          <span className="mx-2 text-zinc-700">·</span>
-          <Link href={tagHref} className="hover:text-blue-400/90">
-            {primary.name}
-          </Link>
-        </>
-      ) : null}
     </p>
-  );
+  ) : null;
 
   const grid = (
     <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
@@ -104,33 +132,62 @@ export function ProductDetailContent({
         </div>
       )}
       <div>
-        {!multiPrintify ? (
-          <p className="text-2xl text-blue-200/90">{formatPrice(displayPriceCents)}</p>
-        ) : null}
-        <p className="mt-2 text-sm text-zinc-500">{availability}</p>
-        <p className="mt-2 text-sm text-zinc-500">
-          Shipping: {formatPrice(shippingCents)} flat rate
-        </p>
-        {product.description && (
-          <p className="mt-6 text-sm leading-relaxed text-zinc-400">
-            {product.description}
+        {tenant ? (
+          <p className="m-0">
+            <Link
+              href={
+                shopSlug === PLATFORM_SHOP_SLUG
+                  ? allProductsHref
+                  : `/s/${encodeURIComponent(shopSlug)}`
+              }
+              className={SHOP_NAME_LINK_CLASS}
+            >
+              {tenant.shopDisplayName}
+            </Link>
           </p>
-        )}
-        <p className="mt-6 text-xs text-zinc-600">
-          Print on demand — ships from our print partner.
-        </p>
+        ) : null}
+        {variant === "page" ? (
+          <h1
+            className={
+              tenant
+                ? "mt-1.5 text-sm font-medium leading-snug text-zinc-100 sm:mt-2 sm:text-base"
+                : "m-0 text-sm font-medium leading-snug text-zinc-100 sm:text-base"
+            }
+          >
+            {displayItemName}
+          </h1>
+        ) : null}
+        {variant === "page" ? adminCatalogSubtitle : null}
+        {!multiPrintify ? (
+          <p
+            className={
+              variant === "page" || tenant
+                ? "mt-3 text-2xl text-blue-200/90"
+                : "text-2xl text-blue-200/90"
+            }
+          >
+            {formatPrice(displayPriceCents)}
+          </p>
+        ) : null}
+        {blurbText ? (
+          <p className="mt-6 whitespace-pre-line text-sm italic leading-relaxed text-zinc-300">
+            {blurbText}
+          </p>
+        ) : null}
+        {description ? (
+          <div className={blurbText ? "mt-5" : "mt-6"}>
+            <h3 className="text-xs font-medium uppercase tracking-wide text-zinc-500">Item details</h3>
+            <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-zinc-400">{description}</p>
+          </div>
+        ) : null}
       </div>
     </div>
   );
 
   if (variant === "page") {
     return (
-      <StoreDocumentPanel
-        backHref={allProductsHref}
-        backLabel="All products"
-        title={product.name}
-      >
-        <div className="-mt-2">{breadcrumb}</div>
+      <StoreDocumentPanel backHref={allProductsHref} backLabel="All products" omitHeaderTitle>
+        {breadcrumb ? <div className="-mt-2">{breadcrumb}</div> : null}
         {grid}
       </StoreDocumentPanel>
     );
@@ -139,12 +196,15 @@ export function ProductDetailContent({
   return (
     <>
       {breadcrumb}
-      <h2
-        id="product-modal-title"
-        className="store-dimension-page-title mb-8 text-2xl text-zinc-50 sm:text-3xl"
-      >
-        {product.name}
-      </h2>
+      <div className="mb-8">
+        <h2
+          id="product-modal-title"
+          className="store-dimension-page-title text-2xl text-zinc-50 sm:text-3xl"
+        >
+          {displayItemName}
+        </h2>
+        {adminCatalogSubtitle}
+      </div>
       {grid}
     </>
   );

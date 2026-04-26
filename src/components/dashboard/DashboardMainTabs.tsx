@@ -18,12 +18,12 @@ import {
 } from "@/lib/marketplace-constants";
 import {
   DashboardListingItemNameForm,
+  DashboardListingStorefrontBlurbForm,
   DashboardListingPriceForm,
   DashboardListingSupplementPhotoForm,
   DashboardSubmitListingRequestForm,
   ListingStorefrontCatalogImagesForms,
 } from "@/components/dashboard/DashboardListingForms";
-import { ListingSlotPromoRedeemForm } from "@/components/dashboard/ListingSlotPromoRedeemForm";
 import { DemoShopPurchaseButton } from "@/components/dashboard/DemoShopPurchaseButton";
 import { ShopProfileSetupPanel } from "@/components/dashboard/ShopProfileSetupPanel";
 import {
@@ -73,6 +73,8 @@ export type DashboardListingRow = {
   ownerSupplementImageUrl: string | null;
   /** Shop label for this listing request (optional). */
   requestItemName: string | null;
+  /** Optional one-line pitch on the public PDP (`ShopListing.storefrontItemBlurb`). */
+  storefrontItemBlurb: string | null;
   listingFeePaidAt: string | null;
   adminRemovedFromShopAt: string | null;
   creatorRemovedFromShopAt: string | null;
@@ -106,7 +108,7 @@ export type DashboardPaidOrderRow = {
   id: string;
   createdAt: string;
   lines: Array<{
-    productName: string;
+    lineDisplayLabel: string;
     quantity: number;
     unitPriceCents: number;
     goodsServicesCostCents: number;
@@ -221,6 +223,49 @@ function statusBadgeClass(status: ListingRequestStatus, active: boolean): string
     default:
       return "bg-zinc-900/80 text-zinc-400 ring-zinc-700/80";
   }
+}
+
+/** Collapsible block on the Listings tab (closed by default). */
+function ListingsTabExpandSection({
+  className = "",
+  title,
+  titleClassName,
+  blurb,
+  badgeCount,
+  children,
+}: {
+  className?: string;
+  title: string;
+  titleClassName: string;
+  blurb?: ReactNode;
+  badgeCount?: number;
+  children: ReactNode;
+}) {
+  return (
+    <details className={`group rounded-xl border border-zinc-800 bg-zinc-950/25 ${className}`}>
+      <summary className="flex cursor-pointer list-none items-start gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className={`text-xs font-semibold uppercase tracking-wide ${titleClassName}`}>{title}</h3>
+            {badgeCount !== undefined ? (
+              <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-200">
+                {badgeCount}
+              </span>
+            ) : null}
+          </div>
+          {blurb ? <div className="mt-1 text-[11px] text-zinc-600">{blurb}</div> : null}
+        </div>
+        <span
+          className="shrink-0 pt-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-600"
+          aria-hidden
+        >
+          Expand
+          <span className="ml-1 inline-block transition group-open:rotate-180">▾</span>
+        </span>
+      </summary>
+      <div className="border-t border-zinc-800/80 px-4 pb-4 pt-3">{children}</div>
+    </details>
+  );
 }
 
 function buildListingDerived(
@@ -562,17 +607,33 @@ function ListingCard({
           {dashboardBadge.label}
         </span>
       </div>
+      <DashboardListingStorefrontBlurbForm
+        listingId={listing.id}
+        storefrontItemBlurb={listing.storefrontItemBlurb}
+        readOnly={fieldsReadOnly}
+      />
       {listing.requestStatus === ListingRequestStatus.rejected ? (
-        <>
-          <p className="mt-1 text-xs text-zinc-500">
-            Rejected — this listing cannot be edited. Contact support if you need help.
-          </p>
+        <details className="mt-1 group">
+          <summary className="flex cursor-pointer list-none items-baseline gap-2 text-xs text-zinc-500">
+            <span className="min-w-0 flex-1">
+              Rejected — this listing cannot be edited. Contact support if you need help.
+            </span>
+            <span
+              className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-zinc-600"
+              aria-hidden
+            >
+              Details
+              <span className="ml-1 inline-block transition group-open:rotate-180">▾</span>
+            </span>
+          </summary>
           {listing.rejectionReasonText ? (
-            <p className="mt-1 text-xs leading-snug text-red-200/85">
+            <div className="mt-1 text-xs leading-snug text-red-200/85">
               <DashboardNoticeBody body={listing.rejectionReasonText} />
-            </p>
-          ) : null}
-        </>
+            </div>
+          ) : (
+            <p className="mt-1 text-xs text-zinc-600">No additional rejection details were provided.</p>
+          )}
+        </details>
       ) : statusLine || freeListingInline ? (
         <p className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs text-zinc-500">
           {statusLine ? <span>{statusLine}</span> : null}
@@ -682,7 +743,7 @@ export function DashboardMainTabs(props: {
   paidListingFeeLabel: string;
   /** Extra free publication slots from redeemed promo codes (non-founder creator shops). */
   listingFeeBonusFreeSlots: number;
-  /** Show self-serve promo redeem UI on the Listings tab. */
+  /** Show self-serve promo redeem UI on the Request listing tab. */
   showListingSlotPromoRedeem: boolean;
   isPlatform: boolean;
   listings: DashboardListingRow[];
@@ -703,7 +764,7 @@ export function DashboardMainTabs(props: {
   shopStripeConnectReadyForCharges: boolean;
   /** Stripe.js publishable key for embedded listing fee card pay. */
   stripePublishableKey: string | null;
-  /** When true, show a gated demo control on the Orders tab (`SHOP_DEMO_PURCHASE_BUTTON=1`). */
+  /** When true, show demo paid-order control on Orders tab (local `next dev` + `SHOP_DEMO_PURCHASE_BUTTON=1` only). */
   showDemoPurchaseButton?: boolean;
 }) {
   const {
@@ -916,6 +977,7 @@ export function DashboardMainTabs(props: {
             draftListingRequestPrefill={draftListingRequestPrefill}
             publicationFeeLabel={setup.firstListingPublicationFeeLabel}
             stripeConnectReadyForPaidListings={setup.stripeConnectReadyForPaidListings}
+            showListingSlotPromoRedeem={showListingSlotPromoRedeem}
             embedded
           />
         </div>
@@ -928,20 +990,24 @@ export function DashboardMainTabs(props: {
         hidden={tab !== "listings"}
         className="pt-4"
       >
-        {showListingSlotPromoRedeem ? <ListingSlotPromoRedeemForm /> : null}
-
         {groupedRequest.length > 0 ? (
-          <div className="mt-6">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Listing requests & setup
-            </h3>
-            {!isPlatform ? (
-              <p className="mt-1 text-[11px] text-zinc-600">
-                {isFounderUnlimitedFreeListingsShop(shopSlug)
-                  ? "All your listings publish free."
-                  : `Your first ${LISTING_FEE_FREE_SLOT_COUNT} listings are free.`}
-              </p>
-            ) : null}
+          <ListingsTabExpandSection
+            className="mt-6"
+            title="In review & listing setup"
+            titleClassName="text-zinc-500"
+            badgeCount={groupedRequest.length}
+            blurb={
+              !isPlatform ? (
+                isFounderUnlimitedFreeListingsShop(shopSlug) ? (
+                  <>All your listings publish free.</>
+                ) : (
+                  <>Your first {LISTING_FEE_FREE_SLOT_COUNT} listings are free.</>
+                )
+              ) : (
+                <>Drafts, publication fees, and requests awaiting admin.</>
+              )
+            }
+          >
             <ul className="mt-3 space-y-6">
               {groupedRequest.map((g) => (
                 <ListingCard
@@ -958,19 +1024,17 @@ export function DashboardMainTabs(props: {
                 />
               ))}
             </ul>
-          </div>
+          </ListingsTabExpandSection>
         ) : null}
 
         {groupedLive.length > 0 ? (
-          <div
-            className={
-              groupedRequest.length > 0 || groupedRemoved.length > 0 ? "mt-10" : "mt-6"
-            }
+          <ListingsTabExpandSection
+            className="mt-6"
+            title="Live"
+            titleClassName="text-emerald-500/90"
+            badgeCount={groupedLive.length}
+            blurb="Active on your public storefront right now."
           >
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-500/90">Live</h3>
-            <p className="mt-1 text-[11px] text-zinc-600">
-              Active on your public storefront right now.
-            </p>
             <ul className="mt-3 space-y-6">
               {groupedLive.map((g) => (
                 <ListingCard
@@ -987,20 +1051,22 @@ export function DashboardMainTabs(props: {
                 />
               ))}
             </ul>
-          </div>
+          </ListingsTabExpandSection>
         ) : null}
 
         {groupedRemoved.length > 0 ? (
-          <div
-            className={
-              groupedRequest.length > 0 || groupedLive.length > 0 ? "mt-10" : "mt-6"
+          <ListingsTabExpandSection
+            className="mt-6"
+            title="Rejected"
+            titleClassName="text-red-400/95"
+            badgeCount={groupedRemoved.length}
+            blurb={
+              <>
+                You took these off your storefront, or the listing request was rejected. These rows aren&apos;t editable
+                — contact support to restore a removed listing or to discuss a rejected request.
+              </>
             }
           >
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-red-400/95">Rejected</h3>
-            <p className="mt-1 text-[11px] text-zinc-600">
-              You took these off your storefront, or the listing request was rejected. These rows aren&apos;t editable —
-              contact support to restore a removed listing or to discuss a rejected request.
-            </p>
             <ul className="mt-3 space-y-6">
               {groupedRemoved.map((g) => (
                 <ListingCard
@@ -1017,7 +1083,7 @@ export function DashboardMainTabs(props: {
                 />
               ))}
             </ul>
-          </div>
+          </ListingsTabExpandSection>
         ) : null}
 
         {listings.length === 0 ? (
@@ -1122,11 +1188,14 @@ export function DashboardMainTabs(props: {
                   {o.lines.map((l, i) => (
                     <li key={i} className="leading-snug">
                       <div className="text-zinc-300">
-                        {l.productName} × {l.quantity}
+                        {l.lineDisplayLabel} × {l.quantity}
                       </div>
-                      <div className="mt-1 text-[11px] text-zinc-500 tabular-nums">
-                        Sale {formatMoney(l.unitPriceCents * l.quantity)} · Goods/services cost{" "}
-                        {formatMoney(l.goodsServicesCostCents)} · Platform fee {formatMoney(l.platformCutCents)}
+                      <div className="mt-1.5 flex flex-wrap items-baseline gap-x-6 gap-y-1.5 text-[11px] text-zinc-500 tabular-nums">
+                        <span className="shrink-0">Sale {formatMoney(l.unitPriceCents * l.quantity)}</span>
+                        <span className="shrink-0">
+                          Goods/services cost {formatMoney(l.goodsServicesCostCents)}
+                        </span>
+                        <span className="shrink-0">Platform fee {formatMoney(l.platformCutCents)}</span>
                       </div>
                     </li>
                   ))}
@@ -1135,7 +1204,7 @@ export function DashboardMainTabs(props: {
                   className="flex shrink-0 flex-col items-end gap-1 text-right leading-snug text-zinc-300"
                   title="Merchandise only: for each line, sale − goods/services − platform fee; Shop Profit is the sum. Excludes shipping and tips."
                 >
-                  <span className="text-zinc-500">Shop Profit</span>
+                  <span className="text-blue-400">Shop Profit</span>
                   <span className="text-[11px] tabular-nums text-zinc-300">
                     {formatMoney(paidOrderShopProfitCents(o))}
                   </span>

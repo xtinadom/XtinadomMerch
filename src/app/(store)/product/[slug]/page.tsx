@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ProductDetailContent } from "@/components/ProductDetailContent";
+import { ProductStorefrontViewBeacon } from "@/components/ProductStorefrontViewBeacon";
 import { resolvePublicProductDetail } from "@/lib/storefront-product-detail";
 
 export const dynamic = "force-dynamic";
@@ -16,14 +17,21 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const detail = await resolvePublicProductDetail(slug, shop);
   if (!detail) notFound();
   return (
-    <ProductDetailContent
-      product={detail.product}
-      variant="page"
-      tenant={detail.tenant}
-      printifyVariantShopPriceCentsById={detail.printifyVariantShopPriceCentsById}
-      adminListingSecondaryImageUrl={detail.adminListingSecondaryImageUrl}
-      ownerSupplementImageUrl={detail.ownerSupplementImageUrl}
-      listingStorefrontCatalogImageUrls={detail.listingStorefrontCatalogImageUrls}
-    />
+    <>
+      <ProductStorefrontViewBeacon productSlug={detail.product.slug} />
+      <ProductDetailContent
+        product={detail.product}
+        variant="page"
+        tenant={detail.tenant}
+        printifyVariantShopPriceCentsById={detail.printifyVariantShopPriceCentsById}
+        adminListingSecondaryImageUrl={detail.adminListingSecondaryImageUrl}
+        ownerSupplementImageUrl={detail.ownerSupplementImageUrl}
+        listingStorefrontCatalogImageUrls={detail.listingStorefrontCatalogImageUrls}
+        adminCatalogStorefrontDescription={detail.adminCatalogStorefrontDescription}
+        listingItemName={detail.listingItemName}
+        adminCatalogItemName={detail.adminCatalogItemName}
+        storefrontItemBlurb={detail.storefrontItemBlurb}
+      />
+    </>
   );
 }

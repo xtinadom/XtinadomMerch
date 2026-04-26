@@ -11,6 +11,7 @@ import {
   listingFeeCentsForOrdinal,
 } from "@/lib/marketplace-constants";
 import { syncFreeListingFeeWaivers } from "@/lib/listing-fee";
+import { shopDemoPurchaseFeatureEnabled } from "@/lib/shop-demo-purchase-feature";
 import { getStripe } from "@/lib/stripe";
 import { dashboardTryCompleteAccountDeletion } from "@/actions/dashboard-account-danger";
 import { logoutShopOwner } from "@/actions/shop-auth";
@@ -67,6 +68,20 @@ function formatMoney(cents: number) {
 type AdminCatalogRowForDisplay = {
   itemGoodsServicesCostCents: number;
 };
+
+/** Orders tab: shop listing title, then admin catalog product name in parentheses. */
+function dashboardPaidOrderLineDisplayLabel(line: {
+  productName: string;
+  product: { name: string } | null;
+  shopListing: { requestItemName: string | null } | null;
+}): string {
+  const adminLabel = (line.product?.name ?? line.productName).trim() || line.productName;
+  const shopLabel = line.shopListing?.requestItemName?.trim() ?? "";
+  if (!shopLabel || shopLabel === adminLabel) {
+    return adminLabel;
+  }
+  return `${shopLabel} (${adminLabel})`;
+}
 
 /** Uses current admin baseline catalog + listing pick + Printify variant mapping (same as checkout). */
 function paidOrderLineGoodsServicesDisplayCents(
@@ -221,10 +236,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           shopCutCents: true,
           printifyVariantId: true,
           shopListing: {
-            select: { baselineCatalogPickEncoded: true },
+            select: { baselineCatalogPickEncoded: true, requestItemName: true },
           },
           product: {
-            select: { printifyVariants: true },
+            select: { name: true, printifyVariants: true },
           },
         },
       },
@@ -232,8 +247,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   });
 
   const isPlatform = shop.slug === PLATFORM_SHOP_SLUG;
-  const showDemoPurchaseButton =
-    !isPlatform && process.env.SHOP_DEMO_PURCHASE_BUTTON === "1";
+  const showDemoPurchaseButton = !isPlatform && shopDemoPurchaseFeatureEnabled();
   const shopStripeConnectReadyForCharges = shopStripeConnectReadyForListingCharges(shop);
   const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
   const mockListingFeeCheckout = !isPlatform && isMockCheckoutEnabled();
@@ -450,6 +464,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       listingPrintifyVariantId: listing.listingPrintifyVariantId,
       listingPrintifyVariantPrices: listing.listingPrintifyVariantPrices,
       requestItemName: listing.requestItemName,
+      storefrontItemBlurb: listing.storefrontItemBlurb,
       listingFeePaidAt: listing.listingFeePaidAt?.toISOString() ?? null,
       adminRemovedFromShopAt: listing.adminRemovedFromShopAt?.toISOString() ?? null,
       creatorRemovedFromShopAt: listing.creatorRemovedFromShopAt?.toISOString() ?? null,
@@ -498,7 +513,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-12">
+    <main className="mx-auto flex min-h-screen max-w-[868px] flex-col px-4 py-12">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-50">Shop dashboard</h1>
@@ -648,7 +663,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           id: o.id,
           createdAt: o.createdAt.toISOString(),
           lines: o.lines.map((l) => ({
-            productName: l.productName,
+            lineDisplayLabel: dashboardPaidOrderLineDisplayLabel(l),
             quantity: l.quantity,
             unitPriceCents: l.unitPriceCents,
             goodsServicesCostCents: paidOrderLineGoodsServicesDisplayCents(

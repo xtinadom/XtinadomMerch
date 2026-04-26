@@ -84,12 +84,9 @@ export function ShopTagMenu({
             </Link>
           </li>
           <li role="none" className="pt-1">
-            <p className="px-4 py-1 text-[10px] font-medium uppercase tracking-wide text-zinc-600">
-              By tag
-            </p>
-            <div className="px-3 pb-2 pt-0.5">
+            <div className="px-3 pb-2 pt-1">
               <label htmlFor={tagSearchId} className="sr-only">
-                Search tags
+                Search
               </label>
               <input
                 id={tagSearchId}
@@ -99,7 +96,7 @@ export function ShopTagMenu({
                 spellCheck={false}
                 value={tagQuery}
                 onChange={(e) => setTagQuery(e.target.value)}
-                placeholder="Search tags…"
+                placeholder="Search..."
                 className="w-full rounded-md border border-zinc-700/90 bg-zinc-950 px-2.5 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
               />
             </div>

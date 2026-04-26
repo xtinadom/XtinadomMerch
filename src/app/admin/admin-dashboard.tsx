@@ -48,6 +48,9 @@ import {
   type ShopWatchDetail,
   type ShopWatchRow,
 } from "@/components/admin/AdminShopWatchTab";
+import { AdminPlatformBrowseFeaturedPanel } from "@/components/admin/AdminPlatformBrowseFeaturedPanel";
+import { AdminHomeHotCarouselFeaturedPanel } from "@/components/admin/AdminHomeHotCarouselFeaturedPanel";
+import { AdminBrowseShopsPageFeaturedPanel } from "@/components/admin/AdminBrowseShopsPageFeaturedPanel";
 import { AdminShopHomeTopTab, type AdminShopHomeTopRow } from "@/components/admin/AdminShopHomeTopTab";
 import {
   listingRejectionReasonTextForCard,
@@ -68,7 +71,9 @@ import {
   SPECIAL_PROMOTION_FREE_LISTING_IDS,
 } from "@/lib/marketplace-constants";
 import { adminInboxEmailAddress } from "@/lib/admin-inbox-config";
+import { parseShopOrderedFeaturedProductIds } from "@/lib/shop-ordered-featured-product-ids";
 import { ensureBaselineAdminCatalogIfEmpty } from "@/lib/seed-baseline-admin-catalog";
+import { marketplaceAggregatedListingWhere } from "@/lib/shop-listing-storefront-visibility";
 import { supportUnresolvedThreadShopIdsExcludingPlatform } from "@/lib/support-thread-unresolved";
 import { fetchPrintifyCatalog, hasPrintifyApiToken } from "@/lib/printify";
 import { defaultPrintifyVariantIdForCatalogProduct } from "@/lib/printify-catalog";
@@ -452,7 +457,6 @@ export async function AdminDashboardPageContent({
   const [
     adminTags,
     productCount,
-    listingRequestQueueCount,
     removedListingCount,
     adminListCount,
     supportUnresolvedShopIds,
@@ -464,7 +468,6 @@ export async function AdminDashboardPageContent({
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
     prisma.product.count(),
-    prisma.shopListing.count({ where: listingRequestTabPrismaWhere }),
     adminSection === "backend"
       ? prisma.shopListing.count({ where: { removedFromListingRequestsAt: { not: null } } })
       : Promise.resolve(0),
@@ -550,6 +553,7 @@ export async function AdminDashboardPageContent({
       slug: r.slug,
       merchandiseCents: Number(r.merchandiseCents),
       shopCutCents: Number(r.shopCutCents),
+      platformProfitCents: Math.max(0, Number(r.merchandiseCents) - Number(r.shopCutCents)),
       paidLineCount: Number(r.lineCount),
     }));
   }
@@ -600,7 +604,8 @@ export async function AdminDashboardPageContent({
       : [];
 
   let listingRequestRows: AdminListingRequestShopListing[] = [];
-  if (inventoryTab === "requests") {
+  /** Load on every main-dash load so the tab badge matches the filtered list (not raw DB queue). */
+  if (adminSection === "main") {
     listingRequestRows = await prisma.shopListing.findMany({
       where: listingRequestTabPrismaWhere,
       orderBy: { updatedAt: "desc" },
@@ -679,10 +684,19 @@ export async function AdminDashboardPageContent({
       return true;
     });
 
-  const listingRequestTabBadgeCount =
-    inventoryTab === "requests" ? listingRequestTabRows.length : listingRequestQueueCount;
+  /** Same as rows in the Requests tab: excludes approved+paid (or free slot) creator listings. */
+  const listingRequestTabBadgeCount = listingRequestTabRows.length;
 
   let shopWatchRows: ShopWatchRow[] = [];
+  let platformBrowseFeaturedPickerShops: { id: string; displayName: string }[] = [];
+  let platformBrowseFeaturedPickerProductsByShopId: Record<
+    string,
+    { productId: string; label: string }[]
+  > = {};
+  let platformBrowseFeaturedPickerLabelsByProductId: Record<string, string> = {};
+  let platformBrowseFeaturedInitialIds: string[] = [];
+  let platformHomeHotCarouselInitialIds: string[] = [];
+  let platformBrowseShopsPageFeaturedInitialIds: string[] = [];
   let creatorShops: { id: string; displayName: string; slug: string; listingFeeBonusFreeSlots: number | null }[] = [];
   let creatorShopIds: string[] = [];
 
@@ -943,6 +957,83 @@ export async function AdminDashboardPageContent({
         b.frozenCount + b.removedCount - (a.frozenCount + a.removedCount) ||
         a.displayName.localeCompare(b.displayName, undefined, { sensitivity: "base" }),
     );
+  }
+
+  if (inventoryTab === "shop-watch") {
+    try {
+      const platformShop = await prisma.shop.findUnique({
+        where: { slug: PLATFORM_SHOP_SLUG },
+        select: { id: true },
+      });
+      if (platformShop) {
+        try {
+          const featuredRow = await prisma.shop.findUnique({
+            where: { id: platformShop.id },
+            select: {
+              browseAllPageFeaturedProductIds: true,
+              homeHotCarouselFeaturedProductIds: true,
+              browseShopsPageFeaturedShopIds: true,
+            },
+          });
+          platformBrowseFeaturedInitialIds = parseShopOrderedFeaturedProductIds(
+            featuredRow?.browseAllPageFeaturedProductIds ?? null,
+          );
+          platformHomeHotCarouselInitialIds = parseShopOrderedFeaturedProductIds(
+            featuredRow?.homeHotCarouselFeaturedProductIds ?? null,
+          );
+          platformBrowseShopsPageFeaturedInitialIds = parseShopOrderedFeaturedProductIds(
+            featuredRow?.browseShopsPageFeaturedShopIds ?? null,
+          );
+        } catch (e) {
+          console.warn(
+            "[admin-dashboard] platform featured JSON columns unavailable (apply migrations for browse-all / home hot carousel?)",
+            e,
+          );
+        }
+        const liveRows = await prisma.shopListing.findMany({
+          where: {
+            ...marketplaceAggregatedListingWhere,
+            product: { active: true },
+          },
+          select: {
+            shopId: true,
+            productId: true,
+            requestItemName: true,
+            product: { select: { name: true } },
+            shop: { select: { displayName: true } },
+          },
+          orderBy: { product: { name: "asc" } },
+          take: 500,
+        });
+        const byShop = new Map<string, { productId: string; label: string }[]>();
+        const shopDisplayNameById = new Map<string, string>();
+        for (const r of liveRows) {
+          shopDisplayNameById.set(r.shopId, r.shop.displayName);
+          const itemLabel = r.requestItemName?.trim() || r.product.name;
+          const list = byShop.get(r.shopId) ?? [];
+          if (list.some((x) => x.productId === r.productId)) continue;
+          list.push({ productId: r.productId, label: itemLabel });
+          byShop.set(r.shopId, list);
+        }
+        platformBrowseFeaturedPickerShops = [...shopDisplayNameById.entries()]
+          .map(([id, displayName]) => ({ id, displayName }))
+          .sort((a, b) =>
+            a.displayName.localeCompare(b.displayName, undefined, { sensitivity: "base" }),
+          );
+        platformBrowseFeaturedPickerProductsByShopId = {};
+        platformBrowseFeaturedPickerLabelsByProductId = {};
+        for (const [sid, products] of byShop) {
+          platformBrowseFeaturedPickerProductsByShopId[sid] = [...products].sort((a, b) =>
+            a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
+          );
+          for (const p of products) {
+            platformBrowseFeaturedPickerLabelsByProductId[p.productId] = p.label;
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[admin-dashboard] platform shop watch featured panel load", e);
+    }
   }
 
   let shopWatchTabBadgeCount = 0;
@@ -1284,6 +1375,7 @@ export async function AdminDashboardPageContent({
           <Link
             href={`${basePath}?tab=requests`}
             role="tab"
+            title="Count matches the Requests list (excludes approved listings that are already paid or in a free slot)."
             aria-selected={inventoryTab === "requests"}
             className={`shrink-0 rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
               inventoryTab === "requests"
@@ -1444,15 +1536,36 @@ export async function AdminDashboardPageContent({
               r2Configured={isR2UploadConfigured()}
             />
           ) : inventoryTab === "shop-watch" ? (
-            <AdminShopWatchTab
-              rows={shopWatchRows}
-              marketplaceStats={{
-                creatorAccountCount,
-                shopsWithListingCount,
-                shopsWithPaidListingCount,
-              }}
-              initialExpandedShopId={watchShopParam}
-            />
+            <>
+              <AdminHomeHotCarouselFeaturedPanel
+                key={`home-hot:${JSON.stringify(platformHomeHotCarouselInitialIds)}`}
+                shops={platformBrowseFeaturedPickerShops}
+                productsByShopId={platformBrowseFeaturedPickerProductsByShopId}
+                labelsByProductId={platformBrowseFeaturedPickerLabelsByProductId}
+                initialProductIds={platformHomeHotCarouselInitialIds}
+              />
+              <AdminPlatformBrowseFeaturedPanel
+                key={JSON.stringify(platformBrowseFeaturedInitialIds)}
+                shops={platformBrowseFeaturedPickerShops}
+                productsByShopId={platformBrowseFeaturedPickerProductsByShopId}
+                labelsByProductId={platformBrowseFeaturedPickerLabelsByProductId}
+                initialProductIds={platformBrowseFeaturedInitialIds}
+              />
+              <AdminBrowseShopsPageFeaturedPanel
+                key={`browse-shops:${JSON.stringify(platformBrowseShopsPageFeaturedInitialIds)}`}
+                shops={creatorShops}
+                initialShopIds={platformBrowseShopsPageFeaturedInitialIds}
+              />
+              <AdminShopWatchTab
+                rows={shopWatchRows}
+                marketplaceStats={{
+                  creatorAccountCount,
+                  shopsWithListingCount,
+                  shopsWithPaidListingCount,
+                }}
+                initialExpandedShopId={watchShopParam}
+              />
+            </>
           ) : inventoryTab === "shop-leaderboard" ? (
             <AdminShopLeaderboardTab
               rows={shopLeaderboardRows}

@@ -1,10 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
+import type { Prisma } from "@/generated/prisma/client";
 
 const include = {
   primaryTag: true,
   tags: { include: { tag: true } },
-} as const;
+  adminCatalogItemPlatformLinks: {
+    select: { id: true, name: true, storefrontDescription: true },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+  },
+} satisfies Prisma.ProductInclude;
 
 export type StorefrontProduct = NonNullable<
   Awaited<ReturnType<typeof loadStorefrontProductBySlug>>

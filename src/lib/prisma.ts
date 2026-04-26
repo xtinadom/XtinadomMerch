@@ -12,7 +12,7 @@ export type PrismaAdminInboundEmailDelegate = PrismaClient["adminInboundEmail"];
  * (or delete `.next`) if needed.
  */
 const PRISMA_SINGLETON_STAMP =
-  "postgres-adapter-v33-admin-catalog-artwork-fields";
+  "postgres-adapter-v37-storefront-blurb-client-sync";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

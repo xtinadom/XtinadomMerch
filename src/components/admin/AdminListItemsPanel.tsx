@@ -23,6 +23,7 @@ export type AdminListItemTag = {
 export type AdminListItemSerializable = {
   id: string;
   name: string;
+  storefrontDescription: string | null;
   itemPlatformProductId: string | null;
   itemExampleListingUrl: string | null;
   itemMinPriceCents: number;
@@ -213,6 +214,7 @@ export function AdminListItemsPanel({
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [editStorefrontDescription, setEditStorefrontDescription] = useState("");
   const [editItemExampleListingUrl, setEditItemExampleListingUrl] = useState("");
   const [editItemMinPriceDollars, setEditItemMinPriceDollars] = useState("");
   const [editItemGoodsServicesCostDollars, setEditItemGoodsServicesCostDollars] = useState("");
@@ -266,6 +268,7 @@ export function AdminListItemsPanel({
     const item = items.find((x) => x.id === itemId);
     if (!item) return;
     setEditName(item.name);
+    setEditStorefrontDescription(item.storefrontDescription ?? "");
     setEditItemExampleListingUrl(item.itemExampleListingUrl ?? "");
     setEditItemMinPriceDollars(dollarsStringFromCents(item.itemMinPriceCents));
     setEditItemGoodsServicesCostDollars(dollarsStringFromCents(item.itemGoodsServicesCostCents));
@@ -280,6 +283,7 @@ export function AdminListItemsPanel({
   function cancelEdit() {
     setEditingId(null);
     setEditName("");
+    setEditStorefrontDescription("");
     setEditItemExampleListingUrl("");
     setEditItemMinPriceDollars("");
     setEditItemGoodsServicesCostDollars("");
@@ -317,6 +321,7 @@ export function AdminListItemsPanel({
     const fd = new FormData();
     fd.set("itemId", editingId);
     fd.set("itemName", name);
+    fd.set("storefrontDescription", editStorefrontDescription);
     fd.set("itemExampleListingUrl", editItemExampleListingUrl);
     fd.set("itemMinPriceDollars", editItemMinPriceDollars);
     fd.set("itemGoodsServicesCostDollars", editItemGoodsServicesCostDollars);
@@ -355,9 +360,11 @@ export function AdminListItemsPanel({
               exampleListingUrl={editItemExampleListingUrl}
               minPriceDollars={editItemMinPriceDollars}
               goodsServicesCostDollars={editItemGoodsServicesCostDollars}
+              storefrontDescription={editStorefrontDescription}
               onChangeExampleListingUrl={setEditItemExampleListingUrl}
               onChangeMinPriceDollars={setEditItemMinPriceDollars}
               onChangeGoodsServicesCostDollars={setEditItemGoodsServicesCostDollars}
+              onChangeStorefrontDescription={setEditStorefrontDescription}
             />
             <AdminCatalogArtworkRequirementFields
               imageRequirementLabel={editItemImageRequirementLabel}

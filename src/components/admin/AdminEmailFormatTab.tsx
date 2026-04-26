@@ -121,7 +121,7 @@ function EmailHtmlFormatToolbar(props: {
     <div
       role="toolbar"
       aria-label="HTML formatting"
-      className="mt-2 flex max-w-4xl flex-wrap items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900/60 p-2"
+      className="mt-2 flex max-w-[996px] flex-wrap items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900/60 p-2"
     >
       <span className="mr-1 text-[10px] uppercase tracking-wide text-zinc-600">Insert</span>
       <button
@@ -402,7 +402,7 @@ export function AdminEmailFormatTab(props: { entries: AdminEmailFormatEntry[] })
         <label className="block text-xs text-zinc-500">
           {entry.kind === "html" ? "HTML body" : "Plain text body"}
           {entry.kind === "html" ? (
-            <p className="mt-1 max-w-4xl text-[11px] leading-snug text-zinc-600">
+            <p className="mt-1 max-w-[996px] text-[11px] leading-snug text-zinc-600">
               Select text (optional), then use the toolbar to wrap it in tags. With no selection, a placeholder is
               inserted and highlighted so you can type over it.
             </p>
@@ -417,7 +417,7 @@ export function AdminEmailFormatTab(props: { entries: AdminEmailFormatEntry[] })
             onChange={(e) => setBody(e.target.value)}
             rows={entry.kind === "html" ? 14 : 10}
             spellCheck={false}
-            className="mt-1 block w-full max-w-4xl rounded border border-zinc-700 bg-zinc-900 px-2 py-2 font-mono text-[13px] leading-relaxed text-zinc-100"
+            className="mt-1 block w-full max-w-[996px] rounded border border-zinc-700 bg-zinc-900 px-2 py-2 font-mono text-[13px] leading-relaxed text-zinc-100"
           />
         </label>
         <div className="flex flex-wrap gap-2">
@@ -475,11 +475,11 @@ export function AdminEmailFormatTab(props: { entries: AdminEmailFormatEntry[] })
           <iframe
             title="Email HTML preview"
             sandbox=""
-            className="mt-3 h-[min(70vh,520px)] w-full max-w-4xl rounded-lg border border-zinc-700 bg-white shadow-lg"
+            className="mt-3 h-[min(70vh,520px)] w-full max-w-[996px] rounded-lg border border-zinc-700 bg-white shadow-lg"
             srcDoc={previewContent.value}
           />
         ) : previewContent.kind === "text" ? (
-          <pre className="mt-3 max-h-[min(70vh,520px)] w-full max-w-4xl overflow-auto whitespace-pre-wrap rounded-lg border border-zinc-700 bg-zinc-900/80 p-4 font-mono text-[13px] leading-relaxed text-zinc-200">
+          <pre className="mt-3 max-h-[min(70vh,520px)] w-full max-w-[996px] overflow-auto whitespace-pre-wrap rounded-lg border border-zinc-700 bg-zinc-900/80 p-4 font-mono text-[13px] leading-relaxed text-zinc-200">
             {previewContent.value}
           </pre>
         ) : null}

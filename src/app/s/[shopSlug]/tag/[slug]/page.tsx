@@ -47,11 +47,17 @@ export default async function ShopTenantUniversalTagPage({ params }: Props) {
         ...storefrontShopListingWhere,
         product: {
           active: true,
-          tags: { some: { tagId: activeTag.id } },
+          OR: [
+            { primaryTagId: activeTag.id },
+            { tags: { some: { tagId: activeTag.id } } },
+          ],
         },
       },
       orderBy: { product: { name: "asc" } },
-      include: { product: { include: productInclude } },
+      include: {
+        product: { include: productInclude },
+        shop: { select: { slug: true } },
+      },
     });
   } catch (e) {
     console.error("[ShopTenantUniversalTagPage] listings", e);
@@ -84,14 +90,15 @@ export default async function ShopTenantUniversalTagPage({ params }: Props) {
       <FeaturedProductsCarousel
         items={productsToFeaturedCarouselItems(products)}
         label={`Featured — ${activeTag.name}`}
+        defaultListingShopSlug={shopSlug}
       />
 
       {products.length === 0 ? (
         <p className="mt-8 text-sm text-zinc-600">No products with this tag yet.</p>
       ) : (
-        <ul className="mt-8 grid justify-center gap-3 [grid-template-columns:repeat(auto-fill,175px)] sm:justify-start">
+        <ul className="mx-auto mt-8 flex max-w-full flex-wrap justify-center gap-3">
           {products.map((p) => (
-            <li key={p.id}>
+            <li key={p.id} className="w-[175px] shrink-0">
               <ProductCard product={p} shopSlug={shopSlug} />
             </li>
           ))}

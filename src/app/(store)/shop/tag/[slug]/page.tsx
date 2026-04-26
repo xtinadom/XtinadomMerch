@@ -8,8 +8,7 @@ import { SHOP_ALL_ROUTE } from "@/lib/constants";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
-import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
-import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
+import { marketplaceAggregatedListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -35,22 +34,24 @@ export default async function ShopUniversalTagPage({ params }: Props) {
     }
   }
 
-  const shop = await prisma.shop.findUnique({ where: { slug: PLATFORM_SHOP_SLUG } });
-  if (!shop) notFound();
-
   let listings;
   try {
     listings = await prisma.shopListing.findMany({
       where: {
-        shopId: shop.id,
-        ...storefrontShopListingWhere,
+        ...marketplaceAggregatedListingWhere,
         product: {
           active: true,
-          tags: { some: { tagId: activeTag.id } },
+          OR: [
+            { primaryTagId: activeTag.id },
+            { tags: { some: { tagId: activeTag.id } } },
+          ],
         },
       },
       orderBy: { product: { name: "asc" } },
-      include: { product: { include: productInclude } },
+      include: {
+        product: { include: productInclude },
+        shop: { select: { slug: true } },
+      },
     });
   } catch (e) {
     console.error("[ShopUniversalTagPage] listings", e);
@@ -71,7 +72,7 @@ export default async function ShopUniversalTagPage({ params }: Props) {
       <h1 className="store-dimension-page-title mt-2 text-2xl !uppercase !tracking-[0.12em] text-zinc-50">
         {activeTag.name}
       </h1>
-      <p className="mt-1 text-sm text-zinc-500">All items in this shop with this tag.</p>
+      <p className="mt-1 text-sm text-zinc-500">Live creator listings with this tag.</p>
 
       <FeaturedProductsCarousel
         items={productsToFeaturedCarouselItems(products)}
@@ -81,10 +82,10 @@ export default async function ShopUniversalTagPage({ params }: Props) {
       {products.length === 0 ? (
         <p className="mt-8 text-sm text-zinc-600">No products with this tag yet.</p>
       ) : (
-        <ul className="mt-8 grid justify-center gap-3 [grid-template-columns:repeat(auto-fill,175px)] sm:justify-start">
-          {products.map((p) => (
-            <li key={p.id}>
-              <ProductCard product={p} />
+        <ul className="mx-auto mt-8 flex max-w-full flex-wrap justify-center gap-3">
+          {listings.map((l) => (
+            <li key={l.id} className="w-[175px] shrink-0">
+              <ProductCard product={productCardProductFromListing(l)} />
             </li>
           ))}
         </ul>

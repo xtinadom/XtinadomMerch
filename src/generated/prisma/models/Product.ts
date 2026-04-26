@@ -30,12 +30,14 @@ export type ProductAvgAggregateOutputType = {
   priceCents: number | null
   stockQuantity: number | null
   minPriceCents: number | null
+  storefrontViewCount: number | null
 }
 
 export type ProductSumAggregateOutputType = {
   priceCents: number | null
   stockQuantity: number | null
   minPriceCents: number | null
+  storefrontViewCount: number | null
 }
 
 export type ProductMinAggregateOutputType = {
@@ -57,6 +59,7 @@ export type ProductMinAggregateOutputType = {
   trackInventory: boolean | null
   active: boolean | null
   minPriceCents: number | null
+  storefrontViewCount: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -80,6 +83,7 @@ export type ProductMaxAggregateOutputType = {
   trackInventory: boolean | null
   active: boolean | null
   minPriceCents: number | null
+  storefrontViewCount: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -106,6 +110,7 @@ export type ProductCountAggregateOutputType = {
   trackInventory: number
   active: number
   minPriceCents: number
+  storefrontViewCount: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -116,12 +121,14 @@ export type ProductAvgAggregateInputType = {
   priceCents?: true
   stockQuantity?: true
   minPriceCents?: true
+  storefrontViewCount?: true
 }
 
 export type ProductSumAggregateInputType = {
   priceCents?: true
   stockQuantity?: true
   minPriceCents?: true
+  storefrontViewCount?: true
 }
 
 export type ProductMinAggregateInputType = {
@@ -143,6 +150,7 @@ export type ProductMinAggregateInputType = {
   trackInventory?: true
   active?: true
   minPriceCents?: true
+  storefrontViewCount?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -166,6 +174,7 @@ export type ProductMaxAggregateInputType = {
   trackInventory?: true
   active?: true
   minPriceCents?: true
+  storefrontViewCount?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -192,6 +201,7 @@ export type ProductCountAggregateInputType = {
   trackInventory?: true
   active?: true
   minPriceCents?: true
+  storefrontViewCount?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -305,6 +315,7 @@ export type ProductGroupByOutputType = {
   trackInventory: boolean
   active: boolean
   minPriceCents: number
+  storefrontViewCount: number
   createdAt: Date
   updatedAt: Date
   _count: ProductCountAggregateOutputType | null
@@ -354,6 +365,7 @@ export type ProductWhereInput = {
   trackInventory?: Prisma.BoolFilter<"Product"> | boolean
   active?: Prisma.BoolFilter<"Product"> | boolean
   minPriceCents?: Prisma.IntFilter<"Product"> | number
+  storefrontViewCount?: Prisma.IntFilter<"Product"> | number
   createdAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   primaryTag?: Prisma.XOR<Prisma.TagNullableScalarRelationFilter, Prisma.TagWhereInput> | null
@@ -386,6 +398,7 @@ export type ProductOrderByWithRelationInput = {
   trackInventory?: Prisma.SortOrder
   active?: Prisma.SortOrder
   minPriceCents?: Prisma.SortOrder
+  storefrontViewCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   primaryTag?: Prisma.TagOrderByWithRelationInput
@@ -421,6 +434,7 @@ export type ProductWhereUniqueInput = Prisma.AtLeast<{
   trackInventory?: Prisma.BoolFilter<"Product"> | boolean
   active?: Prisma.BoolFilter<"Product"> | boolean
   minPriceCents?: Prisma.IntFilter<"Product"> | number
+  storefrontViewCount?: Prisma.IntFilter<"Product"> | number
   createdAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   primaryTag?: Prisma.XOR<Prisma.TagNullableScalarRelationFilter, Prisma.TagWhereInput> | null
@@ -453,6 +467,7 @@ export type ProductOrderByWithAggregationInput = {
   trackInventory?: Prisma.SortOrder
   active?: Prisma.SortOrder
   minPriceCents?: Prisma.SortOrder
+  storefrontViewCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ProductCountOrderByAggregateInput
@@ -487,6 +502,7 @@ export type ProductScalarWhereWithAggregatesInput = {
   trackInventory?: Prisma.BoolWithAggregatesFilter<"Product"> | boolean
   active?: Prisma.BoolWithAggregatesFilter<"Product"> | boolean
   minPriceCents?: Prisma.IntWithAggregatesFilter<"Product"> | number
+  storefrontViewCount?: Prisma.IntWithAggregatesFilter<"Product"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Product"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Product"> | Date | string
 }
@@ -512,6 +528,7 @@ export type ProductCreateInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   primaryTag?: Prisma.TagCreateNestedOneWithoutPrimaryProductsInput
@@ -544,6 +561,7 @@ export type ProductUncheckedCreateInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutProductInput
@@ -574,6 +592,7 @@ export type ProductUpdateInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryTag?: Prisma.TagUpdateOneWithoutPrimaryProductsNestedInput
@@ -606,6 +625,7 @@ export type ProductUncheckedUpdateInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.ProductTagUncheckedUpdateManyWithoutProductNestedInput
@@ -637,6 +657,7 @@ export type ProductCreateManyInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -662,6 +683,7 @@ export type ProductUpdateManyMutationInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -688,6 +710,7 @@ export type ProductUncheckedUpdateManyInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -734,6 +757,7 @@ export type ProductCountOrderByAggregateInput = {
   trackInventory?: Prisma.SortOrder
   active?: Prisma.SortOrder
   minPriceCents?: Prisma.SortOrder
+  storefrontViewCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -742,6 +766,7 @@ export type ProductAvgOrderByAggregateInput = {
   priceCents?: Prisma.SortOrder
   stockQuantity?: Prisma.SortOrder
   minPriceCents?: Prisma.SortOrder
+  storefrontViewCount?: Prisma.SortOrder
 }
 
 export type ProductMaxOrderByAggregateInput = {
@@ -763,6 +788,7 @@ export type ProductMaxOrderByAggregateInput = {
   trackInventory?: Prisma.SortOrder
   active?: Prisma.SortOrder
   minPriceCents?: Prisma.SortOrder
+  storefrontViewCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -786,6 +812,7 @@ export type ProductMinOrderByAggregateInput = {
   trackInventory?: Prisma.SortOrder
   active?: Prisma.SortOrder
   minPriceCents?: Prisma.SortOrder
+  storefrontViewCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -794,6 +821,7 @@ export type ProductSumOrderByAggregateInput = {
   priceCents?: Prisma.SortOrder
   stockQuantity?: Prisma.SortOrder
   minPriceCents?: Prisma.SortOrder
+  storefrontViewCount?: Prisma.SortOrder
 }
 
 export type ProductCreateNestedOneWithoutTagByItemSpotlightsInput = {
@@ -945,6 +973,7 @@ export type ProductCreateWithoutTagByItemSpotlightsInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   primaryTag?: Prisma.TagCreateNestedOneWithoutPrimaryProductsInput
@@ -976,6 +1005,7 @@ export type ProductUncheckedCreateWithoutTagByItemSpotlightsInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutProductInput
@@ -1010,6 +1040,7 @@ export type ProductCreateWithoutPrimaryTagInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.ProductTagCreateNestedManyWithoutProductInput
@@ -1040,6 +1071,7 @@ export type ProductUncheckedCreateWithoutPrimaryTagInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutProductInput
@@ -1091,6 +1123,7 @@ export type ProductUpdateWithoutTagByItemSpotlightsInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryTag?: Prisma.TagUpdateOneWithoutPrimaryProductsNestedInput
@@ -1122,6 +1155,7 @@ export type ProductUncheckedUpdateWithoutTagByItemSpotlightsInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.ProductTagUncheckedUpdateManyWithoutProductNestedInput
@@ -1171,6 +1205,7 @@ export type ProductScalarWhereInput = {
   trackInventory?: Prisma.BoolFilter<"Product"> | boolean
   active?: Prisma.BoolFilter<"Product"> | boolean
   minPriceCents?: Prisma.IntFilter<"Product"> | number
+  storefrontViewCount?: Prisma.IntFilter<"Product"> | number
   createdAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Product"> | Date | string
 }
@@ -1196,6 +1231,7 @@ export type ProductCreateWithoutTagsInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   primaryTag?: Prisma.TagCreateNestedOneWithoutPrimaryProductsInput
@@ -1227,6 +1263,7 @@ export type ProductUncheckedCreateWithoutTagsInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tagByItemSpotlights?: Prisma.TagUncheckedCreateNestedManyWithoutByItemSpotlightProductInput
@@ -1272,6 +1309,7 @@ export type ProductUpdateWithoutTagsInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryTag?: Prisma.TagUpdateOneWithoutPrimaryProductsNestedInput
@@ -1303,6 +1341,7 @@ export type ProductUncheckedUpdateWithoutTagsInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tagByItemSpotlights?: Prisma.TagUncheckedUpdateManyWithoutByItemSpotlightProductNestedInput
@@ -1332,6 +1371,7 @@ export type ProductCreateWithoutShopListingsInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   primaryTag?: Prisma.TagCreateNestedOneWithoutPrimaryProductsInput
@@ -1363,6 +1403,7 @@ export type ProductUncheckedCreateWithoutShopListingsInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutProductInput
@@ -1408,6 +1449,7 @@ export type ProductUpdateWithoutShopListingsInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryTag?: Prisma.TagUpdateOneWithoutPrimaryProductsNestedInput
@@ -1439,6 +1481,7 @@ export type ProductUncheckedUpdateWithoutShopListingsInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.ProductTagUncheckedUpdateManyWithoutProductNestedInput
@@ -1468,6 +1511,7 @@ export type ProductCreateWithoutOrderLinesInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   primaryTag?: Prisma.TagCreateNestedOneWithoutPrimaryProductsInput
@@ -1499,6 +1543,7 @@ export type ProductUncheckedCreateWithoutOrderLinesInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutProductInput
@@ -1544,6 +1589,7 @@ export type ProductUpdateWithoutOrderLinesInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryTag?: Prisma.TagUpdateOneWithoutPrimaryProductsNestedInput
@@ -1575,6 +1621,7 @@ export type ProductUncheckedUpdateWithoutOrderLinesInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.ProductTagUncheckedUpdateManyWithoutProductNestedInput
@@ -1604,6 +1651,7 @@ export type ProductCreateWithoutAdminCatalogItemPlatformLinksInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   primaryTag?: Prisma.TagCreateNestedOneWithoutPrimaryProductsInput
@@ -1635,6 +1683,7 @@ export type ProductUncheckedCreateWithoutAdminCatalogItemPlatformLinksInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutProductInput
@@ -1680,6 +1729,7 @@ export type ProductUpdateWithoutAdminCatalogItemPlatformLinksInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryTag?: Prisma.TagUpdateOneWithoutPrimaryProductsNestedInput
@@ -1711,6 +1761,7 @@ export type ProductUncheckedUpdateWithoutAdminCatalogItemPlatformLinksInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.ProductTagUncheckedUpdateManyWithoutProductNestedInput
@@ -1740,6 +1791,7 @@ export type ProductCreateManyPrimaryTagInput = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: number
+  storefrontViewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1765,6 +1817,7 @@ export type ProductUpdateWithoutPrimaryTagInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.ProductTagUpdateManyWithoutProductNestedInput
@@ -1795,6 +1848,7 @@ export type ProductUncheckedUpdateWithoutPrimaryTagInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.ProductTagUncheckedUpdateManyWithoutProductNestedInput
@@ -1825,6 +1879,7 @@ export type ProductUncheckedUpdateManyWithoutPrimaryTagInput = {
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   minPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
+  storefrontViewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1918,6 +1973,7 @@ export type ProductSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: boolean
+  storefrontViewCount?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   primaryTag?: boolean | Prisma.Product$primaryTagArgs<ExtArgs>
@@ -1951,6 +2007,7 @@ export type ProductSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: boolean
+  storefrontViewCount?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   primaryTag?: boolean | Prisma.Product$primaryTagArgs<ExtArgs>
@@ -1978,6 +2035,7 @@ export type ProductSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: boolean
+  storefrontViewCount?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   primaryTag?: boolean | Prisma.Product$primaryTagArgs<ExtArgs>
@@ -2005,11 +2063,12 @@ export type ProductSelectScalar = {
   trackInventory?: boolean
   active?: boolean
   minPriceCents?: boolean
+  storefrontViewCount?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ProductOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "description" | "priceCents" | "imageUrl" | "imageGallery" | "payCard" | "payCashApp" | "audience" | "fulfillmentType" | "primaryTagId" | "checkoutTipEligible" | "printifyProductId" | "printifyVariantId" | "printifyVariants" | "designNames" | "stockQuantity" | "trackInventory" | "active" | "minPriceCents" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+export type ProductOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "description" | "priceCents" | "imageUrl" | "imageGallery" | "payCard" | "payCashApp" | "audience" | "fulfillmentType" | "primaryTagId" | "checkoutTipEligible" | "printifyProductId" | "printifyVariantId" | "printifyVariants" | "designNames" | "stockQuantity" | "trackInventory" | "active" | "minPriceCents" | "storefrontViewCount" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
 export type ProductInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   primaryTag?: boolean | Prisma.Product$primaryTagArgs<ExtArgs>
   tags?: boolean | Prisma.Product$tagsArgs<ExtArgs>
@@ -2064,6 +2123,12 @@ export type $ProductPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
      * * Minimum price (cents) a shop may set on a listing; defaults to priceCents in migration.
      */
     minPriceCents: number
+    /**
+     * *
+     *    * Incremented on full storefront product page loads (not embed/modal). Used to rank fallback
+     *    * items for the platform home “Hot items” carousel.
+     */
+    storefrontViewCount: number
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["product"]>
@@ -2516,6 +2581,7 @@ export interface ProductFieldRefs {
   readonly trackInventory: Prisma.FieldRef<"Product", 'Boolean'>
   readonly active: Prisma.FieldRef<"Product", 'Boolean'>
   readonly minPriceCents: Prisma.FieldRef<"Product", 'Int'>
+  readonly storefrontViewCount: Prisma.FieldRef<"Product", 'Int'>
   readonly createdAt: Prisma.FieldRef<"Product", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Product", 'DateTime'>
 }

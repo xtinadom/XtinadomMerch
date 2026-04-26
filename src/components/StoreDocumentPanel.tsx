@@ -6,7 +6,12 @@ type Props = {
   backLabel: string;
   /** Small uppercase label above title (e.g. product type) */
   kicker?: string;
-  title: string;
+  title?: string;
+  /**
+   * When true, the header has no H1; caller renders the title in page content (e.g. product PDP
+   * beside gallery).
+   */
+  omitHeaderTitle?: boolean;
   /** Centered column like template “card” */
   narrow?: boolean;
 };
@@ -17,6 +22,7 @@ export function StoreDocumentPanel({
   backLabel,
   kicker,
   title,
+  omitHeaderTitle = false,
   narrow = true,
 }: Props) {
   return (
@@ -35,9 +41,11 @@ export function StoreDocumentPanel({
             {kicker ? (
               <p className="store-kicker mt-3 text-zinc-500">{kicker}</p>
             ) : null}
-            <h1 className="store-dimension-page-title mt-2 text-2xl text-zinc-50 sm:text-3xl">
-              {title}
-            </h1>
+            {omitHeaderTitle || !title ? null : (
+              <h1 className="store-dimension-page-title mt-2 text-2xl text-zinc-50 sm:text-3xl">
+                {title}
+              </h1>
+            )}
           </div>
         </div>
       </header>

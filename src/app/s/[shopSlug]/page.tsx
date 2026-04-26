@@ -4,10 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { FeaturedProductsCarousel } from "@/components/FeaturedProductsCarousel";
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
-import { shopAllProductsHref } from "@/lib/marketplace-constants";
+import { PLATFORM_SHOP_SLUG, shopAllProductsHref } from "@/lib/marketplace-constants";
 import { ShopSocialLinksRow } from "@/components/ShopSocialLinksRow";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
+import { ShopStorefrontViewBeacon } from "@/components/ShopStorefrontViewBeacon";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,7 @@ export default async function ShopTenantHomePage({ params }: Props) {
             adminListingSecondaryImageUrl: shop.homeFeaturedListing.adminListingSecondaryImageUrl,
             ownerSupplementImageUrl: shop.homeFeaturedListing.ownerSupplementImageUrl,
             listingStorefrontCatalogImageUrls: shop.homeFeaturedListing.listingStorefrontCatalogImageUrls,
+            shop: { slug: shopSlug },
           }),
         ]
       : [];
@@ -71,6 +73,7 @@ export default async function ShopTenantHomePage({ params }: Props) {
         product: {
           include: { primaryTag: true, tags: { include: { tag: true } } },
         },
+        shop: { select: { slug: true } },
       },
     });
   } catch (e) {
@@ -80,6 +83,7 @@ export default async function ShopTenantHomePage({ params }: Props) {
 
   return (
     <div>
+      {shop.slug !== PLATFORM_SHOP_SLUG ? <ShopStorefrontViewBeacon shopSlug={shop.slug} /> : null}
       <div className="mb-10 text-center">
         {shop.profileImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -123,6 +127,7 @@ export default async function ShopTenantHomePage({ params }: Props) {
           <FeaturedProductsCarousel
             items={productsToFeaturedCarouselItems(featuredList)}
             label={`Featured at ${shop.displayName}`}
+            defaultListingShopSlug={shopSlug}
           />
         </section>
       ) : null}
@@ -135,6 +140,7 @@ export default async function ShopTenantHomePage({ params }: Props) {
           <FeaturedProductsCarousel
             items={productsToFeaturedCarouselItems(carouselProducts)}
             label="Featured items"
+            defaultListingShopSlug={shopSlug}
           />
         </section>
       ) : featuredList.length === 0 ? (

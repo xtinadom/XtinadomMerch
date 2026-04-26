@@ -4,16 +4,20 @@ export function AdminCatalogItemLevelFields({
   exampleListingUrl,
   minPriceDollars,
   goodsServicesCostDollars,
+  storefrontDescription,
   onChangeExampleListingUrl,
   onChangeMinPriceDollars,
   onChangeGoodsServicesCostDollars,
+  onChangeStorefrontDescription,
 }: {
   exampleListingUrl: string;
   minPriceDollars: string;
   goodsServicesCostDollars: string;
+  storefrontDescription: string;
   onChangeExampleListingUrl: (v: string) => void;
   onChangeMinPriceDollars: (v: string) => void;
   onChangeGoodsServicesCostDollars: (v: string) => void;
+  onChangeStorefrontDescription: (v: string) => void;
 }) {
   return (
     <div className="space-y-3 rounded border border-zinc-800/80 bg-zinc-950/40 p-3">
@@ -22,6 +26,16 @@ export function AdminCatalogItemLevelFields({
         owners to see as a reference). Goods/services cost is optional fulfillment COGS (per unit) retained by the
         platform before the marketplace fee.
       </p>
+      <label className="block min-w-0 text-[11px] text-zinc-500">
+        Storefront description (optional)
+        <textarea
+          value={storefrontDescription}
+          onChange={(e) => onChangeStorefrontDescription(e.target.value)}
+          rows={4}
+          className="mt-0.5 block w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200"
+          placeholder="Shown on the public product page when this item is linked to a product…"
+        />
+      </label>
       <label className="block min-w-0 text-[11px] text-zinc-500">
         Example listing (optional)
         <input

@@ -8,6 +8,8 @@ type Props = {
   viewAllHrefForTag: (slug: string) => string | null;
   emptyMessage: string;
   shopSlug?: string;
+  /** Default 1 (one card preview). Use `Infinity` to list every product in each section. */
+  limitPerSection?: number;
 };
 
 export function ShopByItemAndDesignBrowse({
@@ -16,6 +18,7 @@ export function ShopByItemAndDesignBrowse({
   viewAllHrefForTag,
   emptyMessage,
   shopSlug,
+  limitPerSection = 1,
 }: Props) {
   const emptyItem = byItemSections.length === 0;
   const emptyDesign = byDesignSections.length === 0;
@@ -27,22 +30,14 @@ export function ShopByItemAndDesignBrowse({
     <div className="space-y-16">
       {!emptyItem ? (
         <div>
-          <h2 className="text-sm font-medium uppercase tracking-[0.18em] text-zinc-500">
-            By Item
-          </h2>
-          <p className="mt-1 text-xs text-zinc-600">
-            One product per category tag — use View all for the full list.
-          </p>
-          <div className="mt-6">
-            <ShopProductSectionList
-              shopSlug={shopSlug}
-              sections={byItemSections}
-              viewAllHrefForTag={viewAllHrefForTag}
-              emptyMessage=""
-              limitPerSection={1}
-              layout="wrap"
-            />
-          </div>
+          <ShopProductSectionList
+            shopSlug={shopSlug}
+            sections={byItemSections}
+            viewAllHrefForTag={viewAllHrefForTag}
+            emptyMessage=""
+            limitPerSection={limitPerSection}
+            layout="wrap"
+          />
         </div>
       ) : null}
 
@@ -60,7 +55,7 @@ export function ShopByItemAndDesignBrowse({
               sections={byDesignSections}
               viewAllHrefForTag={() => null}
               emptyMessage=""
-              limitPerSection={1}
+              limitPerSection={limitPerSection}
               layout="wrap"
             />
           </div>

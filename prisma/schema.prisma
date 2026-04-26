@@ -83,6 +83,11 @@ model Product {
   active              Boolean         @default(true)
   /** Minimum price (cents) a shop may set on a listing; defaults to priceCents in migration. */
   minPriceCents       Int             @default(0)
+  /**
+   * Incremented on full storefront product page loads (not embed/modal). Used to rank fallback
+   * items for the platform home “Hot items” carousel.
+   */
+  storefrontViewCount Int             @default(0)
   shopListings        ShopListing[]
   orderLines          OrderLine[]
   adminCatalogItemPlatformLinks AdminCatalogItem[] @relation("AdminCatalogItemPlatformProduct")
@@ -110,6 +115,10 @@ model Shop {
   /** Cached from paid orders for browse sort (webhook updates). */
   totalSalesCents          Int            @default(0)
   /**
+   * Incremented on creator storefront home loads (`/s/{slug}`). Used to rank `/shops` featured fill.
+   */
+  storefrontViewCount      Int            @default(0)
+  /**
    * Creator paused the shop (browse + storefront hidden). Cleared when they unpause, unless a
    * deletion request still requires the shop to stay inactive.
    */
@@ -134,6 +143,21 @@ model Shop {
    */
   listingFeeBonusFreeSlots       Int                            @default(0)
   listingSlotPromoRedemptions    ShopListingSlotPromoRedemption[]
+  /**
+   * Platform catalog shop (`PLATFORM_SHOP_SLUG`): ordered product IDs (max 10) for the `/shop/all`
+   * featured carousel. Remaining carousel slots are filled from 30-day paid order volume.
+   */
+  browseAllPageFeaturedProductIds Json?
+  /**
+   * Platform shop only: ordered product IDs (max 10) for the marketing home “Hot items” carousel.
+   * Remaining slots use `Product.storefrontViewCount`, then any live marketplace listing.
+   */
+  homeHotCarouselFeaturedProductIds Json?
+  /**
+   * Platform shop only: ordered creator `Shop.id` values (max 10) for the `/shops` featured carousel.
+   * Remaining slots use `totalSalesCents`, then `storefrontViewCount`, then any active creator shop.
+   */
+  browseShopsPageFeaturedShopIds Json?
   createdAt                      DateTime                       @default(now())
   updatedAt                      DateTime                       @updatedAt
 }
@@ -300,6 +324,11 @@ model ShopListing {
   /** Shop-provided display name for this listing request (review / fulfillment context). */
   requestItemName    String?
   /**
+   * Optional one-line pitch from the shop (max tweet length); shown on the public product detail
+   * above “Item details”. Editable on the dashboard for draft / approved listings.
+   */
+  storefrontItemBlurb String? @db.VarChar(280)
+  /**
    * Baseline catalog picker value (`ab|…`) saved at submit. Used when stub `Product.slug` is no longer
    * deterministic (multiple listings of the same catalog line) so draft prefill + variant price remap still work.
    */
@@ -428,6 +457,8 @@ model AdminCatalogItem {
   id        String   @id @default(cuid())
   sortOrder Int      @default(0)
   name      String
+  /** Optional public storefront description for this baseline catalog item. */
+  storefrontDescription String? @db.Text
   /** Legacy JSON array (unused for new rows; kept for DB compatibility). */
   variants  Json
   /**

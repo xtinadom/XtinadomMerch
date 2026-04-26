@@ -6,7 +6,14 @@ import { listingFeeCentsForOrdinal } from "@/lib/marketplace-constants";
 const orderLineInclude = {
   order: { select: { id: true, createdAt: true } },
   shop: { select: { displayName: true, slug: true } },
+  shopListing: { select: { requestItemName: true } },
 } as const;
+
+function orderLineDisplayName(l: AdminPlatformSalesOrderLineRow): string {
+  const item = l.shopListing?.requestItemName?.trim();
+  if (item) return item;
+  return l.productName;
+}
 
 export type AdminPlatformSalesOrderLineRow = Prisma.OrderLineGetPayload<{
   include: typeof orderLineInclude;
@@ -198,7 +205,7 @@ export async function loadMergedPlatformSalesLines(
     id: l.id,
     quantity: l.quantity,
     unitPriceCents: l.unitPriceCents,
-    productName: l.productName,
+    productName: orderLineDisplayName(l),
     goodsServicesCostCents: l.goodsServicesCostCents,
     platformCutCents: l.platformCutCents,
     shopCutCents: l.shopCutCents,

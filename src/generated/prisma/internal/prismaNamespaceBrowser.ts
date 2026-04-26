@@ -134,6 +134,7 @@ export const ProductScalarFieldEnum = {
   trackInventory: 'trackInventory',
   active: 'active',
   minPriceCents: 'minPriceCents',
+  storefrontViewCount: 'storefrontViewCount',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -156,12 +157,16 @@ export const ShopScalarFieldEnum = {
   editorialPriority: 'editorialPriority',
   editorialPinnedUntil: 'editorialPinnedUntil',
   totalSalesCents: 'totalSalesCents',
+  storefrontViewCount: 'storefrontViewCount',
   ownerPausedShopAt: 'ownerPausedShopAt',
   accountDeletionRequestedAt: 'accountDeletionRequestedAt',
   accountDeletionEmailConfirmedAt: 'accountDeletionEmailConfirmedAt',
   homeFeaturedListingId: 'homeFeaturedListingId',
   itemGuidelinesAcknowledgedAt: 'itemGuidelinesAcknowledgedAt',
   listingFeeBonusFreeSlots: 'listingFeeBonusFreeSlots',
+  browseAllPageFeaturedProductIds: 'browseAllPageFeaturedProductIds',
+  homeHotCarouselFeaturedProductIds: 'homeHotCarouselFeaturedProductIds',
+  browseShopsPageFeaturedShopIds: 'browseShopsPageFeaturedShopIds',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -284,6 +289,7 @@ export const ShopListingScalarFieldEnum = {
   adminListingSecondaryImageUrl: 'adminListingSecondaryImageUrl',
   listingStorefrontCatalogImageUrls: 'listingStorefrontCatalogImageUrls',
   requestItemName: 'requestItemName',
+  storefrontItemBlurb: 'storefrontItemBlurb',
   baselineCatalogPickEncoded: 'baselineCatalogPickEncoded',
   requestStatus: 'requestStatus',
   adminRemovedFromShopAt: 'adminRemovedFromShopAt',
@@ -375,6 +381,7 @@ export const AdminCatalogItemScalarFieldEnum = {
   id: 'id',
   sortOrder: 'sortOrder',
   name: 'name',
+  storefrontDescription: 'storefrontDescription',
   variants: 'variants',
   itemPlatformProductId: 'itemPlatformProductId',
   itemExampleListingUrl: 'itemExampleListingUrl',

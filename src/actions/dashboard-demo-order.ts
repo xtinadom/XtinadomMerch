@@ -12,11 +12,8 @@ import { baselineGoodsServicesUnitCents } from "@/lib/baseline-goods-services-un
 import { splitMerchandiseLineForCheckoutCents } from "@/lib/marketplace-fee";
 import { parseBaselinePick } from "@/lib/shop-baseline-catalog";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
+import { shopDemoPurchaseFeatureEnabled } from "@/lib/shop-demo-purchase-feature";
 import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
-
-function demoPurchaseEnabled(): boolean {
-  return process.env.SHOP_DEMO_PURCHASE_BUTTON === "1";
-}
 
 function flatShippingCents(): number {
   const raw = process.env.SHIPPING_FLAT_CENTS;
@@ -28,14 +25,15 @@ export type SimulateShopDemoPurchaseResult = { ok: true } | { ok: false; error: 
 
 /**
  * Inserts a **paid** order for the signed-in shop (one line, qty 1) so the dashboard **Orders**
- * workflow can be tested without Stripe. Gated by `SHOP_DEMO_PURCHASE_BUTTON=1` (server env only).
+ * workflow can be tested without Stripe. Only under `next dev` with `SHOP_DEMO_PURCHASE_BUTTON=1`.
  */
 export async function simulateShopDemoPurchase(): Promise<SimulateShopDemoPurchaseResult> {
   try {
-    if (!demoPurchaseEnabled()) {
+    if (!shopDemoPurchaseFeatureEnabled()) {
       return {
         ok: false,
-        error: "Demo purchase is disabled (set SHOP_DEMO_PURCHASE_BUTTON=1 on the server).",
+        error:
+          "Demo purchase is only available in local development (`next dev`) with SHOP_DEMO_PURCHASE_BUTTON=1.",
       };
     }
 

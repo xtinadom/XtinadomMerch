@@ -46,7 +46,9 @@ export function buildByItemOnePerTag(
     });
   }
 
-  const untagged = allProducts.filter((p) => p.tags.length === 0);
+  const untagged = allProducts.filter(
+    (p) => p.tags.length === 0 && !(p.primaryTagId?.trim()),
+  );
   if (untagged[0]) {
     rows.push({
       tag: {
@@ -69,6 +71,39 @@ function productHasDesignName(p: ProductCardProduct, design: string): boolean {
 /** Stable id for a design-name row (slug stays empty — no tag URL). */
 function designRowId(displayName: string): string {
   return `design:${encodeURIComponent(displayName)}`;
+}
+
+/** All products per distinct design name (name order within each row). */
+export function buildByDesignAllPerName(allProducts: ProductCardProduct[]): ShopSectionRow[] {
+  const canonical = new Map<string, string>();
+  for (const p of allProducts) {
+    for (const n of designNamesFromJson(p.designNames)) {
+      const low = n.toLowerCase();
+      if (!canonical.has(low)) canonical.set(low, n);
+    }
+  }
+  const sorted = [...canonical.values()].sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" }),
+  );
+  const rows: ShopSectionRow[] = [];
+  for (const displayName of sorted) {
+    const match = allProducts
+      .filter((p) => productHasDesignName(p, displayName))
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      );
+    if (match.length === 0) continue;
+    rows.push({
+      tag: {
+        id: designRowId(displayName),
+        name: displayName,
+        slug: "",
+        sortOrder: 0,
+      },
+      products: match,
+    });
+  }
+  return rows;
 }
 
 /** One product per distinct design name (first in name order among matches). */

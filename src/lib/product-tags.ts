@@ -21,8 +21,10 @@ export function productTagIds(p: ProductWithTags): string[] {
   return fromJoin;
 }
 
-/** Product appears under tag filter if it has that tag. */
+/** Product appears under tag filter if it has that tag (junction or primary). */
 export function productHasTag(p: ProductWithTags, tagId: string): boolean {
+  const primary = p.primaryTagId?.trim();
+  if (primary && primary === tagId) return true;
   return p.tags.some((t) => t.tagId === tagId);
 }
 

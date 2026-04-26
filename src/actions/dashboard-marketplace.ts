@@ -42,6 +42,8 @@ function formatUsdFromCents(cents: number): string {
 }
 
 const REQUEST_ITEM_NAME_MAX = 120;
+/** `ShopListing.storefrontItemBlurb` — one-line pitch on the public PDP (tweet-length cap). */
+const STOREFRONT_ITEM_BLURB_MAX = 280;
 
 async function requireShopOwner() {
   const session = await getShopOwnerSession();
@@ -280,6 +282,53 @@ export async function dashboardUpdateListingItemName(
   });
   revalidatePath("/dashboard");
   revalidatePath(`/s/${user.shop.slug}`);
+  const pslug = listing.product.slug;
+  revalidatePath(`/product/${pslug}`);
+  revalidatePath(`/s/${user.shop.slug}/product/${pslug}`);
+  revalidatePath(`/embed/product/${pslug}`);
+  return { ok: true };
+}
+
+export async function dashboardUpdateListingStorefrontBlurb(
+  formData: FormData,
+): Promise<{ ok: boolean }> {
+  const user = await requireShopOwner();
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  const raw = String(formData.get("storefrontItemBlurb") ?? "");
+  if (!listingId) return { ok: false };
+
+  const listing = await prisma.shopListing.findFirst({
+    where: { id: listingId, shopId: user.shopId },
+    include: { product: true },
+  });
+  if (!listing) return { ok: false };
+  if (
+    listing.requestStatus === ListingRequestStatus.rejected ||
+    listing.creatorRemovedFromShopAt != null
+  ) {
+    return { ok: false };
+  }
+  if (
+    listing.requestStatus !== ListingRequestStatus.draft &&
+    listing.requestStatus !== ListingRequestStatus.approved
+  ) {
+    return { ok: false };
+  }
+
+  const trimmed = raw.trim();
+  if (trimmed.length > STOREFRONT_ITEM_BLURB_MAX) return { ok: false };
+  const storefrontItemBlurb = trimmed.length === 0 ? null : trimmed;
+
+  await prisma.shopListing.update({
+    where: { id: listingId },
+    data: { storefrontItemBlurb },
+  });
+  revalidatePath("/dashboard");
+  revalidatePath(`/s/${user.shop.slug}`);
+  const pslug = listing.product.slug;
+  revalidatePath(`/product/${pslug}`);
+  revalidatePath(`/s/${user.shop.slug}/product/${pslug}`);
+  revalidatePath(`/embed/product/${pslug}`);
   return { ok: true };
 }
 

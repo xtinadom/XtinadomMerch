@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { startSupportSiteCheckout } from "@/actions/support-site";
+import { SupportSiteCta } from "@/components/SupportSiteCta";
 import {
   configuredSupportTipCents,
   isSupportCheckoutConfigured,
@@ -14,22 +14,21 @@ function formatUsd(cents: number) {
 
 export function SiteLegalFooter() {
   const supportAvailable = isSupportCheckoutConfigured();
-  const tipCents = configuredSupportTipCents();
-  const tipLabel = formatUsd(tipCents);
+  const tipLabel = formatUsd(configuredSupportTipCents());
 
   return (
     <footer className="mt-16 border-t border-zinc-800/80 pt-8 text-center text-xs text-zinc-500">
       <nav className="flex flex-wrap justify-center gap-x-4 gap-y-2">
-        <Link href="/about" className="hover:text-blue-400/90">
+        <Link href="/about" className="store-kicker text-zinc-600 transition hover:text-zinc-400">
           About
         </Link>
-        <Link href="/returns" className="hover:text-blue-400/90">
+        <Link href="/returns" className="store-kicker text-zinc-600 transition hover:text-zinc-400">
           Returns &amp; refunds
         </Link>
-        <Link href="/privacy" className="hover:text-blue-400/90">
+        <Link href="/privacy" className="store-kicker text-zinc-600 transition hover:text-zinc-400">
           Privacy
         </Link>
-        <Link href="/shop-regulations" className="hover:text-blue-400/90">
+        <Link href="/shop-regulations" className="store-kicker text-zinc-600 transition hover:text-zinc-400">
           Shop regulations
         </Link>
         <Link
@@ -40,18 +39,8 @@ export function SiteLegalFooter() {
         </Link>
       </nav>
       {supportAvailable ? (
-        <div className="mt-6 max-w-md mx-auto space-y-2">
-          <form action={startSupportSiteCheckout}>
-            <button
-              type="submit"
-              className="text-sm font-medium text-blue-400/90 transition hover:text-blue-300"
-            >
-              {"Support the site <3"}
-            </button>
-          </form>
-          <p className="text-[11px] leading-relaxed text-zinc-600">
-            Voluntary one-time tip ({tipLabel}) via card — goes to the site operator, not shop payouts.
-          </p>
+        <div className="mt-6 max-w-md mx-auto">
+          <SupportSiteCta tipLabel={tipLabel} />
         </div>
       ) : null}
     </footer>

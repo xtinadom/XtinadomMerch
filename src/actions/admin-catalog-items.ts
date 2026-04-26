@@ -55,6 +55,10 @@ export async function adminAddCatalogItem(formData: FormData) {
 
   const itemLevel = itemLevelFromFormWhenNoVariants(formData);
   if (!itemLevel.ok) return;
+  const storefrontDescriptionRaw = String(formData.get("storefrontDescription") ?? "");
+  const storefrontDescription = storefrontDescriptionRaw.trim()
+    ? storefrontDescriptionRaw.trim().slice(0, 10_000)
+    : null;
 
   const maxSort = await prisma.adminCatalogItem.aggregate({ _max: { sortOrder: true } });
   const sortOrder = (maxSort._max.sortOrder ?? 0) + 1;
@@ -63,6 +67,7 @@ export async function adminAddCatalogItem(formData: FormData) {
     data: {
       name: name.slice(0, 300),
       sortOrder,
+      storefrontDescription,
       variants: EMPTY_VARIANTS_JSON,
       itemPlatformProductId: null,
       itemExampleListingUrl: itemLevel.itemExampleListingUrl,
@@ -83,6 +88,10 @@ export async function adminUpdateCatalogItem(formData: FormData) {
 
   const itemLevel = itemLevelFromFormWhenNoVariants(formData);
   if (!itemLevel.ok) return;
+  const storefrontDescriptionRaw = String(formData.get("storefrontDescription") ?? "");
+  const storefrontDescription = storefrontDescriptionRaw.trim()
+    ? storefrontDescriptionRaw.trim().slice(0, 10_000)
+    : null;
 
   const n = await prisma.adminCatalogItem.updateMany({
     where: { id },
@@ -90,6 +99,7 @@ export async function adminUpdateCatalogItem(formData: FormData) {
       name: name.slice(0, 300),
       variants: EMPTY_VARIANTS_JSON,
       itemPlatformProductId: null,
+      storefrontDescription,
       itemExampleListingUrl: itemLevel.itemExampleListingUrl,
       itemMinPriceCents: itemLevel.itemMinPriceCents,
       itemGoodsServicesCostCents: itemLevel.itemGoodsServicesCostCents,

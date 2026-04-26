@@ -46,6 +46,7 @@ export type AdminCatalogItemMinAggregateOutputType = {
   id: string | null
   sortOrder: number | null
   name: string | null
+  storefrontDescription: string | null
   itemPlatformProductId: string | null
   itemExampleListingUrl: string | null
   itemMinPriceCents: number | null
@@ -60,6 +61,7 @@ export type AdminCatalogItemMaxAggregateOutputType = {
   id: string | null
   sortOrder: number | null
   name: string | null
+  storefrontDescription: string | null
   itemPlatformProductId: string | null
   itemExampleListingUrl: string | null
   itemMinPriceCents: number | null
@@ -74,6 +76,7 @@ export type AdminCatalogItemCountAggregateOutputType = {
   id: number
   sortOrder: number
   name: number
+  storefrontDescription: number
   variants: number
   itemPlatformProductId: number
   itemExampleListingUrl: number
@@ -105,6 +108,7 @@ export type AdminCatalogItemMinAggregateInputType = {
   id?: true
   sortOrder?: true
   name?: true
+  storefrontDescription?: true
   itemPlatformProductId?: true
   itemExampleListingUrl?: true
   itemMinPriceCents?: true
@@ -119,6 +123,7 @@ export type AdminCatalogItemMaxAggregateInputType = {
   id?: true
   sortOrder?: true
   name?: true
+  storefrontDescription?: true
   itemPlatformProductId?: true
   itemExampleListingUrl?: true
   itemMinPriceCents?: true
@@ -133,6 +138,7 @@ export type AdminCatalogItemCountAggregateInputType = {
   id?: true
   sortOrder?: true
   name?: true
+  storefrontDescription?: true
   variants?: true
   itemPlatformProductId?: true
   itemExampleListingUrl?: true
@@ -235,6 +241,7 @@ export type AdminCatalogItemGroupByOutputType = {
   id: string
   sortOrder: number
   name: string
+  storefrontDescription: string | null
   variants: runtime.JsonValue
   itemPlatformProductId: string | null
   itemExampleListingUrl: string | null
@@ -273,6 +280,7 @@ export type AdminCatalogItemWhereInput = {
   id?: Prisma.StringFilter<"AdminCatalogItem"> | string
   sortOrder?: Prisma.IntFilter<"AdminCatalogItem"> | number
   name?: Prisma.StringFilter<"AdminCatalogItem"> | string
+  storefrontDescription?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
   variants?: Prisma.JsonFilter<"AdminCatalogItem">
   itemPlatformProductId?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
   itemExampleListingUrl?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
@@ -290,6 +298,7 @@ export type AdminCatalogItemOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  storefrontDescription?: Prisma.SortOrderInput | Prisma.SortOrder
   variants?: Prisma.SortOrder
   itemPlatformProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   itemExampleListingUrl?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -310,6 +319,7 @@ export type AdminCatalogItemWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.AdminCatalogItemWhereInput | Prisma.AdminCatalogItemWhereInput[]
   sortOrder?: Prisma.IntFilter<"AdminCatalogItem"> | number
   name?: Prisma.StringFilter<"AdminCatalogItem"> | string
+  storefrontDescription?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
   variants?: Prisma.JsonFilter<"AdminCatalogItem">
   itemPlatformProductId?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
   itemExampleListingUrl?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
@@ -327,6 +337,7 @@ export type AdminCatalogItemOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  storefrontDescription?: Prisma.SortOrderInput | Prisma.SortOrder
   variants?: Prisma.SortOrder
   itemPlatformProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   itemExampleListingUrl?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -350,6 +361,7 @@ export type AdminCatalogItemScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"AdminCatalogItem"> | string
   sortOrder?: Prisma.IntWithAggregatesFilter<"AdminCatalogItem"> | number
   name?: Prisma.StringWithAggregatesFilter<"AdminCatalogItem"> | string
+  storefrontDescription?: Prisma.StringNullableWithAggregatesFilter<"AdminCatalogItem"> | string | null
   variants?: Prisma.JsonWithAggregatesFilter<"AdminCatalogItem">
   itemPlatformProductId?: Prisma.StringNullableWithAggregatesFilter<"AdminCatalogItem"> | string | null
   itemExampleListingUrl?: Prisma.StringNullableWithAggregatesFilter<"AdminCatalogItem"> | string | null
@@ -365,6 +377,7 @@ export type AdminCatalogItemCreateInput = {
   id?: string
   sortOrder?: number
   name: string
+  storefrontDescription?: string | null
   variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: string | null
   itemMinPriceCents?: number
@@ -381,6 +394,7 @@ export type AdminCatalogItemUncheckedCreateInput = {
   id?: string
   sortOrder?: number
   name: string
+  storefrontDescription?: string | null
   variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemPlatformProductId?: string | null
   itemExampleListingUrl?: string | null
@@ -397,6 +411,7 @@ export type AdminCatalogItemUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  storefrontDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
@@ -413,6 +428,7 @@ export type AdminCatalogItemUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  storefrontDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemPlatformProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -429,6 +445,7 @@ export type AdminCatalogItemCreateManyInput = {
   id?: string
   sortOrder?: number
   name: string
+  storefrontDescription?: string | null
   variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemPlatformProductId?: string | null
   itemExampleListingUrl?: string | null
@@ -444,6 +461,7 @@ export type AdminCatalogItemUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  storefrontDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
@@ -458,6 +476,7 @@ export type AdminCatalogItemUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  storefrontDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemPlatformProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -483,6 +502,7 @@ export type AdminCatalogItemCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  storefrontDescription?: Prisma.SortOrder
   variants?: Prisma.SortOrder
   itemPlatformProductId?: Prisma.SortOrder
   itemExampleListingUrl?: Prisma.SortOrder
@@ -505,6 +525,7 @@ export type AdminCatalogItemMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  storefrontDescription?: Prisma.SortOrder
   itemPlatformProductId?: Prisma.SortOrder
   itemExampleListingUrl?: Prisma.SortOrder
   itemMinPriceCents?: Prisma.SortOrder
@@ -519,6 +540,7 @@ export type AdminCatalogItemMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  storefrontDescription?: Prisma.SortOrder
   itemPlatformProductId?: Prisma.SortOrder
   itemExampleListingUrl?: Prisma.SortOrder
   itemMinPriceCents?: Prisma.SortOrder
@@ -601,6 +623,7 @@ export type AdminCatalogItemCreateWithoutItemPlatformProductInput = {
   id?: string
   sortOrder?: number
   name: string
+  storefrontDescription?: string | null
   variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: string | null
   itemMinPriceCents?: number
@@ -616,6 +639,7 @@ export type AdminCatalogItemUncheckedCreateWithoutItemPlatformProductInput = {
   id?: string
   sortOrder?: number
   name: string
+  storefrontDescription?: string | null
   variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: string | null
   itemMinPriceCents?: number
@@ -660,6 +684,7 @@ export type AdminCatalogItemScalarWhereInput = {
   id?: Prisma.StringFilter<"AdminCatalogItem"> | string
   sortOrder?: Prisma.IntFilter<"AdminCatalogItem"> | number
   name?: Prisma.StringFilter<"AdminCatalogItem"> | string
+  storefrontDescription?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
   variants?: Prisma.JsonFilter<"AdminCatalogItem">
   itemPlatformProductId?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
   itemExampleListingUrl?: Prisma.StringNullableFilter<"AdminCatalogItem"> | string | null
@@ -675,6 +700,7 @@ export type AdminCatalogItemCreateWithoutCatalogTagsInput = {
   id?: string
   sortOrder?: number
   name: string
+  storefrontDescription?: string | null
   variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: string | null
   itemMinPriceCents?: number
@@ -690,6 +716,7 @@ export type AdminCatalogItemUncheckedCreateWithoutCatalogTagsInput = {
   id?: string
   sortOrder?: number
   name: string
+  storefrontDescription?: string | null
   variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemPlatformProductId?: string | null
   itemExampleListingUrl?: string | null
@@ -721,6 +748,7 @@ export type AdminCatalogItemUpdateWithoutCatalogTagsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  storefrontDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
@@ -736,6 +764,7 @@ export type AdminCatalogItemUncheckedUpdateWithoutCatalogTagsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  storefrontDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemPlatformProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -751,6 +780,7 @@ export type AdminCatalogItemCreateManyItemPlatformProductInput = {
   id?: string
   sortOrder?: number
   name: string
+  storefrontDescription?: string | null
   variants: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: string | null
   itemMinPriceCents?: number
@@ -765,6 +795,7 @@ export type AdminCatalogItemUpdateWithoutItemPlatformProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  storefrontDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
@@ -780,6 +811,7 @@ export type AdminCatalogItemUncheckedUpdateWithoutItemPlatformProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  storefrontDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
@@ -795,6 +827,7 @@ export type AdminCatalogItemUncheckedUpdateManyWithoutItemPlatformProductInput =
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  storefrontDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variants?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   itemExampleListingUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   itemMinPriceCents?: Prisma.IntFieldUpdateOperationsInput | number
@@ -840,6 +873,7 @@ export type AdminCatalogItemSelect<ExtArgs extends runtime.Types.Extensions.Inte
   id?: boolean
   sortOrder?: boolean
   name?: boolean
+  storefrontDescription?: boolean
   variants?: boolean
   itemPlatformProductId?: boolean
   itemExampleListingUrl?: boolean
@@ -858,6 +892,7 @@ export type AdminCatalogItemSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   sortOrder?: boolean
   name?: boolean
+  storefrontDescription?: boolean
   variants?: boolean
   itemPlatformProductId?: boolean
   itemExampleListingUrl?: boolean
@@ -874,6 +909,7 @@ export type AdminCatalogItemSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   sortOrder?: boolean
   name?: boolean
+  storefrontDescription?: boolean
   variants?: boolean
   itemPlatformProductId?: boolean
   itemExampleListingUrl?: boolean
@@ -890,6 +926,7 @@ export type AdminCatalogItemSelectScalar = {
   id?: boolean
   sortOrder?: boolean
   name?: boolean
+  storefrontDescription?: boolean
   variants?: boolean
   itemPlatformProductId?: boolean
   itemExampleListingUrl?: boolean
@@ -901,7 +938,7 @@ export type AdminCatalogItemSelectScalar = {
   updatedAt?: boolean
 }
 
-export type AdminCatalogItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sortOrder" | "name" | "variants" | "itemPlatformProductId" | "itemExampleListingUrl" | "itemMinPriceCents" | "itemGoodsServicesCostCents" | "itemImageRequirementLabel" | "itemMinArtworkLongEdgePx" | "createdAt" | "updatedAt", ExtArgs["result"]["adminCatalogItem"]>
+export type AdminCatalogItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sortOrder" | "name" | "storefrontDescription" | "variants" | "itemPlatformProductId" | "itemExampleListingUrl" | "itemMinPriceCents" | "itemGoodsServicesCostCents" | "itemImageRequirementLabel" | "itemMinArtworkLongEdgePx" | "createdAt" | "updatedAt", ExtArgs["result"]["adminCatalogItem"]>
 export type AdminCatalogItemInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   itemPlatformProduct?: boolean | Prisma.AdminCatalogItem$itemPlatformProductArgs<ExtArgs>
   catalogTags?: boolean | Prisma.AdminCatalogItem$catalogTagsArgs<ExtArgs>
@@ -924,6 +961,10 @@ export type $AdminCatalogItemPayload<ExtArgs extends runtime.Types.Extensions.In
     id: string
     sortOrder: number
     name: string
+    /**
+     * * Optional public storefront description for this baseline catalog item.
+     */
+    storefrontDescription: string | null
     /**
      * * Legacy JSON array (unused for new rows; kept for DB compatibility).
      */
@@ -1390,6 +1431,7 @@ export interface AdminCatalogItemFieldRefs {
   readonly id: Prisma.FieldRef<"AdminCatalogItem", 'String'>
   readonly sortOrder: Prisma.FieldRef<"AdminCatalogItem", 'Int'>
   readonly name: Prisma.FieldRef<"AdminCatalogItem", 'String'>
+  readonly storefrontDescription: Prisma.FieldRef<"AdminCatalogItem", 'String'>
   readonly variants: Prisma.FieldRef<"AdminCatalogItem", 'Json'>
   readonly itemPlatformProductId: Prisma.FieldRef<"AdminCatalogItem", 'String'>
   readonly itemExampleListingUrl: Prisma.FieldRef<"AdminCatalogItem", 'String'>

@@ -15,8 +15,8 @@ export default function AdminRootLayout({
       <Suspense fallback={<SiteHeaderFallback />}>
         <SiteHeader browseMenu />
       </Suspense>
-      <div className="relative mx-auto max-w-4xl px-4 py-10">{children}</div>
-      <div className="mx-auto max-w-4xl px-4 pb-10">
+      <div className="relative mx-auto max-w-[996px] px-4 py-10">{children}</div>
+      <div className="mx-auto max-w-[996px] px-4 pb-10">
         <SiteLegalFooter />
       </div>
     </div>

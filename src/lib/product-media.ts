@@ -217,6 +217,7 @@ export function productPrimaryImageForShopListing(
   product: {
     imageUrl: string | null;
     imageGallery: Prisma.JsonValue | null;
+    printifyVariants?: Prisma.JsonValue | null;
   },
   extras?: {
     adminListingSecondaryImageUrl?: string | null;
@@ -224,7 +225,13 @@ export function productPrimaryImageForShopListing(
     listingStorefrontCatalogImageUrls?: string[] | null;
   },
 ): string | null {
-  return productImageUrlsForShopListing(product, extras)[0] ?? null;
+  const fromCatalog = productImageUrlsForShopListing(product, extras)[0];
+  if (fromCatalog) return fromCatalog;
+  for (const v of parsePrintifyVariantsJson(product.printifyVariants ?? null)) {
+    const u = v.imageUrl?.trim();
+    if (u) return u;
+  }
+  return null;
 }
 
 export function toGalleryJson(urls: string[]): Prisma.InputJsonValue {

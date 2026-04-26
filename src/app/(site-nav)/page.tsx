@@ -5,7 +5,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { SiteLegalFooter } from "@/components/SiteLegalFooter";
 import {
   getFeaturedCreatorShopsForHome,
-  getHotListingProductsForHome,
+  getHomeHotCarouselProducts,
   getTopShopsForHome,
 } from "@/lib/marketplace-home";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
@@ -27,12 +27,12 @@ export default async function HomePage({ searchParams }: PageProps) {
         ? accountDeletedRaw[0]
         : undefined;
   let featuredShops: Awaited<ReturnType<typeof getFeaturedCreatorShopsForHome>>;
-  let hotProducts: Awaited<ReturnType<typeof getHotListingProductsForHome>>;
+  let hotProducts: Awaited<ReturnType<typeof getHomeHotCarouselProducts>>;
   let topShops: Awaited<ReturnType<typeof getTopShopsForHome>>;
   try {
     [featuredShops, hotProducts, topShops] = await Promise.all([
       getFeaturedCreatorShopsForHome(),
-      getHotListingProductsForHome(10),
+      getHomeHotCarouselProducts(),
       getTopShopsForHome(10),
     ]);
   } catch (e) {
@@ -60,7 +60,7 @@ export default async function HomePage({ searchParams }: PageProps) {
     .filter((x): x is NonNullable<typeof x> => x != null);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 py-10 sm:py-14">
+    <main className="mx-auto flex min-h-screen max-w-[996px] flex-col px-4 py-10 sm:py-14">
       <header className="text-center">
         <h1 className="m-0">
           <Link
@@ -70,9 +70,6 @@ export default async function HomePage({ searchParams }: PageProps) {
             XTINADOM
           </Link>
         </h1>
-        <p className="mx-auto mt-4 max-w-lg text-sm text-zinc-400">
-          A platform for creators to sell their brand&apos;s merchandise.
-        </p>
       </header>
 
       {accountDeleted === "1" ? (
@@ -134,35 +131,35 @@ export default async function HomePage({ searchParams }: PageProps) {
       ) : null}
 
       {topShops.length > 0 ? (
-        <section className="mt-16 border-t border-zinc-800/80 pt-10">
-          <div className="text-center">
-            <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500 sm:text-base">
-              Top shops
-            </h2>
-          </div>
-          <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+        <section className="mt-16 border-t border-zinc-800/80 pt-10 text-center">
+          <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500 sm:text-base">
+            Top shops
+          </h2>
+          <ul className="mx-auto mt-6 flex max-w-5xl flex-wrap justify-center gap-4">
             {topShops.map((s) => (
-              <li key={s.id}>
+              <li key={s.id} className="w-36 shrink-0 sm:w-40">
                 <Link
                   href={`/s/${s.slug}`}
-                  className="flex gap-3 rounded-xl border border-zinc-800 bg-zinc-950/50 p-3 transition hover:border-zinc-600"
+                  className="flex aspect-square min-h-0 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-950/50 p-2.5 text-center transition hover:border-zinc-600 sm:gap-2 sm:p-3"
                 >
-                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-zinc-900">
+                  <div className="aspect-square w-[40%] max-w-[4.5rem] shrink-0 overflow-hidden rounded-lg bg-zinc-900 sm:max-w-[5.5rem]">
                     {s.profileImageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={s.profileImageUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-[10px] font-medium text-zinc-600">
+                      <div className="flex h-full w-full items-center justify-center text-xs font-medium text-zinc-600">
                         {s.displayName.slice(0, 2).toUpperCase()}
                       </div>
                     )}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-zinc-100">{s.displayName}</p>
-                    {s.bio ? (
-                      <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-zinc-500">{s.bio}</p>
-                    ) : null}
-                  </div>
+                  <p className="line-clamp-2 w-full min-w-0 text-xs font-medium text-zinc-100 sm:text-sm">
+                    {s.displayName}
+                  </p>
+                  {s.bio ? (
+                    <p className="line-clamp-2 w-full min-w-0 text-[10px] leading-snug text-zinc-500 sm:text-[11px]">
+                      {s.bio}
+                    </p>
+                  ) : null}
                 </Link>
               </li>
             ))}
@@ -178,6 +175,10 @@ export default async function HomePage({ searchParams }: PageProps) {
           Browse all shops
         </Link>
       </div>
+
+      <p className="mx-auto mt-6 max-w-lg text-center text-sm text-zinc-400">
+        A platform for creators, artists, and designers to sell their merchandise.
+      </p>
 
       <SiteLegalFooter />
     </main>

@@ -25,7 +25,7 @@ export function DashboardSupportChatPanel(props: {
       </p>
       <div className="max-h-[min(28rem,55vh)] space-y-3 overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
         {messages.length === 0 && !resolvedAtIso ? (
-          <p className="py-6 text-center text-sm text-zinc-500">No messages yet — say hello below.</p>
+          <p className="py-6 text-center text-sm text-zinc-500">No messages yet.</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {timeline.map((item) => {

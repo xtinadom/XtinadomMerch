@@ -8,6 +8,14 @@ function formatPrice(cents: number) {
   }).format(cents / 100);
 }
 
+/** Local calendar date for table display (e.g. `04-25-26`). */
+function formatDateMMDDYY(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const yy = String(d.getFullYear() % 100).padStart(2, "0");
+  return `${mm}-${dd}-${yy}`;
+}
+
 function escapeCsvCell(v: string) {
   if (/[",\n]/.test(v)) return `"${v.replace(/"/g, '""')}"`;
   return v;
@@ -44,7 +52,7 @@ export function AdminPlatformSalesTab(props: {
     })
     .join("\n");
   const csv =
-    "date,order_id,product,qty,merchandise_cents,goods_services_cents,platform_fee_cents,shop_cut_cents,shop_name,shop_slug\n" +
+    "date,order_id,item,qty,merchandise_cents,goods_services_cents,platform_fee_cents,shop_cut_cents,shop_name,shop_slug\n" +
     csvBody;
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
 
@@ -105,7 +113,7 @@ export function AdminPlatformSalesTab(props: {
           <thead>
             <tr className="border-b border-zinc-800 text-zinc-500">
               <th className="py-2 pr-2 font-medium">Date</th>
-              <th className="py-2 pr-2 font-medium">Product</th>
+              <th className="py-2 pr-2 font-medium">Item</th>
               <th className="py-2 pr-2 font-medium">Qty</th>
               <th className="py-2 pr-2 font-medium">Merch</th>
               <th className="py-2 pr-2 font-medium">G/S cost</th>
@@ -121,7 +129,7 @@ export function AdminPlatformSalesTab(props: {
               return (
                 <tr key={l.id} className="border-b border-zinc-900 text-zinc-300">
                   <td className="py-2 pr-2 font-mono text-[10px] text-zinc-500">
-                    {l.order.createdAt.toISOString().slice(0, 10)}
+                    {formatDateMMDDYY(l.order.createdAt)}
                   </td>
                   <td className="py-2 pr-2">{l.productName}</td>
                   <td className="py-2 pr-2 tabular-nums">{l.quantity}</td>

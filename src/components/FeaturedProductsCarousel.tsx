@@ -10,6 +10,7 @@ import {
   type CSSProperties,
 } from "react";
 import type { FeaturedCarouselItem } from "@/lib/shop-featured-carousel";
+import { PLATFORM_SHOP_SLUG, productHref } from "@/lib/marketplace-constants";
 
 const ROTATE_MS = 2500;
 const SLIDE_GAP_PX = 40;
@@ -31,11 +32,36 @@ function slotCenterDeltaX(): number {
 
 type Props = {
   items: FeaturedCarouselItem[];
-  /** Screen-reader label for the carousel heading. */
+  /** Small uppercase kicker above the row (e.g. “Top sellers”). */
+  eyebrow?: string;
+  /**
+   * When the parent section already provides a heading, hide the duplicate kicker line.
+   */
+  hideKicker?: boolean;
+  /** Screen-reader label for the carousel region. */
   label?: string;
+  /**
+   * When items omit `listingShopSlug`, product links use this shop (e.g. creator `/s/...` “All products”).
+   * Falls back to platform `/product/...` when unset.
+   */
+  defaultListingShopSlug?: string;
 };
 
-export function FeaturedProductsCarousel({ items, label = "Featured products" }: Props) {
+function carouselItemHref(item: FeaturedCarouselItem, defaultListingShopSlug?: string): string {
+  if (item.href) return item.href;
+  return productHref(
+    item.listingShopSlug ?? defaultListingShopSlug ?? PLATFORM_SHOP_SLUG,
+    item.slug,
+  );
+}
+
+export function FeaturedProductsCarousel({
+  items,
+  eyebrow = "Featured",
+  hideKicker = false,
+  label = "Featured products",
+  defaultListingShopSlug,
+}: Props) {
   const n = items.length;
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -76,12 +102,12 @@ export function FeaturedProductsCarousel({ items, label = "Featured products" }:
     setPhase("advancing");
   }, [n, phase, paused, reduceMotion, isMd]);
 
+  /** Arm motion in the same layout pass as `advancing` so opacity + transform start together (no extra frame). */
   useLayoutEffect(() => {
     if (phase !== "advancing" || animArmed) return;
-    const id = requestAnimationFrame(() => {
-      setAnimArmed(true);
-    });
-    return () => cancelAnimationFrame(id);
+    const node = centerMotionRef.current;
+    if (node) void node.offsetWidth;
+    setAnimArmed(true);
   }, [phase, animArmed]);
 
   useEffect(() => {
@@ -145,18 +171,22 @@ export function FeaturedProductsCarousel({ items, label = "Featured products" }:
     "--fc-side": `${SIDE_SQUARE_PX}px`,
   } as CSSProperties;
 
-  const isAnimating = phase === "advancing" && animArmed;
-  const transition = isAnimating
+  /** Advance step is active (dims + left fade start immediately). */
+  const motionLive = phase === "advancing";
+  /** FLIP transform armed after layout flush — same instant as motionLive in practice. */
+  const transformLive = motionLive && animArmed;
+
+  const transformTransition = transformLive
     ? `transform ${ADVANCE_DURATION_MS}ms ${EASING}`
     : "transform 0ms";
-  const opacityTransition = isAnimating
-    ? `opacity ${ADVANCE_DURATION_MS}ms ${EASING}`
-    : "opacity 0ms";
+  const opacityEase = `opacity ${ADVANCE_DURATION_MS}ms ${EASING}`;
+  const opacityTransition = motionLive ? opacityEase : "opacity 0ms";
+  const centerDimTransition = motionLive ? opacityEase : "opacity 0ms";
 
-  const centerMotion: CSSProperties = isAnimating
+  const centerMotion: CSSProperties = transformLive
     ? {
         transform: `translateX(${dx}px) scale(${scaleCenterToSide})`,
-        transition,
+        transition: transformTransition,
         transformOrigin: "center center",
         willChange: "transform",
       }
@@ -167,12 +197,23 @@ export function FeaturedProductsCarousel({ items, label = "Featured products" }:
         willChange: "auto",
       };
 
-  /** Opacity goes full immediately when animating so the rail doesn’t lag behind center/left. */
-  const rightMotion: CSSProperties = isAnimating
+  /** Hero dims like side rails: same opacity as idle rail tiles (no grayscale). */
+  const centerCardTone: CSSProperties = motionLive
+    ? {
+        opacity: 0.4,
+        transition: centerDimTransition,
+      }
+    : {
+        opacity: 1,
+        transition: centerDimTransition,
+      };
+
+  /** Opacity goes full when the rail transform runs. */
+  const rightMotion: CSSProperties = transformLive
     ? {
         transform: `translateX(${dx}px) scale(${scaleSideToCenter})`,
         opacity: 1,
-        transition,
+        transition: transformTransition,
         transformOrigin: "center center",
         willChange: "transform",
       }
@@ -184,8 +225,8 @@ export function FeaturedProductsCarousel({ items, label = "Featured products" }:
         willChange: "auto",
       };
 
-  /** Left rail fades out in place (same duration as center/right — no cross-screen motion). */
-  const leftMotion: CSSProperties = isAnimating
+  /** Left rail fades in lockstep with center hero dim — both keyed off `motionLive`, not transform arm. */
+  const leftMotion: CSSProperties = motionLive
     ? {
         transform: "none",
         opacity: 0,
@@ -199,7 +240,7 @@ export function FeaturedProductsCarousel({ items, label = "Featured products" }:
 
   /** Next list item after `next`, shown on the right rail as the outgoing tile moves to center. */
   const afterNext = n > 1 ? items[(index + 2) % n] : null;
-  const incomingRightMotion: CSSProperties = isAnimating
+  const incomingRightMotion: CSSProperties = motionLive
     ? {
         opacity: 0.4,
         transition: opacityTransition,
@@ -217,10 +258,12 @@ export function FeaturedProductsCarousel({ items, label = "Featured products" }:
       onPointerEnter={() => setPaused(true)}
       onPointerLeave={() => setPaused(false)}
     >
-      <div className="mx-auto max-w-4xl" style={frameStyle}>
-        <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
-          Featured
-        </p>
+      <div className="mx-auto max-w-[996px]" style={frameStyle}>
+        {hideKicker ? null : (
+          <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+            {eyebrow}
+          </p>
+        )}
         <div className="mx-auto flex w-full max-w-full flex-col items-center">
           <div className="flex min-h-[var(--fc-center)] items-center justify-center gap-[40px] overflow-visible">
             {n > 1 && prev ? (
@@ -243,19 +286,22 @@ export function FeaturedProductsCarousel({ items, label = "Featured products" }:
             ) : null}
 
             <Link
-              href={`/product/${curr.slug}`}
+              href={carouselItemHref(curr, defaultListingShopSlug)}
               scroll={false}
               aria-label={curr.name}
               className="group relative z-10 w-[min(100%,var(--fc-center))] shrink-0 overflow-visible"
-              style={{ zIndex: isAnimating ? 5 : 10 }}
+              style={{ zIndex: transformLive ? 5 : 10 }}
             >
               <div ref={centerMotionRef} style={centerMotion}>
-                <div className="aspect-square w-full overflow-hidden rounded-xl border border-zinc-600/90 bg-zinc-900 shadow-lg shadow-black/40 transition group-hover:border-blue-500/50">
+                <div
+                  className="aspect-square w-full overflow-hidden rounded-xl border border-zinc-600/90 bg-zinc-900 shadow-lg shadow-black/40 transition-colors group-hover:border-blue-500/50"
+                  style={centerCardTone}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={curr.imageUrl}
                     alt=""
-                    className="h-full w-full object-cover transition duration-500 ease-out group-hover:scale-[1.02]"
+                    className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
                   />
                 </div>
               </div>
@@ -265,7 +311,7 @@ export function FeaturedProductsCarousel({ items, label = "Featured products" }:
               <div className="relative hidden w-[var(--fc-side)] shrink-0 md:block">
                 {/* Underlay: following list photo fades onto the rail as the front tile moves to center */}
                 <div
-                  className={`absolute inset-0 z-0 aspect-square overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/60 ${!isAnimating ? "pointer-events-none" : ""}`}
+                  className={`absolute inset-0 z-0 aspect-square overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/60 ${!motionLive ? "pointer-events-none" : ""}`}
                   style={incomingRightMotion}
                   aria-hidden="true"
                 >
@@ -297,7 +343,7 @@ export function FeaturedProductsCarousel({ items, label = "Featured products" }:
           </div>
 
           <Link
-            href={`/product/${curr.slug}`}
+            href={carouselItemHref(curr, defaultListingShopSlug)}
             scroll={false}
             className="mt-2.5 line-clamp-2 w-[min(100%,var(--fc-center))] text-center text-xs font-medium leading-snug text-zinc-200 transition hover:text-blue-200/95 sm:text-sm"
           >
@@ -309,7 +355,7 @@ export function FeaturedProductsCarousel({ items, label = "Featured products" }:
           <div className="mt-4 flex justify-center gap-1.5" aria-hidden="true">
             {items.map((item, i) => (
               <span
-                key={item.slug}
+                key={`${item.href ?? ""}:${item.listingShopSlug ?? defaultListingShopSlug ?? ""}:${item.slug}:${i}`}
                 className={
                   i === index
                     ? "h-1.5 w-6 rounded-full bg-blue-400/90 transition-[width,background-color] duration-300"

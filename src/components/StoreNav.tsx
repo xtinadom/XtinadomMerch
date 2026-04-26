@@ -40,7 +40,7 @@ export function StoreNav({
   return (
     <>
       <header className="relative z-[1000] border-b border-zinc-800/40 bg-zinc-950/40 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4">
+        <div className="mx-auto flex max-w-[1124px] items-center justify-between gap-4 px-4 py-4">
           <div className="flex min-w-0 shrink-0 items-center gap-4 sm:gap-5">
             <Link
               href="/"

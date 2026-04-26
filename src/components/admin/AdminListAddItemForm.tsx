@@ -11,6 +11,7 @@ export function AdminListAddItemForm() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [itemName, setItemName] = useState("");
+  const [storefrontDescription, setStorefrontDescription] = useState("");
   const [itemExampleListingUrl, setItemExampleListingUrl] = useState("");
   const [itemMinPriceDollars, setItemMinPriceDollars] = useState("");
   const [itemGoodsServicesCostDollars, setItemGoodsServicesCostDollars] = useState("");
@@ -43,6 +44,7 @@ export function AdminListAddItemForm() {
 
     const fd = new FormData();
     fd.set("itemName", name);
+    fd.set("storefrontDescription", storefrontDescription);
     fd.set("itemExampleListingUrl", itemExampleListingUrl);
     fd.set("itemMinPriceDollars", itemMinPriceDollars);
     fd.set("itemGoodsServicesCostDollars", itemGoodsServicesCostDollars);
@@ -52,6 +54,7 @@ export function AdminListAddItemForm() {
     startTransition(async () => {
       await adminAddCatalogItem(fd);
       setItemName("");
+      setStorefrontDescription("");
       setItemExampleListingUrl("");
       setItemMinPriceDollars("");
       setItemGoodsServicesCostDollars("");
@@ -85,9 +88,11 @@ export function AdminListAddItemForm() {
           exampleListingUrl={itemExampleListingUrl}
           minPriceDollars={itemMinPriceDollars}
           goodsServicesCostDollars={itemGoodsServicesCostDollars}
+          storefrontDescription={storefrontDescription}
           onChangeExampleListingUrl={setItemExampleListingUrl}
           onChangeMinPriceDollars={setItemMinPriceDollars}
           onChangeGoodsServicesCostDollars={setItemGoodsServicesCostDollars}
+          onChangeStorefrontDescription={setStorefrontDescription}
         />
         <AdminCatalogArtworkRequirementFields
           imageRequirementLabel={itemImageRequirementLabel}

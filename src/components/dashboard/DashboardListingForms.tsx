@@ -17,6 +17,7 @@ import {
   dashboardSetListingStorefrontCatalogImagesForm,
   dashboardSubmitListingRequest,
   dashboardUpdateListingItemName,
+  dashboardUpdateListingStorefrontBlurb,
   dashboardUpdateListingPrice,
   dashboardUpdateListingVariantPrices,
   dashboardUploadListingSupplementPhoto,
@@ -35,6 +36,7 @@ import { expectedShopProfitMerchandiseUnitCents } from "@/lib/marketplace-fee";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 
 const REQUEST_ITEM_NAME_MAX = 120;
+const STOREFRONT_ITEM_BLURB_MAX = 280;
 
 const disabledSave =
   "cursor-not-allowed rounded bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-500 ring-1 ring-zinc-800";
@@ -160,6 +162,102 @@ export function DashboardListingItemNameForm({
       <button type="submit" disabled={!dirty || pending} className={`${btnClass} shrink-0`}>
         {label}
       </button>
+    </form>
+  );
+}
+
+type StorefrontBlurbFormProps = {
+  listingId: string;
+  storefrontItemBlurb: string | null;
+  readOnly?: boolean;
+};
+
+export function DashboardListingStorefrontBlurbForm({
+  listingId,
+  storefrontItemBlurb,
+  readOnly = false,
+}: StorefrontBlurbFormProps) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const initial = storefrontItemBlurb?.trim() ?? "";
+  const [text, setText] = useState(initial);
+  const baseline = useRef(initial);
+  const [savedFlash, setSavedFlash] = useState(false);
+
+  useLayoutEffect(() => {
+    const next = storefrontItemBlurb?.trim() ?? "";
+    setText(next);
+    baseline.current = next;
+  }, [listingId, storefrontItemBlurb]);
+
+  useLayoutEffect(() => {
+    setSavedFlash(false);
+  }, [listingId]);
+
+  const dirty = text.trim() !== baseline.current.trim();
+
+  useEffect(() => {
+    if (dirty) setSavedFlash(false);
+  }, [dirty]);
+
+  const onSubmit = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      if (!dirty || pending) return;
+      const fd = new FormData(e.currentTarget);
+      startTransition(async () => {
+        const r = await dashboardUpdateListingStorefrontBlurb(fd);
+        router.refresh();
+        if (r.ok) {
+          setSavedFlash(true);
+          window.setTimeout(() => setSavedFlash(false), 2500);
+        }
+      });
+    },
+    [dirty, pending, router],
+  );
+
+  const label = pending ? "Saving..." : savedFlash && !dirty ? "Saved" : "Save pitch";
+  const btnClass = pending
+    ? savingSaveItemName
+    : !dirty
+      ? savedFlash
+        ? savedSaveItemName
+        : disabledSaveItemName
+      : activeSaveItemName;
+
+  if (readOnly) {
+    return initial ? (
+      <div className="mt-3 min-w-0">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-600">Storefront pitch</p>
+        <p className="mt-1 text-sm italic leading-relaxed text-zinc-400">{initial}</p>
+      </div>
+    ) : null;
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="mt-3 space-y-2">
+      <input type="hidden" name="listingId" value={listingId} />
+      <label className="block text-xs text-zinc-500">
+        Storefront pitch (optional, one line — shows above item details on your product page)
+        <textarea
+          name="storefrontItemBlurb"
+          value={text}
+          maxLength={STOREFRONT_ITEM_BLURB_MAX}
+          rows={2}
+          autoComplete="off"
+          onChange={(ev) => setText(ev.target.value)}
+          className="mt-1 block w-full min-w-0 resize-y rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm leading-snug text-zinc-100"
+        />
+      </label>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[11px] text-zinc-600">
+          {text.length}/{STOREFRONT_ITEM_BLURB_MAX} characters
+        </p>
+        <button type="submit" disabled={!dirty || pending} className={`${btnClass} shrink-0`}>
+          {label}
+        </button>
+      </div>
     </form>
   );
 }

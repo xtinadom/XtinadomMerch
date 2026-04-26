@@ -13,6 +13,7 @@ export type AdminShopLeaderboardRow = {
   slug: string;
   merchandiseCents: number;
   shopCutCents: number;
+  platformProfitCents: number;
   paidLineCount: number;
 };
 
@@ -27,8 +28,8 @@ export function AdminShopLeaderboardTab(props: {
     <section aria-label="Shop leaderboard">
       <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Shop leaderboard</h2>
       <p className="mt-1 text-xs text-zinc-600">
-        Creator shops ranked by paid merchandise total (quantity × unit price). Shops with no paid lines in the range
-        are omitted. Same paid-order scope as Platform sales (tips and shipping excluded).
+        Creator shops ranked by paid merchandise total (quantity × unit price). Shops with no paid merchandise in the
+        range are omitted. Same paid-order scope as Platform sales (tips and shipping excluded).
       </p>
       <form
         method="get"
@@ -67,29 +68,38 @@ export function AdminShopLeaderboardTab(props: {
         </Link>
       </form>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[640px] border-collapse text-left text-xs">
+        <table className="w-full min-w-[640px] border-collapse text-xs">
           <thead>
             <tr className="border-b border-zinc-800 text-zinc-500">
-              <th className="py-2 pr-2 font-medium">#</th>
-              <th className="py-2 pr-2 font-medium">Shop</th>
-              <th className="py-2 pr-2 font-medium">Merchandise</th>
-              <th className="py-2 pr-2 font-medium">Shop cut</th>
-              <th className="py-2 font-medium">Paid lines</th>
+              <th className="py-2 px-2 text-center font-medium">#</th>
+              <th className="py-2 pr-2 text-left font-medium">Shop</th>
+              <th className="py-2 px-2 text-center font-medium">Merchandise</th>
+              <th className="py-2 px-2 text-center font-medium">Shop cut</th>
+              <th className="py-2 px-2 text-center font-medium whitespace-nowrap text-blue-400/90">
+                Platform profit
+              </th>
+              <th
+                className="py-2 px-2 text-center font-medium"
+                title="Paid line items in this date range: one per cart line (not total units)."
+              >
+                Item Sales
+              </th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.slug} className="border-b border-zinc-900 text-zinc-300">
-                <td className="py-2 pr-2 tabular-nums text-zinc-500">{r.rank}</td>
-                <td className="py-2 pr-2">
+                <td className="py-2 px-2 text-center tabular-nums text-zinc-500">{r.rank}</td>
+                <td className="py-2 pr-2 text-left">
                   <Link href={`/s/${encodeURIComponent(r.slug)}`} className="text-blue-400/90 hover:underline">
                     {r.displayName}
                   </Link>
                   <span className="ml-2 font-mono text-[10px] text-zinc-600">/s/{r.slug}</span>
                 </td>
-                <td className="py-2 pr-2 tabular-nums">{formatPrice(r.merchandiseCents)}</td>
-                <td className="py-2 pr-2 tabular-nums">{formatPrice(r.shopCutCents)}</td>
-                <td className="py-2 tabular-nums text-zinc-400">{r.paidLineCount}</td>
+                <td className="py-2 px-2 text-center tabular-nums">{formatPrice(r.merchandiseCents)}</td>
+                <td className="py-2 px-2 text-center tabular-nums">{formatPrice(r.shopCutCents)}</td>
+                <td className="py-2 px-2 text-center tabular-nums">{formatPrice(r.platformProfitCents)}</td>
+                <td className="py-2 px-2 text-center tabular-nums text-zinc-400">{r.paidLineCount}</td>
               </tr>
             ))}
           </tbody>

@@ -23,6 +23,7 @@ export async function AdminListTab() {
   const serializable = items.map((item) => ({
     id: item.id,
     name: item.name,
+    storefrontDescription: item.storefrontDescription,
     itemPlatformProductId: item.itemPlatformProductId,
     itemExampleListingUrl: item.itemExampleListingUrl,
     itemMinPriceCents: item.itemMinPriceCents,

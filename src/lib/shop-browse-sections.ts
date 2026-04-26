@@ -7,6 +7,12 @@ export type ShopSectionRow = {
   products: ProductCardProduct[];
 };
 
+function sortProductsByName(products: ProductCardProduct[]): ProductCardProduct[] {
+  return [...products].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+  );
+}
+
 /** Group active products by store tags; append “Other” for items with no ProductTag rows. */
 export function buildShopSections(
   allProducts: ProductCardProduct[],
@@ -20,11 +26,13 @@ export function buildShopSections(
         slug: tag.slug,
         sortOrder: tag.sortOrder,
       },
-      products: allProducts.filter((p) => productHasTag(p, tag.id)),
+      products: sortProductsByName(allProducts.filter((p) => productHasTag(p, tag.id))),
     }))
     .filter((s) => s.products.length > 0);
 
-  const untagged = allProducts.filter((p) => p.tags.length === 0);
+  const untagged = sortProductsByName(
+    allProducts.filter((p) => p.tags.length === 0 && !(p.primaryTagId?.trim())),
+  );
   if (untagged.length === 0) return taggedSections;
   return [
     ...taggedSections,

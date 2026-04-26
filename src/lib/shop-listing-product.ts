@@ -37,6 +37,7 @@ export function productCardProductFromListing<
     adminListingSecondaryImageUrl?: string | null;
     ownerSupplementImageUrl?: string | null;
     listingStorefrontCatalogImageUrls?: unknown;
+    shop?: { slug: string; displayName?: string } | null;
   },
 >(listing: LP): ProductCardProduct {
   const custom = listing.requestItemName?.trim();
@@ -44,10 +45,14 @@ export function productCardProductFromListing<
   const catalogSel = parseListingStorefrontCatalogImageSelection(
     listing.listingStorefrontCatalogImageUrls,
   );
+  const storefrontShopSlug = listing.shop?.slug?.trim() || undefined;
+  const storefrontShopDisplayName = listing.shop?.displayName?.trim() || undefined;
   return {
     ...listing.product,
     name,
     priceCents: listingCardPriceCents(listing),
+    ...(storefrontShopSlug ? { storefrontShopSlug } : {}),
+    ...(storefrontShopDisplayName ? { storefrontShopDisplayName } : {}),
     adminListingSecondaryImageUrl: sanitizeShopListingAdminSecondaryImageUrlForDisplay(
       listing.adminListingSecondaryImageUrl,
       listing.shopId,

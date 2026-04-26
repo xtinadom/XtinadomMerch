@@ -83,6 +83,8 @@ export function ShopFirstListingRequestPanel(props: {
   publicationFeeLabel?: string | null;
   /** When a fee applies, Connect must be complete before this request can be submitted. */
   stripeConnectReadyForPaidListings?: boolean;
+  /** Bonus listing-slot promo redeem (non-founder creator shops). */
+  showListingSlotPromoRedeem?: boolean;
   embedded?: boolean;
 }) {
   const {
@@ -92,6 +94,7 @@ export function ShopFirstListingRequestPanel(props: {
     draftListingRequestPrefill = null,
     publicationFeeLabel = null,
     stripeConnectReadyForPaidListings = true,
+    showListingSlotPromoRedeem = false,
     embedded,
   } = props;
 
@@ -314,7 +317,7 @@ export function ShopFirstListingRequestPanel(props: {
         ) : null}
       </div>
 
-      <ListingSlotPromoRedeemForm />
+      {showListingSlotPromoRedeem ? <ListingSlotPromoRedeemForm /> : null}
 
       {catalogGroups.length === 0 ? (
         <p className="text-xs text-amber-200/80">
