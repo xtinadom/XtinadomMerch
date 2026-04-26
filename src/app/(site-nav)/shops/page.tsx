@@ -52,7 +52,7 @@ export default async function ShopsBrowsePage({ searchParams }: PageProps) {
   let raw;
   try {
     raw = await prisma.shop.findMany({
-      where: { active: true, slug: { not: PLATFORM_SHOP_SLUG } },
+      where: { active: true, listedOnShopsBrowse: true, slug: { not: PLATFORM_SHOP_SLUG } },
       select: {
         id: true,
         slug: true,

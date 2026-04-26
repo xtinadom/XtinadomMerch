@@ -9,6 +9,8 @@ import { resendShopEmailVerification } from "@/actions/shop-email-verify";
 export type ShopSetupShopPayload = {
   shopSlug: string;
   displayName: string;
+  /** When true, shop may appear on `/shops` and home “top shops”; storefront stays linkable either way. */
+  listedOnShopsBrowse: boolean;
   profileImageUrl: string | null;
   welcomeMessage: string | null;
   socialLinks: unknown;

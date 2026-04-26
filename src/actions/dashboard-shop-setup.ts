@@ -134,6 +134,31 @@ export async function updateShopProfileSetup(
   return { ok: true };
 }
 
+/** Public directory opt-in: `/shops` and home “top shops” only when true. */
+export async function updateShopListedOnShopsBrowseForm(
+  formData: FormData,
+): Promise<ShopSetupActionResult> {
+  const user = await requireShopOwner();
+  const shop = user.shop;
+  if (shop.slug === PLATFORM_SHOP_SLUG) {
+    return { ok: false, error: "Not available for the platform catalog shop." };
+  }
+  const raw = String(formData.get("listedOnShopsBrowse") ?? "").trim().toLowerCase();
+  const listed = raw === "1" || raw === "true" || raw === "yes";
+  const unlisted = raw === "0" || raw === "false" || raw === "no";
+  if (!listed && !unlisted) {
+    return { ok: false, error: "Choose whether your store appears on the shops list." };
+  }
+  await prisma.shop.update({
+    where: { id: shop.id },
+    data: { listedOnShopsBrowse: listed },
+  });
+  revalidatePath("/dashboard");
+  revalidatePath("/shops");
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function acknowledgeShopItemGuidelines(): Promise<void> {
   const user = await requireShopOwner();
   const shop = user.shop;

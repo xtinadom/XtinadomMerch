@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
+  updateShopListedOnShopsBrowseForm,
   updateShopProfileSetup,
   uploadShopProfileImageSetup,
   type ShopSetupActionResult,
@@ -105,8 +106,10 @@ export function ShopProfileSetupPanel(props: {
   const [isProfilePending, startProfileTransition] = useTransition();
   const [isAvatarPending, startAvatarTransition] = useTransition();
   const [isSocialSavePending, startSocialSaveTransition] = useTransition();
+  const [isListedBrowsePending, startListedBrowseTransition] = useTransition();
 
   const [displayName, setDisplayName] = useState(shop.displayName);
+  const [listedOnShopsBrowse, setListedOnShopsBrowse] = useState(shop.listedOnShopsBrowse);
   const [welcomeMessage, setWelcomeMessage] = useState(shop.welcomeMessage ?? "");
   const [social, setSocial] = useState(() => socialRecordFromShop(shop.socialLinks));
   const [socialAddKey, setSocialAddKey] = useState<"" | ShopSocialKey>("");
@@ -122,8 +125,9 @@ export function ShopProfileSetupPanel(props: {
     setDisplayName(shop.displayName);
     setWelcomeMessage(shop.welcomeMessage ?? "");
     setSocial(socialRecordFromShop(shop.socialLinks));
+    setListedOnShopsBrowse(shop.listedOnShopsBrowse);
     setProfileSavedFlash(false);
-  }, [shop.shopSlug, shop.displayName, shop.welcomeMessage, shop.socialLinks]);
+  }, [shop.shopSlug, shop.displayName, shop.welcomeMessage, shop.socialLinks, shop.listedOnShopsBrowse]);
 
   useEffect(() => {
     setAvatarHasFile(false);
@@ -180,6 +184,24 @@ export function ShopProfileSetupPanel(props: {
       );
       if (!r.ok) {
         setSocial(prevSocial);
+        setMessage({ tone: "err", text: r.error });
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  function setListedOnShopsBrowsePreference(next: boolean) {
+    if (isListedBrowsePending || next === listedOnShopsBrowse) return;
+    const prev = listedOnShopsBrowse;
+    setListedOnShopsBrowse(next);
+    startListedBrowseTransition(async () => {
+      setMessage(null);
+      const fd = new FormData();
+      fd.set("listedOnShopsBrowse", next ? "true" : "false");
+      const r: ShopSetupActionResult = await updateShopListedOnShopsBrowseForm(fd);
+      if (!r.ok) {
+        setListedOnShopsBrowse(prev);
         setMessage({ tone: "err", text: r.error });
         return;
       }
@@ -261,6 +283,40 @@ export function ShopProfileSetupPanel(props: {
         >
           View storefront
         </Link>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-3 rounded-lg border border-zinc-800/80 bg-zinc-900/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <span id={`shop-listed-browse-label-${shop.shopSlug}`} className="text-xs text-zinc-500">
+          Store appears in shops list
+        </span>
+        <div
+          role="radiogroup"
+          aria-labelledby={`shop-listed-browse-label-${shop.shopSlug}`}
+          className="flex flex-wrap gap-4"
+        >
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-300">
+            <input
+              type="radio"
+              name={`listedOnShopsBrowse-${shop.shopSlug}`}
+              checked={listedOnShopsBrowse}
+              disabled={isListedBrowsePending}
+              onChange={() => setListedOnShopsBrowsePreference(true)}
+              className="border-zinc-600 text-sky-600 focus:ring-sky-500/40"
+            />
+            Yes
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-300">
+            <input
+              type="radio"
+              name={`listedOnShopsBrowse-${shop.shopSlug}`}
+              checked={!listedOnShopsBrowse}
+              disabled={isListedBrowsePending}
+              onChange={() => setListedOnShopsBrowsePreference(false)}
+              className="border-zinc-600 text-sky-600 focus:ring-sky-500/40"
+            />
+            No
+          </label>
+        </div>
       </div>
 
       <div className="mt-8 space-y-6 text-sm text-zinc-300">

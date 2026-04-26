@@ -48,6 +48,7 @@ export type ShopMinAggregateOutputType = {
   bio: string | null
   welcomeMessage: string | null
   active: boolean | null
+  listedOnShopsBrowse: boolean | null
   stripeConnectAccountId: string | null
   connectChargesEnabled: boolean | null
   payoutsEnabled: boolean | null
@@ -73,6 +74,7 @@ export type ShopMaxAggregateOutputType = {
   bio: string | null
   welcomeMessage: string | null
   active: boolean | null
+  listedOnShopsBrowse: boolean | null
   stripeConnectAccountId: string | null
   connectChargesEnabled: boolean | null
   payoutsEnabled: boolean | null
@@ -99,6 +101,7 @@ export type ShopCountAggregateOutputType = {
   welcomeMessage: number
   socialLinks: number
   active: number
+  listedOnShopsBrowse: number
   stripeConnectAccountId: number
   connectChargesEnabled: number
   payoutsEnabled: number
@@ -143,6 +146,7 @@ export type ShopMinAggregateInputType = {
   bio?: true
   welcomeMessage?: true
   active?: true
+  listedOnShopsBrowse?: true
   stripeConnectAccountId?: true
   connectChargesEnabled?: true
   payoutsEnabled?: true
@@ -168,6 +172,7 @@ export type ShopMaxAggregateInputType = {
   bio?: true
   welcomeMessage?: true
   active?: true
+  listedOnShopsBrowse?: true
   stripeConnectAccountId?: true
   connectChargesEnabled?: true
   payoutsEnabled?: true
@@ -194,6 +199,7 @@ export type ShopCountAggregateInputType = {
   welcomeMessage?: true
   socialLinks?: true
   active?: true
+  listedOnShopsBrowse?: true
   stripeConnectAccountId?: true
   connectChargesEnabled?: true
   payoutsEnabled?: true
@@ -310,6 +316,7 @@ export type ShopGroupByOutputType = {
   welcomeMessage: string | null
   socialLinks: runtime.JsonValue | null
   active: boolean
+  listedOnShopsBrowse: boolean
   stripeConnectAccountId: string | null
   connectChargesEnabled: boolean
   payoutsEnabled: boolean
@@ -362,6 +369,7 @@ export type ShopWhereInput = {
   welcomeMessage?: Prisma.StringNullableFilter<"Shop"> | string | null
   socialLinks?: Prisma.JsonNullableFilter<"Shop">
   active?: Prisma.BoolFilter<"Shop"> | boolean
+  listedOnShopsBrowse?: Prisma.BoolFilter<"Shop"> | boolean
   stripeConnectAccountId?: Prisma.StringNullableFilter<"Shop"> | string | null
   connectChargesEnabled?: Prisma.BoolFilter<"Shop"> | boolean
   payoutsEnabled?: Prisma.BoolFilter<"Shop"> | boolean
@@ -399,6 +407,7 @@ export type ShopOrderByWithRelationInput = {
   welcomeMessage?: Prisma.SortOrderInput | Prisma.SortOrder
   socialLinks?: Prisma.SortOrderInput | Prisma.SortOrder
   active?: Prisma.SortOrder
+  listedOnShopsBrowse?: Prisma.SortOrder
   stripeConnectAccountId?: Prisma.SortOrderInput | Prisma.SortOrder
   connectChargesEnabled?: Prisma.SortOrder
   payoutsEnabled?: Prisma.SortOrder
@@ -441,6 +450,7 @@ export type ShopWhereUniqueInput = Prisma.AtLeast<{
   welcomeMessage?: Prisma.StringNullableFilter<"Shop"> | string | null
   socialLinks?: Prisma.JsonNullableFilter<"Shop">
   active?: Prisma.BoolFilter<"Shop"> | boolean
+  listedOnShopsBrowse?: Prisma.BoolFilter<"Shop"> | boolean
   connectChargesEnabled?: Prisma.BoolFilter<"Shop"> | boolean
   payoutsEnabled?: Prisma.BoolFilter<"Shop"> | boolean
   editorialPriority?: Prisma.IntNullableFilter<"Shop"> | number | null
@@ -476,6 +486,7 @@ export type ShopOrderByWithAggregationInput = {
   welcomeMessage?: Prisma.SortOrderInput | Prisma.SortOrder
   socialLinks?: Prisma.SortOrderInput | Prisma.SortOrder
   active?: Prisma.SortOrder
+  listedOnShopsBrowse?: Prisma.SortOrder
   stripeConnectAccountId?: Prisma.SortOrderInput | Prisma.SortOrder
   connectChargesEnabled?: Prisma.SortOrder
   payoutsEnabled?: Prisma.SortOrder
@@ -513,6 +524,7 @@ export type ShopScalarWhereWithAggregatesInput = {
   welcomeMessage?: Prisma.StringNullableWithAggregatesFilter<"Shop"> | string | null
   socialLinks?: Prisma.JsonNullableWithAggregatesFilter<"Shop">
   active?: Prisma.BoolWithAggregatesFilter<"Shop"> | boolean
+  listedOnShopsBrowse?: Prisma.BoolWithAggregatesFilter<"Shop"> | boolean
   stripeConnectAccountId?: Prisma.StringNullableWithAggregatesFilter<"Shop"> | string | null
   connectChargesEnabled?: Prisma.BoolWithAggregatesFilter<"Shop"> | boolean
   payoutsEnabled?: Prisma.BoolWithAggregatesFilter<"Shop"> | boolean
@@ -542,6 +554,7 @@ export type ShopCreateInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -578,6 +591,7 @@ export type ShopUncheckedCreateInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -614,6 +628,7 @@ export type ShopUpdateInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -650,6 +665,7 @@ export type ShopUncheckedUpdateInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -686,6 +702,7 @@ export type ShopCreateManyInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -715,6 +732,7 @@ export type ShopUpdateManyMutationInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -743,6 +761,7 @@ export type ShopUncheckedUpdateManyInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -772,6 +791,7 @@ export type ShopCountOrderByAggregateInput = {
   welcomeMessage?: Prisma.SortOrder
   socialLinks?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  listedOnShopsBrowse?: Prisma.SortOrder
   stripeConnectAccountId?: Prisma.SortOrder
   connectChargesEnabled?: Prisma.SortOrder
   payoutsEnabled?: Prisma.SortOrder
@@ -807,6 +827,7 @@ export type ShopMaxOrderByAggregateInput = {
   bio?: Prisma.SortOrder
   welcomeMessage?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  listedOnShopsBrowse?: Prisma.SortOrder
   stripeConnectAccountId?: Prisma.SortOrder
   connectChargesEnabled?: Prisma.SortOrder
   payoutsEnabled?: Prisma.SortOrder
@@ -832,6 +853,7 @@ export type ShopMinOrderByAggregateInput = {
   bio?: Prisma.SortOrder
   welcomeMessage?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  listedOnShopsBrowse?: Prisma.SortOrder
   stripeConnectAccountId?: Prisma.SortOrder
   connectChargesEnabled?: Prisma.SortOrder
   payoutsEnabled?: Prisma.SortOrder
@@ -1021,6 +1043,7 @@ export type ShopCreateWithoutListingSlotPromoRedemptionsInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -1056,6 +1079,7 @@ export type ShopUncheckedCreateWithoutListingSlotPromoRedemptionsInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -1107,6 +1131,7 @@ export type ShopUpdateWithoutListingSlotPromoRedemptionsInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1142,6 +1167,7 @@ export type ShopUncheckedUpdateWithoutListingSlotPromoRedemptionsInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1177,6 +1203,7 @@ export type ShopCreateWithoutSupportThreadInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -1212,6 +1239,7 @@ export type ShopUncheckedCreateWithoutSupportThreadInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -1263,6 +1291,7 @@ export type ShopUpdateWithoutSupportThreadInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1298,6 +1327,7 @@ export type ShopUncheckedUpdateWithoutSupportThreadInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1333,6 +1363,7 @@ export type ShopCreateWithoutOwnerNoticesInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -1368,6 +1399,7 @@ export type ShopUncheckedCreateWithoutOwnerNoticesInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -1419,6 +1451,7 @@ export type ShopUpdateWithoutOwnerNoticesInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1454,6 +1487,7 @@ export type ShopUncheckedUpdateWithoutOwnerNoticesInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1489,6 +1523,7 @@ export type ShopCreateWithoutUsersInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -1524,6 +1559,7 @@ export type ShopUncheckedCreateWithoutUsersInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -1575,6 +1611,7 @@ export type ShopUpdateWithoutUsersInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1610,6 +1647,7 @@ export type ShopUncheckedUpdateWithoutUsersInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1645,6 +1683,7 @@ export type ShopCreateWithoutListingsInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -1680,6 +1719,7 @@ export type ShopUncheckedCreateWithoutListingsInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -1720,6 +1760,7 @@ export type ShopCreateWithoutHomeFeaturedListingInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -1755,6 +1796,7 @@ export type ShopUncheckedCreateWithoutHomeFeaturedListingInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -1806,6 +1848,7 @@ export type ShopUpdateWithoutListingsInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1841,6 +1884,7 @@ export type ShopUncheckedUpdateWithoutListingsInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1887,6 +1931,7 @@ export type ShopUpdateWithoutHomeFeaturedListingInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1922,6 +1967,7 @@ export type ShopUncheckedUpdateWithoutHomeFeaturedListingInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1957,6 +2003,7 @@ export type ShopCreateWithoutOrdersInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -1992,6 +2039,7 @@ export type ShopUncheckedCreateWithoutOrdersInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -2043,6 +2091,7 @@ export type ShopUpdateWithoutOrdersInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2078,6 +2127,7 @@ export type ShopUncheckedUpdateWithoutOrdersInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2113,6 +2163,7 @@ export type ShopCreateWithoutOrderLinesInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -2148,6 +2199,7 @@ export type ShopUncheckedCreateWithoutOrderLinesInput = {
   welcomeMessage?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: string | null
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -2199,6 +2251,7 @@ export type ShopUpdateWithoutOrderLinesInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2234,6 +2287,7 @@ export type ShopUncheckedUpdateWithoutOrderLinesInput = {
   welcomeMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  listedOnShopsBrowse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripeConnectAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   connectChargesEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payoutsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2345,6 +2399,7 @@ export type ShopSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   welcomeMessage?: boolean
   socialLinks?: boolean
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: boolean
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -2383,6 +2438,7 @@ export type ShopSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   welcomeMessage?: boolean
   socialLinks?: boolean
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: boolean
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -2413,6 +2469,7 @@ export type ShopSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   welcomeMessage?: boolean
   socialLinks?: boolean
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: boolean
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -2443,6 +2500,7 @@ export type ShopSelectScalar = {
   welcomeMessage?: boolean
   socialLinks?: boolean
   active?: boolean
+  listedOnShopsBrowse?: boolean
   stripeConnectAccountId?: boolean
   connectChargesEnabled?: boolean
   payoutsEnabled?: boolean
@@ -2463,7 +2521,7 @@ export type ShopSelectScalar = {
   updatedAt?: boolean
 }
 
-export type ShopOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "displayName" | "profileImageUrl" | "bio" | "welcomeMessage" | "socialLinks" | "active" | "stripeConnectAccountId" | "connectChargesEnabled" | "payoutsEnabled" | "editorialPriority" | "editorialPinnedUntil" | "totalSalesCents" | "storefrontViewCount" | "ownerPausedShopAt" | "accountDeletionRequestedAt" | "accountDeletionEmailConfirmedAt" | "homeFeaturedListingId" | "itemGuidelinesAcknowledgedAt" | "listingFeeBonusFreeSlots" | "browseAllPageFeaturedProductIds" | "homeHotCarouselFeaturedProductIds" | "browseShopsPageFeaturedShopIds" | "createdAt" | "updatedAt", ExtArgs["result"]["shop"]>
+export type ShopOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "displayName" | "profileImageUrl" | "bio" | "welcomeMessage" | "socialLinks" | "active" | "listedOnShopsBrowse" | "stripeConnectAccountId" | "connectChargesEnabled" | "payoutsEnabled" | "editorialPriority" | "editorialPinnedUntil" | "totalSalesCents" | "storefrontViewCount" | "ownerPausedShopAt" | "accountDeletionRequestedAt" | "accountDeletionEmailConfirmedAt" | "homeFeaturedListingId" | "itemGuidelinesAcknowledgedAt" | "listingFeeBonusFreeSlots" | "browseAllPageFeaturedProductIds" | "homeHotCarouselFeaturedProductIds" | "browseShopsPageFeaturedShopIds" | "createdAt" | "updatedAt", ExtArgs["result"]["shop"]>
 export type ShopInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   homeFeaturedListing?: boolean | Prisma.Shop$homeFeaturedListingArgs<ExtArgs>
   users?: boolean | Prisma.Shop$usersArgs<ExtArgs>
@@ -2509,6 +2567,12 @@ export type $ShopPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
      */
     socialLinks: runtime.JsonValue | null
     active: boolean
+    /**
+     * *
+     *    * When false, the shop is hidden from the public `/shops` directory and home “top shops” strips;
+     *    * the storefront at `/s/{slug}` stays available for direct links and search engines you link to.
+     */
+    listedOnShopsBrowse: boolean
     stripeConnectAccountId: string | null
     connectChargesEnabled: boolean
     payoutsEnabled: boolean
@@ -3010,6 +3074,7 @@ export interface ShopFieldRefs {
   readonly welcomeMessage: Prisma.FieldRef<"Shop", 'String'>
   readonly socialLinks: Prisma.FieldRef<"Shop", 'Json'>
   readonly active: Prisma.FieldRef<"Shop", 'Boolean'>
+  readonly listedOnShopsBrowse: Prisma.FieldRef<"Shop", 'Boolean'>
   readonly stripeConnectAccountId: Prisma.FieldRef<"Shop", 'String'>
   readonly connectChargesEnabled: Prisma.FieldRef<"Shop", 'Boolean'>
   readonly payoutsEnabled: Prisma.FieldRef<"Shop", 'Boolean'>

@@ -23,6 +23,7 @@ export async function getFeaturedCreatorShopsForHome() {
   return prisma.shop.findMany({
     where: {
       active: true,
+      listedOnShopsBrowse: true,
       slug: { not: PLATFORM_SHOP_SLUG },
       homeFeaturedListing: {
         is: {
@@ -58,6 +59,7 @@ export async function getTopShopsForHome(limit = TOP_SHOPS_HOME_DEFAULT) {
   const raw = await prisma.shop.findMany({
     where: {
       active: true,
+      listedOnShopsBrowse: true,
       slug: { not: PLATFORM_SHOP_SLUG },
     },
     select: {

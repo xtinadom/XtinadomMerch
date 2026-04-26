@@ -151,6 +151,7 @@ export const ShopScalarFieldEnum = {
   welcomeMessage: 'welcomeMessage',
   socialLinks: 'socialLinks',
   active: 'active',
+  listedOnShopsBrowse: 'listedOnShopsBrowse',
   stripeConnectAccountId: 'stripeConnectAccountId',
   connectChargesEnabled: 'connectChargesEnabled',
   payoutsEnabled: 'payoutsEnabled',

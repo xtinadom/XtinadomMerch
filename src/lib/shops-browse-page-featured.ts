@@ -4,6 +4,7 @@ import { parseShopOrderedFeaturedProductIds } from "@/lib/shop-ordered-featured-
 
 const CREATOR_SHOP_BASE = {
   active: true,
+  listedOnShopsBrowse: true,
   slug: { not: PLATFORM_SHOP_SLUG },
 } as const;
 

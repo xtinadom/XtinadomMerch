@@ -628,6 +628,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 shop: {
                   shopSlug: shop.slug,
                   displayName: shop.displayName,
+                  listedOnShopsBrowse: shop.listedOnShopsBrowse,
                   profileImageUrl: shop.profileImageUrl,
                   welcomeMessage: shop.welcomeMessage,
                   socialLinks: shop.socialLinks,

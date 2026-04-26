@@ -106,6 +106,11 @@ model Shop {
   /** Optional social URLs: reddit, x, bluesky, twitch, instagram. */
   socialLinks              Json?
   active                   Boolean        @default(true)
+  /**
+   * When false, the shop is hidden from the public `/shops` directory and home “top shops” strips;
+   * the storefront at `/s/{slug}` stays available for direct links and search engines you link to.
+   */
+  listedOnShopsBrowse      Boolean        @default(true)
   stripeConnectAccountId   String?        @unique
   connectChargesEnabled    Boolean        @default(false)
   payoutsEnabled           Boolean        @default(false)
