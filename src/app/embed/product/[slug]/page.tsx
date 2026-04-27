@@ -30,6 +30,7 @@ export default async function EmbedProductPage({ params }: Props) {
             listingItemName={detail.listingItemName}
             adminCatalogItemName={detail.adminCatalogItemName}
             storefrontItemBlurb={detail.storefrontItemBlurb}
+            listingSearchKeywords={detail.listingSearchKeywords}
           />
         </div>
       </div>

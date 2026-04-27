@@ -31,6 +31,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
         listingItemName={detail.listingItemName}
         adminCatalogItemName={detail.adminCatalogItemName}
         storefrontItemBlurb={detail.storefrontItemBlurb}
+        listingSearchKeywords={detail.listingSearchKeywords}
       />
     </>
   );

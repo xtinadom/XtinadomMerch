@@ -12,7 +12,7 @@ export type PrismaAdminInboundEmailDelegate = PrismaClient["adminInboundEmail"];
  * (or delete `.next`) if needed.
  */
 const PRISMA_SINGLETON_STAMP =
-  "postgres-adapter-v37-storefront-blurb-client-sync";
+  "postgres-adapter-v38-shop-listing-search-keywords";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

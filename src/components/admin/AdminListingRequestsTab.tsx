@@ -36,6 +36,8 @@ export type ListingRequestTabRow = {
   updatedAt: string;
   requestStatus: ListingRequestStatus;
   requestItemName: string | null;
+  storefrontItemBlurb: string | null;
+  listingSearchKeywords: string | null;
   requestImages: unknown;
   listingPrintifyProductId: string | null;
   listingPrintifyVariantId: string | null;
@@ -102,6 +104,7 @@ function AdminPrintifyMappingFormFields({
   catalogPickEnabled,
   printifyCatalogPickList,
   printifyProductIdsMappedToShopListings,
+  printifyProductIdsSharedAcrossListings,
   printifyProductId,
   setPrintifyProductId,
 }: {
@@ -109,6 +112,7 @@ function AdminPrintifyMappingFormFields({
   catalogPickEnabled: boolean;
   printifyCatalogPickList: PrintifyCatalogPickEntry[];
   printifyProductIdsMappedToShopListings: readonly string[];
+  printifyProductIdsSharedAcrossListings: readonly string[];
   printifyProductId: string;
   setPrintifyProductId: (v: string) => void;
 }) {
@@ -122,6 +126,16 @@ function AdminPrintifyMappingFormFields({
     [printifyCatalogPickList, printifyProductIdsMappedToShopListings, printifyProductId],
   );
   const useCatalogSelect = catalogPickEnabled && rowPickList.length > 0;
+
+  const sharedSet = useMemo(
+    () => new Set(printifyProductIdsSharedAcrossListings.map((id) => id.trim()).filter(Boolean)),
+    [printifyProductIdsSharedAcrossListings],
+  );
+  const curTrim = printifyProductId.trim();
+  const duplicatePrintifyWarning =
+    curTrim && sharedSet.has(curTrim)
+      ? "This Printify catalog product is already linked on another shop listing. Confirm this is intentional — duplicate mappings can cause fulfillment or catalog confusion."
+      : null;
 
   return (
     <>
@@ -166,6 +180,11 @@ function AdminPrintifyMappingFormFields({
           />
         )}
       </label>
+      {duplicatePrintifyWarning ? (
+        <p className="mt-2 rounded-md border border-amber-900/50 bg-amber-950/25 px-2.5 py-2 text-[11px] leading-snug text-amber-200/90">
+          {duplicatePrintifyWarning}
+        </p>
+      ) : null}
     </>
   );
 }
@@ -539,10 +558,58 @@ function PrintifyCatalogSyncSubmitFooter({ lastSyncedAtIso }: { lastSyncedAtIso:
   );
 }
 
+function ListingRequestCopySummary({ r }: { r: ListingRequestTabRow }) {
+  const empty = "—";
+  const productName = r.product.name.trim() || empty;
+  const itemName = r.requestItemName?.trim() || empty;
+  const pitch = r.storefrontItemBlurb?.trim() || empty;
+  const keywords = r.listingSearchKeywords?.trim() || empty;
+
+  return (
+    <div className="mt-1 space-y-0.5 text-xs">
+      <p className="text-zinc-500">
+        <span className="text-zinc-600">Product name </span>
+        <span className={productName === empty ? "text-zinc-600" : "text-zinc-300"}>{productName}</span>
+      </p>
+      <p className="text-zinc-500">
+        <span className="text-zinc-600">Listing item name </span>
+        <span
+          className={
+            itemName === empty
+              ? "text-zinc-600"
+              : "whitespace-pre-wrap break-words font-medium text-zinc-200"
+          }
+        >
+          {itemName}
+        </span>
+      </p>
+      <p className="text-zinc-500">
+        <span className="text-zinc-600">Storefront pitch </span>
+        <span
+          className={pitch === empty ? "text-zinc-600" : "whitespace-pre-wrap break-words text-zinc-300"}
+        >
+          {pitch}
+        </span>
+      </p>
+      <p className="text-zinc-500">
+        <span className="text-zinc-600">Keywords </span>
+        <span
+          className={
+            keywords === empty ? "text-zinc-600" : "whitespace-pre-wrap break-words text-zinc-300"
+          }
+        >
+          {keywords}
+        </span>
+      </p>
+    </div>
+  );
+}
+
 function ListingRequestCard({
   r,
   printifyCatalogPickList,
   printifyProductIdsMappedToShopListings,
+  printifyProductIdsSharedAcrossListings,
   r2Configured,
   groupedVariant,
   suppressLegacyGroupStep3Decision = false,
@@ -554,6 +621,7 @@ function ListingRequestCard({
   r: ListingRequestTabRow;
   printifyCatalogPickList: PrintifyCatalogPickEntry[];
   printifyProductIdsMappedToShopListings: readonly string[];
+  printifyProductIdsSharedAcrossListings: readonly string[];
   r2Configured: boolean;
   /** When set, this row is rendered inside a multi-variant group (outer &lt;li&gt; is the parent). */
   groupedVariant?: { variantLabel: string; stacked: boolean };
@@ -666,15 +734,7 @@ function ListingRequestCard({
               </button>
             </form>
           </div>
-          <p className="mt-1 text-xs text-zinc-500">
-            Catalog product (one listing — all variants approved or rejected together):{" "}
-            <span className="text-zinc-400">{r.product.name}</span> ({r.product.slug}) · {r.product.fulfillmentType}
-          </p>
-          {r.requestItemName?.trim() ? (
-            <p className="mt-1 text-xs text-zinc-400">
-              Creator name: <span className="font-medium text-zinc-200">{r.requestItemName.trim()}</span>
-            </p>
-          ) : null}
+          <ListingRequestCopySummary r={r} />
           {imgs.length > 0 ? (
             <ul className="mt-2 list-inside list-disc text-xs text-zinc-500">
               {imgs.map((u) => (
@@ -719,10 +779,7 @@ function ListingRequestCard({
               ) : null}
             </p>
           </div>
-          <p className="mt-1 text-xs text-zinc-500">
-            Catalog stub: <span className="text-zinc-400">{r.product.name}</span> ({r.product.slug}) ·{" "}
-            {r.product.fulfillmentType}
-          </p>
+          <ListingRequestCopySummary r={r} />
         </>
       )}
 
@@ -733,10 +790,6 @@ function ListingRequestCard({
           aria-label="Image check: pass or fail"
         >
           <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Step 1 — Image check</p>
-          <p className="text-xs text-zinc-600">
-            Do the submitted reference images / URLs pass a print-ready check? Record pass to continue, or fail and
-            reject with a reason.
-          </p>
           <div className="flex flex-wrap items-start gap-8">
             <div className="flex min-w-0 flex-col gap-1.5">
               <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Passes check?</span>
@@ -859,6 +912,7 @@ function ListingRequestCard({
             catalogPickEnabled={catalogPickEnabled}
             printifyCatalogPickList={printifyCatalogPickList}
             printifyProductIdsMappedToShopListings={printifyProductIdsMappedToShopListings}
+            printifyProductIdsSharedAcrossListings={printifyProductIdsSharedAcrossListings}
             printifyProductId={printifyProductId}
             setPrintifyProductId={setPrintifyProductId}
           />
@@ -938,6 +992,7 @@ function ListingRequestCard({
                   catalogPickEnabled={catalogPickEnabled}
                   printifyCatalogPickList={printifyCatalogPickList}
                   printifyProductIdsMappedToShopListings={printifyProductIdsMappedToShopListings}
+                  printifyProductIdsSharedAcrossListings={printifyProductIdsSharedAcrossListings}
                   printifyProductId={printifyProductId}
                   setPrintifyProductId={setPrintifyProductId}
                 />
@@ -1021,6 +1076,7 @@ function ListingRequestCard({
                   catalogPickEnabled={catalogPickEnabled}
                   printifyCatalogPickList={printifyCatalogPickList}
                   printifyProductIdsMappedToShopListings={printifyProductIdsMappedToShopListings}
+                  printifyProductIdsSharedAcrossListings={printifyProductIdsSharedAcrossListings}
                   printifyProductId={printifyProductId}
                   setPrintifyProductId={setPrintifyProductId}
                 />
@@ -1080,6 +1136,8 @@ export function AdminListingRequestsTab(props: {
    * the current row’s saved id (so admins can resync without losing the selection).
    */
   printifyProductIdsMappedToShopListings?: readonly string[];
+  /** Same Printify catalog id appears on multiple listings — show duplicate warning when mapping matches. */
+  printifyProductIdsSharedAcrossListings?: readonly string[];
   /** When false, hide admin secondary image upload (R2 env missing). */
   r2Configured?: boolean;
 }) {
@@ -1087,6 +1145,7 @@ export function AdminListingRequestsTab(props: {
     rows,
     printifyCatalogPickList = [],
     printifyProductIdsMappedToShopListings = [],
+    printifyProductIdsSharedAcrossListings = [],
     r2Configured = true,
   } = props;
   const [tab, setTab] = useState<RequestsTabId>("new");
@@ -1171,6 +1230,7 @@ export function AdminListingRequestsTab(props: {
                 r={r}
                 printifyCatalogPickList={printifyCatalogPickList}
                 printifyProductIdsMappedToShopListings={printifyProductIdsMappedToShopListings}
+                printifyProductIdsSharedAcrossListings={printifyProductIdsSharedAcrossListings}
                 r2Configured={r2Configured}
               />
             ))}

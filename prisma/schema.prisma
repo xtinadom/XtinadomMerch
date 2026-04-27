@@ -334,6 +334,11 @@ model ShopListing {
    */
   storefrontItemBlurb String? @db.VarChar(280)
   /**
+   * Optional shop-owned search hints (comma- or space-separated), distinct from admin `Tag` labels;
+   * used for browse/PDP discoverability, not as category tags.
+   */
+  listingSearchKeywords String? @db.VarChar(2000)
+  /**
    * Baseline catalog picker value (`ab|…`) saved at submit. Used when stub `Product.slug` is no longer
    * deterministic (multiple listings of the same catalog line) so draft prefill + variant price remap still work.
    */

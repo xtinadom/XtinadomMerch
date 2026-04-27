@@ -106,6 +106,8 @@ export type ResolvedPublicProductDetail = {
   adminCatalogItemName?: string | null;
   /** Shop owner one-line pitch (`ShopListing.storefrontItemBlurb`). */
   storefrontItemBlurb?: string | null;
+  /** Shop search hints (`ShopListing.listingSearchKeywords`). */
+  listingSearchKeywords?: string | null;
 };
 
 async function withAdminCatalogStorefrontDescription(
@@ -142,6 +144,7 @@ export function mapListingRowToProductDetail(row: StorefrontShopListing): Resolv
     listingStorefrontCatalogImageUrls: catalogSel === null ? undefined : catalogSel,
     listingItemName: row.requestItemName?.trim() || null,
     storefrontItemBlurb: row.storefrontItemBlurb?.trim() || null,
+    listingSearchKeywords: row.listingSearchKeywords?.trim() || null,
   };
 }
 

@@ -1,5 +1,9 @@
 import Link from "next/link";
-import type { AdminPlatformSalesMergedLine } from "@/lib/admin-platform-sales-merged-lines";
+import type {
+  AdminPlatformSalesMergedLine,
+  PlatformSalesYtdTotals,
+} from "@/lib/admin-platform-sales-merged-lines";
+import { AdminClearPlatformSalesForm } from "@/components/admin/AdminClearPlatformSalesForm";
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -21,12 +25,31 @@ function escapeCsvCell(v: string) {
   return v;
 }
 
+function buildSalesTabHref(parts: {
+  salesFrom?: string;
+  salesTo?: string;
+  salesKind?: string;
+}): string {
+  const u = new URLSearchParams();
+  u.set("tab", "sales");
+  if (parts.salesFrom?.trim()) u.set("salesFrom", parts.salesFrom.trim());
+  if (parts.salesTo?.trim()) u.set("salesTo", parts.salesTo.trim());
+  if (parts.salesKind && parts.salesKind !== "all") u.set("salesKind", parts.salesKind);
+  const q = u.toString();
+  return `/admin?${q}`;
+}
+
 export function AdminPlatformSalesTab(props: {
   lines: AdminPlatformSalesMergedLine[];
   salesFromValue: string;
   salesToValue: string;
+  salesKind: "all" | "listing" | "item";
+  ytdTotals: PlatformSalesYtdTotals | null;
+  /** Server: allow destructive clear outside prod or when env flag set. */
+  clearSalesHistoryEnabled: boolean;
 }) {
-  const { lines, salesFromValue, salesToValue } = props;
+  const { lines, salesFromValue, salesToValue, salesKind, ytdTotals, clearSalesHistoryEnabled } = props;
+
   const csvBody = lines
     .map((l) => {
       const merch =
@@ -56,6 +79,29 @@ export function AdminPlatformSalesTab(props: {
     csvBody;
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
 
+  const kindHref = (k: "all" | "listing" | "item") =>
+    buildSalesTabHref({
+      salesFrom: salesFromValue,
+      salesTo: salesToValue,
+      salesKind: k === "all" ? undefined : k,
+    });
+
+  const kindBtn = (k: "all" | "listing" | "item", label: string) => {
+    const active = salesKind === k;
+    return (
+      <Link
+        href={kindHref(k)}
+        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+          active
+            ? "border-zinc-500 bg-zinc-800/90 text-zinc-100"
+            : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
+        }`}
+      >
+        {label}
+      </Link>
+    );
+  };
+
   return (
     <section aria-label="Platform sales">
       <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
@@ -63,14 +109,47 @@ export function AdminPlatformSalesTab(props: {
       </h2>
       <p className="mt-1 text-xs text-zinc-600">
         Paid storefront order lines (merchandise splits) plus listing publication fees (card / mock checkout).
-        Tips and shipping are not included. Publication fees are platform revenue (no shop merchandise split).
+        Tips and shipping are not included. Publication fees are platform revenue (no shop merchandise split). Free
+        publication slots do not appear as listing rows.
       </p>
+
+      {ytdTotals ? (
+        <div className="mt-4 rounded-lg border border-zinc-800/90 bg-zinc-950/40 px-3 py-3 text-xs">
+          <p className="font-medium uppercase tracking-wide text-zinc-500">
+            YTD {ytdTotals.year} platform revenue (UTC, through now)
+          </p>
+          <dl className="mt-2 grid gap-2 sm:grid-cols-3">
+            <div>
+              <dt className="text-[10px] uppercase tracking-wide text-zinc-600">Listing fees</dt>
+              <dd className="tabular-nums text-zinc-200">{formatPrice(ytdTotals.listingPlatformCents)}</dd>
+            </div>
+            <div>
+              <dt className="text-[10px] uppercase tracking-wide text-zinc-600">Merchandise (platform fee)</dt>
+              <dd className="tabular-nums text-zinc-200">{formatPrice(ytdTotals.itemPlatformCents)}</dd>
+            </div>
+            <div>
+              <dt className="text-[10px] uppercase tracking-wide text-zinc-600">Combined</dt>
+              <dd className="tabular-nums text-zinc-100">
+                {formatPrice(ytdTotals.listingPlatformCents + ytdTotals.itemPlatformCents)}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      ) : null}
+
+      <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Filter by sale type">
+        {kindBtn("all", "All")}
+        {kindBtn("listing", "Listing")}
+        {kindBtn("item", "Item")}
+      </div>
+
       <form
         method="get"
         className="mt-4 flex flex-wrap items-end gap-3 text-xs"
         action="/admin"
       >
         <input type="hidden" name="tab" value="sales" />
+        {salesKind !== "all" ? <input type="hidden" name="salesKind" value={salesKind} /> : null}
         <label className="text-zinc-500">
           From (ISO date)
           <input
@@ -105,9 +184,10 @@ export function AdminPlatformSalesTab(props: {
           Download CSV
         </a>
         <Link href="/admin?tab=sales" className="text-zinc-500 hover:text-zinc-300">
-          Clear dates
+          Clear dates &amp; filters
         </Link>
       </form>
+
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[860px] border-collapse text-left text-xs">
           <thead>
@@ -149,6 +229,8 @@ export function AdminPlatformSalesTab(props: {
       {lines.length === 0 ? (
         <p className="mt-4 text-sm text-zinc-600">No matching paid lines or publication fees.</p>
       ) : null}
+
+      <AdminClearPlatformSalesForm enabled={clearSalesHistoryEnabled} />
     </section>
   );
 }

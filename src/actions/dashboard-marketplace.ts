@@ -44,6 +44,14 @@ function formatUsdFromCents(cents: number): string {
 const REQUEST_ITEM_NAME_MAX = 120;
 /** `ShopListing.storefrontItemBlurb` — one-line pitch on the public PDP (tweet-length cap). */
 const STOREFRONT_ITEM_BLURB_MAX = 280;
+/** Comma-/space-separated listing search hints (`ShopListing.listingSearchKeywords`). */
+const LISTING_SEARCH_KEYWORDS_MAX = 2000;
+
+function normalizeListingSearchKeywords(raw: string): string | null {
+  const collapsed = raw.replace(/\s+/g, " ").trim();
+  if (!collapsed) return null;
+  return collapsed.slice(0, LISTING_SEARCH_KEYWORDS_MAX);
+}
 
 async function requireShopOwner() {
   const session = await getShopOwnerSession();
@@ -322,6 +330,49 @@ export async function dashboardUpdateListingStorefrontBlurb(
   await prisma.shopListing.update({
     where: { id: listingId },
     data: { storefrontItemBlurb },
+  });
+  revalidatePath("/dashboard");
+  revalidatePath(`/s/${user.shop.slug}`);
+  const pslug = listing.product.slug;
+  revalidatePath(`/product/${pslug}`);
+  revalidatePath(`/s/${user.shop.slug}/product/${pslug}`);
+  revalidatePath(`/embed/product/${pslug}`);
+  return { ok: true };
+}
+
+export async function dashboardUpdateListingSearchKeywords(
+  formData: FormData,
+): Promise<{ ok: boolean }> {
+  const user = await requireShopOwner();
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  const raw = String(formData.get("listingSearchKeywords") ?? "");
+  if (!listingId) return { ok: false };
+
+  const listing = await prisma.shopListing.findFirst({
+    where: { id: listingId, shopId: user.shopId },
+    include: { product: true },
+  });
+  if (!listing) return { ok: false };
+  if (
+    listing.requestStatus === ListingRequestStatus.rejected ||
+    listing.creatorRemovedFromShopAt != null
+  ) {
+    return { ok: false };
+  }
+  if (
+    listing.requestStatus !== ListingRequestStatus.draft &&
+    listing.requestStatus !== ListingRequestStatus.approved
+  ) {
+    return { ok: false };
+  }
+
+  const trimmed = raw.trim();
+  if (trimmed.length > LISTING_SEARCH_KEYWORDS_MAX) return { ok: false };
+  const listingSearchKeywords = normalizeListingSearchKeywords(raw);
+
+  await prisma.shopListing.update({
+    where: { id: listingId },
+    data: { listingSearchKeywords },
   });
   revalidatePath("/dashboard");
   revalidatePath(`/s/${user.shop.slug}`);

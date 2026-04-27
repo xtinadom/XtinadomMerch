@@ -467,6 +467,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       listingPrintifyVariantPrices: listing.listingPrintifyVariantPrices,
       requestItemName: listing.requestItemName,
       storefrontItemBlurb: listing.storefrontItemBlurb,
+      listingSearchKeywords: listing.listingSearchKeywords,
       listingFeePaidAt: listing.listingFeePaidAt?.toISOString() ?? null,
       adminRemovedFromShopAt: listing.adminRemovedFromShopAt?.toISOString() ?? null,
       creatorRemovedFromShopAt: listing.creatorRemovedFromShopAt?.toISOString() ?? null,

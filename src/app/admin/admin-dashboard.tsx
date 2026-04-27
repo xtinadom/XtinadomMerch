@@ -32,6 +32,7 @@ import {
 import { AdminPlatformSalesTab } from "@/components/admin/AdminPlatformSalesTab";
 import {
   loadMergedPlatformSalesLines,
+  loadPlatformSalesYtdTotals,
   type AdminPlatformSalesMergedLine,
 } from "@/lib/admin-platform-sales-merged-lines";
 import {
@@ -287,6 +288,9 @@ export async function AdminDashboardPageContent({
 
   const salesFromRaw = typeof sp.salesFrom === "string" ? sp.salesFrom : "";
   const salesToRaw = typeof sp.salesTo === "string" ? sp.salesTo : "";
+  const salesKindRaw = typeof sp.salesKind === "string" ? sp.salesKind.trim() : "";
+  const salesKindFilter: "all" | "listing" | "item" =
+    salesKindRaw === "listing" || salesKindRaw === "item" ? salesKindRaw : "all";
   function parseIsoDateBoundary(s: string): Date | undefined {
     const t = s.trim();
     if (!t) return undefined;
@@ -453,6 +457,11 @@ export async function AdminDashboardPageContent({
 
   let platformSalesLineCount = 0;
   let platformSalesTabLines: AdminPlatformSalesMergedLine[] = [];
+  let platformSalesYtdTotals: Awaited<ReturnType<typeof loadPlatformSalesYtdTotals>> | null = null;
+
+  const clearSalesHistoryEnabled =
+    process.env.NODE_ENV !== "production" ||
+    process.env.ALLOW_ADMIN_CLEAR_SALES_HISTORY?.trim() === "true";
 
   const [
     adminTags,
@@ -496,7 +505,12 @@ export async function AdminDashboardPageContent({
     });
     platformSalesLineCount = bundle.orderLineCount + bundle.publicationFeePaymentCount;
     if (inventoryTab === "sales") {
-      platformSalesTabLines = bundle.lines;
+      const merged = bundle.lines;
+      platformSalesTabLines =
+        salesKindFilter === "all"
+          ? merged
+          : merged.filter((l) => l.platformSaleCategory === salesKindFilter);
+      platformSalesYtdTotals = await loadPlatformSalesYtdTotals(prisma, new Date());
     }
   }
 
@@ -658,6 +672,8 @@ export async function AdminDashboardPageContent({
       updatedAt: r.updatedAt.toISOString(),
       requestStatus: r.requestStatus,
       requestItemName: r.requestItemName,
+      storefrontItemBlurb: r.storefrontItemBlurb,
+      listingSearchKeywords: r.listingSearchKeywords,
       requestImages: r.requestImages,
       listingPrintifyProductId: r.listingPrintifyProductId,
       listingPrintifyVariantId: r.listingPrintifyVariantId,
@@ -1118,19 +1134,23 @@ export async function AdminDashboardPageContent({
   }
 
   let printifyProductIdsMappedToShopListings: string[] = [];
+  /** Printify catalog product ids referenced by more than one shop listing (review warning). */
+  let printifyProductIdsSharedAcrossListings: string[] = [];
   if (inventoryTab === "requests") {
     try {
       const mappedShopListingPrintifyRows = await prisma.shopListing.findMany({
         where: { listingPrintifyProductId: { not: null } },
         select: { listingPrintifyProductId: true },
       });
-      printifyProductIdsMappedToShopListings = [
-        ...new Set(
-          mappedShopListingPrintifyRows
-            .map((row) => row.listingPrintifyProductId?.trim())
-            .filter((id): id is string => Boolean(id)),
-        ),
-      ];
+      const trimmedIds = mappedShopListingPrintifyRows
+        .map((row) => row.listingPrintifyProductId?.trim())
+        .filter((id): id is string => Boolean(id));
+      printifyProductIdsMappedToShopListings = [...new Set(trimmedIds)];
+      const counts = new Map<string, number>();
+      for (const id of trimmedIds) counts.set(id, (counts.get(id) ?? 0) + 1);
+      printifyProductIdsSharedAcrossListings = [...counts.entries()]
+        .filter(([, n]) => n >= 2)
+        .map(([id]) => id);
     } catch (e) {
       console.error("[admin] printifyProductIdsMappedToShopListings query failed", e);
     }
@@ -1533,6 +1553,7 @@ export async function AdminDashboardPageContent({
               rows={listingRequestTabRows}
               printifyCatalogPickList={printifyCatalogPickList}
               printifyProductIdsMappedToShopListings={printifyProductIdsMappedToShopListings}
+              printifyProductIdsSharedAcrossListings={printifyProductIdsSharedAcrossListings}
               r2Configured={isR2UploadConfigured()}
             />
           ) : inventoryTab === "shop-watch" ? (
@@ -1579,6 +1600,9 @@ export async function AdminDashboardPageContent({
               lines={platformSalesTabLines}
               salesFromValue={salesFromRaw}
               salesToValue={salesToRaw}
+              salesKind={salesKindFilter}
+              ytdTotals={platformSalesYtdTotals}
+              clearSalesHistoryEnabled={clearSalesHistoryEnabled}
             />
           ) : inventoryTab === "admin-inbox" ? (
             <AdminInboxTab

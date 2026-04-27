@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getStoreTagsForShop } from "@/lib/store-tags";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
@@ -21,10 +22,31 @@ const productInclude = {
   tags: { include: { tag: true } },
 } as const;
 
+/** Optional browse filter: each whitespace-separated token must match product name, listing name, or keywords. */
+function listingTextSearchWhere(query: string | undefined): Prisma.ShopListingWhereInput {
+  const trimmed = query?.trim();
+  if (!trimmed) return {};
+  const tokens = trimmed.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return {};
+  const insensitive = "insensitive" as Prisma.QueryMode;
+  return {
+    AND: tokens.map((t) => ({
+      OR: [
+        { product: { name: { contains: t, mode: insensitive } } },
+        { requestItemName: { contains: t, mode: insensitive } },
+        { listingSearchKeywords: { contains: t, mode: insensitive } },
+      ],
+    })),
+  };
+}
+
 export async function ShopAllProductsPage({
   shopSlug = PLATFORM_SHOP_SLUG,
+  searchQuery,
 }: {
   shopSlug?: string;
+  /** From `?q=` on `/shop/all` or `/s/[shop]/all`. */
+  searchQuery?: string;
 } = {}) {
   const shop = await prisma.shop.findFirst({
     where: { slug: shopSlug, active: true },
@@ -51,10 +73,16 @@ export async function ShopAllProductsPage({
   const isPlatformCatalog = shopSlug === PLATFORM_SHOP_SLUG;
   const tags = isPlatformCatalog ? [] : await getStoreTagsForShop(shop.id);
 
-  const listingWhere =
+  const listingWhereBase: Prisma.ShopListingWhereInput =
     shopSlug === PLATFORM_SHOP_SLUG
       ? { ...marketplaceAggregatedListingWhere, product: { active: true } }
       : { shopId: shop.id, ...storefrontShopListingWhere, product: { active: true } };
+
+  const textWhere = listingTextSearchWhere(searchQuery);
+  const listingWhere: Prisma.ShopListingWhereInput =
+    Object.keys(textWhere).length === 0
+      ? listingWhereBase
+      : { AND: [listingWhereBase, textWhere] };
 
   let listings;
   try {
@@ -97,12 +125,37 @@ export async function ShopAllProductsPage({
 
   return (
     <div>
-      <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="store-dimension-page-title text-2xl !uppercase !tracking-[0.12em] text-zinc-50">
             All products
           </h1>
         </div>
+        <form method="get" className="flex w-full max-w-md flex-wrap items-center gap-2 sm:justify-end">
+          <label className="sr-only" htmlFor="shop-all-search-q">
+            Search products
+          </label>
+          <input
+            id="shop-all-search-q"
+            name="q"
+            type="search"
+            defaultValue={searchQuery ?? ""}
+            placeholder="Search name or keywords…"
+            autoComplete="off"
+            className="min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-900/80 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600"
+          />
+          <button
+            type="submit"
+            className="rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-700"
+          >
+            Search
+          </button>
+          {searchQuery?.trim() ? (
+            <a href={shopSlug === PLATFORM_SHOP_SLUG ? "/shop/all" : `/s/${encodeURIComponent(shopSlug)}/all`} className="text-xs text-zinc-500 hover:text-zinc-300">
+              Clear
+            </a>
+          ) : null}
+        </form>
       </div>
 
       {featuredCarouselItems.length > 0 ? (

@@ -29,6 +29,7 @@ export default async function ProductModalInterceptPage({ params, searchParams }
         listingItemName={detail.listingItemName}
         adminCatalogItemName={detail.adminCatalogItemName}
         storefrontItemBlurb={detail.storefrontItemBlurb}
+        listingSearchKeywords={detail.listingSearchKeywords}
       />
     </ProductModalShell>
   );

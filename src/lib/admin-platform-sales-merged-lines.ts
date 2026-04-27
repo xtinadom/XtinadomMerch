@@ -19,9 +19,13 @@ export type AdminPlatformSalesOrderLineRow = Prisma.OrderLineGetPayload<{
   include: typeof orderLineInclude;
 }>;
 
+/** Row filters: publication fee vs merchandise order lines. */
+export type AdminPlatformSaleCategory = "listing" | "item";
+
 export type AdminPlatformSalesMergedLine =
   | {
       kind: "merchandise";
+      platformSaleCategory: "item";
       id: string;
       quantity: number;
       unitPriceCents: number;
@@ -34,6 +38,7 @@ export type AdminPlatformSalesMergedLine =
     }
   | {
       kind: "listing_publication_fee";
+      platformSaleCategory: "listing";
       id: string;
       quantity: number;
       unitPriceCents: number;
@@ -163,6 +168,8 @@ export async function loadMergedPlatformSalesLines(
   let publicationFeePaymentCount = 0;
   for (const row of feeListings) {
     if (!row.listingFeePaidAt) continue;
+    /** Free-slot waiver: do not show as a paid publication in platform sales. */
+    if (row.listingPublicationFeePaidCents === 0) continue;
     const feeCents = publicationFeeCentsForListing(
       {
         ...row,
@@ -182,6 +189,7 @@ export async function loadMergedPlatformSalesLines(
       : "Listing publication fee";
     feeLines.push({
       kind: "listing_publication_fee",
+      platformSaleCategory: "listing",
       id: `listing_publication_fee:${row.id}`,
       quantity: 1,
       unitPriceCents: feeCents,
@@ -202,6 +210,7 @@ export async function loadMergedPlatformSalesLines(
 
   const merchLines: AdminPlatformSalesMergedLine[] = orderLines.map((l) => ({
     kind: "merchandise" as const,
+    platformSaleCategory: "item" as const,
     id: l.id,
     quantity: l.quantity,
     unitPriceCents: l.unitPriceCents,
@@ -222,5 +231,102 @@ export async function loadMergedPlatformSalesLines(
     lines,
     orderLineCount,
     publicationFeePaymentCount,
+  };
+}
+
+/** Jan 1 00:00:00.000 UTC of `year` through `end` (inclusive window for `lte`). */
+export function utcYearToDateRange(year: number, end: Date): { gte: Date; lte: Date } {
+  const gte = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+  return { gte, lte: end };
+}
+
+export type PlatformSalesYtdTotals = {
+  year: number;
+  /** Sum of `OrderLine.platformCutCents` for paid orders in YTD window. */
+  itemPlatformCents: number;
+  /** Sum of publication fee platform revenue (same rules as merged listing fee rows). */
+  listingPlatformCents: number;
+};
+
+/**
+ * Year-to-date platform revenue by sale category (UTC calendar year through `through`).
+ * Listing fees use the same waived / ordinal rules as {@link loadMergedPlatformSalesLines}.
+ */
+export async function loadPlatformSalesYtdTotals(
+  prisma: PrismaClient,
+  through: Date,
+): Promise<PlatformSalesYtdTotals> {
+  const year = through.getUTCFullYear();
+  const { gte, lte } = utcYearToDateRange(year, through);
+
+  const orderLineSum = await prisma.orderLine.aggregate({
+    where: {
+      order: {
+        status: OrderStatus.paid,
+        createdAt: { gte, lte },
+      },
+    },
+    _sum: { platformCutCents: true },
+  });
+
+  const listingFeePaidFilter: Prisma.DateTimeNullableFilter = {
+    not: null,
+    gte,
+    lte,
+  };
+
+  const feeListings = await prisma.shopListing.findMany({
+    where: { listingFeePaidAt: listingFeePaidFilter },
+    select: {
+      id: true,
+      shopId: true,
+      listingFeePaidAt: true,
+      listingPublicationFeePaidCents: true,
+      shop: {
+        select: {
+          slug: true,
+          listingFeeBonusFreeSlots: true,
+        },
+      },
+    },
+  });
+
+  const shopIds = [...new Set(feeListings.map((l) => l.shopId))];
+  const ordinalRows =
+    shopIds.length === 0
+      ? []
+      : await prisma.shopListing.findMany({
+          where: { shopId: { in: shopIds } },
+          orderBy: [{ shopId: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+          select: { id: true, shopId: true },
+        });
+  const ordinalByListingId = buildOrdinalByListingId(ordinalRows);
+
+  let listingPlatformCents = 0;
+  for (const row of feeListings) {
+    if (!row.listingFeePaidAt) continue;
+    if (row.listingPublicationFeePaidCents === 0) continue;
+    const feeCents = publicationFeeCentsForListing(
+      {
+        id: row.id,
+        shopId: row.shopId,
+        listingFeePaidAt: row.listingFeePaidAt,
+        listingPublicationFeePaidCents: row.listingPublicationFeePaidCents,
+        requestItemName: null,
+        shop: {
+          displayName: "",
+          slug: row.shop.slug,
+          listingFeeBonusFreeSlots: row.shop.listingFeeBonusFreeSlots ?? 0,
+        },
+      },
+      ordinalByListingId,
+    );
+    if (feeCents > 0) listingPlatformCents += feeCents;
+  }
+
+  return {
+    year,
+    itemPlatformCents: orderLineSum._sum.platformCutCents ?? 0,
+    listingPlatformCents,
   };
 }

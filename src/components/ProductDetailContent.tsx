@@ -34,6 +34,8 @@ export function ProductDetailContent({
   adminCatalogItemName,
   /** Shop owner one-line pitch (`ShopListing.storefrontItemBlurb`, max tweet length). */
   storefrontItemBlurb,
+  /** Optional search hints (`ShopListing.listingSearchKeywords`). */
+  listingSearchKeywords,
 }: {
   product: StorefrontProduct;
   variant: "page" | "modal";
@@ -55,6 +57,7 @@ export function ProductDetailContent({
   listingItemName?: string | null;
   adminCatalogItemName?: string | null;
   storefrontItemBlurb?: string | null;
+  listingSearchKeywords?: string | null;
 }) {
   const shopSlug = tenant?.shopSlug ?? PLATFORM_SHOP_SLUG;
   const displayItemName = listingItemName?.trim() || product.name;
@@ -91,6 +94,7 @@ export function ProductDetailContent({
       : adminFromProductOnly;
   const description = adminPart.trim() || product.description?.trim() || "";
   const blurbText = storefrontItemBlurb?.trim() || "";
+  const keywordsText = listingSearchKeywords?.trim() || "";
 
   const primary = product.primaryTag;
   const allProductsHref =
@@ -179,6 +183,11 @@ export function ProductDetailContent({
             <h3 className="text-xs font-medium uppercase tracking-wide text-zinc-500">Item details</h3>
             <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-zinc-400">{description}</p>
           </div>
+        ) : null}
+        {keywordsText ? (
+          <p className="mt-8 text-[11px] leading-relaxed text-zinc-600">
+            <span className="text-zinc-500">Keywords:</span> {keywordsText}
+          </p>
         ) : null}
       </div>
     </div>

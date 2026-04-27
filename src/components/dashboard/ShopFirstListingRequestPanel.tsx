@@ -198,16 +198,7 @@ export function ShopFirstListingRequestPanel(props: {
     }
     const o = catalogOptions.find((x) => x.productId === listingProductId);
     if (!o) return;
-    setListingPrice((prev) => {
-      const t = prev.trim();
-      if (!t) return (o.minPriceCents / 100).toFixed(2);
-      const parsed = parseFloat(t.replace(/[^0-9.]/g, ""));
-      if (!Number.isFinite(parsed)) return (o.minPriceCents / 100).toFixed(2);
-      const cents = Math.round(parsed * 100);
-      if (cents < o.minPriceCents) return (o.minPriceCents / 100).toFixed(2);
-      if (cents > SHOP_LISTING_MAX_PRICE_CENTS) return (SHOP_LISTING_MAX_PRICE_CENTS / 100).toFixed(2);
-      return prev;
-    });
+    setListingPrice((o.minPriceCents / 100).toFixed(2));
   }, [listingProductId, catalogOptions]);
 
   useEffect(() => {

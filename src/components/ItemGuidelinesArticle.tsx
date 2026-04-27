@@ -31,8 +31,9 @@ export function ItemGuidelinesArticle(props: { className?: string }) {
         <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Content standards</h3>
         <p className="mt-2 text-sm text-zinc-400">
           Images must pass typical social-media style checks: no nudity, no depicted sex acts, and no explicit sexual
-          content. Artful, suggestive content may be acceptable when it stays within those bounds. The platform may
-          reject or remove listings that do not meet this standard.
+          content. Artful, suggestive content may be acceptable when it stays within those bounds. Depictions of illegal
+          activity are also prohibited. Text in listings must follow these guidelines as well. The platform may reject
+          or remove listings that do not meet this standard.
         </p>
       </div>
 

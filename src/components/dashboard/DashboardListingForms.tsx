@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -18,6 +19,7 @@ import {
   dashboardSubmitListingRequest,
   dashboardUpdateListingItemName,
   dashboardUpdateListingStorefrontBlurb,
+  dashboardUpdateListingSearchKeywords,
   dashboardUpdateListingPrice,
   dashboardUpdateListingVariantPrices,
   dashboardUploadListingSupplementPhoto,
@@ -37,6 +39,7 @@ import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 
 const REQUEST_ITEM_NAME_MAX = 120;
 const STOREFRONT_ITEM_BLURB_MAX = 280;
+const LISTING_SEARCH_KEYWORDS_MAX = 2000;
 
 const disabledSave =
   "cursor-not-allowed rounded bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-500 ring-1 ring-zinc-800";
@@ -253,6 +256,107 @@ export function DashboardListingStorefrontBlurbForm({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[11px] text-zinc-600">
           {text.length}/{STOREFRONT_ITEM_BLURB_MAX} characters
+        </p>
+        <button type="submit" disabled={!dirty || pending} className={`${btnClass} shrink-0`}>
+          {label}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+type SearchKeywordsFormProps = {
+  listingId: string;
+  listingSearchKeywords: string | null;
+  readOnly?: boolean;
+};
+
+export function DashboardListingSearchKeywordsForm({
+  listingId,
+  listingSearchKeywords,
+  readOnly = false,
+}: SearchKeywordsFormProps) {
+  const keywordsFieldId = useId();
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const initial = listingSearchKeywords?.trim() ?? "";
+  const [text, setText] = useState(initial);
+  const baseline = useRef(initial);
+  const [savedFlash, setSavedFlash] = useState(false);
+
+  useLayoutEffect(() => {
+    const next = listingSearchKeywords?.trim() ?? "";
+    setText(next);
+    baseline.current = next;
+  }, [listingId, listingSearchKeywords]);
+
+  useLayoutEffect(() => {
+    setSavedFlash(false);
+  }, [listingId]);
+
+  const dirty = text.trim() !== baseline.current.trim();
+
+  useEffect(() => {
+    if (dirty) setSavedFlash(false);
+  }, [dirty]);
+
+  const onSubmit = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      if (!dirty || pending) return;
+      const fd = new FormData(e.currentTarget);
+      startTransition(async () => {
+        const r = await dashboardUpdateListingSearchKeywords(fd);
+        router.refresh();
+        if (r.ok) {
+          setSavedFlash(true);
+          window.setTimeout(() => setSavedFlash(false), 2500);
+        }
+      });
+    },
+    [dirty, pending, router],
+  );
+
+  const label = pending ? "Saving..." : savedFlash && !dirty ? "Saved" : "Save keywords";
+  const btnClass = pending
+    ? savingSaveItemName
+    : !dirty
+      ? savedFlash
+        ? savedSaveItemName
+        : disabledSaveItemName
+      : activeSaveItemName;
+
+  if (readOnly) {
+    return initial ? (
+      <div className="mt-3 min-w-0">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-600">Keywords</p>
+        <p className="mt-1 text-sm leading-relaxed text-zinc-500">{initial}</p>
+      </div>
+    ) : null;
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="mt-3 space-y-2">
+      <input type="hidden" name="listingId" value={listingId} />
+      <div className="space-y-1">
+        <label htmlFor={keywordsFieldId} className="block text-xs text-zinc-500">
+          Keywords (optional, helps shoppers find listing)
+        </label>
+        <textarea
+          id={keywordsFieldId}
+          name="listingSearchKeywords"
+          value={text}
+          maxLength={LISTING_SEARCH_KEYWORDS_MAX}
+          rows={2}
+          autoComplete="off"
+          onChange={(ev) => setText(ev.target.value)}
+          className="block w-full min-w-0 resize-y rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm leading-snug text-zinc-100"
+        />
+        <p className="text-[11px] text-zinc-600">Space separates words.</p>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[11px] text-zinc-600">
+          {text.length}/{LISTING_SEARCH_KEYWORDS_MAX} characters
         </p>
         <button type="submit" disabled={!dirty || pending} className={`${btnClass} shrink-0`}>
           {label}

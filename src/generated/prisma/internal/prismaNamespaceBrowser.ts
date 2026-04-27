@@ -291,6 +291,7 @@ export const ShopListingScalarFieldEnum = {
   listingStorefrontCatalogImageUrls: 'listingStorefrontCatalogImageUrls',
   requestItemName: 'requestItemName',
   storefrontItemBlurb: 'storefrontItemBlurb',
+  listingSearchKeywords: 'listingSearchKeywords',
   baselineCatalogPickEncoded: 'baselineCatalogPickEncoded',
   requestStatus: 'requestStatus',
   adminRemovedFromShopAt: 'adminRemovedFromShopAt',

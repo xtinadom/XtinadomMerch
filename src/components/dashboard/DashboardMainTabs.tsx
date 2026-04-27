@@ -19,6 +19,7 @@ import {
 import {
   DashboardListingItemNameForm,
   DashboardListingStorefrontBlurbForm,
+  DashboardListingSearchKeywordsForm,
   DashboardListingPriceForm,
   DashboardListingSupplementPhotoForm,
   DashboardSubmitListingRequestForm,
@@ -75,6 +76,8 @@ export type DashboardListingRow = {
   requestItemName: string | null;
   /** Optional one-line pitch on the public PDP (`ShopListing.storefrontItemBlurb`). */
   storefrontItemBlurb: string | null;
+  /** Optional shop search hints (`ShopListing.listingSearchKeywords`). */
+  listingSearchKeywords: string | null;
   listingFeePaidAt: string | null;
   adminRemovedFromShopAt: string | null;
   creatorRemovedFromShopAt: string | null;
@@ -610,6 +613,11 @@ function ListingCard({
       <DashboardListingStorefrontBlurbForm
         listingId={listing.id}
         storefrontItemBlurb={listing.storefrontItemBlurb}
+        readOnly={fieldsReadOnly}
+      />
+      <DashboardListingSearchKeywordsForm
+        listingId={listing.id}
+        listingSearchKeywords={listing.listingSearchKeywords}
         readOnly={fieldsReadOnly}
       />
       {listing.requestStatus === ListingRequestStatus.rejected ? (

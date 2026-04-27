@@ -36,6 +36,7 @@ export default async function ShopTenantProductPage({ params }: Props) {
         listingItemName={detail.listingItemName}
         adminCatalogItemName={adminCatalogItemName}
         storefrontItemBlurb={detail.storefrontItemBlurb}
+        listingSearchKeywords={detail.listingSearchKeywords}
       />
     </>
   );
