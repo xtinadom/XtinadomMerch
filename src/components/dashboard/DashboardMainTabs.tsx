@@ -854,69 +854,73 @@ export function DashboardMainTabs(props: {
   return (
     <section className="mt-8">
       <div
-        className="flex flex-wrap gap-1 rounded-xl border border-zinc-800 bg-zinc-950/40 p-1"
+        className="flex flex-col gap-2"
         role="tablist"
         aria-label="Shop dashboard"
       >
         {hasSetup && setup && showOnboardingTab ? (
-          tabBtn(
-            "setup",
-            <span className="inline-flex items-center gap-2">
-              Onboarding
-              <span className="rounded-full bg-amber-900/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-amber-100">
-                {setup.incompleteSetupCount}
-              </span>
-            </span>,
-            setupTabId,
-            setupPanelId,
-          )
-        ) : null}
-        {hasSetup && setup
-          ? tabBtn("shopProfile", "Shop profile", shopProfileTabId, shopProfilePanelId)
-          : null}
-        {hasSetup && setup
-          ? tabBtn(
-              "itemGuidelines",
-              "Item guidelines",
-              itemGuidelinesTabId,
-              itemGuidelinesPanelId,
-            )
-          : null}
-        {hasSetup && setup
-          ? tabBtn("requestListing", "Request listing", requestListingTabId, requestListingPanelId)
-          : null}
-        {tabBtn(
-          "listings",
-          listingTabCounts ? (
-            <span className="inline-flex items-center gap-2">
-              Listings
-              <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-200">
-                {listingTabCounts.live}/{listingTabCounts.livePlusRequested}
-              </span>
-            </span>
-          ) : (
-            "Listings"
-          ),
-          listingsTabId,
-          listingsPanelId,
-        )}
-        {hasNotifications && notifications
-          ? tabBtn(
-              "notifications",
+          <div className="flex flex-wrap gap-1 rounded-xl border border-zinc-800 bg-zinc-950/40 p-1">
+            {tabBtn(
+              "setup",
               <span className="inline-flex items-center gap-2">
-                Notifications
-                {unreadN > 0 ? (
-                  <span className="rounded-full bg-sky-900/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-sky-100">
-                    {unreadN}
-                  </span>
-                ) : null}
+                Onboarding
+                <span className="rounded-full bg-amber-900/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-amber-100">
+                  {setup.incompleteSetupCount}
+                </span>
               </span>,
-              notificationsTabId,
-              notificationsPanelId,
-            )
-          : null}
-        {canSupport ? tabBtn("support", "Support", supportTabId, supportPanelId) : null}
-        {tabBtn("orders", "Orders", ordersTabId, ordersPanelId)}
+              setupTabId,
+              setupPanelId,
+            )}
+          </div>
+        ) : null}
+        <div className="flex flex-wrap gap-1 rounded-xl border border-zinc-800 bg-zinc-950/40 p-1">
+          {hasSetup && setup
+            ? tabBtn("shopProfile", "Shop profile", shopProfileTabId, shopProfilePanelId)
+            : null}
+          {hasSetup && setup
+            ? tabBtn(
+                "itemGuidelines",
+                "Item guidelines",
+                itemGuidelinesTabId,
+                itemGuidelinesPanelId,
+              )
+            : null}
+          {hasSetup && setup
+            ? tabBtn("requestListing", "Request listing", requestListingTabId, requestListingPanelId)
+            : null}
+          {tabBtn(
+            "listings",
+            listingTabCounts ? (
+              <span className="inline-flex items-center gap-2">
+                Listings
+                <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-200">
+                  {listingTabCounts.live}/{listingTabCounts.livePlusRequested}
+                </span>
+              </span>
+            ) : (
+              "Listings"
+            ),
+            listingsTabId,
+            listingsPanelId,
+          )}
+          {hasNotifications && notifications
+            ? tabBtn(
+                "notifications",
+                <span className="inline-flex items-center gap-2">
+                  Notifications
+                  {unreadN > 0 ? (
+                    <span className="rounded-full bg-sky-900/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-sky-100">
+                      {unreadN}
+                    </span>
+                  ) : null}
+                </span>,
+                notificationsTabId,
+                notificationsPanelId,
+              )
+            : null}
+          {canSupport ? tabBtn("support", "Support", supportTabId, supportPanelId) : null}
+          {tabBtn("orders", "Orders", ordersTabId, ordersPanelId)}
+        </div>
       </div>
 
       {hasSetup && setup && showOnboardingTab ? (

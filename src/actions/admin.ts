@@ -281,8 +281,13 @@ async function deleteOrArchivePrintifyListingById(
   });
   if (!row) return "noop";
 
-  const lines = await prisma.orderLine.count({ where: { productId } });
-  if (lines > 0) {
+  const [orderLines, shopListings] = await Promise.all([
+    prisma.orderLine.count({ where: { productId } }),
+    prisma.shopListing.count({ where: { productId } }),
+  ]);
+
+  /** Keep the `Product` row whenever real data still points at it — `ShopListing` cascades on delete. */
+  if (orderLines > 0 || shopListings > 0) {
     await prisma.product.update({
       where: { id: productId },
       data: {

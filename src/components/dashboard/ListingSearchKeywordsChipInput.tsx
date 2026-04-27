@@ -128,7 +128,7 @@ export function ListingSearchKeywordsChipInput({
         </p>
       ) : null}
       <p className="text-[11px] text-zinc-600">
-        Press Space or Enter after each word. Total stored: {keywordsJoinedLength}/{SEARCH_KEYWORDS_MAX} characters
+        {`Press Space or Enter after each word. Total stored: ${keywordsJoinedLength}/${SEARCH_KEYWORDS_MAX} characters`}
       </p>
     </>
   );
