@@ -874,6 +874,21 @@ export function DashboardMainTabs(props: {
           </div>
         ) : null}
         <div className="flex flex-wrap gap-1 rounded-xl border border-zinc-800 bg-zinc-950/40 p-1">
+          {hasNotifications && notifications
+            ? tabBtn(
+                "notifications",
+                <span className="inline-flex items-center gap-2">
+                  Notifications
+                  {unreadN > 0 ? (
+                    <span className="rounded-full bg-sky-900/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-sky-100">
+                      {unreadN}
+                    </span>
+                  ) : null}
+                </span>,
+                notificationsTabId,
+                notificationsPanelId,
+              )
+            : null}
           {hasSetup && setup
             ? tabBtn("shopProfile", "Shop profile", shopProfileTabId, shopProfilePanelId)
             : null}
@@ -903,21 +918,6 @@ export function DashboardMainTabs(props: {
             listingsTabId,
             listingsPanelId,
           )}
-          {hasNotifications && notifications
-            ? tabBtn(
-                "notifications",
-                <span className="inline-flex items-center gap-2">
-                  Notifications
-                  {unreadN > 0 ? (
-                    <span className="rounded-full bg-sky-900/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-sky-100">
-                      {unreadN}
-                    </span>
-                  ) : null}
-                </span>,
-                notificationsTabId,
-                notificationsPanelId,
-              )
-            : null}
           {canSupport ? tabBtn("support", "Support", supportTabId, supportPanelId) : null}
           {tabBtn("orders", "Orders", ordersTabId, ordersPanelId)}
         </div>

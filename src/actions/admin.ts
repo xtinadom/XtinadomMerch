@@ -38,7 +38,6 @@ import { slugify } from "@/lib/slugify";
 import {
   parseImageUrlList,
   productAllStoredImageUrls,
-  productImageUrls,
   productImageUrlsUnionHero,
   toGalleryJson,
 } from "@/lib/product-media";
@@ -272,39 +271,31 @@ function importAudience(): Audience {
   return Audience.both;
 }
 
+/**
+ * Printify full/resync must never `DELETE` a `Product` — `ShopListing` uses onDelete: Cascade
+ * and would remove creator rows. Unlinked / duplicate / orphan rows are only deactivated and
+ * stripped of Printify ids (same as the former “archive” path).
+ */
 async function deleteOrArchivePrintifyListingById(
   productId: string,
-): Promise<"deleted" | "archived" | "noop"> {
+): Promise<"archived" | "noop"> {
   const row = await prisma.product.findUnique({
     where: { id: productId },
-    select: { slug: true, imageUrl: true, imageGallery: true },
+    select: { slug: true },
   });
   if (!row) return "noop";
 
-  const [orderLines, shopListings] = await Promise.all([
-    prisma.orderLine.count({ where: { productId } }),
-    prisma.shopListing.count({ where: { productId } }),
-  ]);
-
-  /** Keep the `Product` row whenever real data still points at it — `ShopListing` cascades on delete. */
-  if (orderLines > 0 || shopListings > 0) {
-    await prisma.product.update({
-      where: { id: productId },
-      data: {
-        active: false,
-        printifyProductId: null,
-        printifyVariantId: null,
-        printifyVariants: Prisma.DbNull,
-      },
-    });
-    revalidatePath("/product/" + row.slug);
-    return "archived";
-  }
-
-  await deleteListingImagesFromR2(productImageUrls(row));
-  await prisma.product.delete({ where: { id: productId } });
+  await prisma.product.update({
+    where: { id: productId },
+    data: {
+      active: false,
+      printifyProductId: null,
+      printifyVariantId: null,
+      printifyVariants: Prisma.DbNull,
+    },
+  });
   revalidatePath("/product/" + row.slug);
-  return "deleted";
+  return "archived";
 }
 
 async function ensurePrintifyProductTagged(productId: string): Promise<void> {
@@ -375,7 +366,7 @@ async function processOnePrintifyCatalogProduct(
       });
       for (const row of noVariantRows) {
         const outcome = await deleteOrArchivePrintifyListingById(row.id);
-        if (outcome === "deleted" || outcome === "archived") {
+        if (outcome === "archived") {
           removed += 1;
         }
       }
@@ -610,7 +601,7 @@ export async function syncPrintifyFromCatalog(formData: FormData): Promise<void>
 
     for (const o of orphans) {
       const outcome = await deleteOrArchivePrintifyListingById(o.id);
-      if (outcome === "deleted" || outcome === "archived") {
+      if (outcome === "archived") {
         removed += 1;
       }
     }

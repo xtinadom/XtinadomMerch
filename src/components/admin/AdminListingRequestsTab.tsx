@@ -144,10 +144,7 @@ function AdminPrintifyMappingFormFields({
       <label className="block text-xs text-zinc-500">
         Printify product
         {useCatalogSelect ? (
-          <span className="mt-0.5 block text-[10px] font-normal normal-case tracking-normal text-zinc-600">
-            Most recently updated first. Products already linked to another shop listing are hidden; this row’s saved
-            id stays selectable. The default Printify variant is stored automatically when you save.
-          </span>
+          <span className="sr-only">Most recently updated first.</span>
         ) : null}
         {useCatalogSelect ? (
           <select
@@ -342,25 +339,31 @@ function ListingAdminSecondaryImagePanel({
     <>
       <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/25 p-3">
         <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Hero (Printify)</p>
-        {printifyHeroPreview ? (
-          <div className="mt-2 flex flex-wrap items-start gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+        <div className="mt-2 flex flex-wrap items-start gap-3">
+          {printifyHeroPreview ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={printifyHeroPreview}
               alt=""
-              className="h-24 w-24 rounded border border-zinc-700 object-cover"
+              className="h-24 w-24 shrink-0 rounded border border-zinc-700 object-cover"
             />
-            <p className="max-w-md text-[11px] text-zinc-600">
-              Synced from Printify onto the catalog product — buyers see this first. Refresh the admin page if you
-              just saved the Printify product mapping and the preview is stale.
+          ) : null}
+          <div className="min-w-0 flex-1 space-y-2">
+            <p className="text-xs text-zinc-500">
+              <span className="font-medium text-zinc-400">Saved mapping</span> — Printify product:{" "}
+              <span className="font-mono text-zinc-400">{r.listingPrintifyProductId ?? "—"}</span>
             </p>
+            <div className="border-t border-zinc-800/50 pt-2">
+              <ListingRequestCopySummary r={r} className="mt-0 space-y-0.5 text-xs" />
+            </div>
+            {!printifyHeroPreview ? (
+              <p className="text-[11px] text-amber-200/85">
+                No hero image on the catalog product yet. Re-save Printify mapping or check Printify mockups before
+                approving.
+              </p>
+            ) : null}
           </div>
-        ) : (
-          <p className="mt-2 text-[11px] text-amber-200/85">
-            No hero image on the catalog product yet. Re-save Printify mapping or check Printify mockups before
-            approving.
-          </p>
-        )}
+        </div>
       </div>
       {r2Configured ? (
         <div className="space-y-2 rounded-lg border border-zinc-800/80 bg-zinc-950/20 p-3">
@@ -400,9 +403,7 @@ function ListingAdminSecondaryImagePanel({
                 )
               ) : null}
             </div>
-          ) : (
-            <p className="text-[11px] text-zinc-600">None set — upload a file or paste an HTTPS image URL.</p>
-          )}
+          ) : null}
           <ListingAdminSecondaryImageUploadForm
             key={`${r.id}-${r.adminListingSecondaryImageUrl ? "y" : "n"}`}
             listingId={r.id}
@@ -506,18 +507,15 @@ function formatPrintifyCatalogSyncedAtLabel(iso: string | null | undefined): str
 /** Static hint under step 2 save (submit button is outside this form). */
 function PrintifyCatalogSyncHint({ lastSyncedAtIso }: { lastSyncedAtIso: string | null }) {
   const formatted = formatPrintifyCatalogSyncedAtLabel(lastSyncedAtIso);
+  if (!formatted || !lastSyncedAtIso) return null;
   return (
     <p className="text-[10px] leading-snug text-zinc-600">
-      {formatted && lastSyncedAtIso ? (
-        <>
-          Last catalog sync{" "}
-          <time dateTime={lastSyncedAtIso} className="tabular-nums text-zinc-500">
-            {formatted}
-          </time>
-        </>
-      ) : (
-        "Catalog sync time is recorded when you save the Printify product below."
-      )}
+      <>
+        Last catalog sync{" "}
+        <time dateTime={lastSyncedAtIso} className="tabular-nums text-zinc-500">
+          {formatted}
+        </time>
+      </>
     </p>
   );
 }
@@ -558,7 +556,14 @@ function PrintifyCatalogSyncSubmitFooter({ lastSyncedAtIso }: { lastSyncedAtIso:
   );
 }
 
-function ListingRequestCopySummary({ r }: { r: ListingRequestTabRow }) {
+function ListingRequestCopySummary({
+  r,
+  className = "mt-1 space-y-0.5 text-xs",
+}: {
+  r: ListingRequestTabRow;
+  /** Root wrapper; default has top margin for the card header — use e.g. `mt-0 space-y-0.5 text-xs` when nested under Hero. */
+  className?: string;
+}) {
   const empty = "—";
   const productName = r.product.name.trim() || empty;
   const itemName = r.requestItemName?.trim() || empty;
@@ -566,7 +571,7 @@ function ListingRequestCopySummary({ r }: { r: ListingRequestTabRow }) {
   const keywords = r.listingSearchKeywords?.trim() || empty;
 
   return (
-    <div className="mt-1 space-y-0.5 text-xs">
+    <div className={className}>
       <p className="text-zinc-500">
         <span className="text-zinc-600">Product name </span>
         <span className={productName === empty ? "text-zinc-600" : "text-zinc-300"}>{productName}</span>
@@ -640,6 +645,11 @@ function ListingRequestCard({
   const isAwaitingImageReview = r.requestStatus === ListingRequestStatus.submitted;
   const isImagesOkStep = r.requestStatus === ListingRequestStatus.images_ok;
   const isPrintifyReady = r.requestStatus === ListingRequestStatus.printify_item_created;
+  /** After Printify mapping is saved, hide raw submission URLs (hero comes from Printify on the product). */
+  const hideRequestImageUrlList =
+    (r.listingPrintifyProductId?.trim() ?? "") !== "" ||
+    r.requestStatus === ListingRequestStatus.printify_item_created ||
+    r.requestStatus === ListingRequestStatus.approved;
   const showPrintifyWorkflowSection =
     (isImagesOkStep &&
       (!suppressLegacyGroupPrintifyStep1Block || !suppressLegacyGroupPrintifyStep2Block)) ||
@@ -734,26 +744,28 @@ function ListingRequestCard({
               </button>
             </form>
           </div>
-          <ListingRequestCopySummary r={r} />
-          {imgs.length > 0 ? (
-            <ul className="mt-2 list-inside list-disc text-xs text-zinc-500">
-              {imgs.map((u) => (
-                <li key={u} className="break-all">
-                  <a
-                    href={u}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400/90 underline decoration-blue-500/40 underline-offset-2 hover:text-blue-300"
-                    onClick={(e) => openRequestImageInNewTab(e, u)}
-                  >
-                    {u}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-2 text-xs text-zinc-600">No image URLs submitted.</p>
-          )}
+          {!isPrintifyReady && !isApproved ? <ListingRequestCopySummary r={r} /> : null}
+          {!hideRequestImageUrlList ? (
+            imgs.length > 0 ? (
+              <ul className="mt-2 list-inside list-disc text-xs text-zinc-500">
+                {imgs.map((u) => (
+                  <li key={u} className="break-all">
+                    <a
+                      href={u}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400/90 underline decoration-blue-500/40 underline-offset-2 hover:text-blue-300"
+                      onClick={(e) => openRequestImageInNewTab(e, u)}
+                    >
+                      {u}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-xs text-zinc-600">No image URLs submitted.</p>
+            )
+          ) : null}
         </>
       ) : suppressLegacyGroupPrintifyStep2Block ? (
         statusChip ? (
@@ -779,7 +791,7 @@ function ListingRequestCard({
               ) : null}
             </p>
           </div>
-          <ListingRequestCopySummary r={r} />
+          {!isPrintifyReady && !isApproved ? <ListingRequestCopySummary r={r} /> : null}
         </>
       )}
 
@@ -823,7 +835,6 @@ function ListingRequestCard({
                 aria-label="Step 1 image check: Image OK or image rejected"
               >
                 <div className="flex min-w-0 max-w-xs flex-col gap-1.5">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Image OK</span>
                   {printifyStepImageOk ? (
                     <div
                       role="status"
@@ -849,21 +860,14 @@ function ListingRequestCard({
                   )}
                   <span id={`image-ok-live-${r.id}`} className="sr-only" aria-live="polite" aria-atomic="true">
                     {printifyStepImageOk
-                      ? "Passed check. Reject is disabled. You can save the Printify product."
+                      ? "Passed check. Image reject is hidden. You can save the Printify product."
                       : "Image OK not selected. Choose Image OK or reject."}
                   </span>
                   <p
                     id={`image-ok-step2-hint-${r.id}`}
                     className={`text-[11px] leading-snug transition-colors duration-200 ${printifyStepImageOk ? "text-emerald-200/90" : "text-zinc-600"}`}
                   >
-                    {printifyStepImageOk ? (
-                      <>
-                        <span className="font-medium text-emerald-300/95">Confirmed for this step.</span> Choose the
-                        Printify catalog product below and save — then step 3 (admin images, then approve or reject). The
-                        shop still shows{" "}
-                        <span className="font-medium text-zinc-400">In review</span> until you approve.
-                      </>
-                    ) : (
+                    {printifyStepImageOk ? null : (
                       <>
                         Click <span className="font-medium text-zinc-500">Image OK</span> for clear green confirmation,
                         then choose the Printify product and save.
@@ -871,18 +875,16 @@ function ListingRequestCard({
                     )}
                   </p>
                 </div>
-                <div
-                  className={`flex min-w-0 flex-1 flex-col gap-1.5 transition-opacity duration-200 ${printifyStepImageOk ? "opacity-40 saturate-50" : ""}`}
-                  aria-disabled={printifyStepImageOk}
-                >
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Image rejected</span>
-                  <AdminListingRejectForm
-                    listingId={r.id}
-                    className="max-w-md"
-                    rejectionReasonLegend="Why images are rejected"
-                    disabled={printifyStepImageOk}
-                  />
-                </div>
+                {!printifyStepImageOk ? (
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Image rejected</span>
+                    <AdminListingRejectForm
+                      listingId={r.id}
+                      className="max-w-md"
+                      rejectionReasonLegend="Why images are rejected"
+                    />
+                  </div>
+                ) : null}
               </div>
             </>
           ) : null}
@@ -919,11 +921,6 @@ function ListingRequestCard({
           </form>
           <div className={compactNestedGroupInlineStep2 ? "pt-2" : "border-t border-zinc-800/80 pt-3"}>
             <div className="flex min-w-0 flex-col gap-1.5">
-              {!compactNestedGroupInlineStep2 ? (
-                <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
-                  Save Printify mapping (then Step 3 — admin images &amp; approve)
-                </span>
-              ) : null}
               <button
                 type="submit"
                 form={`admin-printify-save-${r.id}`}
@@ -944,13 +941,6 @@ function ListingRequestCard({
               <PrintifyCatalogSyncHint lastSyncedAtIso={r.listingPrintifyCatalogSyncedAt} />
             ) : null}
           </div>
-          {!compactNestedGroupInlineStep2 ? (
-            <p className="text-[11px] leading-snug text-zinc-600">
-              After save, <span className="font-medium text-zinc-500">Step 3 — Admin images</span> (optional
-              second image) and <span className="font-medium text-zinc-500">Approve</span> /{" "}
-              <span className="font-medium text-zinc-500">Reject</span> appear below.
-            </p>
-          ) : null}
             </>
           ) : null}
         </>
@@ -960,17 +950,6 @@ function ListingRequestCard({
         <div className="space-y-3">
           <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
             Step 3 — Admin images
-          </p>
-          <p className="text-xs text-zinc-500">
-            Listing images are compressed to about <span className="font-medium text-zinc-400">100 KiB</span>{" "}
-            on save. The <span className="font-medium text-zinc-400">hero</span> comes from the Printify item
-            (synced to the catalog product). You may add one <span className="font-medium text-zinc-400">optional</span>{" "}
-            second image (upload or HTTPS URL); it appears on the shop after approval. The shop owner cannot remove
-            hero or admin images — only their own optional extra photo on the dashboard.
-          </p>
-          <p className="text-xs text-zinc-500">
-            <span className="font-medium text-zinc-400">Saved mapping</span> — Printify product:{" "}
-            <span className="font-mono text-zinc-400">{r.listingPrintifyProductId ?? "—"}</span>
           </p>
           <details className="rounded-lg border border-zinc-800/80 bg-zinc-950/30 px-3 py-2">
             <summary className="cursor-pointer select-none text-[11px] font-medium text-zinc-400">
@@ -1012,33 +991,30 @@ function ListingRequestCard({
               <span className="font-medium text-zinc-400">Decision (all sizes)</span> box above the size list.
             </p>
           ) : (
-            <>
-              <p className="text-[11px] text-zinc-600">
-                One listing for the whole catalog product — all variants are approved or rejected together.
-              </p>
-              <div className="flex min-w-0 flex-col gap-1.5">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Decision</span>
-                <div className="flex flex-wrap items-end gap-6">
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <span className="text-[10px] text-zinc-600">Approve item</span>
-                    <AdminListingApproveForm
-                      listingId={r.id}
-                      productId={r.product.id}
-                      approveButtonLabel="Approve item"
-                      approvePendingLabel="Approving item…"
-                      approveButtonClassName="px-4 py-2 text-sm font-medium"
-                      approveDisabled={!printifyHeroPreview}
-                    />
-                    {!printifyHeroPreview ? (
-                      <span className="text-[10px] text-zinc-600">
-                        Approve disabled until the product has a hero image.
-                      </span>
-                    ) : null}
-                  </div>
-                  <AdminListingRejectForm listingId={r.id} className="max-w-md" />
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Decision</span>
+              <div className="flex flex-wrap items-end gap-6">
+                <div className="flex min-w-0 flex-col gap-1">
+                  <AdminListingApproveForm
+                    listingId={r.id}
+                    productId={r.product.id}
+                    approveButtonLabel="Approve item"
+                    approvePendingLabel="Approving item…"
+                    approveButtonClassName="px-4 py-2 text-sm font-medium"
+                    approveDisabled={!printifyHeroPreview}
+                  />
+                  {!printifyHeroPreview ? (
+                    <span className="text-[10px] text-zinc-600">
+                      Approve disabled until the product has a hero image.
+                    </span>
+                  ) : null}
                 </div>
+                {r.requestStatus !== ListingRequestStatus.images_ok &&
+                r.requestStatus !== ListingRequestStatus.printify_item_created ? (
+                  <AdminListingRejectForm listingId={r.id} className="max-w-md" />
+                ) : null}
               </div>
-            </>
+            </div>
           )}
         </div>
       ) : null}
