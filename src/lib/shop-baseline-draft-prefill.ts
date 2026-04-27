@@ -7,6 +7,8 @@ export type DraftListingRequestPrefillPayload = {
   listingPriceDollars: string | null;
   variantPricesJson: Record<string, string> | null;
   requestItemName: string;
+  storefrontItemBlurb?: string | null;
+  listingSearchKeywords?: string | null;
 };
 
 /**

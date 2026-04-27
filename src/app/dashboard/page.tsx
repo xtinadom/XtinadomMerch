@@ -333,6 +333,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       draftListingRequestPrefill = {
         listingId: draftListingForRequestPrefill.id,
         ...resolved,
+        storefrontItemBlurb: draftListingForRequestPrefill.storefrontItemBlurb,
+        listingSearchKeywords: draftListingForRequestPrefill.listingSearchKeywords,
       };
     }
   }

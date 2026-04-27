@@ -38,10 +38,14 @@ export function CartAndCheckoutClient({
   const [pending, startTransition] = useTransition();
 
   const refetch = useCallback(async () => {
-    const r = await fetch("/api/cart-state", { credentials: "same-origin" });
-    const j = (await r.json()) as CartCheckoutState & { error?: string };
-    if (!j.error && Array.isArray(j.lines)) {
-      setState(j as CartCheckoutState);
+    try {
+      const r = await fetch("/api/cart-state", { credentials: "same-origin" });
+      const j = (await r.json()) as CartCheckoutState & { error?: string };
+      if (!j.error && Array.isArray(j.lines)) {
+        setState(j as CartCheckoutState);
+      }
+    } catch {
+      // Offline or unreachable — keep showing last known cart state.
     }
   }, []);
 

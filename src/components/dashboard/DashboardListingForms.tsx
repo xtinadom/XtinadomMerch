@@ -34,12 +34,12 @@ import {
   SHOP_LISTING_MAX_PRICE_CENTS,
   shopListingMaxPriceUsdLabel,
 } from "@/lib/marketplace-constants";
+import { SEARCH_KEYWORDS_MAX } from "@/lib/search-keywords-normalize";
 import { expectedShopProfitMerchandiseUnitCents } from "@/lib/marketplace-fee";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 
 const REQUEST_ITEM_NAME_MAX = 120;
 const STOREFRONT_ITEM_BLURB_MAX = 280;
-const LISTING_SEARCH_KEYWORDS_MAX = 2000;
 
 const disabledSave =
   "cursor-not-allowed rounded bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-500 ring-1 ring-zinc-800";
@@ -346,7 +346,7 @@ export function DashboardListingSearchKeywordsForm({
           id={keywordsFieldId}
           name="listingSearchKeywords"
           value={text}
-          maxLength={LISTING_SEARCH_KEYWORDS_MAX}
+          maxLength={SEARCH_KEYWORDS_MAX}
           rows={2}
           autoComplete="off"
           onChange={(ev) => setText(ev.target.value)}
@@ -356,7 +356,7 @@ export function DashboardListingSearchKeywordsForm({
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[11px] text-zinc-600">
-          {text.length}/{LISTING_SEARCH_KEYWORDS_MAX} characters
+          {text.length}/{SEARCH_KEYWORDS_MAX} characters
         </p>
         <button type="submit" disabled={!dirty || pending} className={`${btnClass} shrink-0`}>
           {label}

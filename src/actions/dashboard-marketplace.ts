@@ -33,6 +33,7 @@ import { printifyVariantShopFloorCents } from "@/lib/listing-cart-price";
 import { listingCatalogUrlsForPersist } from "@/lib/product-media";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { canStartStripeConnect, computeShopOnboardingSteps } from "@/lib/shop-onboarding-gate";
+import { normalizeSearchKeywords, SEARCH_KEYWORDS_MAX } from "@/lib/search-keywords-normalize";
 
 function formatUsdFromCents(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -44,15 +45,6 @@ function formatUsdFromCents(cents: number): string {
 const REQUEST_ITEM_NAME_MAX = 120;
 /** `ShopListing.storefrontItemBlurb` — one-line pitch on the public PDP (tweet-length cap). */
 const STOREFRONT_ITEM_BLURB_MAX = 280;
-/** Comma-/space-separated listing search hints (`ShopListing.listingSearchKeywords`). */
-const LISTING_SEARCH_KEYWORDS_MAX = 2000;
-
-function normalizeListingSearchKeywords(raw: string): string | null {
-  const collapsed = raw.replace(/\s+/g, " ").trim();
-  if (!collapsed) return null;
-  return collapsed.slice(0, LISTING_SEARCH_KEYWORDS_MAX);
-}
-
 async function requireShopOwner() {
   const session = await getShopOwnerSession();
   if (!session.shopUserId) redirect("/dashboard/login");
@@ -367,8 +359,8 @@ export async function dashboardUpdateListingSearchKeywords(
   }
 
   const trimmed = raw.trim();
-  if (trimmed.length > LISTING_SEARCH_KEYWORDS_MAX) return { ok: false };
-  const listingSearchKeywords = normalizeListingSearchKeywords(raw);
+  if (trimmed.length > SEARCH_KEYWORDS_MAX) return { ok: false };
+  const listingSearchKeywords = normalizeSearchKeywords(raw);
 
   await prisma.shopListing.update({
     where: { id: listingId },

@@ -40,8 +40,10 @@ import { downgradeSubmittedToDraftIfListingFeeUnpaid } from "@/lib/listing-fee";
 import { widthHeightPxFromImageBuffer } from "@/lib/artwork-image-dimensions";
 import { exportedImageMeetsPrintDimensions } from "@/lib/listing-artwork-print-area";
 import { syncProductTagsForNewBaselineListing } from "@/lib/baseline-listing-product-tags-sync";
+import { normalizeSearchKeywords, SEARCH_KEYWORDS_MAX } from "@/lib/search-keywords-normalize";
 
 const WELCOME_MAX = 280;
+const STOREFRONT_ITEM_BLURB_MAX = 280;
 const REQUEST_ITEM_NAME_MAX = 120;
 
 function parseRequestItemNameFromForm(
@@ -281,6 +283,20 @@ export async function submitFirstListingSetup(
   }
   const requestItemName = itemNameParsed.value;
 
+  const blurbRaw = String(formData.get("storefrontItemBlurb") ?? "").trim();
+  if (blurbRaw.length > STOREFRONT_ITEM_BLURB_MAX) {
+    return {
+      ok: false,
+      error: `Storefront pitch must be ${STOREFRONT_ITEM_BLURB_MAX} characters or fewer.`,
+    };
+  }
+  const keywordsRaw = String(formData.get("listingSearchKeywords") ?? "");
+  if (keywordsRaw.trim().length > SEARCH_KEYWORDS_MAX) {
+    return { ok: false, error: `Keywords must be ${SEARCH_KEYWORDS_MAX} characters or fewer.` };
+  }
+  const storefrontItemBlurb = blurbRaw.length > 0 ? blurbRaw : null;
+  const listingSearchKeywords = normalizeSearchKeywords(keywordsRaw);
+
   const pickRaw = String(formData.get("productId") ?? "").trim();
   const dollars = String(formData.get("listingPriceDollars") ?? "").trim();
   if (!pickRaw) {
@@ -458,6 +474,8 @@ export async function submitFirstListingSetup(
     productId,
     priceCents,
     requestItemName,
+    storefrontItemBlurb,
+    listingSearchKeywords,
     requestImages: [url],
     requestStatus: ListingRequestStatus.submitted,
     active: false,
@@ -472,6 +490,8 @@ export async function submitFirstListingSetup(
         update: {
           priceCents,
           requestItemName,
+          storefrontItemBlurb,
+          listingSearchKeywords,
           requestImages: [url],
           requestStatus: ListingRequestStatus.submitted,
           active: false,

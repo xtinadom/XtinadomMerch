@@ -41,6 +41,8 @@ export function GateClient({ redirectFrom }: { redirectFrom: string | null }) {
       window.setTimeout(() => {
         window.location.replace(absolute);
       }, 0);
+    } catch {
+      setError("Could not reach the server. Check your connection and that the site is running, then try again.");
     } finally {
       if (!success) setPending(false);
     }
