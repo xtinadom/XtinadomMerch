@@ -43,7 +43,7 @@ export function AdminPlatformSalesTab(props: {
   lines: AdminPlatformSalesMergedLine[];
   salesFromValue: string;
   salesToValue: string;
-  salesKind: "all" | "listing" | "item";
+  salesKind: "all" | "listing" | "item" | "support";
   ytdTotals: PlatformSalesYtdTotals | null;
   /** Server: allow destructive clear outside prod or when env flag set. */
   clearSalesHistoryEnabled: boolean;
@@ -79,14 +79,14 @@ export function AdminPlatformSalesTab(props: {
     csvBody;
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
 
-  const kindHref = (k: "all" | "listing" | "item") =>
+  const kindHref = (k: "all" | "listing" | "item" | "support") =>
     buildSalesTabHref({
       salesFrom: salesFromValue,
       salesTo: salesToValue,
       salesKind: k === "all" ? undefined : k,
     });
 
-  const kindBtn = (k: "all" | "listing" | "item", label: string) => {
+  const kindBtn = (k: "all" | "listing" | "item" | "support", label: string) => {
     const active = salesKind === k;
     return (
       <Link
@@ -118,7 +118,7 @@ export function AdminPlatformSalesTab(props: {
           <p className="font-medium uppercase tracking-wide text-zinc-500">
             YTD {ytdTotals.year} platform revenue (UTC, through now)
           </p>
-          <dl className="mt-2 grid gap-2 sm:grid-cols-3">
+          <dl className="mt-2 grid gap-2 sm:grid-cols-4">
             <div>
               <dt className="text-[10px] uppercase tracking-wide text-zinc-600">Listing fees</dt>
               <dd className="tabular-nums text-zinc-200">{formatPrice(ytdTotals.listingPlatformCents)}</dd>
@@ -128,9 +128,17 @@ export function AdminPlatformSalesTab(props: {
               <dd className="tabular-nums text-zinc-200">{formatPrice(ytdTotals.itemPlatformCents)}</dd>
             </div>
             <div>
+              <dt className="text-[10px] uppercase tracking-wide text-zinc-600">Support tips</dt>
+              <dd className="tabular-nums text-zinc-200">{formatPrice(ytdTotals.supportPlatformCents)}</dd>
+            </div>
+            <div>
               <dt className="text-[10px] uppercase tracking-wide text-zinc-600">Combined</dt>
               <dd className="tabular-nums text-zinc-100">
-                {formatPrice(ytdTotals.listingPlatformCents + ytdTotals.itemPlatformCents)}
+                {formatPrice(
+                  ytdTotals.listingPlatformCents +
+                    ytdTotals.itemPlatformCents +
+                    ytdTotals.supportPlatformCents,
+                )}
               </dd>
             </div>
           </dl>
@@ -141,6 +149,7 @@ export function AdminPlatformSalesTab(props: {
         {kindBtn("all", "All")}
         {kindBtn("listing", "Listing")}
         {kindBtn("item", "Item")}
+        {kindBtn("support", "Support")}
       </div>
 
       <form

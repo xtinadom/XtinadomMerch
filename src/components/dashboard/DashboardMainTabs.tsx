@@ -34,6 +34,7 @@ import {
 } from "@/components/dashboard/ShopSetupTabs";
 import { ShopItemGuidelinesPanel } from "@/components/dashboard/ShopItemGuidelinesPanel";
 import { ShopFirstListingRequestPanel } from "@/components/dashboard/ShopFirstListingRequestPanel";
+import { BugFeedbackPanel } from "@/components/dashboard/BugFeedbackPanel";
 import type { DraftListingRequestPrefillPayload } from "@/lib/shop-baseline-draft-prefill";
 import type { ShopSetupCatalogGroup } from "@/lib/shop-baseline-catalog";
 import { dashboardMarkOwnerNoticeRead } from "@/actions/shop-dashboard-notices";
@@ -688,6 +689,7 @@ type TabId =
   | "shopProfile"
   | "itemGuidelines"
   | "requestListing"
+  | "bugFeedback"
   | "listings"
   | "notifications"
   | "support"
@@ -715,6 +717,7 @@ function normalizeDashboardMainTab(
       t === "setup" ||
       t === "shopProfile" ||
       t === "itemGuidelines" ||
+      t === "bugFeedback" ||
       t === "notifications" ||
       t === "requestListing" ||
       (t === "support" && canSupport)
@@ -819,6 +822,8 @@ export function DashboardMainTabs(props: {
   const itemGuidelinesPanelId = `${baseId}-panel-item-guidelines`;
   const requestListingTabId = `${baseId}-tab-request-listing`;
   const requestListingPanelId = `${baseId}-panel-request-listing`;
+  const bugFeedbackTabId = `${baseId}-tab-bug-feedback`;
+  const bugFeedbackPanelId = `${baseId}-panel-bug-feedback`;
   const listingsTabId = `${baseId}-tab-listings`;
   const notificationsTabId = `${baseId}-tab-notifications`;
   const notificationsPanelId = `${baseId}-panel-notifications`;
@@ -888,6 +893,9 @@ export function DashboardMainTabs(props: {
                 notificationsTabId,
                 notificationsPanelId,
               )
+            : null}
+          {hasSetup && setup
+            ? tabBtn("bugFeedback", "Bug/Feedback", bugFeedbackTabId, bugFeedbackPanelId)
             : null}
           {hasSetup && setup
             ? tabBtn("shopProfile", "Shop profile", shopProfileTabId, shopProfilePanelId)
@@ -992,6 +1000,18 @@ export function DashboardMainTabs(props: {
             showListingSlotPromoRedeem={showListingSlotPromoRedeem}
             embedded
           />
+        </div>
+      ) : null}
+
+      {hasSetup && setup ? (
+        <div
+          id={bugFeedbackPanelId}
+          role="tabpanel"
+          aria-labelledby={bugFeedbackTabId}
+          hidden={tab !== "bugFeedback"}
+          className="pt-6"
+        >
+          <BugFeedbackPanel embedded />
         </div>
       ) : null}
 

@@ -60,7 +60,28 @@ async function fulfillListingFeePaymentIntent(pi: Stripe.PaymentIntent): Promise
 
 /** Voluntary platform tip — no Order row; acknowledge so we don’t treat it as a merch checkout. */
 async function fulfillSupportTipCheckout(session: Stripe.Checkout.Session): Promise<boolean> {
-  return session.metadata?.kind === "support_tip";
+  if (session.metadata?.kind !== "support_tip") return false;
+  const cents =
+    typeof session.amount_total === "number" && Number.isFinite(session.amount_total)
+      ? session.amount_total
+      : 0;
+  const currency =
+    typeof session.currency === "string" && session.currency.trim()
+      ? session.currency.trim().toLowerCase()
+      : "usd";
+  if (cents <= 0) return true;
+  // Idempotent: webhook handler already gates by ProcessedStripeEvent, but this also protects manual replays.
+  await prisma.supportTip.upsert({
+    where: { stripeCheckoutSessionId: session.id },
+    create: {
+      stripeCheckoutSessionId: session.id,
+      amountCents: cents,
+      currency,
+      createdAt: new Date((session.created ?? Math.floor(Date.now() / 1000)) * 1000),
+    },
+    update: {},
+  });
+  return true;
 }
 
 async function fulfillOrder(session: Stripe.Checkout.Session) {

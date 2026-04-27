@@ -137,6 +137,7 @@ model Shop {
   users                    ShopUser[]
   listings                 ShopListing[]  @relation("ShopListings")
   ownerNotices             ShopOwnerNotice[]
+  bugFeedbackReports       BugFeedbackReport[]
   orders                   Order[]
   orderLines               OrderLine[]
   supportThread            SupportThread?
@@ -215,6 +216,16 @@ model SupportMessage {
   @@index([threadId, createdAt])
 }
 
+model SupportTip {
+  id                     String   @id @default(cuid())
+  stripeCheckoutSessionId String  @unique
+  amountCents            Int
+  currency               String   @default("usd")
+  createdAt              DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model ShopOwnerNotice {
   id        String    @id @default(cuid())
   shopId    String
@@ -229,6 +240,32 @@ model ShopOwnerNotice {
 
   @@index([shopId, readAt])
   @@index([relatedListingId])
+}
+
+model BugFeedbackReport {
+  id              String   @id @default(cuid())
+  shopId          String
+  shop            Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  happened        String   @db.Text
+  expected        String   @db.Text
+  stepsToReproduce String? @db.Text
+  pageUrl         String?  @db.VarChar(2048)
+  userAgent       String?  @db.Text
+
+  imageUrl        String?  @db.VarChar(2048)
+  imageR2Key      String?
+  imageUploadedAt DateTime?
+  imageDeletedAt  DateTime?
+
+  resolvedAt      DateTime?
+  adminNotes      String?  @db.Text
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([shopId, createdAt])
+  @@index([resolvedAt])
+  @@index([imageUploadedAt])
 }
 
 model ShopUser {

@@ -80,10 +80,20 @@ export type SupportThread = Prisma.SupportThreadModel
  */
 export type SupportMessage = Prisma.SupportMessageModel
 /**
+ * Model SupportTip
+ * 
+ */
+export type SupportTip = Prisma.SupportTipModel
+/**
  * Model ShopOwnerNotice
  * 
  */
 export type ShopOwnerNotice = Prisma.ShopOwnerNoticeModel
+/**
+ * Model BugFeedbackReport
+ * 
+ */
+export type BugFeedbackReport = Prisma.BugFeedbackReportModel
 /**
  * Model ShopUser
  * 

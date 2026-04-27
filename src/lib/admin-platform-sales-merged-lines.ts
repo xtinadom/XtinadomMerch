@@ -20,7 +20,7 @@ export type AdminPlatformSalesOrderLineRow = Prisma.OrderLineGetPayload<{
 }>;
 
 /** Row filters: publication fee vs merchandise order lines. */
-export type AdminPlatformSaleCategory = "listing" | "item";
+export type AdminPlatformSaleCategory = "listing" | "item" | "support";
 
 export type AdminPlatformSalesMergedLine =
   | {
@@ -48,6 +48,19 @@ export type AdminPlatformSalesMergedLine =
       shopCutCents: number;
       order: { id: string; createdAt: Date };
       shop: { displayName: string; slug: string } | null;
+    }
+  | {
+      kind: "support_tip";
+      platformSaleCategory: "support";
+      id: string;
+      quantity: number;
+      unitPriceCents: number;
+      productName: string;
+      goodsServicesCostCents: number;
+      platformCutCents: number;
+      shopCutCents: number;
+      order: { id: string; createdAt: Date };
+      shop: null;
     };
 
 type ListingFeeRow = {
@@ -114,6 +127,7 @@ export async function loadMergedPlatformSalesLines(
   lines: AdminPlatformSalesMergedLine[];
   orderLineCount: number;
   publicationFeePaymentCount: number;
+  supportTipCount: number;
 }> {
   const orderWhere = {
     order: {
@@ -124,7 +138,9 @@ export async function loadMergedPlatformSalesLines(
 
   const listingFeePaidFilter = listingFeePaidAtWhere(opts.salesOrderCreatedAt);
 
-  const [orderLinesRaw, orderLineCount, feeListings] = await Promise.all([
+  const supportTipWhere = opts.salesOrderCreatedAt ? { createdAt: opts.salesOrderCreatedAt } : {};
+
+  const [orderLinesRaw, orderLineCount, feeListings, supportTips, supportTipCount] = await Promise.all([
     prisma.orderLine.findMany({
       where: orderWhere,
       orderBy: { order: { createdAt: "desc" } },
@@ -149,6 +165,13 @@ export async function loadMergedPlatformSalesLines(
         },
       },
     }),
+    prisma.supportTip.findMany({
+      where: supportTipWhere,
+      orderBy: { createdAt: "desc" },
+      take: 500,
+      select: { id: true, amountCents: true, createdAt: true },
+    }),
+    prisma.supportTip.count({ where: supportTipWhere }),
   ]);
 
   const orderLines = orderLinesRaw as AdminPlatformSalesOrderLineRow[];
@@ -222,7 +245,21 @@ export async function loadMergedPlatformSalesLines(
     shop: l.shop,
   }));
 
-  const merged = [...merchLines, ...feeLines].sort(
+  const supportLines: AdminPlatformSalesMergedLine[] = supportTips.map((t) => ({
+    kind: "support_tip" as const,
+    platformSaleCategory: "support" as const,
+    id: `support_tip:${t.id}`,
+    quantity: 1,
+    unitPriceCents: t.amountCents,
+    productName: "Support tip",
+    goodsServicesCostCents: 0,
+    platformCutCents: t.amountCents,
+    shopCutCents: 0,
+    order: { id: `support_tip:${t.id}`, createdAt: t.createdAt },
+    shop: null,
+  }));
+
+  const merged = [...merchLines, ...feeLines, ...supportLines].sort(
     (a, b) => b.order.createdAt.getTime() - a.order.createdAt.getTime(),
   );
   const lines = merged.slice(0, 500);
@@ -231,6 +268,7 @@ export async function loadMergedPlatformSalesLines(
     lines,
     orderLineCount,
     publicationFeePaymentCount,
+    supportTipCount,
   };
 }
 
@@ -246,6 +284,8 @@ export type PlatformSalesYtdTotals = {
   itemPlatformCents: number;
   /** Sum of publication fee platform revenue (same rules as merged listing fee rows). */
   listingPlatformCents: number;
+  /** Sum of platform support tips (Stripe Checkout sessions). */
+  supportPlatformCents: number;
 };
 
 /**
@@ -324,9 +364,15 @@ export async function loadPlatformSalesYtdTotals(
     if (feeCents > 0) listingPlatformCents += feeCents;
   }
 
+  const supportTipSum = await prisma.supportTip.aggregate({
+    where: { createdAt: { gte, lte } },
+    _sum: { amountCents: true },
+  });
+
   return {
     year,
     itemPlatformCents: orderLineSum._sum.platformCutCents ?? 0,
     listingPlatformCents,
+    supportPlatformCents: supportTipSum._sum.amountCents ?? 0,
   };
 }

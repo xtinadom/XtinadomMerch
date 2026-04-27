@@ -391,7 +391,9 @@ export const ModelName = {
   ShopListingSlotPromoRedemption: 'ShopListingSlotPromoRedemption',
   SupportThread: 'SupportThread',
   SupportMessage: 'SupportMessage',
+  SupportTip: 'SupportTip',
   ShopOwnerNotice: 'ShopOwnerNotice',
+  BugFeedbackReport: 'BugFeedbackReport',
   ShopUser: 'ShopUser',
   ShopAccountDeletionToken: 'ShopAccountDeletionToken',
   ShopPasswordResetToken: 'ShopPasswordResetToken',
@@ -421,7 +423,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tag" | "productTag" | "product" | "shop" | "shopListingSlotPromoRedemption" | "supportThread" | "supportMessage" | "shopOwnerNotice" | "shopUser" | "shopAccountDeletionToken" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "adminCatalogItemTag" | "adminInboundEmail" | "siteEmailTemplate" | "comment"
+    modelProps: "tag" | "productTag" | "product" | "shop" | "shopListingSlotPromoRedemption" | "supportThread" | "supportMessage" | "supportTip" | "shopOwnerNotice" | "bugFeedbackReport" | "shopUser" | "shopAccountDeletionToken" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "adminCatalogItemTag" | "adminInboundEmail" | "siteEmailTemplate" | "comment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -943,6 +945,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SupportTip: {
+      payload: Prisma.$SupportTipPayload<ExtArgs>
+      fields: Prisma.SupportTipFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SupportTipFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportTipPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SupportTipFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportTipPayload>
+        }
+        findFirst: {
+          args: Prisma.SupportTipFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportTipPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SupportTipFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportTipPayload>
+        }
+        findMany: {
+          args: Prisma.SupportTipFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportTipPayload>[]
+        }
+        create: {
+          args: Prisma.SupportTipCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportTipPayload>
+        }
+        createMany: {
+          args: Prisma.SupportTipCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SupportTipCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportTipPayload>[]
+        }
+        delete: {
+          args: Prisma.SupportTipDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportTipPayload>
+        }
+        update: {
+          args: Prisma.SupportTipUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportTipPayload>
+        }
+        deleteMany: {
+          args: Prisma.SupportTipDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SupportTipUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SupportTipUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportTipPayload>[]
+        }
+        upsert: {
+          args: Prisma.SupportTipUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupportTipPayload>
+        }
+        aggregate: {
+          args: Prisma.SupportTipAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSupportTip>
+        }
+        groupBy: {
+          args: Prisma.SupportTipGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SupportTipGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SupportTipCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SupportTipCountAggregateOutputType> | number
+        }
+      }
+    }
     ShopOwnerNotice: {
       payload: Prisma.$ShopOwnerNoticePayload<ExtArgs>
       fields: Prisma.ShopOwnerNoticeFieldRefs
@@ -1014,6 +1090,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.ShopOwnerNoticeCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.ShopOwnerNoticeCountAggregateOutputType> | number
+        }
+      }
+    }
+    BugFeedbackReport: {
+      payload: Prisma.$BugFeedbackReportPayload<ExtArgs>
+      fields: Prisma.BugFeedbackReportFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BugFeedbackReportFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugFeedbackReportPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BugFeedbackReportFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugFeedbackReportPayload>
+        }
+        findFirst: {
+          args: Prisma.BugFeedbackReportFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugFeedbackReportPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BugFeedbackReportFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugFeedbackReportPayload>
+        }
+        findMany: {
+          args: Prisma.BugFeedbackReportFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugFeedbackReportPayload>[]
+        }
+        create: {
+          args: Prisma.BugFeedbackReportCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugFeedbackReportPayload>
+        }
+        createMany: {
+          args: Prisma.BugFeedbackReportCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BugFeedbackReportCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugFeedbackReportPayload>[]
+        }
+        delete: {
+          args: Prisma.BugFeedbackReportDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugFeedbackReportPayload>
+        }
+        update: {
+          args: Prisma.BugFeedbackReportUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugFeedbackReportPayload>
+        }
+        deleteMany: {
+          args: Prisma.BugFeedbackReportDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BugFeedbackReportUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BugFeedbackReportUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugFeedbackReportPayload>[]
+        }
+        upsert: {
+          args: Prisma.BugFeedbackReportUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugFeedbackReportPayload>
+        }
+        aggregate: {
+          args: Prisma.BugFeedbackReportAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBugFeedbackReport>
+        }
+        groupBy: {
+          args: Prisma.BugFeedbackReportGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BugFeedbackReportGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BugFeedbackReportCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BugFeedbackReportCountAggregateOutputType> | number
         }
       }
     }
@@ -2209,6 +2359,17 @@ export const SupportMessageScalarFieldEnum = {
 export type SupportMessageScalarFieldEnum = (typeof SupportMessageScalarFieldEnum)[keyof typeof SupportMessageScalarFieldEnum]
 
 
+export const SupportTipScalarFieldEnum = {
+  id: 'id',
+  stripeCheckoutSessionId: 'stripeCheckoutSessionId',
+  amountCents: 'amountCents',
+  currency: 'currency',
+  createdAt: 'createdAt'
+} as const
+
+export type SupportTipScalarFieldEnum = (typeof SupportTipScalarFieldEnum)[keyof typeof SupportTipScalarFieldEnum]
+
+
 export const ShopOwnerNoticeScalarFieldEnum = {
   id: 'id',
   shopId: 'shopId',
@@ -2220,6 +2381,27 @@ export const ShopOwnerNoticeScalarFieldEnum = {
 } as const
 
 export type ShopOwnerNoticeScalarFieldEnum = (typeof ShopOwnerNoticeScalarFieldEnum)[keyof typeof ShopOwnerNoticeScalarFieldEnum]
+
+
+export const BugFeedbackReportScalarFieldEnum = {
+  id: 'id',
+  shopId: 'shopId',
+  happened: 'happened',
+  expected: 'expected',
+  stepsToReproduce: 'stepsToReproduce',
+  pageUrl: 'pageUrl',
+  userAgent: 'userAgent',
+  imageUrl: 'imageUrl',
+  imageR2Key: 'imageR2Key',
+  imageUploadedAt: 'imageUploadedAt',
+  imageDeletedAt: 'imageDeletedAt',
+  resolvedAt: 'resolvedAt',
+  adminNotes: 'adminNotes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BugFeedbackReportScalarFieldEnum = (typeof BugFeedbackReportScalarFieldEnum)[keyof typeof BugFeedbackReportScalarFieldEnum]
 
 
 export const ShopUserScalarFieldEnum = {
@@ -2776,7 +2958,9 @@ export type GlobalOmitConfig = {
   shopListingSlotPromoRedemption?: Prisma.ShopListingSlotPromoRedemptionOmit
   supportThread?: Prisma.SupportThreadOmit
   supportMessage?: Prisma.SupportMessageOmit
+  supportTip?: Prisma.SupportTipOmit
   shopOwnerNotice?: Prisma.ShopOwnerNoticeOmit
+  bugFeedbackReport?: Prisma.BugFeedbackReportOmit
   shopUser?: Prisma.ShopUserOmit
   shopAccountDeletionToken?: Prisma.ShopAccountDeletionTokenOmit
   shopPasswordResetToken?: Prisma.ShopPasswordResetTokenOmit

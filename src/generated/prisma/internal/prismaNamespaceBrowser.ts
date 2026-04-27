@@ -58,7 +58,9 @@ export const ModelName = {
   ShopListingSlotPromoRedemption: 'ShopListingSlotPromoRedemption',
   SupportThread: 'SupportThread',
   SupportMessage: 'SupportMessage',
+  SupportTip: 'SupportTip',
   ShopOwnerNotice: 'ShopOwnerNotice',
+  BugFeedbackReport: 'BugFeedbackReport',
   ShopUser: 'ShopUser',
   ShopAccountDeletionToken: 'ShopAccountDeletionToken',
   ShopPasswordResetToken: 'ShopPasswordResetToken',
@@ -208,6 +210,17 @@ export const SupportMessageScalarFieldEnum = {
 export type SupportMessageScalarFieldEnum = (typeof SupportMessageScalarFieldEnum)[keyof typeof SupportMessageScalarFieldEnum]
 
 
+export const SupportTipScalarFieldEnum = {
+  id: 'id',
+  stripeCheckoutSessionId: 'stripeCheckoutSessionId',
+  amountCents: 'amountCents',
+  currency: 'currency',
+  createdAt: 'createdAt'
+} as const
+
+export type SupportTipScalarFieldEnum = (typeof SupportTipScalarFieldEnum)[keyof typeof SupportTipScalarFieldEnum]
+
+
 export const ShopOwnerNoticeScalarFieldEnum = {
   id: 'id',
   shopId: 'shopId',
@@ -219,6 +232,27 @@ export const ShopOwnerNoticeScalarFieldEnum = {
 } as const
 
 export type ShopOwnerNoticeScalarFieldEnum = (typeof ShopOwnerNoticeScalarFieldEnum)[keyof typeof ShopOwnerNoticeScalarFieldEnum]
+
+
+export const BugFeedbackReportScalarFieldEnum = {
+  id: 'id',
+  shopId: 'shopId',
+  happened: 'happened',
+  expected: 'expected',
+  stepsToReproduce: 'stepsToReproduce',
+  pageUrl: 'pageUrl',
+  userAgent: 'userAgent',
+  imageUrl: 'imageUrl',
+  imageR2Key: 'imageR2Key',
+  imageUploadedAt: 'imageUploadedAt',
+  imageDeletedAt: 'imageDeletedAt',
+  resolvedAt: 'resolvedAt',
+  adminNotes: 'adminNotes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BugFeedbackReportScalarFieldEnum = (typeof BugFeedbackReportScalarFieldEnum)[keyof typeof BugFeedbackReportScalarFieldEnum]
 
 
 export const ShopUserScalarFieldEnum = {

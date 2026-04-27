@@ -12,7 +12,7 @@ function CheckoutSubmitButton({ tipLabel }: { tipLabel: string }) {
       disabled={pending}
       className="w-full rounded-lg border border-zinc-600 bg-zinc-100 px-4 py-2.5 text-sm font-medium text-zinc-900 transition enabled:hover:bg-white disabled:cursor-wait disabled:opacity-70"
     >
-      {pending ? "Opening Stripe…" : `Pay ${tipLabel} with card`}
+      {pending ? "Opening Stripe…" : "Pay with card"}
     </button>
   );
 }
@@ -66,7 +66,9 @@ export function SupportSiteCta({ tipLabel }: { tipLabel: string }) {
             </h3>
             <div id={descId} className="mt-3 space-y-3 text-left text-sm leading-relaxed text-zinc-300">
               <p>
-                This platform is owned and operated by a small business. Voluntary support helps
+                This platform is owned and operated by a small business.
+                <br />
+                Voluntary support helps
                 keep the site running independently, and is genuinely appreciated.
               </p>
             </div>

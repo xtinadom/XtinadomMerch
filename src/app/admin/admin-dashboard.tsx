@@ -40,6 +40,7 @@ import {
   type AdminShopLeaderboardRow,
 } from "@/components/admin/AdminShopLeaderboardTab";
 import { AdminListingRequestsTab } from "@/components/admin/AdminListingRequestsTab";
+import { AdminBugFeedbackTab, type AdminBugFeedbackRow } from "@/components/admin/AdminBugFeedbackTab";
 import {
   AdminRemovedListingItemsTab,
   type RemovedListingRow,
@@ -159,6 +160,7 @@ export async function AdminDashboardPageContent({
     "support",
     "admin-inbox",
     "requests",
+    "bug-feedback",
     "shop-watch",
     "shop-leaderboard",
     "home-top-shops",
@@ -289,8 +291,10 @@ export async function AdminDashboardPageContent({
   const salesFromRaw = typeof sp.salesFrom === "string" ? sp.salesFrom : "";
   const salesToRaw = typeof sp.salesTo === "string" ? sp.salesTo : "";
   const salesKindRaw = typeof sp.salesKind === "string" ? sp.salesKind.trim() : "";
-  const salesKindFilter: "all" | "listing" | "item" =
-    salesKindRaw === "listing" || salesKindRaw === "item" ? salesKindRaw : "all";
+  const salesKindFilter: "all" | "listing" | "item" | "support" =
+    salesKindRaw === "listing" || salesKindRaw === "item" || salesKindRaw === "support"
+      ? salesKindRaw
+      : "all";
   function parseIsoDateBoundary(s: string): Date | undefined {
     const t = s.trim();
     if (!t) return undefined;
@@ -327,6 +331,36 @@ export async function AdminDashboardPageContent({
       ],
     },
   };
+
+  const bugFeedbackOpenCount =
+    adminSection === "main"
+      ? await prisma.bugFeedbackReport.count({ where: { resolvedAt: null } })
+      : 0;
+
+  const bugFeedbackRows: AdminBugFeedbackRow[] =
+    adminSection === "main" && inventoryTab === "bug-feedback"
+      ? (
+          await prisma.bugFeedbackReport.findMany({
+            orderBy: { createdAt: "desc" },
+            take: 200,
+            include: {
+              shop: { select: { slug: true, displayName: true } },
+            },
+          })
+        ).map((r) => ({
+          id: r.id,
+          shop: r.shop,
+          happened: r.happened,
+          expected: r.expected,
+          stepsToReproduce: r.stepsToReproduce,
+          pageUrl: r.pageUrl,
+          userAgent: r.userAgent,
+          imageUrl: r.imageUrl,
+          createdAtIso: r.createdAt.toISOString(),
+          resolvedAtIso: r.resolvedAt?.toISOString() ?? null,
+          adminNotes: r.adminNotes,
+        }))
+      : [];
 
   const sync = typeof sp.sync === "string" ? sp.sync : undefined;
   const syncUpdated = typeof sp.updated === "string" ? sp.updated : undefined;
@@ -1407,6 +1441,19 @@ export async function AdminDashboardPageContent({
             <span className="ml-1.5 tabular-nums text-zinc-500">({listingRequestTabBadgeCount})</span>
           </Link>
           <Link
+            href={`${basePath}?tab=bug-feedback`}
+            role="tab"
+            aria-selected={inventoryTab === "bug-feedback"}
+            className={`shrink-0 rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
+              inventoryTab === "bug-feedback"
+                ? "bg-zinc-900 text-zinc-100 ring-1 ring-b-0 ring-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+            }`}
+          >
+            Bug/Feedback
+            <span className="ml-1.5 tabular-nums text-zinc-500">({bugFeedbackOpenCount})</span>
+          </Link>
+          <Link
             href={`${basePath}?tab=shop-watch`}
             role="tab"
             aria-selected={inventoryTab === "shop-watch"}
@@ -1548,6 +1595,8 @@ export async function AdminDashboardPageContent({
               detail={adminSupportDetail}
               selectedShopId={supportShopParam}
             />
+          ) : inventoryTab === "bug-feedback" ? (
+            <AdminBugFeedbackTab rows={bugFeedbackRows} />
           ) : inventoryTab === "requests" ? (
             <AdminListingRequestsTab
               rows={listingRequestTabRows}

@@ -9,8 +9,10 @@ import { prisma } from "@/lib/prisma";
 import { getShopOwnerSession } from "@/lib/session";
 import { FulfillmentType, ListingRequestStatus } from "@/generated/prisma/enums";
 import {
+  deleteR2ObjectsByKeys,
   deleteLegacyShopProfileAvatarKeys,
   isR2UploadConfigured,
+  publicUrlToR2ObjectKey,
   putPublicR2Object,
   shopProfileAvatarObjectKey,
 } from "@/lib/r2-upload";
@@ -207,13 +209,25 @@ export async function uploadShopProfileImageSetup(
     };
   }
 
+  const previousUrl = shop.profileImageUrl;
+  const previousKey = previousUrl ? publicUrlToR2ObjectKey(previousUrl) : null;
+
+  // Best-effort: remove any old rolling keys before writing the next one.
+  // (We run this *before* upload so we never delete the new key by mistake.)
   await deleteLegacyShopProfileAvatarKeys(shop.id);
-  const key = shopProfileAvatarObjectKey(shop.id);
+  // Best-effort: also remove the old canonical key used by earlier versions.
+  await deleteR2ObjectsByKeys([shopProfileAvatarObjectKey(shop.id)]);
+
+  const key = `shops/${shop.id}/avatar-${randomUUID()}.webp`;
   const url = await putPublicR2Object({
     key,
     body: webp,
     contentType: "image/webp",
   });
+  // Best-effort: delete the previous avatar object (covers older `avatar.webp?v=...` URLs too).
+  if (previousKey && previousKey.startsWith(`shops/${shop.id}/`) && previousKey !== key) {
+    await deleteR2ObjectsByKeys([previousKey]);
+  }
 
   await prisma.shop.update({
     where: { id: shop.id },
