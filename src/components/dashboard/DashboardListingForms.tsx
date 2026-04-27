@@ -7,6 +7,7 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   useTransition,
@@ -34,7 +35,8 @@ import {
   SHOP_LISTING_MAX_PRICE_CENTS,
   shopListingMaxPriceUsdLabel,
 } from "@/lib/marketplace-constants";
-import { SEARCH_KEYWORDS_MAX } from "@/lib/search-keywords-normalize";
+import { parseKeywordTokensFromStored } from "@/lib/search-keywords-normalize";
+import { ListingSearchKeywordsChipInput } from "@/components/dashboard/ListingSearchKeywordsChipInput";
 import { expectedShopProfitMerchandiseUnitCents } from "@/lib/marketplace-fee";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 
@@ -279,22 +281,31 @@ export function DashboardListingSearchKeywordsForm({
   const keywordsFieldId = useId();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const initial = listingSearchKeywords?.trim() ?? "";
-  const [text, setText] = useState(initial);
-  const baseline = useRef(initial);
+  const rawInitial = listingSearchKeywords?.trim() ?? "";
+  const initialJoined = parseKeywordTokensFromStored(rawInitial).join(" ");
+  const [keywordTokens, setKeywordTokens] = useState(() => parseKeywordTokensFromStored(rawInitial));
+  const [keywordDraft, setKeywordDraft] = useState("");
+  const [keywordDuplicateHint, setKeywordDuplicateHint] = useState<string | null>(null);
+  const baseline = useRef(initialJoined);
   const [savedFlash, setSavedFlash] = useState(false);
 
+  const keywordsJoined = useMemo(() => keywordTokens.join(" "), [keywordTokens]);
+
   useLayoutEffect(() => {
-    const next = listingSearchKeywords?.trim() ?? "";
-    setText(next);
-    baseline.current = next;
+    const raw = listingSearchKeywords?.trim() ?? "";
+    const tokens = parseKeywordTokensFromStored(raw);
+    const normalized = tokens.join(" ");
+    setKeywordTokens(tokens);
+    setKeywordDraft("");
+    setKeywordDuplicateHint(null);
+    baseline.current = normalized;
   }, [listingId, listingSearchKeywords]);
 
   useLayoutEffect(() => {
     setSavedFlash(false);
   }, [listingId]);
 
-  const dirty = text.trim() !== baseline.current.trim();
+  const dirty = keywordsJoined.trim() !== baseline.current.trim();
 
   useEffect(() => {
     if (dirty) setSavedFlash(false);
@@ -327,10 +338,10 @@ export function DashboardListingSearchKeywordsForm({
       : activeSaveItemName;
 
   if (readOnly) {
-    return initial ? (
+    return rawInitial ? (
       <div className="mt-3 min-w-0">
         <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-600">Keywords</p>
-        <p className="mt-1 text-sm leading-relaxed text-zinc-500">{initial}</p>
+        <p className="mt-1 text-sm leading-relaxed text-zinc-500">{initialJoined || rawInitial}</p>
       </div>
     ) : null;
   }
@@ -338,26 +349,24 @@ export function DashboardListingSearchKeywordsForm({
   return (
     <form onSubmit={onSubmit} className="mt-3 space-y-2">
       <input type="hidden" name="listingId" value={listingId} />
+      <input type="hidden" name="listingSearchKeywords" value={keywordsJoined} />
       <div className="space-y-1">
         <label htmlFor={keywordsFieldId} className="block text-xs text-zinc-500">
-          Keywords (optional, helps shoppers find listing)
+          Keywords (optional, helps shoppers find this listing)
         </label>
-        <textarea
-          id={keywordsFieldId}
-          name="listingSearchKeywords"
-          value={text}
-          maxLength={SEARCH_KEYWORDS_MAX}
-          rows={2}
-          autoComplete="off"
-          onChange={(ev) => setText(ev.target.value)}
-          className="block w-full min-w-0 resize-y rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm leading-snug text-zinc-100"
+        <ListingSearchKeywordsChipInput
+          inputId={keywordsFieldId}
+          disabled={pending}
+          keywordTokens={keywordTokens}
+          keywordDraft={keywordDraft}
+          duplicateHint={keywordDuplicateHint}
+          keywordsJoinedLength={keywordsJoined.length}
+          setKeywordTokens={setKeywordTokens}
+          setKeywordDraft={setKeywordDraft}
+          setDuplicateHint={setKeywordDuplicateHint}
         />
-        <p className="text-[11px] text-zinc-600">Space separates words.</p>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[11px] text-zinc-600">
-          {text.length}/{SEARCH_KEYWORDS_MAX} characters
-        </p>
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <button type="submit" disabled={!dirty || pending} className={`${btnClass} shrink-0`}>
           {label}
         </button>

@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
 import { submitFirstListingSetup, type ShopSetupActionResult } from "@/actions/dashboard-shop-setup";
 import { ItemGuidelinesPopup } from "@/components/ItemGuidelinesPopup";
+import { ListingSearchKeywordsChipInput } from "@/components/dashboard/ListingSearchKeywordsChipInput";
 import { ListingArtworkCropDialog } from "@/components/dashboard/ListingArtworkCropDialog";
 import { ListingSlotPromoRedeemForm } from "@/components/dashboard/ListingSlotPromoRedeemForm";
 import { flattenShopBaselineCatalogGroups, type ShopSetupCatalogGroup } from "@/lib/shop-baseline-catalog";
@@ -12,50 +13,9 @@ import type { DraftListingRequestPrefillPayload } from "@/lib/shop-baseline-draf
 import { SHOP_LISTING_MAX_PRICE_CENTS, shopListingMaxPriceUsdLabel } from "@/lib/marketplace-constants";
 import { exportedImageMeetsPrintDimensions } from "@/lib/listing-artwork-print-area";
 import { expectedShopProfitMerchandiseUnitCents } from "@/lib/marketplace-fee";
-import { SEARCH_KEYWORDS_MAX } from "@/lib/search-keywords-normalize";
+import { parseKeywordTokensFromStored } from "@/lib/search-keywords-normalize";
 
 const STOREFRONT_ITEM_BLURB_MAX = 280;
-
-function keywordDedupeFold(s: string): string {
-  return s.trim().toLocaleLowerCase("en");
-}
-
-function parseKeywordTokensFromStored(raw: string | null | undefined): string[] {
-  const s = (raw ?? "").trim();
-  if (!s) return [];
-  const parts = s.split(/\s+/).filter(Boolean);
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const p of parts) {
-    const key = keywordDedupeFold(p);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(p);
-  }
-  return out;
-}
-
-/** Merge new keyword pieces; skips case-insensitive duplicates and enforces max joined length. */
-function mergeKeywordPieces(
-  prev: string[],
-  cleaned: string[],
-): { next: string[]; skippedDuplicate: boolean } {
-  const seen = new Set(prev.map(keywordDedupeFold));
-  let next = [...prev];
-  let skippedDuplicate = false;
-  for (const t of cleaned) {
-    const key = keywordDedupeFold(t);
-    if (seen.has(key)) {
-      skippedDuplicate = true;
-      continue;
-    }
-    const candidate = [...next, t].join(" ");
-    if (candidate.length > SEARCH_KEYWORDS_MAX) break;
-    seen.add(key);
-    next.push(t);
-  }
-  return { next, skippedDuplicate };
-}
 
 const btnPrimary =
   "rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-white disabled:cursor-not-allowed";
@@ -164,7 +124,6 @@ export function ShopFirstListingRequestPanel(props: {
   const [keywordDraft, setKeywordDraft] = useState("");
   const [keywordDuplicateHint, setKeywordDuplicateHint] = useState<string | null>(null);
   const listingFileRef = useRef<HTMLInputElement>(null);
-  const keywordInputRef = useRef<HTMLInputElement>(null);
   const prefillAppliedListingIdRef = useRef<string | null>(null);
   const pendingListingFdRef = useRef<FormData | null>(null);
   const [attestationOpen, setAttestationOpen] = useState(false);
@@ -176,18 +135,6 @@ export function ShopFirstListingRequestPanel(props: {
   const listingKeywordsInputId = useId();
 
   const keywordsJoined = useMemo(() => keywordTokens.join(" "), [keywordTokens]);
-
-  const addKeywordPieces = useCallback((pieces: string[]) => {
-    const cleaned = pieces.map((p) => p.trim()).filter(Boolean);
-    if (cleaned.length === 0) return;
-    setKeywordTokens((prev) => {
-      const { next, skippedDuplicate } = mergeKeywordPieces(prev, cleaned);
-      if (skippedDuplicate) {
-        queueMicrotask(() => setKeywordDuplicateHint("you already have that keyword"));
-      }
-      return next;
-    });
-  }, []);
 
   useEffect(() => {
     if (attestationOpen) {
@@ -689,88 +636,17 @@ export function ShopFirstListingRequestPanel(props: {
               <label htmlFor={listingKeywordsInputId} className="block text-xs text-zinc-500">
                 Keywords (optional, helps shoppers find this listing)
               </label>
-              <div
-                role="group"
-                aria-label="Listing keywords"
-                className={`mt-1 flex min-h-[2.75rem] cursor-text flex-wrap items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 ${
-                  freezeListingRequestFields ? "cursor-not-allowed" : ""
-                }`}
-                onClick={() => {
-                  if (!freezeListingRequestFields) keywordInputRef.current?.focus();
-                }}
-              >
-                {keywordTokens.map((kw, idx) => (
-                  <span
-                    key={`${idx}-${kw}`}
-                    className="inline-flex max-w-[min(100%,14rem)] items-center gap-0.5 rounded-md border border-zinc-600 bg-zinc-800/90 pl-2 pr-0.5 py-0.5 text-xs text-zinc-200"
-                  >
-                    <span className="min-w-0 truncate" title={kw}>
-                      {kw}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={freezeListingRequestFields}
-                      aria-label={`Remove keyword ${kw}`}
-                      className="flex size-6 shrink-0 items-center justify-center rounded text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100 disabled:opacity-40"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setKeywordTokens((prev) => prev.filter((_, i) => i !== idx));
-                      }}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-                <input
-                  id={listingKeywordsInputId}
-                  ref={keywordInputRef}
-                  type="text"
-                  value={keywordDraft}
-                  autoComplete="off"
-                  disabled={freezeListingRequestFields}
-                  placeholder={
-                    keywordTokens.length === 0 ? "Type a word, press Space or Enter…" : "Add another…"
-                  }
-                  onChange={(e) => {
-                    setKeywordDraft(e.target.value);
-                    setKeywordDuplicateHint(null);
-                  }}
-                  onPaste={(e) => {
-                    if (freezeListingRequestFields) return;
-                    e.preventDefault();
-                    const text = e.clipboardData.getData("text/plain");
-                    const parts = text.split(/[\s,]+/).filter(Boolean);
-                    addKeywordPieces(parts);
-                    setKeywordDraft("");
-                  }}
-                  onKeyDown={(e) => {
-                    if (freezeListingRequestFields) return;
-                    if (e.key === "Enter" || e.key === " " || e.key === ",") {
-                      e.preventDefault();
-                      const raw = keywordDraft.trim();
-                      if (!raw) return;
-                      const parts = raw.split(/\s+/).filter(Boolean);
-                      addKeywordPieces(parts);
-                      setKeywordDraft("");
-                      return;
-                    }
-                    if (e.key === "Backspace" && keywordDraft === "" && keywordTokens.length > 0) {
-                      e.preventDefault();
-                      setKeywordTokens((prev) => prev.slice(0, -1));
-                    }
-                  }}
-                  className="min-w-[10rem] flex-1 bg-transparent py-1 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 disabled:cursor-not-allowed"
-                />
-              </div>
-              {keywordDuplicateHint ? (
-                <p className="mt-1 text-[11px] text-white" role="status" aria-live="polite">
-                  {keywordDuplicateHint}
-                </p>
-              ) : null}
-              <p className="text-[11px] text-zinc-600">
-                Press Space or Enter after each word. Total stored: {keywordsJoined.length}/
-                {SEARCH_KEYWORDS_MAX} characters
-              </p>
+              <ListingSearchKeywordsChipInput
+                inputId={listingKeywordsInputId}
+                disabled={freezeListingRequestFields}
+                keywordTokens={keywordTokens}
+                keywordDraft={keywordDraft}
+                duplicateHint={keywordDuplicateHint}
+                keywordsJoinedLength={keywordsJoined.length}
+                setKeywordTokens={setKeywordTokens}
+                setKeywordDraft={setKeywordDraft}
+                setDuplicateHint={setKeywordDuplicateHint}
+              />
             </div>
           </div>
           </form>
