@@ -7,6 +7,10 @@ import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
 export const storefrontShopListingWhere = {
   active: true,
   creatorRemovedFromShopAt: null,
+  /** Admin “frozen” listings must not sell or appear publicly. */
+  adminRemovedFromShopAt: null,
+  /** Account-deletion pipeline hides storefront rows before full cleanup. */
+  hiddenStorefrontForAccountDeletionAt: null,
 } as const;
 
 /**

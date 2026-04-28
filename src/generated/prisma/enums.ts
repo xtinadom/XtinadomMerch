@@ -37,6 +37,26 @@ export const ListingRequestStatus = {
 export type ListingRequestStatus = (typeof ListingRequestStatus)[keyof typeof ListingRequestStatus]
 
 
+export const PromotionKind = {
+  FRONT_PAGE_ITEM: 'FRONT_PAGE_ITEM',
+  HOT_FEATURED_ITEM: 'HOT_FEATURED_ITEM',
+  MOST_POPULAR_OF_TAG_ITEM: 'MOST_POPULAR_OF_TAG_ITEM',
+  FEATURED_SHOP_HOME: 'FEATURED_SHOP_HOME'
+} as const
+
+export type PromotionKind = (typeof PromotionKind)[keyof typeof PromotionKind]
+
+
+export const PromotionPurchaseStatus = {
+  pending: 'pending',
+  paid: 'paid',
+  canceled: 'canceled',
+  failed: 'failed'
+} as const
+
+export type PromotionPurchaseStatus = (typeof PromotionPurchaseStatus)[keyof typeof PromotionPurchaseStatus]
+
+
 export const ShopUserRole = {
   owner: 'owner'
 } as const

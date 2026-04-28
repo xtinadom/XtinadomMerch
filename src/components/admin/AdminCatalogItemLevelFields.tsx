@@ -21,11 +21,6 @@ export function AdminCatalogItemLevelFields({
 }) {
   return (
     <div className="space-y-3 rounded border border-zinc-800/80 bg-zinc-950/40 p-3">
-      <p className="text-[11px] text-zinc-500">
-        No variants: minimum price is required. Example listing is optional (any URL or site path you want shop
-        owners to see as a reference). Goods/services cost is optional fulfillment COGS (per unit) retained by the
-        platform before the marketplace fee.
-      </p>
       <label className="block min-w-0 text-[11px] text-zinc-500">
         Storefront description (optional)
         <textarea

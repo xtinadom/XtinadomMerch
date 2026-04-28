@@ -41,11 +41,17 @@ import { dashboardMarkOwnerNoticeRead } from "@/actions/shop-dashboard-notices";
 import { DashboardNoticeMarkReadButton } from "@/components/dashboard/DashboardNoticeMarkReadButton";
 import { DashboardNoticeBody } from "@/components/dashboard/DashboardNoticeBody";
 import { dashboardListingMinPriceHintCents } from "@/lib/listing-cart-price";
+import { expectedShopProfitMerchandiseUnitCents } from "@/lib/marketplace-fee";
 import {
   parseListingStorefrontCatalogImageSelection,
   productImageUrlsUnionHero,
 } from "@/lib/product-media";
 import type { GroupedDashboardListing } from "@/lib/dashboard-legacy-baseline-listing-groups";
+import { parseListingPrintifyVariantPrices } from "@/lib/listing-printify-variant-prices";
+import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
+import { ListingsTabExpandSection } from "@/components/dashboard/ListingsTabExpandSection";
+import { ListingsPromotedSection } from "@/components/dashboard/ListingsPromotedSection";
+import type { DashboardPromotionPurchaseRow } from "@/components/dashboard/ListingsPromotedSection";
 
 export type DashboardSetupPanelProps = {
   setupTabsKey: string;
@@ -98,6 +104,8 @@ export type DashboardListingRow = {
   product: {
     name: string;
     slug: string;
+    /** Catalog row — storefront and marketplace browse require this true. */
+    active: boolean;
     minPriceCents: number;
     priceCents: number;
     imageUrl: string | null;
@@ -179,6 +187,26 @@ function formatMoney(cents: number) {
   }).format(cents / 100);
 }
 
+function estimatedUnitProfitCentsForListing(listing: DashboardListingRow): number {
+  const variants = getPrintifyVariantsForProduct(listing.product);
+  const fallbackVariantId = variants[0]?.id ?? "";
+  const variantId =
+    listing.listingPrintifyVariantId?.trim() ||
+    listing.product.printifyVariantId?.trim() ||
+    fallbackVariantId;
+  const map = parseListingPrintifyVariantPrices(listing.listingPrintifyVariantPrices);
+  const listPriceCents =
+    variantId && map?.[variantId] != null ? map[variantId]! : listing.priceCents;
+  const goodsServicesUnitCents =
+    variantId && listing.goodsServicesUnitCentsByPrintifyVariantId?.[variantId] != null
+      ? listing.goodsServicesUnitCentsByPrintifyVariantId[variantId]!
+      : 0;
+  return expectedShopProfitMerchandiseUnitCents({
+    listPriceCents,
+    goodsServicesUnitCents,
+  });
+}
+
 /** UTC calendar date as MM/DD for listing status lines. */
 function formatListingCalendarMd(iso: string): string {
   try {
@@ -227,49 +255,6 @@ function statusBadgeClass(status: ListingRequestStatus, active: boolean): string
     default:
       return "bg-zinc-900/80 text-zinc-400 ring-zinc-700/80";
   }
-}
-
-/** Collapsible block on the Listings tab (closed by default). */
-function ListingsTabExpandSection({
-  className = "",
-  title,
-  titleClassName,
-  blurb,
-  badgeCount,
-  children,
-}: {
-  className?: string;
-  title: string;
-  titleClassName: string;
-  blurb?: ReactNode;
-  badgeCount?: number;
-  children: ReactNode;
-}) {
-  return (
-    <details className={`group rounded-xl border border-zinc-800 bg-zinc-950/25 ${className}`}>
-      <summary className="flex cursor-pointer list-none items-start gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className={`text-xs font-semibold uppercase tracking-wide ${titleClassName}`}>{title}</h3>
-            {badgeCount !== undefined ? (
-              <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-200">
-                {badgeCount}
-              </span>
-            ) : null}
-          </div>
-          {blurb ? <div className="mt-1 text-[11px] text-zinc-600">{blurb}</div> : null}
-        </div>
-        <span
-          className="shrink-0 pt-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-600"
-          aria-hidden
-        >
-          Expand
-          <span className="ml-1 inline-block transition group-open:rotate-180">▾</span>
-        </span>
-      </summary>
-      <div className="border-t border-zinc-800/80 px-4 pb-4 pt-3">{children}</div>
-    </details>
-  );
 }
 
 function buildListingDerived(
@@ -403,7 +388,6 @@ function ListingOptionPanel({
 }) {
   const d = buildListingDerived(listing, shopSlug, isPlatform, listingFeeBonusFreeSlots);
   const {
-    listingLocked,
     fieldsReadOnly,
     canSubmit,
     imagesDefault,
@@ -555,10 +539,6 @@ function ListingOptionPanel({
           paidListingFeeLabel={paidListingFeeLabel}
           listingFeeChargeConsentRequired={feeCents > 0}
         />
-      ) : listingLocked ? (
-        <p className="mt-3 text-xs text-zinc-600">
-          This listing can&apos;t be edited. Contact support if you need help.
-        </p>
       ) : null}
     </div>
   );
@@ -585,8 +565,26 @@ function ListingCard({
   stripePublishableKey: string | null;
   mockListingFeeCheckout: boolean;
 }) {
-  const { dashboardBadge, fieldsReadOnly, isFreeListingSlot, founderFreeShop, freeSlotCap } =
+  const { fieldsReadOnly, listingLocked, isFreeListingSlot, founderFreeShop, freeSlotCap } =
     buildListingDerived(listing, shopSlug, isPlatform, listingFeeBonusFreeSlots);
+  const [expanded, setExpanded] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const previewTitleId = useId();
+  const showPreviewButton =
+    listing.requestStatus !== ListingRequestStatus.rejected &&
+    listing.creatorRemovedFromShopAt == null &&
+    listing.adminRemovedFromShopAt == null;
+  const showExpandButton = !listingLocked;
+  const salePriceLine = !listingLocked ? `Sale price ${formatMoney(listing.priceCents)}` : null;
+  const compactSubline = listingLocked
+    ? listing.requestStatus === ListingRequestStatus.rejected
+      ? "Rejected — this listing cannot be edited."
+      : listing.creatorRemovedFromShopAt != null
+        ? "Creator removed — this listing will not appear on your storefront."
+        : listing.adminRemovedFromShopAt != null
+          ? "Frozen — this listing will not appear on your storefront."
+          : requestStatusDescription(listing)
+    : `Est. profit ${formatMoney(estimatedUnitProfitCentsForListing(listing))}`;
 
   const freeListingInline =
     !isPlatform && isFreeListingSlot
@@ -595,91 +593,188 @@ function ListingCard({
         : `Free listing (${listing.listingOrdinal} of ${freeSlotCap}).`
       : null;
   const statusLine = requestStatusDescription(listing);
+  const compactTitle = (listing.requestItemName?.trim() || listing.product.name).trim() || "Listing";
+  const heroUrl = listing.product.imageUrl?.trim() || "";
+  const productSlug = listing.product.slug;
+  const openFullPath = isPlatform
+    ? `/product/${encodeURIComponent(productSlug)}`
+    : `/s/${encodeURIComponent(shopSlug)}/product/${encodeURIComponent(productSlug)}`;
+  const embedPath = isPlatform
+    ? `/embed/product/${encodeURIComponent(productSlug)}`
+    : `/embed/product/${encodeURIComponent(productSlug)}?shop=${encodeURIComponent(shopSlug)}`;
+
+  useEffect(() => {
+    if (!previewOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [previewOpen]);
 
   return (
-    <li className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 text-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <DashboardListingItemNameForm
-          listingId={listing.id}
-          catalogProductName={listing.product.name}
-          requestItemName={listing.requestItemName}
-          readOnly={fieldsReadOnly}
-        />
-        <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ${dashboardBadge.ringClass}`}
-        >
-          {dashboardBadge.label}
-        </span>
-      </div>
-      <DashboardListingStorefrontBlurbForm
-        listingId={listing.id}
-        storefrontItemBlurb={listing.storefrontItemBlurb}
-        readOnly={fieldsReadOnly}
-      />
-      <DashboardListingSearchKeywordsForm
-        listingId={listing.id}
-        listingSearchKeywords={listing.listingSearchKeywords}
-        readOnly={fieldsReadOnly}
-      />
-      {listing.requestStatus === ListingRequestStatus.rejected ? (
-        <details className="mt-1 group">
-          <summary className="flex cursor-pointer list-none items-baseline gap-2 text-xs text-zinc-500">
-            <span className="min-w-0 flex-1">
-              Rejected — this listing cannot be edited. Contact support if you need help.
-            </span>
-            <span
-              className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-zinc-600"
-              aria-hidden
+    <li className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-3 text-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/40">
+            {heroUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img alt="" src={heroUrl} className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-zinc-100">{compactTitle}</p>
+            {salePriceLine ? <p className="mt-0.5 text-[11px] text-zinc-500">{salePriceLine}</p> : null}
+            <p className="mt-0.5 text-[11px] text-zinc-500">
+              {compactSubline}
+            </p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {showPreviewButton ? (
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-xs text-zinc-200 hover:border-zinc-500"
             >
-              Details
-              <span className="ml-1 inline-block transition group-open:rotate-180">▾</span>
-            </span>
-          </summary>
-          {listing.rejectionReasonText ? (
-            <div className="mt-1 text-xs leading-snug text-red-200/85">
-              <DashboardNoticeBody body={listing.rejectionReasonText} />
-            </div>
-          ) : (
-            <p className="mt-1 text-xs text-zinc-600">No additional rejection details were provided.</p>
-          )}
-        </details>
-      ) : statusLine || freeListingInline ? (
-        <p className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs text-zinc-500">
-          {statusLine ? <span>{statusLine}</span> : null}
-          {statusLine && freeListingInline ? (
-            <>
-              <span className="text-zinc-600/40" aria-hidden>
-                ·
-              </span>
-              <span className="text-zinc-600">{freeListingInline}</span>
-            </>
-          ) : freeListingInline ? (
-            <span className="text-zinc-600">{freeListingInline}</span>
+              Preview
+            </button>
           ) : null}
-        </p>
-      ) : null}
-      {listing.creatorRemovedFromShopAt ? (
-        <p className="mt-1 text-xs text-fuchsia-200/80">
-          You removed this listing from your shop on {listing.creatorRemovedFromShopAt.slice(0, 10)}. It no longer
-          appears on your public storefront. Contact support if you need it restored.
-        </p>
-      ) : listing.adminRemovedFromShopAt ? (
-        <p className="mt-1 text-xs text-sky-200/75">
-          This listing was frozen by the platform and is hidden from your storefront until support clears it.
-        </p>
+          {showExpandButton ? (
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-xs text-zinc-200 hover:border-zinc-500"
+            >
+              {expanded ? "Close" : fieldsReadOnly ? "View" : "Edit"}
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {previewOpen ? (
+        <div className="store-modal-overlay-scroll fixed inset-0 z-[2500] flex items-start justify-center overflow-y-auto overscroll-contain p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 sm:pt-[max(1.5rem,env(safe-area-inset-top))] sm:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            aria-label="Close product"
+            className="fixed inset-0 bg-black/72 backdrop-blur-lg"
+            onClick={() => setPreviewOpen(false)}
+          />
+          <div
+            className="store-dimension-panel store-product-modal-panel animate-store-panel-in relative z-[2501] flex w-full max-h-[min(calc(100dvh-2rem),calc(100svh-2rem))] min-h-0 max-w-3xl flex-col overflow-hidden shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={previewTitleId}
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(false)}
+              aria-label="Close"
+              className="absolute right-2 top-2 z-10 flex h-10 w-10 items-center justify-center rounded-md border border-zinc-700/80 bg-zinc-950/90 text-lg leading-none text-zinc-400 shadow-sm backdrop-blur-sm transition hover:border-zinc-600 hover:bg-zinc-900 hover:text-zinc-100 sm:right-3 sm:top-3"
+            >
+              ×
+            </button>
+            <div className="store-product-modal-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-6 pt-10 pr-14 sm:px-10 sm:pb-10 sm:pt-6 sm:pr-16">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 id={previewTitleId} className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  Preview
+                </h2>
+                <a
+                  href={openFullPath}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-blue-400/90 underline-offset-2 hover:underline"
+                >
+                  Open full page
+                </a>
+              </div>
+              <iframe
+                title={`Item details: ${compactTitle}`}
+                src={embedPath}
+                className="h-[min(860px,calc(100dvh-8rem))] w-full border-0 bg-zinc-950"
+              />
+            </div>
+          </div>
+        </div>
       ) : null}
 
-      <ListingOptionPanel
-        listing={listing}
-        isPlatform={isPlatform}
-        paidListingFeeLabel={paidListingFeeLabel}
-        shopSlug={shopSlug}
-        listingFeeBonusFreeSlots={listingFeeBonusFreeSlots}
-        r2Configured={r2Configured}
-        shopStripeConnectReadyForCharges={shopStripeConnectReadyForCharges}
-        stripePublishableKey={stripePublishableKey}
-        mockListingFeeCheckout={mockListingFeeCheckout}
-      />
+      {expanded ? (
+        <>
+          <div className="mt-3 border-t border-zinc-800 pt-3">
+            <DashboardListingItemNameForm
+              listingId={listing.id}
+              catalogProductName={listing.product.name}
+              requestItemName={listing.requestItemName}
+              readOnly={fieldsReadOnly}
+            />
+          </div>
+
+          <DashboardListingStorefrontBlurbForm
+            listingId={listing.id}
+            storefrontItemBlurb={listing.storefrontItemBlurb}
+            readOnly={fieldsReadOnly}
+          />
+          <DashboardListingSearchKeywordsForm
+            listingId={listing.id}
+            listingSearchKeywords={listing.listingSearchKeywords}
+            readOnly={fieldsReadOnly}
+          />
+          {listing.requestStatus === ListingRequestStatus.rejected ? (
+            <details className="mt-1 group">
+              <summary className="flex cursor-pointer list-none items-baseline gap-2 text-xs text-zinc-500">
+                <span className="min-w-0 flex-1">Rejected — this listing cannot be edited.</span>
+                <span
+                  className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-zinc-600"
+                  aria-hidden
+                >
+                  Details
+                  <span className="ml-1 inline-block transition group-open:rotate-180">▾</span>
+                </span>
+              </summary>
+              {listing.rejectionReasonText ? (
+                <div className="mt-1 text-xs leading-snug text-red-200/85">
+                  <DashboardNoticeBody body={listing.rejectionReasonText} />
+                </div>
+              ) : (
+                <p className="mt-1 text-xs text-zinc-600">No additional rejection details were provided.</p>
+              )}
+            </details>
+          ) : statusLine || freeListingInline ? (
+            <p className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs text-zinc-500">
+              {statusLine ? <span>{statusLine}</span> : null}
+              {statusLine && freeListingInline ? (
+                <>
+                  <span className="text-zinc-600/40" aria-hidden>
+                    ·
+                  </span>
+                  <span className="text-zinc-600">{freeListingInline}</span>
+                </>
+              ) : freeListingInline ? (
+                <span className="text-zinc-600">{freeListingInline}</span>
+              ) : null}
+            </p>
+          ) : null}
+
+          <ListingOptionPanel
+            listing={listing}
+            isPlatform={isPlatform}
+            paidListingFeeLabel={paidListingFeeLabel}
+            shopSlug={shopSlug}
+            listingFeeBonusFreeSlots={listingFeeBonusFreeSlots}
+            r2Configured={r2Configured}
+            shopStripeConnectReadyForCharges={shopStripeConnectReadyForCharges}
+            stripePublishableKey={stripePublishableKey}
+            mockListingFeeCheckout={mockListingFeeCheckout}
+          />
+        </>
+      ) : null}
     </li>
   );
 }
@@ -710,13 +805,14 @@ function normalizeDashboardMainTab(
   if (hasSetup) {
     let t = i;
     if (t === "setup" && !showOnboardingTab) t = defaultCreatorTab;
+    if (t === "itemGuidelines" && !showOnboardingTab) t = defaultCreatorTab;
 
     if (
       t === "listings" ||
       t === "orders" ||
       t === "setup" ||
       t === "shopProfile" ||
-      t === "itemGuidelines" ||
+      (t === "itemGuidelines" && showOnboardingTab) ||
       t === "bugFeedback" ||
       t === "notifications" ||
       t === "requestListing" ||
@@ -764,6 +860,13 @@ export function DashboardMainTabs(props: {
     request: GroupedDashboardListing<DashboardListingRow>[];
     removed: GroupedDashboardListing<DashboardListingRow>[];
   };
+  /** Paid promotion boosts (Stripe or mock); null for platform shop. */
+  promotions?: {
+    purchases: DashboardPromotionPurchaseRow[];
+    liveListingPicklist: { id: string; label: string }[];
+    mockPromotionCheckout: boolean;
+    stripePublishableKey: string | null;
+  } | null;
   paidOrders: DashboardPaidOrderRow[];
   /** R2 configured for optional listing photo uploads (creator shops). */
   r2Configured: boolean;
@@ -791,6 +894,7 @@ export function DashboardMainTabs(props: {
     isPlatform,
     listings,
     groupedListingSections,
+    promotions = null,
     paidOrders,
     r2Configured,
     draftListingRequestPrefill = null,
@@ -805,13 +909,12 @@ export function DashboardMainTabs(props: {
   const hasNotifications = Boolean(notifications);
   const canSupport = Boolean(supportChat);
   const tabOpts = { hasSetup, showOnboardingTab, hasNotifications, canSupport };
+  const normalizedInitialTab = normalizeDashboardMainTab(initialTabProp, tabOpts);
+  const [didUserPickTab, setDidUserPickTab] = useState(false);
   const [tab, setTab] = useState<TabId>(() =>
     normalizeDashboardMainTab(initialTabProp, tabOpts),
   );
-
-  useEffect(() => {
-    setTab(normalizeDashboardMainTab(initialTabProp, tabOpts));
-  }, [initialTabProp, hasSetup, showOnboardingTab, hasNotifications, canSupport]);
+  const effectiveTab = didUserPickTab ? tab : normalizedInitialTab;
 
   const baseId = useId();
   const setupTabId = `${baseId}-tab-setup`;
@@ -840,12 +943,15 @@ export function DashboardMainTabs(props: {
       type="button"
       role="tab"
       id={tabId}
-      aria-selected={tab === id}
+      aria-selected={effectiveTab === id}
       aria-controls={panelId}
-      tabIndex={tab === id ? 0 : -1}
-      onClick={() => setTab(id)}
+      tabIndex={effectiveTab === id ? 0 : -1}
+      onClick={() => {
+        setDidUserPickTab(true);
+        setTab(id);
+      }}
       className={`rounded-md px-4 py-2 text-sm font-medium transition ${
-        tab === id
+        effectiveTab === id
           ? "bg-zinc-800 text-zinc-100 ring-1 ring-zinc-600"
           : "text-zinc-500 hover:bg-zinc-900/80 hover:text-zinc-300"
       }`}
@@ -876,6 +982,7 @@ export function DashboardMainTabs(props: {
               setupTabId,
               setupPanelId,
             )}
+            {tabBtn("itemGuidelines", "Item guidelines", itemGuidelinesTabId, itemGuidelinesPanelId)}
           </div>
         ) : null}
         <div className="flex flex-wrap gap-1 rounded-xl border border-zinc-800 bg-zinc-950/40 p-1">
@@ -895,18 +1002,7 @@ export function DashboardMainTabs(props: {
               )
             : null}
           {hasSetup && setup
-            ? tabBtn("bugFeedback", "Bug/Feedback", bugFeedbackTabId, bugFeedbackPanelId)
-            : null}
-          {hasSetup && setup
             ? tabBtn("shopProfile", "Shop profile", shopProfileTabId, shopProfilePanelId)
-            : null}
-          {hasSetup && setup
-            ? tabBtn(
-                "itemGuidelines",
-                "Item guidelines",
-                itemGuidelinesTabId,
-                itemGuidelinesPanelId,
-              )
             : null}
           {hasSetup && setup
             ? tabBtn("requestListing", "Request listing", requestListingTabId, requestListingPanelId)
@@ -926,8 +1022,11 @@ export function DashboardMainTabs(props: {
             listingsTabId,
             listingsPanelId,
           )}
-          {canSupport ? tabBtn("support", "Support", supportTabId, supportPanelId) : null}
           {tabBtn("orders", "Orders", ordersTabId, ordersPanelId)}
+          {canSupport ? tabBtn("support", "Support", supportTabId, supportPanelId) : null}
+          {hasSetup && setup
+            ? tabBtn("bugFeedback", "Bug/Feedback", bugFeedbackTabId, bugFeedbackPanelId)
+            : null}
         </div>
       </div>
 
@@ -936,7 +1035,7 @@ export function DashboardMainTabs(props: {
           id={setupPanelId}
           role="tabpanel"
           aria-labelledby={setupTabId}
-          hidden={tab !== "setup"}
+          hidden={effectiveTab !== "setup"}
           className="pt-6"
         >
           <ShopSetupTabs
@@ -954,7 +1053,7 @@ export function DashboardMainTabs(props: {
           id={shopProfilePanelId}
           role="tabpanel"
           aria-labelledby={shopProfileTabId}
-          hidden={tab !== "shopProfile"}
+          hidden={effectiveTab !== "shopProfile"}
           className="pt-6"
         >
           <ShopProfileSetupPanel
@@ -966,12 +1065,12 @@ export function DashboardMainTabs(props: {
         </div>
       ) : null}
 
-      {hasSetup && setup ? (
+      {hasSetup && setup && showOnboardingTab ? (
         <div
           id={itemGuidelinesPanelId}
           role="tabpanel"
           aria-labelledby={itemGuidelinesTabId}
-          hidden={tab !== "itemGuidelines"}
+          hidden={effectiveTab !== "itemGuidelines"}
           className="pt-6"
         >
           <ShopItemGuidelinesPanel
@@ -987,7 +1086,7 @@ export function DashboardMainTabs(props: {
           id={requestListingPanelId}
           role="tabpanel"
           aria-labelledby={requestListingTabId}
-          hidden={tab !== "requestListing"}
+          hidden={effectiveTab !== "requestListing"}
           className="pt-6"
         >
           <ShopFirstListingRequestPanel
@@ -1008,7 +1107,7 @@ export function DashboardMainTabs(props: {
           id={bugFeedbackPanelId}
           role="tabpanel"
           aria-labelledby={bugFeedbackTabId}
-          hidden={tab !== "bugFeedback"}
+          hidden={effectiveTab !== "bugFeedback"}
           className="pt-6"
         >
           <BugFeedbackPanel embedded />
@@ -1019,7 +1118,7 @@ export function DashboardMainTabs(props: {
         id={listingsPanelId}
         role="tabpanel"
         aria-labelledby={listingsTabId}
-        hidden={tab !== "listings"}
+        hidden={effectiveTab !== "listings"}
         className="pt-4"
       >
         {groupedRequest.length > 0 ? (
@@ -1040,7 +1139,7 @@ export function DashboardMainTabs(props: {
               )
             }
           >
-            <ul className="mt-3 space-y-6">
+            <ul className="mt-3 space-y-3">
               {groupedRequest.map((g) => (
                 <ListingCard
                   key={g.row.id}
@@ -1059,6 +1158,15 @@ export function DashboardMainTabs(props: {
           </ListingsTabExpandSection>
         ) : null}
 
+        {!isPlatform && promotions ? (
+          <ListingsPromotedSection
+            purchases={promotions.purchases}
+            liveListingPicklist={promotions.liveListingPicklist}
+            mockPromotionCheckout={promotions.mockPromotionCheckout}
+            stripePublishableKey={promotions.stripePublishableKey}
+          />
+        ) : null}
+
         {groupedLive.length > 0 ? (
           <ListingsTabExpandSection
             className="mt-6"
@@ -1067,7 +1175,7 @@ export function DashboardMainTabs(props: {
             badgeCount={groupedLive.length}
             blurb="Active on your public storefront right now."
           >
-            <ul className="mt-3 space-y-6">
+            <ul className="mt-3 space-y-3">
               {groupedLive.map((g) => (
                 <ListingCard
                   key={g.row.id}
@@ -1089,17 +1197,16 @@ export function DashboardMainTabs(props: {
         {groupedRemoved.length > 0 ? (
           <ListingsTabExpandSection
             className="mt-6"
-            title="Rejected"
+            title="Removed"
             titleClassName="text-red-400/95"
             badgeCount={groupedRemoved.length}
             blurb={
               <>
-                You took these off your storefront, or the listing request was rejected. These rows aren&apos;t editable
-                — contact support to restore a removed listing or to discuss a rejected request.
+                Listings that do not (or will not) appear on your storefront.
               </>
             }
           >
-            <ul className="mt-3 space-y-6">
+            <ul className="mt-3 space-y-3">
               {groupedRemoved.map((g) => (
                 <ListingCard
                   key={g.row.id}
@@ -1131,7 +1238,7 @@ export function DashboardMainTabs(props: {
           id={notificationsPanelId}
           role="tabpanel"
           aria-labelledby={notificationsTabId}
-          hidden={tab !== "notifications"}
+          hidden={effectiveTab !== "notifications"}
           className="pt-6"
         >
           <p className="text-xs text-zinc-600">
@@ -1159,18 +1266,20 @@ export function DashboardMainTabs(props: {
                         <DashboardNoticeMarkReadButton />
                       </form>
                     ) : (
-                      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-zinc-600">
-                        Read
-                      </span>
+                      <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+                        <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
+                          Read
+                        </span>
+                        {n.readAt ? (
+                          <span className="text-[11px] text-zinc-600">
+                            Read {formatNoticeWhen(n.readAt)}
+                          </span>
+                        ) : null}
+                      </div>
                     )}
                   </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-600">
+                  <div className="mt-2 text-[11px] text-zinc-600">
                     <time dateTime={n.createdAt}>{formatNoticeWhen(n.createdAt)}</time>
-                    {n.readAt ? (
-                      <span className="text-zinc-600">
-                        Read {formatNoticeWhen(n.readAt)}
-                      </span>
-                    ) : null}
                   </div>
                 </li>
               );
@@ -1187,7 +1296,7 @@ export function DashboardMainTabs(props: {
           id={supportPanelId}
           role="tabpanel"
           aria-labelledby={supportTabId}
-          hidden={tab !== "support"}
+          hidden={effectiveTab !== "support"}
           className="pt-6"
         >
           {supportChat}
@@ -1198,7 +1307,7 @@ export function DashboardMainTabs(props: {
         id={ordersPanelId}
         role="tabpanel"
         aria-labelledby={ordersTabId}
-        hidden={tab !== "orders"}
+        hidden={effectiveTab !== "orders"}
         className="pt-6"
       >
         <p className="text-xs text-zinc-600">

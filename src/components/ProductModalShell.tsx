@@ -22,7 +22,7 @@ export function ProductModalShell({ children }: { children: ReactNode }) {
       <button
         type="button"
         aria-label="Close product"
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/72 backdrop-blur-lg"
         onClick={close}
       />
       <div

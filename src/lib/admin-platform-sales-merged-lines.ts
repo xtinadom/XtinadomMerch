@@ -1,7 +1,8 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Prisma } from "@/generated/prisma/client";
-import { OrderStatus } from "@/generated/prisma/enums";
+import { OrderStatus, PromotionKind, PromotionPurchaseStatus } from "@/generated/prisma/enums";
 import { listingFeeCentsForOrdinal } from "@/lib/marketplace-constants";
+import { promotionKindLabel } from "@/lib/promotions";
 
 const orderLineInclude = {
   order: { select: { id: true, createdAt: true } },
@@ -19,8 +20,8 @@ export type AdminPlatformSalesOrderLineRow = Prisma.OrderLineGetPayload<{
   include: typeof orderLineInclude;
 }>;
 
-/** Row filters: publication fee vs merchandise order lines. */
-export type AdminPlatformSaleCategory = "listing" | "item" | "support";
+/** Row filters: publication fee vs merchandise order lines vs promotion purchases. */
+export type AdminPlatformSaleCategory = "listing" | "item" | "support" | "promotion";
 
 export type AdminPlatformSalesMergedLine =
   | {
@@ -61,6 +62,19 @@ export type AdminPlatformSalesMergedLine =
       shopCutCents: number;
       order: { id: string; createdAt: Date };
       shop: null;
+    }
+  | {
+      kind: "promotion_purchase";
+      platformSaleCategory: "promotion";
+      id: string;
+      quantity: number;
+      unitPriceCents: number;
+      productName: string;
+      goodsServicesCostCents: number;
+      platformCutCents: number;
+      shopCutCents: number;
+      order: { id: string; createdAt: Date };
+      shop: { displayName: string; slug: string } | null;
     };
 
 type ListingFeeRow = {
@@ -82,6 +96,25 @@ function listingFeePaidAtWhere(
     ...(salesOrderCreatedAt.gte ? { gte: salesOrderCreatedAt.gte } : {}),
     ...(salesOrderCreatedAt.lte ? { lte: salesOrderCreatedAt.lte } : {}),
   };
+}
+
+function promotionPaidAtWhere(
+  salesOrderCreatedAt: { gte?: Date; lte?: Date } | undefined,
+): Prisma.DateTimeNullableFilter {
+  const notNull: Prisma.DateTimeNullableFilter = { not: null };
+  if (!salesOrderCreatedAt) return notNull;
+  return {
+    not: null,
+    ...(salesOrderCreatedAt.gte ? { gte: salesOrderCreatedAt.gte } : {}),
+    ...(salesOrderCreatedAt.lte ? { lte: salesOrderCreatedAt.lte } : {}),
+  };
+}
+
+function promotionMergedLabel(kind: PromotionKind, listingName: string | null): string {
+  const k = promotionKindLabel(kind);
+  if (kind === PromotionKind.FEATURED_SHOP_HOME) return `${k} — shop`;
+  const ln = listingName?.trim();
+  return ln ? `${k} — ${ln}` : `${k} — listing`;
 }
 
 function buildOrdinalByListingId(
@@ -117,7 +150,7 @@ function publicationFeeCentsForListing(
 }
 
 /**
- * Paid merchandise order lines plus listing publication fee payments (Stripe / mock), for the admin
+ * Paid merchandise order lines plus listing publication fees plus promotion purchases (Stripe / mock).
  * Platform sales tab. Merged newest-first (cap 500 rows).
  */
 export async function loadMergedPlatformSalesLines(
@@ -128,6 +161,7 @@ export async function loadMergedPlatformSalesLines(
   orderLineCount: number;
   publicationFeePaymentCount: number;
   supportTipCount: number;
+  promotionPurchaseCount: number;
 }> {
   const orderWhere = {
     order: {
@@ -140,7 +174,16 @@ export async function loadMergedPlatformSalesLines(
 
   const supportTipWhere = opts.salesOrderCreatedAt ? { createdAt: opts.salesOrderCreatedAt } : {};
 
-  const [orderLinesRaw, orderLineCount, feeListings, supportTips, supportTipCount] = await Promise.all([
+  const promotionPaidFilter = promotionPaidAtWhere(opts.salesOrderCreatedAt);
+
+  const [
+    orderLinesRaw,
+    orderLineCount,
+    feeListings,
+    supportTips,
+    supportTipCount,
+    promotionRows,
+  ] = await Promise.all([
     prisma.orderLine.findMany({
       where: orderWhere,
       orderBy: { order: { createdAt: "desc" } },
@@ -172,6 +215,22 @@ export async function loadMergedPlatformSalesLines(
       select: { id: true, amountCents: true, createdAt: true },
     }),
     prisma.supportTip.count({ where: supportTipWhere }),
+    prisma.promotionPurchase.findMany({
+      where: {
+        status: PromotionPurchaseStatus.paid,
+        paidAt: promotionPaidFilter,
+      },
+      orderBy: { paidAt: "desc" },
+      take: 500,
+      select: {
+        id: true,
+        kind: true,
+        amountCents: true,
+        paidAt: true,
+        shop: { select: { displayName: true, slug: true } },
+        shopListing: { select: { requestItemName: true } },
+      },
+    }),
   ]);
 
   const orderLines = orderLinesRaw as AdminPlatformSalesOrderLineRow[];
@@ -259,7 +318,32 @@ export async function loadMergedPlatformSalesLines(
     shop: null,
   }));
 
-  const merged = [...merchLines, ...feeLines, ...supportLines].sort(
+  const promotionLines: AdminPlatformSalesMergedLine[] = promotionRows
+    .filter((row): row is typeof row & { paidAt: Date } => row.paidAt != null)
+    .map((row) => ({
+      kind: "promotion_purchase" as const,
+      platformSaleCategory: "promotion" as const,
+      id: `promotion_purchase:${row.id}`,
+      quantity: 1,
+      unitPriceCents: row.amountCents,
+      productName: promotionMergedLabel(
+        row.kind,
+        row.shopListing?.requestItemName ?? null,
+      ),
+      goodsServicesCostCents: 0,
+      platformCutCents: row.amountCents,
+      shopCutCents: 0,
+      order: {
+        id: `promotion_purchase:${row.id}`,
+        createdAt: row.paidAt,
+      },
+      shop: {
+        displayName: row.shop.displayName,
+        slug: row.shop.slug,
+      },
+    }));
+
+  const merged = [...merchLines, ...feeLines, ...supportLines, ...promotionLines].sort(
     (a, b) => b.order.createdAt.getTime() - a.order.createdAt.getTime(),
   );
   const lines = merged.slice(0, 500);
@@ -269,6 +353,7 @@ export async function loadMergedPlatformSalesLines(
     orderLineCount,
     publicationFeePaymentCount,
     supportTipCount,
+    promotionPurchaseCount: promotionLines.length,
   };
 }
 
@@ -284,6 +369,8 @@ export type PlatformSalesYtdTotals = {
   itemPlatformCents: number;
   /** Sum of publication fee platform revenue (same rules as merged listing fee rows). */
   listingPlatformCents: number;
+  /** Sum of paid promotion placements (merchant dashboard boosts). */
+  promotionPlatformCents: number;
   /** Sum of platform support tips (Stripe Checkout sessions). */
   supportPlatformCents: number;
 };
@@ -369,10 +456,19 @@ export async function loadPlatformSalesYtdTotals(
     _sum: { amountCents: true },
   });
 
+  const promotionPurchaseSum = await prisma.promotionPurchase.aggregate({
+    where: {
+      status: PromotionPurchaseStatus.paid,
+      paidAt: { not: null, gte, lte },
+    },
+    _sum: { amountCents: true },
+  });
+
   return {
     year,
     itemPlatformCents: orderLineSum._sum.platformCutCents ?? 0,
     listingPlatformCents,
+    promotionPlatformCents: promotionPurchaseSum._sum.amountCents ?? 0,
     supportPlatformCents: supportTipSum._sum.amountCents ?? 0,
   };
 }

@@ -78,9 +78,6 @@ export function AdminListAddItemForm() {
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
       <h3 className="text-xs font-medium uppercase tracking-wide text-zinc-500">List item</h3>
-      <p className="mt-1 text-xs text-zinc-600">
-        Item name and minimum list price are required. Example listing URL and goods/services cost are optional.
-      </p>
       <form onSubmit={submit} className="mt-4 space-y-4">
         <label className="block text-xs text-zinc-500">
           Item name

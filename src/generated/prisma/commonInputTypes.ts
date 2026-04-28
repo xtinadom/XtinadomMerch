@@ -338,6 +338,40 @@ export type EnumListingRequestStatusWithAggregatesFilter<$PrismaModel = never> =
   _max?: Prisma.NestedEnumListingRequestStatusFilter<$PrismaModel>
 }
 
+export type EnumPromotionKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.PromotionKind | Prisma.EnumPromotionKindFieldRefInput<$PrismaModel>
+  in?: $Enums.PromotionKind[] | Prisma.ListEnumPromotionKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PromotionKind[] | Prisma.ListEnumPromotionKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPromotionKindFilter<$PrismaModel> | $Enums.PromotionKind
+}
+
+export type EnumPromotionPurchaseStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.PromotionPurchaseStatus | Prisma.EnumPromotionPurchaseStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.PromotionPurchaseStatus[] | Prisma.ListEnumPromotionPurchaseStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PromotionPurchaseStatus[] | Prisma.ListEnumPromotionPurchaseStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPromotionPurchaseStatusFilter<$PrismaModel> | $Enums.PromotionPurchaseStatus
+}
+
+export type EnumPromotionKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.PromotionKind | Prisma.EnumPromotionKindFieldRefInput<$PrismaModel>
+  in?: $Enums.PromotionKind[] | Prisma.ListEnumPromotionKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PromotionKind[] | Prisma.ListEnumPromotionKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPromotionKindWithAggregatesFilter<$PrismaModel> | $Enums.PromotionKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumPromotionKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumPromotionKindFilter<$PrismaModel>
+}
+
+export type EnumPromotionPurchaseStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.PromotionPurchaseStatus | Prisma.EnumPromotionPurchaseStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.PromotionPurchaseStatus[] | Prisma.ListEnumPromotionPurchaseStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PromotionPurchaseStatus[] | Prisma.ListEnumPromotionPurchaseStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPromotionPurchaseStatusWithAggregatesFilter<$PrismaModel> | $Enums.PromotionPurchaseStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumPromotionPurchaseStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumPromotionPurchaseStatusFilter<$PrismaModel>
+}
+
 export type EnumOrderStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.OrderStatus | Prisma.EnumOrderStatusFieldRefInput<$PrismaModel>
   in?: $Enums.OrderStatus[] | Prisma.ListEnumOrderStatusFieldRefInput<$PrismaModel>
@@ -731,6 +765,40 @@ export type NestedEnumListingRequestStatusWithAggregatesFilter<$PrismaModel = ne
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumListingRequestStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumListingRequestStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumPromotionKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.PromotionKind | Prisma.EnumPromotionKindFieldRefInput<$PrismaModel>
+  in?: $Enums.PromotionKind[] | Prisma.ListEnumPromotionKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PromotionKind[] | Prisma.ListEnumPromotionKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPromotionKindFilter<$PrismaModel> | $Enums.PromotionKind
+}
+
+export type NestedEnumPromotionPurchaseStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.PromotionPurchaseStatus | Prisma.EnumPromotionPurchaseStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.PromotionPurchaseStatus[] | Prisma.ListEnumPromotionPurchaseStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PromotionPurchaseStatus[] | Prisma.ListEnumPromotionPurchaseStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPromotionPurchaseStatusFilter<$PrismaModel> | $Enums.PromotionPurchaseStatus
+}
+
+export type NestedEnumPromotionKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.PromotionKind | Prisma.EnumPromotionKindFieldRefInput<$PrismaModel>
+  in?: $Enums.PromotionKind[] | Prisma.ListEnumPromotionKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PromotionKind[] | Prisma.ListEnumPromotionKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPromotionKindWithAggregatesFilter<$PrismaModel> | $Enums.PromotionKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumPromotionKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumPromotionKindFilter<$PrismaModel>
+}
+
+export type NestedEnumPromotionPurchaseStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.PromotionPurchaseStatus | Prisma.EnumPromotionPurchaseStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.PromotionPurchaseStatus[] | Prisma.ListEnumPromotionPurchaseStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PromotionPurchaseStatus[] | Prisma.ListEnumPromotionPurchaseStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPromotionPurchaseStatusWithAggregatesFilter<$PrismaModel> | $Enums.PromotionPurchaseStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumPromotionPurchaseStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumPromotionPurchaseStatusFilter<$PrismaModel>
 }
 
 export type NestedEnumOrderStatusFilter<$PrismaModel = never> = {

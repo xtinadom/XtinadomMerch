@@ -156,6 +156,13 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         ? sp.emailVerify[0]
         : undefined;
   const fee = typeof sp.fee === "string" ? sp.fee : undefined;
+  const promo = typeof sp.promo === "string" ? sp.promo : undefined;
+  const promoErr =
+    typeof sp.promoErr === "string"
+      ? sp.promoErr
+      : Array.isArray(sp.promoErr)
+        ? sp.promoErr[0]
+        : undefined;
   const dashRaw = sp.dash;
   const dashStr =
     typeof dashRaw === "string" ? dashRaw : Array.isArray(dashRaw) ? dashRaw[0] : undefined;
@@ -404,7 +411,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         dashStr === "support"
       ? dashStr === "setup" && incompleteSetupCount === 0
         ? "listings"
-        : dashStr
+        : dashStr === "itemGuidelines" && incompleteSetupCount === 0
+          ? "listings"
+          : dashStr
       : incompleteSetupCount > 0
         ? "setup"
         : "listings";
@@ -479,6 +488,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       product: {
         name: listing.product.name,
         slug: listing.product.slug,
+        active: listing.product.active,
         minPriceCents: listing.product.minPriceCents,
         priceCents: listing.product.priceCents,
         imageUrl: listing.product.imageUrl,
@@ -495,6 +505,45 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     listingRows,
     adminCatalogRows,
   );
+
+  const promotionPurchasesForDash = !isPlatform
+    ? await prisma.promotionPurchase.findMany({
+        where: { shopId: shop.id },
+        orderBy: { createdAt: "desc" },
+        take: 40,
+        include: {
+          shopListing: {
+            select: { requestItemName: true, product: { select: { name: true } } },
+          },
+        },
+      })
+    : [];
+
+  const promotionsPayload = !isPlatform
+    ? {
+        purchases: promotionPurchasesForDash.map((row) => ({
+          id: row.id,
+          kind: row.kind,
+          status: row.status,
+          amountCents: row.amountCents,
+          createdAtIso: row.createdAt.toISOString(),
+          paidAtIso: row.paidAt?.toISOString() ?? null,
+          listingLabel: row.shopListing
+            ? row.shopListing.requestItemName?.trim() || row.shopListing.product.name
+            : null,
+        })),
+        liveListingPicklist: listingRows
+          .filter(
+            (l) => l.active && l.requestStatus !== ListingRequestStatus.rejected,
+          )
+          .map((l) => ({
+            id: l.id,
+            label: (l.requestItemName && l.requestItemName.trim()) || l.product.name,
+          })),
+        mockPromotionCheckout: mockListingFeeCheckout,
+        stripePublishableKey,
+      }
+    : null;
 
   const listingTabCounts = !isPlatform ? dashboardListingTabBadgeCounts(listingRows) : null;
 
@@ -566,6 +615,18 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 : "Something went wrong with the listing fee payment. Open the Listings tab and try paying again, or contact support."}
         </p>
       ) : null}
+      {promo === "ok" ? (
+        <p className="mt-4 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
+          Promotion purchase recorded (mock checkout when enabled).
+        </p>
+      ) : null}
+      {promo === "err" ? (
+        <p className="mt-4 rounded-lg border border-red-900/50 bg-red-950/30 px-4 py-2 text-sm text-red-200/90">
+          {promoErr === "mock_only"
+            ? "Mock promotion pay is only available when mock checkout is enabled on the server."
+            : "Something went wrong recording the promotion. Try again or contact support."}
+        </p>
+      ) : null}
 
       {!isPlatform && emailVerify === "ok" ? (
         <p className="mt-4 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-2 text-sm text-emerald-200/90">
@@ -619,6 +680,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         supportChat={supportChatPanel}
         draftListingRequestPrefill={draftListingRequestPrefill}
         groupedListingSections={groupedListingSections}
+        promotions={promotionsPayload}
         listingTabCounts={listingTabCounts}
         listingFeeBonusFreeSlots={bonusListingSlots}
         showListingSlotPromoRedeem={

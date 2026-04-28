@@ -41,7 +41,8 @@ export function productCardProductFromListing<
   },
 >(listing: LP): ProductCardProduct {
   const custom = listing.requestItemName?.trim();
-  const name = custom || listing.product.name;
+  const catalogProductName = listing.product.name;
+  const name = custom || catalogProductName;
   const catalogSel = parseListingStorefrontCatalogImageSelection(
     listing.listingStorefrontCatalogImageUrls,
   );
@@ -50,6 +51,7 @@ export function productCardProductFromListing<
   return {
     ...listing.product,
     name,
+    catalogProductName,
     priceCents: listingCardPriceCents(listing),
     ...(storefrontShopSlug ? { storefrontShopSlug } : {}),
     ...(storefrontShopDisplayName ? { storefrontShopDisplayName } : {}),

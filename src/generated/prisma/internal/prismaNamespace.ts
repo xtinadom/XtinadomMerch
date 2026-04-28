@@ -399,6 +399,7 @@ export const ModelName = {
   ShopPasswordResetToken: 'ShopPasswordResetToken',
   ShopEmailVerificationToken: 'ShopEmailVerificationToken',
   ShopListing: 'ShopListing',
+  PromotionPurchase: 'PromotionPurchase',
   Order: 'Order',
   OrderLine: 'OrderLine',
   FulfillmentJob: 'FulfillmentJob',
@@ -423,7 +424,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tag" | "productTag" | "product" | "shop" | "shopListingSlotPromoRedemption" | "supportThread" | "supportMessage" | "supportTip" | "shopOwnerNotice" | "bugFeedbackReport" | "shopUser" | "shopAccountDeletionToken" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "adminCatalogItemTag" | "adminInboundEmail" | "siteEmailTemplate" | "comment"
+    modelProps: "tag" | "productTag" | "product" | "shop" | "shopListingSlotPromoRedemption" | "supportThread" | "supportMessage" | "supportTip" | "shopOwnerNotice" | "bugFeedbackReport" | "shopUser" | "shopAccountDeletionToken" | "shopPasswordResetToken" | "shopEmailVerificationToken" | "shopListing" | "promotionPurchase" | "order" | "orderLine" | "fulfillmentJob" | "processedStripeEvent" | "adminCatalogItem" | "adminCatalogItemTag" | "adminInboundEmail" | "siteEmailTemplate" | "comment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1537,6 +1538,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    PromotionPurchase: {
+      payload: Prisma.$PromotionPurchasePayload<ExtArgs>
+      fields: Prisma.PromotionPurchaseFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PromotionPurchaseFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromotionPurchasePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PromotionPurchaseFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromotionPurchasePayload>
+        }
+        findFirst: {
+          args: Prisma.PromotionPurchaseFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromotionPurchasePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PromotionPurchaseFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromotionPurchasePayload>
+        }
+        findMany: {
+          args: Prisma.PromotionPurchaseFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromotionPurchasePayload>[]
+        }
+        create: {
+          args: Prisma.PromotionPurchaseCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromotionPurchasePayload>
+        }
+        createMany: {
+          args: Prisma.PromotionPurchaseCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PromotionPurchaseCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromotionPurchasePayload>[]
+        }
+        delete: {
+          args: Prisma.PromotionPurchaseDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromotionPurchasePayload>
+        }
+        update: {
+          args: Prisma.PromotionPurchaseUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromotionPurchasePayload>
+        }
+        deleteMany: {
+          args: Prisma.PromotionPurchaseDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PromotionPurchaseUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PromotionPurchaseUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromotionPurchasePayload>[]
+        }
+        upsert: {
+          args: Prisma.PromotionPurchaseUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromotionPurchasePayload>
+        }
+        aggregate: {
+          args: Prisma.PromotionPurchaseAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePromotionPurchase>
+        }
+        groupBy: {
+          args: Prisma.PromotionPurchaseGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PromotionPurchaseGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PromotionPurchaseCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PromotionPurchaseCountAggregateOutputType> | number
+        }
+      }
+    }
     Order: {
       payload: Prisma.$OrderPayload<ExtArgs>
       fields: Prisma.OrderFieldRefs
@@ -2489,6 +2564,26 @@ export const ShopListingScalarFieldEnum = {
 export type ShopListingScalarFieldEnum = (typeof ShopListingScalarFieldEnum)[keyof typeof ShopListingScalarFieldEnum]
 
 
+export const PromotionPurchaseScalarFieldEnum = {
+  id: 'id',
+  shopId: 'shopId',
+  shopUserId: 'shopUserId',
+  kind: 'kind',
+  shopListingId: 'shopListingId',
+  tagId: 'tagId',
+  amountCents: 'amountCents',
+  currency: 'currency',
+  status: 'status',
+  stripePaymentIntentId: 'stripePaymentIntentId',
+  stripeChargeId: 'stripeChargeId',
+  paidAt: 'paidAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PromotionPurchaseScalarFieldEnum = (typeof PromotionPurchaseScalarFieldEnum)[keyof typeof PromotionPurchaseScalarFieldEnum]
+
+
 export const OrderScalarFieldEnum = {
   id: 'id',
   shopId: 'shopId',
@@ -2816,6 +2911,34 @@ export type ListEnumListingRequestStatusFieldRefInput<$PrismaModel> = FieldRefIn
 
 
 /**
+ * Reference to a field of type 'PromotionKind'
+ */
+export type EnumPromotionKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PromotionKind'>
+    
+
+
+/**
+ * Reference to a field of type 'PromotionKind[]'
+ */
+export type ListEnumPromotionKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PromotionKind[]'>
+    
+
+
+/**
+ * Reference to a field of type 'PromotionPurchaseStatus'
+ */
+export type EnumPromotionPurchaseStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PromotionPurchaseStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'PromotionPurchaseStatus[]'
+ */
+export type ListEnumPromotionPurchaseStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PromotionPurchaseStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'OrderStatus'
  */
 export type EnumOrderStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrderStatus'>
@@ -2966,6 +3089,7 @@ export type GlobalOmitConfig = {
   shopPasswordResetToken?: Prisma.ShopPasswordResetTokenOmit
   shopEmailVerificationToken?: Prisma.ShopEmailVerificationTokenOmit
   shopListing?: Prisma.ShopListingOmit
+  promotionPurchase?: Prisma.PromotionPurchaseOmit
   order?: Prisma.OrderOmit
   orderLine?: Prisma.OrderLineOmit
   fulfillmentJob?: Prisma.FulfillmentJobOmit

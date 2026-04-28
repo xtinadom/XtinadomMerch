@@ -7,22 +7,22 @@ export default function ShopRegulationsPage() {
     <main className="mx-auto max-w-2xl px-4 py-16">
       <h1 className="text-2xl font-semibold text-zinc-50">Shop regulations</h1>
       <p className="mt-2 text-sm text-zinc-500">
-        The rules below are the same <strong className="font-medium text-zinc-400">item guidelines</strong> creators
-        see during onboarding.
+        Items that go against regulations will be promptly rejected/removed.
       </p>
       <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 sm:p-6">
         <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Item guidelines</h2>
         <ItemGuidelinesArticle className="mt-4 space-y-4 text-sm leading-relaxed text-zinc-300" />
       </div>
       <p className="mt-4 text-xs text-zinc-600">
-        Acknowledge these in your dashboard under{" "}
+        While you still have onboarding steps pending, acknowledge from your{" "}
         <Link
-          href="/dashboard?dash=itemGuidelines"
+          href="/dashboard"
           className="text-blue-400/90 underline underline-offset-2 hover:text-blue-300"
         >
-          Onboarding → Item guidelines
-        </Link>
-        .
+          shop dashboard
+        </Link>{" "}
+        (open the Item guidelines tab next to Onboarding). After setup is complete, use this page anytime to review the
+        same rules.
       </p>
       <p className="mt-10">
         <Link href="/" className="text-sm text-blue-400/90 hover:underline">

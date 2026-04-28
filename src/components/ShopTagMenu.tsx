@@ -65,7 +65,7 @@ export function ShopTagMenu({
         aria-expanded={open}
         aria-haspopup="true"
       >
-        Browse
+        Items
         <span className="text-[10px] opacity-70">{open ? "▴" : "▾"}</span>
       </button>
       {open && (
@@ -80,7 +80,7 @@ export function ShopTagMenu({
               className="block px-4 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800"
               onClick={close}
             >
-              All products
+              All Items
             </Link>
           </li>
           <li role="none" className="pt-1">

@@ -1,4 +1,4 @@
-import type { Prisma } from "@/generated/prisma/client";
+import type { ProductCardProduct } from "@/components/ProductCard";
 import { productPrimaryImageForShopListing } from "@/lib/product-media";
 
 /** Placeholder tile when a shop has no profile image (carousel expects an image URL). */
@@ -10,7 +10,10 @@ export const SHOP_FEATURE_CAROUSEL_PLACEHOLDER_IMAGE =
 
 export type FeaturedCarouselItem = {
   slug: string;
+  /** Listing / storefront label (may differ from admin catalog title). */
   name: string;
+  /** Admin catalog product name — shown under `name` when distinct. */
+  catalogProductName?: string;
   imageUrl: string;
   /** When set, links resolve to `/s/{slug}/product/...` (marketplace aggregate / hot picks). */
   listingShopSlug?: string;
@@ -18,24 +21,11 @@ export type FeaturedCarouselItem = {
   href?: string;
 };
 
-type ProductForFeatured = {
-  slug: string;
-  name: string;
-  updatedAt: Date;
-  imageUrl: string | null;
-  imageGallery: Prisma.JsonValue | null;
-  printifyVariants?: Prisma.JsonValue | null;
-  storefrontShopSlug?: string;
-  adminListingSecondaryImageUrl?: string | null;
-  ownerSupplementImageUrl?: string | null;
-  listingStorefrontCatalogImageUrls?: string[];
-};
-
 const DEFAULT_LIMIT = 12;
 
 /** Newest products with a hero image — used for shop featured carousels. */
 export function productsToFeaturedCarouselItems(
-  products: ProductForFeatured[],
+  products: ProductCardProduct[],
   options?: { limit?: number },
 ): FeaturedCarouselItem[] {
   const limit = options?.limit ?? DEFAULT_LIMIT;
@@ -49,16 +39,23 @@ export function productsToFeaturedCarouselItems(
     )
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
     .slice(0, limit)
-    .map((p) => ({
-      slug: p.slug,
-      name: p.name,
-      imageUrl: productPrimaryImageForShopListing(p, {
-        adminListingSecondaryImageUrl: p.adminListingSecondaryImageUrl,
-        ownerSupplementImageUrl: p.ownerSupplementImageUrl,
-        listingStorefrontCatalogImageUrls: p.listingStorefrontCatalogImageUrls,
-      })!,
-      ...(p.storefrontShopSlug ? { listingShopSlug: p.storefrontShopSlug } : {}),
-    }));
+    .map((p) => {
+      const catalog = p.catalogProductName?.trim();
+      const listingTitle = p.name.trim();
+      const showCatalog =
+        catalog != null && catalog.length > 0 && catalog !== listingTitle;
+      return {
+        slug: p.slug,
+        name: p.name,
+        ...(showCatalog ? { catalogProductName: catalog } : {}),
+        imageUrl: productPrimaryImageForShopListing(p, {
+          adminListingSecondaryImageUrl: p.adminListingSecondaryImageUrl,
+          ownerSupplementImageUrl: p.ownerSupplementImageUrl,
+          listingStorefrontCatalogImageUrls: p.listingStorefrontCatalogImageUrls,
+        })!,
+        ...(p.storefrontShopSlug ? { listingShopSlug: p.storefrontShopSlug } : {}),
+      };
+    });
 }
 
 type ShopForFeaturedCarousel = {

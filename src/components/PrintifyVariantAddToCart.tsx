@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addToCart } from "@/actions/cart";
-import { ProductImageGallery } from "@/components/ProductImageGallery";
+import { ProductImageGallery, PRODUCT_HERO_GALLERY_WRAP_CLASS } from "@/components/ProductImageGallery";
 import { uniqueImageUrlsOrdered } from "@/lib/product-media";
 
 export type PrintifyVariantOption = {
@@ -66,7 +66,7 @@ export function PrintifyVariantAddToCart({
   if (!selected) return null;
 
   return (
-    <div className="mx-auto w-full max-w-[400px]">
+    <div className={PRODUCT_HERO_GALLERY_WRAP_CLASS}>
       <ProductImageGallery
         images={galleryImages}
         resetKey={variantId}

@@ -2,6 +2,10 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
+import { getShopsBrowsePageFeaturedCarouselShops } from "@/lib/shops-browse-page-featured";
+import { FeaturedProductsCarousel } from "@/components/FeaturedProductsCarousel";
+import { ShopBrowseGrid } from "@/components/ShopBrowseGrid";
+import { shopsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import {
   parseShopBrowseSort,
   sortShopsForBrowse,
@@ -9,12 +13,11 @@ import {
 } from "@/lib/shops-browse";
 import { SiteLegalFooter } from "@/components/SiteLegalFooter";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
-import { FeaturedProductsCarousel } from "@/components/FeaturedProductsCarousel";
-import { shopsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
-import { getShopsBrowsePageFeaturedCarouselShops } from "@/lib/shops-browse-page-featured";
-import { ShopBrowseGrid } from "@/components/ShopBrowseGrid";
 
 export const dynamic = "force-dynamic";
+
+/** First N featured shops (same selection as home Featured shops carousel). */
+const TOP_SHOPS_PREVIEW_COUNT = 8;
 
 type PageProps = {
   searchParams: Promise<{ sort?: string }>;
@@ -71,30 +74,21 @@ export default async function ShopsBrowsePage({ searchParams }: PageProps) {
 
   const shops = sortShopsForBrowse(raw, sort);
 
-  let featuredRows: Awaited<ReturnType<typeof getShopsBrowsePageFeaturedCarouselShops>> = [];
+  let featuredRows = shops.slice(0, TOP_SHOPS_PREVIEW_COUNT).map((s) => ({
+    slug: s.slug,
+    displayName: s.displayName,
+    profileImageUrl: s.profileImageUrl,
+  }));
   try {
-    featuredRows = await getShopsBrowsePageFeaturedCarouselShops(12);
-  } catch (e) {
-    console.warn("[ShopsBrowsePage] featured carousel load failed (migrations applied?)", e);
-  }
-
-  const seenFeatured = new Set(featuredRows.map((s) => s.id));
-  const mergedFeatured = [...featuredRows];
-  for (const s of shops) {
-    if (mergedFeatured.length >= 12) break;
-    if (seenFeatured.has(s.id)) continue;
-    seenFeatured.add(s.id);
-    mergedFeatured.push({
-      id: s.id,
+    const rows = await getShopsBrowsePageFeaturedCarouselShops(TOP_SHOPS_PREVIEW_COUNT);
+    featuredRows = rows.map((s) => ({
       slug: s.slug,
       displayName: s.displayName,
       profileImageUrl: s.profileImageUrl,
-      bio: s.bio,
-      totalSalesCents: s.totalSalesCents,
-    });
+    }));
+  } catch (e) {
+    console.warn("[shops] featured shops load failed; falling back to browse sort", e);
   }
-
-  const featuredCarouselItems = shopsToFeaturedCarouselItems(mergedFeatured);
 
   const gridShops = shops.map((s) => ({
     id: s.id,
@@ -103,46 +97,21 @@ export default async function ShopsBrowsePage({ searchParams }: PageProps) {
     profileImageUrl: s.profileImageUrl,
     bio: s.bio,
   }));
+  const featuredCarouselItems = shopsToFeaturedCarouselItems(featuredRows, {
+    limit: TOP_SHOPS_PREVIEW_COUNT,
+  });
 
   return (
     <main className="mx-auto flex min-h-screen max-w-[996px] flex-col px-4 py-12">
-      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="store-dimension-page-title text-2xl !uppercase !tracking-[0.12em] text-zinc-50 sm:text-3xl">
-            Creator shops
-          </h1>
-          <p className="mt-2 max-w-lg text-sm text-zinc-500">See what other creators are up to</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-600">Sort</span>
-          <SortPill href={sortHref("editorial")} active={sort === "editorial"}>
-            Spotlight
-          </SortPill>
-          <SortPill href={sortHref("sales")} active={sort === "sales"}>
-            Sales
-          </SortPill>
-          <SortPill href={sortHref("new")} active={sort === "new"}>
-            New
-          </SortPill>
-        </div>
+      <div className="mb-8">
+        <h1 className="store-dimension-page-title text-2xl !uppercase !tracking-[0.12em] text-zinc-50 sm:text-3xl">
+          Creator shops
+        </h1>
+        <p className="mt-2 max-w-lg text-sm text-zinc-500">See what other creators are up to</p>
       </div>
 
-      {featuredCarouselItems.length > 0 ? (
-        <section className="mb-10">
-          <h2 className="mb-2 text-center text-sm font-medium uppercase tracking-wide text-zinc-500">
-            Featured shops
-          </h2>
-          <FeaturedProductsCarousel
-            items={featuredCarouselItems}
-            hideKicker
-            label="Featured shops"
-          />
-        </section>
-      ) : null}
-
-      <section className="mt-2">
-        <h2 className="mb-4 text-sm font-medium uppercase tracking-wide text-zinc-500">Top shops</h2>
-        {gridShops.length === 0 ? (
+      {gridShops.length === 0 ? (
+        <section className="mt-2">
           <p className="text-sm text-zinc-600">
             No shops yet —{" "}
             <Link href="/create-shop" className="text-blue-400 hover:underline">
@@ -150,10 +119,35 @@ export default async function ShopsBrowsePage({ searchParams }: PageProps) {
             </Link>
             .
           </p>
-        ) : (
-          <ShopBrowseGrid shops={gridShops} />
-        )}
-      </section>
+        </section>
+      ) : (
+        <>
+          <section className="mt-2">
+            <h2 className="mb-4 text-sm font-medium uppercase tracking-wide text-zinc-500">
+              Featured shops
+            </h2>
+            <FeaturedProductsCarousel items={featuredCarouselItems} label="Featured shops" compact />
+          </section>
+          <section className="mt-12 border-t border-zinc-800/80 pt-10">
+            <h2 className="mb-4 text-sm font-medium uppercase tracking-wide text-zinc-500">All shops</h2>
+            <div className="mb-6 flex flex-wrap items-center gap-2 sm:justify-end">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-600">
+                Sort
+              </span>
+              <SortPill href={sortHref("editorial")} active={sort === "editorial"}>
+                Spotlight
+              </SortPill>
+              <SortPill href={sortHref("sales")} active={sort === "sales"}>
+                Sales
+              </SortPill>
+              <SortPill href={sortHref("new")} active={sort === "new"}>
+                New
+              </SortPill>
+            </div>
+            <ShopBrowseGrid shops={gridShops} />
+          </section>
+        </>
+      )}
 
       <p className="mt-12 text-center">
         <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-300">

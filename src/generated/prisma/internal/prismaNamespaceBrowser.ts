@@ -66,6 +66,7 @@ export const ModelName = {
   ShopPasswordResetToken: 'ShopPasswordResetToken',
   ShopEmailVerificationToken: 'ShopEmailVerificationToken',
   ShopListing: 'ShopListing',
+  PromotionPurchase: 'PromotionPurchase',
   Order: 'Order',
   OrderLine: 'OrderLine',
   FulfillmentJob: 'FulfillmentJob',
@@ -338,6 +339,26 @@ export const ShopListingScalarFieldEnum = {
 } as const
 
 export type ShopListingScalarFieldEnum = (typeof ShopListingScalarFieldEnum)[keyof typeof ShopListingScalarFieldEnum]
+
+
+export const PromotionPurchaseScalarFieldEnum = {
+  id: 'id',
+  shopId: 'shopId',
+  shopUserId: 'shopUserId',
+  kind: 'kind',
+  shopListingId: 'shopListingId',
+  tagId: 'tagId',
+  amountCents: 'amountCents',
+  currency: 'currency',
+  status: 'status',
+  stripePaymentIntentId: 'stripePaymentIntentId',
+  stripeChargeId: 'stripeChargeId',
+  paidAt: 'paidAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PromotionPurchaseScalarFieldEnum = (typeof PromotionPurchaseScalarFieldEnum)[keyof typeof PromotionPurchaseScalarFieldEnum]
 
 
 export const OrderScalarFieldEnum = {

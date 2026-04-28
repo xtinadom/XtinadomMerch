@@ -8,6 +8,8 @@ import {
   getHomeHotCarouselProducts,
   getHotListingProductsForHome,
 } from "@/lib/marketplace-home";
+import { getHomeFeaturedShopsCarouselItems } from "@/lib/shops-browse-page-featured";
+import { PLATFORM_SHOP_SLUG, shopAllProductsHref } from "@/lib/marketplace-constants";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 
@@ -29,11 +31,13 @@ export default async function HomePage({ searchParams }: PageProps) {
   let featuredShops: Awaited<ReturnType<typeof getFeaturedCreatorShopsForHome>>;
   let hotProducts: Awaited<ReturnType<typeof getHomeHotCarouselProducts>>;
   let topItems: Awaited<ReturnType<typeof getHotListingProductsForHome>>;
+  let featuredShopsCarouselItems: Awaited<ReturnType<typeof getHomeFeaturedShopsCarouselItems>>;
   try {
-    [featuredShops, hotProducts, topItems] = await Promise.all([
+    [featuredShops, hotProducts, topItems, featuredShopsCarouselItems] = await Promise.all([
       getFeaturedCreatorShopsForHome(),
       getHomeHotCarouselProducts(),
       getHotListingProductsForHome(10),
+      getHomeFeaturedShopsCarouselItems(),
     ]);
   } catch (e) {
     return <ShopDataLoadError cause={e} />;
@@ -149,12 +153,32 @@ export default async function HomePage({ searchParams }: PageProps) {
       ) : null}
 
       <div className="mt-16 border-t border-zinc-800/80 pt-10 text-center">
-        <Link
-          href="/shops"
-          className="text-sm text-zinc-500 underline decoration-zinc-700 underline-offset-4 transition hover:text-blue-400/90 hover:decoration-blue-400/50"
-        >
-          Browse all shops
-        </Link>
+        {featuredShopsCarouselItems.length > 0 ? (
+          <section className="mb-10">
+            <h2 className="mb-2 text-center text-sm font-medium uppercase tracking-wide text-zinc-500">
+              Featured shops
+            </h2>
+            <FeaturedProductsCarousel
+              items={featuredShopsCarouselItems}
+              label="Featured shops"
+              compact
+            />
+          </section>
+        ) : null}
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          <Link
+            href="/shops"
+            className="text-sm text-zinc-500 underline decoration-zinc-700 underline-offset-4 transition hover:text-blue-400/90 hover:decoration-blue-400/50"
+          >
+            Browse all shops
+          </Link>
+          <Link
+            href={shopAllProductsHref(PLATFORM_SHOP_SLUG)}
+            className="text-sm text-zinc-500 underline decoration-zinc-700 underline-offset-4 transition hover:text-blue-400/90 hover:decoration-blue-400/50"
+          >
+            Browse all items
+          </Link>
+        </div>
       </div>
 
       <SiteLegalFooter />

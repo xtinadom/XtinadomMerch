@@ -291,8 +291,11 @@ export async function AdminDashboardPageContent({
   const salesFromRaw = typeof sp.salesFrom === "string" ? sp.salesFrom : "";
   const salesToRaw = typeof sp.salesTo === "string" ? sp.salesTo : "";
   const salesKindRaw = typeof sp.salesKind === "string" ? sp.salesKind.trim() : "";
-  const salesKindFilter: "all" | "listing" | "item" | "support" =
-    salesKindRaw === "listing" || salesKindRaw === "item" || salesKindRaw === "support"
+  const salesKindFilter: "all" | "listing" | "item" | "support" | "promotion" =
+    salesKindRaw === "listing" ||
+    salesKindRaw === "item" ||
+    salesKindRaw === "support" ||
+    salesKindRaw === "promotion"
       ? salesKindRaw
       : "all";
   function parseIsoDateBoundary(s: string): Date | undefined {
@@ -537,7 +540,10 @@ export async function AdminDashboardPageContent({
     const bundle = await loadMergedPlatformSalesLines(prisma, {
       salesOrderCreatedAt,
     });
-    platformSalesLineCount = bundle.orderLineCount + bundle.publicationFeePaymentCount;
+    platformSalesLineCount =
+      bundle.orderLineCount +
+      bundle.publicationFeePaymentCount +
+      bundle.promotionPurchaseCount;
     if (inventoryTab === "sales") {
       const merged = bundle.lines;
       platformSalesTabLines =

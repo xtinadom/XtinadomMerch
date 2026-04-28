@@ -43,7 +43,7 @@ export function AdminPlatformSalesTab(props: {
   lines: AdminPlatformSalesMergedLine[];
   salesFromValue: string;
   salesToValue: string;
-  salesKind: "all" | "listing" | "item" | "support";
+  salesKind: "all" | "listing" | "item" | "support" | "promotion";
   ytdTotals: PlatformSalesYtdTotals | null;
   /** Server: allow destructive clear outside prod or when env flag set. */
   clearSalesHistoryEnabled: boolean;
@@ -53,7 +53,7 @@ export function AdminPlatformSalesTab(props: {
   const csvBody = lines
     .map((l) => {
       const merch =
-        l.kind === "listing_publication_fee"
+        l.kind === "listing_publication_fee" || l.kind === "promotion_purchase"
           ? 0
           : l.unitPriceCents * l.quantity;
       const shopName = l.shop?.displayName ?? "";
@@ -79,14 +79,14 @@ export function AdminPlatformSalesTab(props: {
     csvBody;
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
 
-  const kindHref = (k: "all" | "listing" | "item" | "support") =>
+  const kindHref = (k: "all" | "listing" | "item" | "support" | "promotion") =>
     buildSalesTabHref({
       salesFrom: salesFromValue,
       salesTo: salesToValue,
       salesKind: k === "all" ? undefined : k,
     });
 
-  const kindBtn = (k: "all" | "listing" | "item" | "support", label: string) => {
+  const kindBtn = (k: "all" | "listing" | "item" | "support" | "promotion", label: string) => {
     const active = salesKind === k;
     return (
       <Link
@@ -108,9 +108,9 @@ export function AdminPlatformSalesTab(props: {
         Platform sales (paid lines)
       </h2>
       <p className="mt-1 text-xs text-zinc-600">
-        Paid storefront order lines (merchandise splits) plus listing publication fees (card / mock checkout).
-        Tips and shipping are not included. Publication fees are platform revenue (no shop merchandise split). Free
-        publication slots do not appear as listing rows.
+        Paid storefront order lines (merchandise splits) plus listing publication fees and merchant promotion
+        purchases (card / mock checkout). Tips and shipping are not included. Publication fees and promotions are
+        platform revenue (no shop merchandise split). Free publication slots do not appear as listing rows.
       </p>
 
       {ytdTotals ? (
@@ -118,10 +118,14 @@ export function AdminPlatformSalesTab(props: {
           <p className="font-medium uppercase tracking-wide text-zinc-500">
             YTD {ytdTotals.year} platform revenue (UTC, through now)
           </p>
-          <dl className="mt-2 grid gap-2 sm:grid-cols-4">
+          <dl className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             <div>
               <dt className="text-[10px] uppercase tracking-wide text-zinc-600">Listing fees</dt>
               <dd className="tabular-nums text-zinc-200">{formatPrice(ytdTotals.listingPlatformCents)}</dd>
+            </div>
+            <div>
+              <dt className="text-[10px] uppercase tracking-wide text-zinc-600">Promotions</dt>
+              <dd className="tabular-nums text-zinc-200">{formatPrice(ytdTotals.promotionPlatformCents)}</dd>
             </div>
             <div>
               <dt className="text-[10px] uppercase tracking-wide text-zinc-600">Merchandise (platform fee)</dt>
@@ -136,6 +140,7 @@ export function AdminPlatformSalesTab(props: {
               <dd className="tabular-nums text-zinc-100">
                 {formatPrice(
                   ytdTotals.listingPlatformCents +
+                    ytdTotals.promotionPlatformCents +
                     ytdTotals.itemPlatformCents +
                     ytdTotals.supportPlatformCents,
                 )}
@@ -148,6 +153,7 @@ export function AdminPlatformSalesTab(props: {
       <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Filter by sale type">
         {kindBtn("all", "All")}
         {kindBtn("listing", "Listing")}
+        {kindBtn("promotion", "Promotion")}
         {kindBtn("item", "Item")}
         {kindBtn("support", "Support")}
       </div>
@@ -213,7 +219,8 @@ export function AdminPlatformSalesTab(props: {
           </thead>
           <tbody>
             {lines.map((l) => {
-              const isPubFee = l.kind === "listing_publication_fee";
+              const isPubFee =
+                l.kind === "listing_publication_fee" || l.kind === "promotion_purchase";
               const merch = isPubFee ? 0 : l.unitPriceCents * l.quantity;
               return (
                 <tr key={l.id} className="border-b border-zinc-900 text-zinc-300">
@@ -236,7 +243,7 @@ export function AdminPlatformSalesTab(props: {
         </table>
       </div>
       {lines.length === 0 ? (
-        <p className="mt-4 text-sm text-zinc-600">No matching paid lines or publication fees.</p>
+        <p className="mt-4 text-sm text-zinc-600">No matching paid lines, publication fees, or promotions.</p>
       ) : null}
 
       <AdminClearPlatformSalesForm enabled={clearSalesHistoryEnabled} />

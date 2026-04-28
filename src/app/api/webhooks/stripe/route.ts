@@ -10,6 +10,7 @@ import {
   OrderStatus,
 } from "@/generated/prisma/enums";
 import { fulfillListingFeeForShopListingIfUnpaid } from "@/lib/listing-fee-fulfillment";
+import { fulfillPromotionPurchasePaidIfPending } from "@/lib/promotion-fulfillment";
 
 export const runtime = "nodejs";
 
@@ -54,6 +55,27 @@ async function fulfillListingFeePaymentIntent(pi: Stripe.PaymentIntent): Promise
     typeof pi.amount === "number" && Number.isFinite(pi.amount) ? pi.amount : undefined;
   await fulfillListingFeeForShopListingIfUnpaid(listingId, {
     ...(paidPublicationFeeCents !== undefined ? { paidPublicationFeeCents } : {}),
+  });
+  return true;
+}
+
+async function fulfillPromotionPaymentIntent(pi: Stripe.PaymentIntent): Promise<boolean> {
+  if (pi.metadata?.kind !== "promotion") return false;
+  const purchaseId = pi.metadata.promotionPurchaseId;
+  if (!purchaseId || typeof purchaseId !== "string") return true;
+  if (pi.status !== "succeeded") return true;
+  const chargeIdRaw = pi.latest_charge;
+  const chargeId =
+    typeof chargeIdRaw === "string"
+      ? chargeIdRaw
+      : chargeIdRaw && typeof chargeIdRaw === "object" && chargeIdRaw && "id" in chargeIdRaw
+        ? String((chargeIdRaw as { id: string }).id)
+        : null;
+  await fulfillPromotionPurchasePaidIfPending(purchaseId, {
+    paymentIntentId: pi.id,
+    chargeId,
+    paidAmountCents:
+      typeof pi.amount === "number" && Number.isFinite(pi.amount) ? pi.amount : undefined,
   });
   return true;
 }
@@ -311,6 +333,10 @@ export async function POST(req: Request) {
     const pi = event.data.object as Stripe.PaymentIntent;
     const listingFee = await fulfillListingFeePaymentIntent(pi);
     if (listingFee) {
+      return NextResponse.json({ received: true });
+    }
+    const promo = await fulfillPromotionPaymentIntent(pi);
+    if (promo) {
       return NextResponse.json({ received: true });
     }
   }

@@ -2,11 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getStoreTags } from "@/lib/store-tags";
-import { FeaturedProductsCarousel } from "@/components/FeaturedProductsCarousel";
 import { ProductCard } from "@/components/ProductCard";
 import { SHOP_ALL_ROUTE } from "@/lib/constants";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
-import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
 import { marketplaceAggregatedListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
@@ -58,8 +56,6 @@ export default async function ShopUniversalTagPage({ params }: Props) {
     return <ShopDataLoadError cause={e} />;
   }
 
-  const products = listings.map((l) => productCardProductFromListing(l));
-
   return (
     <div>
       <p className="text-xs text-zinc-500">
@@ -74,12 +70,7 @@ export default async function ShopUniversalTagPage({ params }: Props) {
       </h1>
       <p className="mt-1 text-sm text-zinc-500">Live creator listings with this tag.</p>
 
-      <FeaturedProductsCarousel
-        items={productsToFeaturedCarouselItems(products)}
-        label={`Featured with tag ${activeTag.name}`}
-      />
-
-      {products.length === 0 ? (
+      {listings.length === 0 ? (
         <p className="mt-8 text-sm text-zinc-600">No products with this tag yet.</p>
       ) : (
         <ul className="mx-auto mt-8 flex max-w-full flex-wrap justify-center gap-3">

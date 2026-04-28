@@ -198,7 +198,9 @@ export function ShopSetupTabs(props: {
                 href="/dashboard?dash=itemGuidelines"
                 className="mt-1.5 inline-block text-xs font-medium text-zinc-300 underline decoration-zinc-600 underline-offset-2 hover:text-zinc-100"
               >
-                {steps.guidelines ? "Review guidelines tab →" : "Open Item guidelines tab →"}
+                {steps.guidelines
+                  ? "Review Item guidelines tab →"
+                  : "Open Item guidelines (next to Onboarding) →"}
               </Link>
             </div>
           </li>

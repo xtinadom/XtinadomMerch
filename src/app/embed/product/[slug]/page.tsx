@@ -8,11 +8,17 @@ import { resolvePublicProductDetail } from "@/lib/storefront-product-detail";
  */
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
 
-export default async function EmbedProductPage({ params }: Props) {
+export default async function EmbedProductPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const detail = await resolvePublicProductDetail(slug);
+  const sp = (await searchParams) ?? {};
+  const shopRaw = sp.shop;
+  const shop = typeof shopRaw === "string" ? shopRaw : Array.isArray(shopRaw) ? shopRaw[0] : undefined;
+  const detail = await resolvePublicProductDetail(slug, shop);
   if (!detail) notFound();
   return (
     <div className="store-dimension-bg flex h-[100dvh] min-h-0 w-full flex-col overflow-hidden">

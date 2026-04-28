@@ -6,10 +6,6 @@ export function ItemGuidelinesArticle(props: { className?: string }) {
 
   return (
     <div className={className}>
-      <p className="text-sm text-zinc-400">
-        Read this before requesting listings. Submitting a listing means you agree to these rules.
-      </p>
-
       <div>
         <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Rights to images</h3>
         <p className="mt-2 text-sm text-zinc-400">
@@ -21,9 +17,10 @@ export function ItemGuidelinesArticle(props: { className?: string }) {
       <div>
         <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Platform review</h3>
         <p className="mt-2 text-sm text-zinc-400">
-          Admin review (including approval of images) is not legal clearance. If a rights or content issue is
-          discovered later, you remain responsible. The platform is not liable for having approved an image that is
-          later shown to infringe someone else&apos;s rights or violate these guidelines.
+          All listings are manually reviewed to verify they are within item guidelines. Admin review (including approval
+          of images) is not legal clearance. If a rights or content issue is discovered later, you remain responsible.
+          The platform is not liable for having approved an image that is later shown to infringe someone else&apos;s
+          rights or violate these guidelines.
         </p>
       </div>
 
@@ -41,7 +38,7 @@ export function ItemGuidelinesArticle(props: { className?: string }) {
         <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Fees</h3>
         <p className="mt-2 text-sm text-zinc-400">Your first 3 listings are free. Listings after that are 25 cents.</p>
         <p className="mt-2 text-sm text-zinc-400">
-          Listing fees paid for items that are rejected or removed later for not following these guidelines, are{" "}
+          Listing fees paid for items that are rejected or removed later for not following these regulations, are{" "}
           <strong className="text-zinc-200">non-refundable</strong>.
         </p>
       </div>

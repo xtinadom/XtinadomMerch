@@ -25,13 +25,6 @@ export function AdminCatalogArtworkRequirementFields({
   return (
     <div className="space-y-3 border-t border-zinc-800/80 pt-4">
       <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Artwork / resolution</p>
-      <p className="text-[11px] leading-relaxed text-zinc-600">
-        Optional. <strong className="text-zinc-500">Print area (px)</strong> — width and height of the Printify print
-        file. When both are set, creators crop to that aspect and export that exact size.{" "}
-        <strong className="text-zinc-500">Minimum DPI</strong> may only be set together with print area: it requires
-        proportionally more pixels in the crop vs. the template, assuming the template dimensions are at{" "}
-        {PRINT_AREA_REFERENCE_DPI} DPI (e.g. 600 DPI → twice the source pixels before downscale).
-      </p>
       <label className="block text-xs text-zinc-500">
         Requirement note (optional)
         <input

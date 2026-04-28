@@ -11,5 +11,16 @@ export default async function ShopTenantAllPage({ params, searchParams }: Props)
   const { shopSlug } = await params;
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q : undefined;
-  return <ShopAllProductsPage shopSlug={shopSlug} searchQuery={q} />;
+  const browseFlat = sp.flat === "1";
+  const tag = typeof sp.tag === "string" ? sp.tag : undefined;
+  const sort = typeof sp.sort === "string" ? sp.sort : undefined;
+  return (
+    <ShopAllProductsPage
+      shopSlug={shopSlug}
+      searchQuery={q}
+      browseFlat={browseFlat}
+      tagSlug={tag}
+      browseSort={sort}
+    />
+  );
 }

@@ -7,6 +7,8 @@ import { PLATFORM_SHOP_SLUG, productHref } from "@/lib/marketplace-constants";
 export type ProductCardProduct = Product & {
   primaryTag: Tag | null;
   tags: { tagId: string; tag: Tag }[];
+  /** Underlying admin/catalog `Product.name` when storefront `name` is overridden by listing item name. */
+  catalogProductName?: string;
   /** When set (e.g. marketplace aggregate), links use this shop instead of the `shopSlug` prop. */
   storefrontShopSlug?: string;
   /** Creator shop display name (marketplace / multi-vendor). */

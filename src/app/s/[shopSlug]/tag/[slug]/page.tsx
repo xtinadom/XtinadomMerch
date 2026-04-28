@@ -2,13 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getStoreTagsForShop } from "@/lib/store-tags";
-import { FeaturedProductsCarousel } from "@/components/FeaturedProductsCarousel";
 import { ProductCard } from "@/components/ProductCard";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
-import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
 import { shopAllProductsHref } from "@/lib/marketplace-constants";
-import { storefrontShopListingWhere } from "@/lib/shop-listing-storefront-visibility";
+import { marketplaceAggregatedListingWhere } from "@/lib/shop-listing-storefront-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -43,8 +41,7 @@ export default async function ShopTenantUniversalTagPage({ params }: Props) {
   try {
     listings = await prisma.shopListing.findMany({
       where: {
-        shopId: shop.id,
-        ...storefrontShopListingWhere,
+        ...marketplaceAggregatedListingWhere,
         product: {
           active: true,
           OR: [
@@ -56,7 +53,7 @@ export default async function ShopTenantUniversalTagPage({ params }: Props) {
       orderBy: { product: { name: "asc" } },
       include: {
         product: { include: productInclude },
-        shop: { select: { slug: true } },
+        shop: { select: { slug: true, displayName: true } },
       },
     });
   } catch (e) {
@@ -64,7 +61,6 @@ export default async function ShopTenantUniversalTagPage({ params }: Props) {
     return <ShopDataLoadError cause={e} />;
   }
 
-  const products = listings.map((l) => productCardProductFromListing(l));
   const allHref = shopAllProductsHref(shopSlug);
 
   return (
@@ -79,27 +75,14 @@ export default async function ShopTenantUniversalTagPage({ params }: Props) {
       <h1 className="store-dimension-page-title mt-2 text-2xl !uppercase !tracking-[0.12em] text-zinc-50">
         {activeTag.name}
       </h1>
-      <p className="mt-1 text-sm text-zinc-500">
-        Items with this tag in{" "}
-        <Link href={`/s/${shopSlug}`} className="text-blue-400/90 hover:underline">
-          {shop.displayName}
-        </Link>
-        .
-      </p>
 
-      <FeaturedProductsCarousel
-        items={productsToFeaturedCarouselItems(products)}
-        label={`Featured — ${activeTag.name}`}
-        defaultListingShopSlug={shopSlug}
-      />
-
-      {products.length === 0 ? (
+      {listings.length === 0 ? (
         <p className="mt-8 text-sm text-zinc-600">No products with this tag yet.</p>
       ) : (
         <ul className="mx-auto mt-8 flex max-w-full flex-wrap justify-center gap-3">
-          {products.map((p) => (
-            <li key={p.id} className="w-[175px] shrink-0">
-              <ProductCard product={p} shopSlug={shopSlug} />
+          {listings.map((l) => (
+            <li key={l.id} className="w-[175px] shrink-0">
+              <ProductCard product={productCardProductFromListing(l)} showShopName />
             </li>
           ))}
         </ul>

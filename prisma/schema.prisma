@@ -28,6 +28,21 @@ enum ListingRequestStatus {
   rejected
 }
 
+/** Paid placement products (merchant dashboard); public ranking integration is separate. */
+enum PromotionKind {
+  FRONT_PAGE_ITEM
+  HOT_FEATURED_ITEM
+  MOST_POPULAR_OF_TAG_ITEM
+  FEATURED_SHOP_HOME
+}
+
+enum PromotionPurchaseStatus {
+  pending
+  paid
+  canceled
+  failed
+}
+
 enum ShopUserRole {
   owner
 }
@@ -43,6 +58,7 @@ model Tag {
   productTags                       ProductTag[]
   primaryProducts                   Product[] @relation("ProductPrimaryTag")
   adminCatalogItemTags              AdminCatalogItemTag[]
+  promotionPurchases               PromotionPurchase[]
   createdAt                         DateTime  @default(now())
   updatedAt                         DateTime  @updatedAt
 }
@@ -164,6 +180,7 @@ model Shop {
    * Remaining slots use `totalSalesCents`, then `storefrontViewCount`, then any active creator shop.
    */
   browseShopsPageFeaturedShopIds Json?
+  promotionPurchases             PromotionPurchase[]
   createdAt                      DateTime                       @default(now())
   updatedAt                      DateTime                       @updatedAt
 }
@@ -282,6 +299,7 @@ model ShopUser {
   passwordResetTokens ShopPasswordResetToken[]
   emailVerificationTokens ShopEmailVerificationToken[]
   accountDeletionTokens ShopAccountDeletionToken[]
+  promotionPurchases PromotionPurchase[]
 }
 
 model ShopAccountDeletionToken {
@@ -398,6 +416,7 @@ model ShopListing {
   shopHomeFeatured   Shop?                  @relation("ShopHomeFeatured")
   orderLines         OrderLine[]
   rejectionNotices   ShopOwnerNotice[]      @relation("ListingRejectionNotice")
+  promotionPurchases PromotionPurchase[]
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
 
@@ -405,6 +424,35 @@ model ShopListing {
   @@index([shopId, active])
   @@index([requestStatus])
   @@index([removedFromListingRequestsAt])
+}
+
+/**
+ * Stripe-paid promotion slot purchase. Multiple rows per listing/shop/kind are allowed.
+ * `paidAt` ordering is the merchant-facing “stack”; public surfaces may merge with organic later.
+ */
+model PromotionPurchase {
+  id                    String                  @id @default(cuid())
+  shopId                String
+  shop                  Shop                    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopUserId            String
+  shopUser              ShopUser                @relation(fields: [shopUserId], references: [id], onDelete: Cascade)
+  kind                  PromotionKind
+  /** Listing-scoped placements; null for FEATURED_SHOP_HOME. */
+  shopListingId         String?
+  shopListing           ShopListing?            @relation(fields: [shopListingId], references: [id], onDelete: SetNull)
+  /** Reserved for tag-page “most popular” placement when live ranking ships. */
+  tagId                 String?
+  tag                   Tag?                    @relation(fields: [tagId], references: [id], onDelete: SetNull)
+  amountCents           Int
+  currency              String                  @default("usd")
+  status                PromotionPurchaseStatus @default(pending)
+  stripePaymentIntentId String?                 @unique
+  stripeChargeId        String?
+  paidAt                DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  @@index([shopId, createdAt(sort: Desc)])
 }
 
 enum OrderStatus {

@@ -236,6 +236,7 @@ export type TagWhereInput = {
   productTags?: Prisma.ProductTagListRelationFilter
   primaryProducts?: Prisma.ProductListRelationFilter
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagListRelationFilter
+  promotionPurchases?: Prisma.PromotionPurchaseListRelationFilter
 }
 
 export type TagOrderByWithRelationInput = {
@@ -250,6 +251,7 @@ export type TagOrderByWithRelationInput = {
   productTags?: Prisma.ProductTagOrderByRelationAggregateInput
   primaryProducts?: Prisma.ProductOrderByRelationAggregateInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagOrderByRelationAggregateInput
+  promotionPurchases?: Prisma.PromotionPurchaseOrderByRelationAggregateInput
 }
 
 export type TagWhereUniqueInput = Prisma.AtLeast<{
@@ -267,6 +269,7 @@ export type TagWhereUniqueInput = Prisma.AtLeast<{
   productTags?: Prisma.ProductTagListRelationFilter
   primaryProducts?: Prisma.ProductListRelationFilter
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagListRelationFilter
+  promotionPurchases?: Prisma.PromotionPurchaseListRelationFilter
 }, "id" | "slug">
 
 export type TagOrderByWithAggregationInput = {
@@ -308,6 +311,7 @@ export type TagCreateInput = {
   productTags?: Prisma.ProductTagCreateNestedManyWithoutTagInput
   primaryProducts?: Prisma.ProductCreateNestedManyWithoutPrimaryTagInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagCreateNestedManyWithoutTagInput
+  promotionPurchases?: Prisma.PromotionPurchaseCreateNestedManyWithoutTagInput
 }
 
 export type TagUncheckedCreateInput = {
@@ -321,6 +325,7 @@ export type TagUncheckedCreateInput = {
   productTags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutTagInput
   primaryProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutPrimaryTagInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagUncheckedCreateNestedManyWithoutTagInput
+  promotionPurchases?: Prisma.PromotionPurchaseUncheckedCreateNestedManyWithoutTagInput
 }
 
 export type TagUpdateInput = {
@@ -334,6 +339,7 @@ export type TagUpdateInput = {
   productTags?: Prisma.ProductTagUpdateManyWithoutTagNestedInput
   primaryProducts?: Prisma.ProductUpdateManyWithoutPrimaryTagNestedInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagUpdateManyWithoutTagNestedInput
+  promotionPurchases?: Prisma.PromotionPurchaseUpdateManyWithoutTagNestedInput
 }
 
 export type TagUncheckedUpdateInput = {
@@ -347,6 +353,7 @@ export type TagUncheckedUpdateInput = {
   productTags?: Prisma.ProductTagUncheckedUpdateManyWithoutTagNestedInput
   primaryProducts?: Prisma.ProductUncheckedUpdateManyWithoutPrimaryTagNestedInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagUncheckedUpdateManyWithoutTagNestedInput
+  promotionPurchases?: Prisma.PromotionPurchaseUncheckedUpdateManyWithoutTagNestedInput
 }
 
 export type TagCreateManyInput = {
@@ -528,6 +535,22 @@ export type TagUncheckedUpdateManyWithoutByItemSpotlightProductNestedInput = {
   deleteMany?: Prisma.TagScalarWhereInput | Prisma.TagScalarWhereInput[]
 }
 
+export type TagCreateNestedOneWithoutPromotionPurchasesInput = {
+  create?: Prisma.XOR<Prisma.TagCreateWithoutPromotionPurchasesInput, Prisma.TagUncheckedCreateWithoutPromotionPurchasesInput>
+  connectOrCreate?: Prisma.TagCreateOrConnectWithoutPromotionPurchasesInput
+  connect?: Prisma.TagWhereUniqueInput
+}
+
+export type TagUpdateOneWithoutPromotionPurchasesNestedInput = {
+  create?: Prisma.XOR<Prisma.TagCreateWithoutPromotionPurchasesInput, Prisma.TagUncheckedCreateWithoutPromotionPurchasesInput>
+  connectOrCreate?: Prisma.TagCreateOrConnectWithoutPromotionPurchasesInput
+  upsert?: Prisma.TagUpsertWithoutPromotionPurchasesInput
+  disconnect?: Prisma.TagWhereInput | boolean
+  delete?: Prisma.TagWhereInput | boolean
+  connect?: Prisma.TagWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TagUpdateToOneWithWhereWithoutPromotionPurchasesInput, Prisma.TagUpdateWithoutPromotionPurchasesInput>, Prisma.TagUncheckedUpdateWithoutPromotionPurchasesInput>
+}
+
 export type TagCreateNestedOneWithoutAdminCatalogItemTagsInput = {
   create?: Prisma.XOR<Prisma.TagCreateWithoutAdminCatalogItemTagsInput, Prisma.TagUncheckedCreateWithoutAdminCatalogItemTagsInput>
   connectOrCreate?: Prisma.TagCreateOrConnectWithoutAdminCatalogItemTagsInput
@@ -552,6 +575,7 @@ export type TagCreateWithoutProductTagsInput = {
   byItemSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagByItemSpotlightsInput
   primaryProducts?: Prisma.ProductCreateNestedManyWithoutPrimaryTagInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagCreateNestedManyWithoutTagInput
+  promotionPurchases?: Prisma.PromotionPurchaseCreateNestedManyWithoutTagInput
 }
 
 export type TagUncheckedCreateWithoutProductTagsInput = {
@@ -564,6 +588,7 @@ export type TagUncheckedCreateWithoutProductTagsInput = {
   updatedAt?: Date | string
   primaryProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutPrimaryTagInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagUncheckedCreateNestedManyWithoutTagInput
+  promotionPurchases?: Prisma.PromotionPurchaseUncheckedCreateNestedManyWithoutTagInput
 }
 
 export type TagCreateOrConnectWithoutProductTagsInput = {
@@ -592,6 +617,7 @@ export type TagUpdateWithoutProductTagsInput = {
   byItemSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagByItemSpotlightsNestedInput
   primaryProducts?: Prisma.ProductUpdateManyWithoutPrimaryTagNestedInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagUpdateManyWithoutTagNestedInput
+  promotionPurchases?: Prisma.PromotionPurchaseUpdateManyWithoutTagNestedInput
 }
 
 export type TagUncheckedUpdateWithoutProductTagsInput = {
@@ -604,6 +630,7 @@ export type TagUncheckedUpdateWithoutProductTagsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryProducts?: Prisma.ProductUncheckedUpdateManyWithoutPrimaryTagNestedInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagUncheckedUpdateManyWithoutTagNestedInput
+  promotionPurchases?: Prisma.PromotionPurchaseUncheckedUpdateManyWithoutTagNestedInput
 }
 
 export type TagCreateWithoutPrimaryProductsInput = {
@@ -616,6 +643,7 @@ export type TagCreateWithoutPrimaryProductsInput = {
   byItemSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagByItemSpotlightsInput
   productTags?: Prisma.ProductTagCreateNestedManyWithoutTagInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagCreateNestedManyWithoutTagInput
+  promotionPurchases?: Prisma.PromotionPurchaseCreateNestedManyWithoutTagInput
 }
 
 export type TagUncheckedCreateWithoutPrimaryProductsInput = {
@@ -628,6 +656,7 @@ export type TagUncheckedCreateWithoutPrimaryProductsInput = {
   updatedAt?: Date | string
   productTags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutTagInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagUncheckedCreateNestedManyWithoutTagInput
+  promotionPurchases?: Prisma.PromotionPurchaseUncheckedCreateNestedManyWithoutTagInput
 }
 
 export type TagCreateOrConnectWithoutPrimaryProductsInput = {
@@ -645,6 +674,7 @@ export type TagCreateWithoutByItemSpotlightProductInput = {
   productTags?: Prisma.ProductTagCreateNestedManyWithoutTagInput
   primaryProducts?: Prisma.ProductCreateNestedManyWithoutPrimaryTagInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagCreateNestedManyWithoutTagInput
+  promotionPurchases?: Prisma.PromotionPurchaseCreateNestedManyWithoutTagInput
 }
 
 export type TagUncheckedCreateWithoutByItemSpotlightProductInput = {
@@ -657,6 +687,7 @@ export type TagUncheckedCreateWithoutByItemSpotlightProductInput = {
   productTags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutTagInput
   primaryProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutPrimaryTagInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagUncheckedCreateNestedManyWithoutTagInput
+  promotionPurchases?: Prisma.PromotionPurchaseUncheckedCreateNestedManyWithoutTagInput
 }
 
 export type TagCreateOrConnectWithoutByItemSpotlightProductInput = {
@@ -690,6 +721,7 @@ export type TagUpdateWithoutPrimaryProductsInput = {
   byItemSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagByItemSpotlightsNestedInput
   productTags?: Prisma.ProductTagUpdateManyWithoutTagNestedInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagUpdateManyWithoutTagNestedInput
+  promotionPurchases?: Prisma.PromotionPurchaseUpdateManyWithoutTagNestedInput
 }
 
 export type TagUncheckedUpdateWithoutPrimaryProductsInput = {
@@ -702,6 +734,7 @@ export type TagUncheckedUpdateWithoutPrimaryProductsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   productTags?: Prisma.ProductTagUncheckedUpdateManyWithoutTagNestedInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagUncheckedUpdateManyWithoutTagNestedInput
+  promotionPurchases?: Prisma.PromotionPurchaseUncheckedUpdateManyWithoutTagNestedInput
 }
 
 export type TagUpsertWithWhereUniqueWithoutByItemSpotlightProductInput = {
@@ -733,6 +766,74 @@ export type TagScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
 }
 
+export type TagCreateWithoutPromotionPurchasesInput = {
+  id?: string
+  slug: string
+  name: string
+  sortOrder?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  byItemSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagByItemSpotlightsInput
+  productTags?: Prisma.ProductTagCreateNestedManyWithoutTagInput
+  primaryProducts?: Prisma.ProductCreateNestedManyWithoutPrimaryTagInput
+  adminCatalogItemTags?: Prisma.AdminCatalogItemTagCreateNestedManyWithoutTagInput
+}
+
+export type TagUncheckedCreateWithoutPromotionPurchasesInput = {
+  id?: string
+  slug: string
+  name: string
+  sortOrder?: number
+  byItemSpotlightProductId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  productTags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutTagInput
+  primaryProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutPrimaryTagInput
+  adminCatalogItemTags?: Prisma.AdminCatalogItemTagUncheckedCreateNestedManyWithoutTagInput
+}
+
+export type TagCreateOrConnectWithoutPromotionPurchasesInput = {
+  where: Prisma.TagWhereUniqueInput
+  create: Prisma.XOR<Prisma.TagCreateWithoutPromotionPurchasesInput, Prisma.TagUncheckedCreateWithoutPromotionPurchasesInput>
+}
+
+export type TagUpsertWithoutPromotionPurchasesInput = {
+  update: Prisma.XOR<Prisma.TagUpdateWithoutPromotionPurchasesInput, Prisma.TagUncheckedUpdateWithoutPromotionPurchasesInput>
+  create: Prisma.XOR<Prisma.TagCreateWithoutPromotionPurchasesInput, Prisma.TagUncheckedCreateWithoutPromotionPurchasesInput>
+  where?: Prisma.TagWhereInput
+}
+
+export type TagUpdateToOneWithWhereWithoutPromotionPurchasesInput = {
+  where?: Prisma.TagWhereInput
+  data: Prisma.XOR<Prisma.TagUpdateWithoutPromotionPurchasesInput, Prisma.TagUncheckedUpdateWithoutPromotionPurchasesInput>
+}
+
+export type TagUpdateWithoutPromotionPurchasesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  byItemSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagByItemSpotlightsNestedInput
+  productTags?: Prisma.ProductTagUpdateManyWithoutTagNestedInput
+  primaryProducts?: Prisma.ProductUpdateManyWithoutPrimaryTagNestedInput
+  adminCatalogItemTags?: Prisma.AdminCatalogItemTagUpdateManyWithoutTagNestedInput
+}
+
+export type TagUncheckedUpdateWithoutPromotionPurchasesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  byItemSpotlightProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  productTags?: Prisma.ProductTagUncheckedUpdateManyWithoutTagNestedInput
+  primaryProducts?: Prisma.ProductUncheckedUpdateManyWithoutPrimaryTagNestedInput
+  adminCatalogItemTags?: Prisma.AdminCatalogItemTagUncheckedUpdateManyWithoutTagNestedInput
+}
+
 export type TagCreateWithoutAdminCatalogItemTagsInput = {
   id?: string
   slug: string
@@ -743,6 +844,7 @@ export type TagCreateWithoutAdminCatalogItemTagsInput = {
   byItemSpotlightProduct?: Prisma.ProductCreateNestedOneWithoutTagByItemSpotlightsInput
   productTags?: Prisma.ProductTagCreateNestedManyWithoutTagInput
   primaryProducts?: Prisma.ProductCreateNestedManyWithoutPrimaryTagInput
+  promotionPurchases?: Prisma.PromotionPurchaseCreateNestedManyWithoutTagInput
 }
 
 export type TagUncheckedCreateWithoutAdminCatalogItemTagsInput = {
@@ -755,6 +857,7 @@ export type TagUncheckedCreateWithoutAdminCatalogItemTagsInput = {
   updatedAt?: Date | string
   productTags?: Prisma.ProductTagUncheckedCreateNestedManyWithoutTagInput
   primaryProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutPrimaryTagInput
+  promotionPurchases?: Prisma.PromotionPurchaseUncheckedCreateNestedManyWithoutTagInput
 }
 
 export type TagCreateOrConnectWithoutAdminCatalogItemTagsInput = {
@@ -783,6 +886,7 @@ export type TagUpdateWithoutAdminCatalogItemTagsInput = {
   byItemSpotlightProduct?: Prisma.ProductUpdateOneWithoutTagByItemSpotlightsNestedInput
   productTags?: Prisma.ProductTagUpdateManyWithoutTagNestedInput
   primaryProducts?: Prisma.ProductUpdateManyWithoutPrimaryTagNestedInput
+  promotionPurchases?: Prisma.PromotionPurchaseUpdateManyWithoutTagNestedInput
 }
 
 export type TagUncheckedUpdateWithoutAdminCatalogItemTagsInput = {
@@ -795,6 +899,7 @@ export type TagUncheckedUpdateWithoutAdminCatalogItemTagsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   productTags?: Prisma.ProductTagUncheckedUpdateManyWithoutTagNestedInput
   primaryProducts?: Prisma.ProductUncheckedUpdateManyWithoutPrimaryTagNestedInput
+  promotionPurchases?: Prisma.PromotionPurchaseUncheckedUpdateManyWithoutTagNestedInput
 }
 
 export type TagCreateManyByItemSpotlightProductInput = {
@@ -816,6 +921,7 @@ export type TagUpdateWithoutByItemSpotlightProductInput = {
   productTags?: Prisma.ProductTagUpdateManyWithoutTagNestedInput
   primaryProducts?: Prisma.ProductUpdateManyWithoutPrimaryTagNestedInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagUpdateManyWithoutTagNestedInput
+  promotionPurchases?: Prisma.PromotionPurchaseUpdateManyWithoutTagNestedInput
 }
 
 export type TagUncheckedUpdateWithoutByItemSpotlightProductInput = {
@@ -828,6 +934,7 @@ export type TagUncheckedUpdateWithoutByItemSpotlightProductInput = {
   productTags?: Prisma.ProductTagUncheckedUpdateManyWithoutTagNestedInput
   primaryProducts?: Prisma.ProductUncheckedUpdateManyWithoutPrimaryTagNestedInput
   adminCatalogItemTags?: Prisma.AdminCatalogItemTagUncheckedUpdateManyWithoutTagNestedInput
+  promotionPurchases?: Prisma.PromotionPurchaseUncheckedUpdateManyWithoutTagNestedInput
 }
 
 export type TagUncheckedUpdateManyWithoutByItemSpotlightProductInput = {
@@ -848,12 +955,14 @@ export type TagCountOutputType = {
   productTags: number
   primaryProducts: number
   adminCatalogItemTags: number
+  promotionPurchases: number
 }
 
 export type TagCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   productTags?: boolean | TagCountOutputTypeCountProductTagsArgs
   primaryProducts?: boolean | TagCountOutputTypeCountPrimaryProductsArgs
   adminCatalogItemTags?: boolean | TagCountOutputTypeCountAdminCatalogItemTagsArgs
+  promotionPurchases?: boolean | TagCountOutputTypeCountPromotionPurchasesArgs
 }
 
 /**
@@ -887,6 +996,13 @@ export type TagCountOutputTypeCountAdminCatalogItemTagsArgs<ExtArgs extends runt
   where?: Prisma.AdminCatalogItemTagWhereInput
 }
 
+/**
+ * TagCountOutputType without action
+ */
+export type TagCountOutputTypeCountPromotionPurchasesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PromotionPurchaseWhereInput
+}
+
 
 export type TagSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -900,6 +1016,7 @@ export type TagSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   productTags?: boolean | Prisma.Tag$productTagsArgs<ExtArgs>
   primaryProducts?: boolean | Prisma.Tag$primaryProductsArgs<ExtArgs>
   adminCatalogItemTags?: boolean | Prisma.Tag$adminCatalogItemTagsArgs<ExtArgs>
+  promotionPurchases?: boolean | Prisma.Tag$promotionPurchasesArgs<ExtArgs>
   _count?: boolean | Prisma.TagCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["tag"]>
 
@@ -941,6 +1058,7 @@ export type TagInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   productTags?: boolean | Prisma.Tag$productTagsArgs<ExtArgs>
   primaryProducts?: boolean | Prisma.Tag$primaryProductsArgs<ExtArgs>
   adminCatalogItemTags?: boolean | Prisma.Tag$adminCatalogItemTagsArgs<ExtArgs>
+  promotionPurchases?: boolean | Prisma.Tag$promotionPurchasesArgs<ExtArgs>
   _count?: boolean | Prisma.TagCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TagIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -957,6 +1075,7 @@ export type $TagPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     productTags: Prisma.$ProductTagPayload<ExtArgs>[]
     primaryProducts: Prisma.$ProductPayload<ExtArgs>[]
     adminCatalogItemTags: Prisma.$AdminCatalogItemTagPayload<ExtArgs>[]
+    promotionPurchases: Prisma.$PromotionPurchasePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1367,6 +1486,7 @@ export interface Prisma__TagClient<T, Null = never, ExtArgs extends runtime.Type
   productTags<T extends Prisma.Tag$productTagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tag$productTagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductTagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   primaryProducts<T extends Prisma.Tag$primaryProductsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tag$primaryProductsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   adminCatalogItemTags<T extends Prisma.Tag$adminCatalogItemTagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tag$adminCatalogItemTagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AdminCatalogItemTagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  promotionPurchases<T extends Prisma.Tag$promotionPurchasesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tag$promotionPurchasesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PromotionPurchasePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1892,6 +2012,30 @@ export type Tag$adminCatalogItemTagsArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   distinct?: Prisma.AdminCatalogItemTagScalarFieldEnum | Prisma.AdminCatalogItemTagScalarFieldEnum[]
+}
+
+/**
+ * Tag.promotionPurchases
+ */
+export type Tag$promotionPurchasesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PromotionPurchase
+   */
+  select?: Prisma.PromotionPurchaseSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PromotionPurchase
+   */
+  omit?: Prisma.PromotionPurchaseOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PromotionPurchaseInclude<ExtArgs> | null
+  where?: Prisma.PromotionPurchaseWhereInput
+  orderBy?: Prisma.PromotionPurchaseOrderByWithRelationInput | Prisma.PromotionPurchaseOrderByWithRelationInput[]
+  cursor?: Prisma.PromotionPurchaseWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PromotionPurchaseScalarFieldEnum | Prisma.PromotionPurchaseScalarFieldEnum[]
 }
 
 /**

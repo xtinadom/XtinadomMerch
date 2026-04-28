@@ -715,7 +715,7 @@ export function ShopFirstListingRequestPanel(props: {
               <span>
                 I have the rights to the photo / artwork I am uploading, and it follows the{" "}
                 <Link
-                  href="/dashboard?dash=itemGuidelines"
+                  href="/shop-regulations"
                   className="text-blue-400/90 underline underline-offset-2 hover:text-blue-300"
                   onClick={(e) => {
                     e.preventDefault();

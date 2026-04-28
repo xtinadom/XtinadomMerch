@@ -8,12 +8,15 @@ type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-/** Shared by `(store)/@modal/(.)product` and `(site-nav)/@modal/(...)product` intercept routes. */
-export default async function ProductModalInterceptPage({ params, searchParams }: Props) {
-  const { slug } = await params;
-  const sp = await searchParams;
-  const shop = typeof sp.shop === "string" ? sp.shop : undefined;
-  const detail = await resolvePublicProductDetail(slug, shop);
+/** Shared body for modal intercept routes (`ProductModalShell` + tenant-aware resolution). */
+export async function ProductModalInterceptBody({
+  productSlug,
+  shopSlug,
+}: {
+  productSlug: string;
+  shopSlug?: string;
+}) {
+  const detail = await resolvePublicProductDetail(productSlug, shopSlug);
   if (!detail) notFound();
   return (
     <ProductModalShell>
@@ -33,4 +36,12 @@ export default async function ProductModalInterceptPage({ params, searchParams }
       />
     </ProductModalShell>
   );
+}
+
+/** Shared by `(store)/@modal/(.)product` and `(site-nav)/@modal/(...)product` intercept routes. */
+export default async function ProductModalInterceptPage({ params, searchParams }: Props) {
+  const { slug } = await params;
+  const sp = await searchParams;
+  const shop = typeof sp.shop === "string" ? sp.shop : undefined;
+  return <ProductModalInterceptBody productSlug={slug} shopSlug={shop} />;
 }

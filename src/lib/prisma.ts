@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@/generated/prisma/client";
+import type { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient as PrismaClientConstructor } from "@/generated/prisma/client";
 import { runtimeDatabaseUrlFromEnv } from "@/lib/env-postgres-url";
 
 export type PrismaAdminInboundEmailDelegate = PrismaClient["adminInboundEmail"];
@@ -12,7 +13,7 @@ export type PrismaAdminInboundEmailDelegate = PrismaClient["adminInboundEmail"];
  * (or delete `.next`) if needed.
  */
 const PRISMA_SINGLETON_STAMP =
-  "postgres-adapter-v40-drop-shop-shopSearchKeywords";
+  "postgres-adapter-v43-prisma-export-let-sync";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -47,7 +48,7 @@ function createPrisma(): PrismaClient {
   globalForPrisma.pgPool = pool;
 
   const adapter = new PrismaPg(pool);
-  return new PrismaClient({ adapter });
+  return new PrismaClientConstructor({ adapter });
 }
 
 if (globalForPrisma.prismaSingletonStamp !== PRISMA_SINGLETON_STAMP) {
@@ -56,10 +57,48 @@ if (globalForPrisma.prismaSingletonStamp !== PRISMA_SINGLETON_STAMP) {
   globalForPrisma.prismaSingletonStamp = PRISMA_SINGLETON_STAMP;
 }
 
-/** Real `PrismaClient` instance — do not wrap in `Proxy` (breaks Prisma query engine). */
-export const prisma = globalForPrisma.prisma ?? createPrisma();
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+function clientHasPromotionPurchaseDelegate(client: PrismaClient): boolean {
+  return (
+    typeof (client as { promotionPurchase?: { findMany?: unknown } }).promotionPurchase
+      ?.findMany === "function"
+  );
+}
+
+/**
+ * Drops and recreates the Prisma singleton when `promotionPurchase` is missing (stale codegen / dev HMR).
+ * Also updates the exported {@link prisma} binding — must not use `export const prisma` or importers keep
+ * a stale object reference forever.
+ */
+function reconcilePrismaSingleton(): PrismaClient {
+  let client = globalForPrisma.prisma ?? createPrisma();
+
+  if (!clientHasPromotionPurchaseDelegate(client)) {
+    globalForPrisma.prisma = undefined;
+    client = createPrisma();
+    if (!clientHasPromotionPurchaseDelegate(client)) {
+      throw new Error(
+        "PrismaClient is missing the promotionPurchase delegate. Run `npx prisma generate`, ensure src/generated/prisma is up to date, and restart the server.",
+      );
+    }
+  }
+
+  globalForPrisma.prisma = client;
+  return client;
+}
+
+/**
+ * Real `PrismaClient` instance — do not wrap in `Proxy` (breaks Prisma query engine).
+ * `let`: {@link reconcilePrismaSingleton} may replace the instance; `export const` would freeze stale refs.
+ */
+export let prisma: PrismaClient = reconcilePrismaSingleton();
+
+/**
+ * Re-run reconciliation and sync {@link prisma} (call after codegen hot-reloads in rare dev cases).
+ */
+export function reconcilePrismaAndSyncExport(): PrismaClient {
+  const next = reconcilePrismaSingleton();
+  prisma = next;
+  return next;
 }
 
 /**

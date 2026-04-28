@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
+import type { FeaturedCarouselItem } from "@/lib/shop-featured-carousel";
+import { shopsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { parseShopOrderedFeaturedProductIds } from "@/lib/shop-ordered-featured-product-ids";
+import { sortShopsForBrowse } from "@/lib/shops-browse";
 
 const CREATOR_SHOP_BASE = {
   active: true,
@@ -29,8 +32,9 @@ const select = {
 const CAROUSEL_CAP = 12;
 
 /**
- * `/shops` featured carousel: admin-ordered creator shop ids on the platform shop row, then
+ * Admin-ordered featured shop strip: creator shop ids on the platform shop row, then
  * `totalSalesCents`, then `storefrontViewCount`, then any remaining active creator shops.
+ * Composed into carousel items via {@link getHomeFeaturedShopsCarouselItems}.
  */
 export async function getShopsBrowsePageFeaturedCarouselShops(
   limit = CAROUSEL_CAP,
@@ -148,4 +152,60 @@ export async function getShopsBrowsePageFeaturedCarouselShops(
   }
 
   return out;
+}
+
+function mergeFeaturedRowsWithBrowseList(
+  featuredRows: ShopBrowseFeaturedRow[],
+  browseShopsSorted: ShopBrowseFeaturedRow[],
+  limit: number,
+): ShopBrowseFeaturedRow[] {
+  const seen = new Set(featuredRows.map((s) => s.id));
+  const merged = [...featuredRows];
+  for (const s of browseShopsSorted) {
+    if (merged.length >= limit) break;
+    if (seen.has(s.id)) continue;
+    seen.add(s.id);
+    merged.push(s);
+  }
+  return merged;
+}
+
+/**
+ * Featured shops carousel for the platform home footer (same composition as the former `/shops` strip).
+ * Fills from editorial-sorted browse shops when admin picks + internal backfill need more rows.
+ */
+export async function getHomeFeaturedShopsCarouselItems(): Promise<FeaturedCarouselItem[]> {
+  let featuredRows: ShopBrowseFeaturedRow[] = [];
+  try {
+    featuredRows = await getShopsBrowsePageFeaturedCarouselShops(CAROUSEL_CAP);
+  } catch (e) {
+    console.warn("[getHomeFeaturedShopsCarouselItems] featured carousel load failed (migrations applied?)", e);
+  }
+
+  const raw = await prisma.shop.findMany({
+    where: CREATOR_SHOP_BASE,
+    select: {
+      id: true,
+      slug: true,
+      displayName: true,
+      profileImageUrl: true,
+      bio: true,
+      totalSalesCents: true,
+      editorialPriority: true,
+      editorialPinnedUntil: true,
+      createdAt: true,
+    },
+  });
+
+  const editorialSorted = sortShopsForBrowse(raw, "editorial").map((s) => ({
+    id: s.id,
+    slug: s.slug,
+    displayName: s.displayName,
+    profileImageUrl: s.profileImageUrl,
+    bio: s.bio,
+    totalSalesCents: s.totalSalesCents,
+  }));
+
+  const merged = mergeFeaturedRowsWithBrowseList(featuredRows, editorialSorted, CAROUSEL_CAP);
+  return shopsToFeaturedCarouselItems(merged);
 }

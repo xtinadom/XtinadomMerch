@@ -120,6 +120,13 @@ export type ShopEmailVerificationToken = Prisma.ShopEmailVerificationTokenModel
  */
 export type ShopListing = Prisma.ShopListingModel
 /**
+ * Model PromotionPurchase
+ * *
+ *  * Stripe-paid promotion slot purchase. Multiple rows per listing/shop/kind are allowed.
+ *  * `paidAt` ordering is the merchant-facing “stack”; public surfaces may merge with organic later.
+ */
+export type PromotionPurchase = Prisma.PromotionPurchaseModel
+/**
  * Model Order
  * 
  */

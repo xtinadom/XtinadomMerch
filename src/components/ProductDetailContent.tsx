@@ -3,7 +3,7 @@ import { ProductAddToCartForm } from "@/components/ProductAddToCartForm";
 import { productImageUrlsForShopListing } from "@/lib/product-media";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { PrintifyVariantAddToCart } from "@/components/PrintifyVariantAddToCart";
-import { ProductImageGallery } from "@/components/ProductImageGallery";
+import { ProductImageGallery, PRODUCT_HERO_GALLERY_WRAP_CLASS } from "@/components/ProductImageGallery";
 import { StoreDocumentPanel } from "@/components/StoreDocumentPanel";
 import { SHOP_ALL_ROUTE } from "@/lib/constants";
 import type { StorefrontProduct } from "@/lib/product-storefront";
@@ -111,7 +111,7 @@ export function ProductDetailContent({
   ) : null;
 
   const grid = (
-    <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
+    <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-x-8 xl:gap-x-10">
       {multiPrintify ? (
         <PrintifyVariantAddToCart
           productId={product.id}
@@ -127,7 +127,7 @@ export function ProductDetailContent({
           galleryExtras={images}
         />
       ) : (
-        <div className="mx-auto w-full max-w-[400px]">
+        <div className={PRODUCT_HERO_GALLERY_WRAP_CLASS}>
           <ProductImageGallery images={images} />
           <ProductAddToCartForm
             productId={product.id}
@@ -135,7 +135,13 @@ export function ProductDetailContent({
           />
         </div>
       )}
-      <div>
+      <div
+        className={
+          variant === "modal"
+            ? `${PRODUCT_HERO_GALLERY_WRAP_CLASS} aspect-square overflow-y-auto overscroll-contain rounded-xl bg-zinc-950/92 p-4 sm:p-5`
+            : undefined
+        }
+      >
         {tenant ? (
           <p className="m-0">
             <Link
@@ -195,7 +201,13 @@ export function ProductDetailContent({
 
   if (variant === "page") {
     return (
-      <StoreDocumentPanel backHref={allProductsHref} backLabel="All products" omitHeaderTitle>
+      <StoreDocumentPanel
+        backHref={allProductsHref}
+        backLabel="All products"
+        showBackLink={false}
+        closeHref={allProductsHref}
+        omitHeaderTitle
+      >
         {breadcrumb ? <div className="-mt-2">{breadcrumb}</div> : null}
         {grid}
       </StoreDocumentPanel>

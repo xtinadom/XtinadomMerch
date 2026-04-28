@@ -22,9 +22,11 @@ function SiteHeaderFallback() {
 
 export default async function ShopTenantLayout({
   children,
+  modal,
   params,
 }: {
   children: React.ReactNode;
+  modal: React.ReactNode;
   params: Promise<{ shopSlug: string }>;
 }) {
   const { shopSlug } = await params;
@@ -42,6 +44,7 @@ export default async function ShopTenantLayout({
       <div className="mx-auto max-w-[1124px] px-4 pb-10 sm:px-6">
         <SiteLegalFooter />
       </div>
+      {modal}
     </div>
   );
 }

@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { uniqueImageUrlsOrdered } from "@/lib/product-media";
 
+/** PDP / variant picker column: shrinks with its container; upper bound steps up with breakpoints (400px at lg+). */
+export const PRODUCT_HERO_GALLERY_WRAP_CLASS =
+  "mx-auto min-w-0 w-full max-w-[min(100%,17rem)] sm:max-w-[min(100%,19rem)] md:max-w-[min(100%,21rem)] lg:max-w-[min(100%,25rem)]";
+
 type Props = {
   images: string[];
   /** When this changes (e.g. selected Printify variant), move the main image to match `preferMainSrc` if it exists in `images`, else first. */

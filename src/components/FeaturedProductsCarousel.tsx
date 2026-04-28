@@ -13,21 +13,30 @@ import type { FeaturedCarouselItem } from "@/lib/shop-featured-carousel";
 import { PLATFORM_SHOP_SLUG, productHref } from "@/lib/marketplace-constants";
 
 const ROTATE_MS = 2500;
-const SLIDE_GAP_PX = 40;
 const ADVANCE_DURATION_MS = 560;
 const EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
 
-/**
- * Iteration-one layout: large center square + smaller side squares, `items-center`.
- * Row height is driven by the center square; scale that to this max edge length.
- */
-const CENTER_SQUARE_PX = 300;
-/** Side ≈ min(22%,200px)-style width vs ~448px center; +20% vs that baseline. */
-const SIDE_SQUARE_PX = Math.round(CENTER_SQUARE_PX * (200 / 448) * 1.2);
+/** Default layout: large center square + smaller side squares. Base ≈ 70% of original. */
+const DEFAULT_CENTER_PX = Math.round(300 * 0.7);
+const DEFAULT_SLIDE_GAP_PX = Math.round(40 * 0.7);
 
-/** Horizontal distance (px) between adjacent slot centers (left↔center or center↔right). */
-function slotCenterDeltaX(): number {
-  return -(SLIDE_GAP_PX + CENTER_SQUARE_PX / 2 + SIDE_SQUARE_PX / 2);
+/** Same formula as side rails: scales with center tile. */
+function sidePxFromCenter(centerPx: number): number {
+  return Math.round(centerPx * (200 / 448) * 1.2);
+}
+
+/** Side-rail width for the default (non-compact) carousel — compact mode uses this as hero size so it matches those rails. */
+const DEFAULT_SIDE_PX = sidePxFromCenter(DEFAULT_CENTER_PX);
+
+function carouselTileMetrics(compact: boolean): {
+  centerPx: number;
+  sidePx: number;
+  slideGapPx: number;
+} {
+  const centerPx = compact ? DEFAULT_SIDE_PX : DEFAULT_CENTER_PX;
+  const sidePx = sidePxFromCenter(centerPx);
+  const slideGapPx = compact ? DEFAULT_SLIDE_GAP_PX / 2 : DEFAULT_SLIDE_GAP_PX;
+  return { centerPx, sidePx, slideGapPx };
 }
 
 type Props = {
@@ -35,7 +44,7 @@ type Props = {
   /** Small uppercase kicker above the row (e.g. “Top sellers”). */
   eyebrow?: string;
   /**
-   * When the parent section already provides a heading, hide the duplicate kicker line.
+   * When false, show a small uppercase kicker above the row (default: hidden so section headings aren’t duplicated).
    */
   hideKicker?: boolean;
   /** Screen-reader label for the carousel region. */
@@ -45,6 +54,8 @@ type Props = {
    * Falls back to platform `/product/...` when unset.
    */
   defaultListingShopSlug?: string;
+  /** Half-size tiles and tighter gap (e.g. featured shops on platform home). */
+  compact?: boolean;
 };
 
 function carouselItemHref(item: FeaturedCarouselItem, defaultListingShopSlug?: string): string {
@@ -58,10 +69,14 @@ function carouselItemHref(item: FeaturedCarouselItem, defaultListingShopSlug?: s
 export function FeaturedProductsCarousel({
   items,
   eyebrow = "Featured",
-  hideKicker = false,
+  hideKicker = true,
   label = "Featured products",
   defaultListingShopSlug,
+  compact = false,
 }: Props) {
+  const { centerPx, sidePx, slideGapPx } = carouselTileMetrics(compact);
+  const dx = -(slideGapPx + centerPx / 2 + sidePx / 2);
+
   const n = items.length;
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -87,9 +102,8 @@ export function FeaturedProductsCarousel({
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  const dx = slotCenterDeltaX();
-  const scaleCenterToSide = SIDE_SQUARE_PX / CENTER_SQUARE_PX;
-  const scaleSideToCenter = CENTER_SQUARE_PX / SIDE_SQUARE_PX;
+  const scaleCenterToSide = sidePx / centerPx;
+  const scaleSideToCenter = centerPx / sidePx;
 
   const beginAdvance = useCallback(() => {
     if (n <= 1 || phase !== "idle") return;
@@ -167,14 +181,18 @@ export function FeaturedProductsCarousel({
   const next = n > 1 ? items[(index + 1) % n] : null;
 
   const frameStyle = {
-    "--fc-center": `${CENTER_SQUARE_PX}px`,
-    "--fc-side": `${SIDE_SQUARE_PX}px`,
+    "--fc-center": `${centerPx}px`,
+    "--fc-side": `${sidePx}px`,
   } as CSSProperties;
 
   /** Advance step is active (dims + left fade start immediately). */
   const motionLive = phase === "advancing";
   /** FLIP transform armed after layout flush — same instant as motionLive in practice. */
   const transformLive = motionLive && animArmed;
+
+  /** Incoming slide (`next`): show caption & dot as soon as the rail moves; `index`/`curr` lag until transition end. */
+  const captionItem = n > 1 && transformLive && next ? next : curr;
+  const activeDotIndex = n > 1 && transformLive ? (index + 1) % n : index;
 
   const transformTransition = transformLive
     ? `transform ${ADVANCE_DURATION_MS}ms ${EASING}`
@@ -265,7 +283,10 @@ export function FeaturedProductsCarousel({
           </p>
         )}
         <div className="mx-auto flex w-full max-w-full flex-col items-center">
-          <div className="flex min-h-[var(--fc-center)] items-center justify-center gap-[40px] overflow-visible">
+          <div
+            className="flex min-h-[var(--fc-center)] items-center justify-center overflow-visible"
+            style={{ gap: `${slideGapPx}px` }}
+          >
             {n > 1 && prev ? (
               <div className="relative hidden w-[var(--fc-side)] shrink-0 md:block">
                 <div
@@ -342,13 +363,18 @@ export function FeaturedProductsCarousel({
             ) : null}
           </div>
 
-          <Link
-            href={carouselItemHref(curr, defaultListingShopSlug)}
-            scroll={false}
-            className="mt-2.5 line-clamp-2 w-[min(100%,var(--fc-center))] text-center text-xs font-medium leading-snug text-zinc-200 transition hover:text-blue-200/95 sm:text-sm"
-          >
-            {curr.name}
-          </Link>
+          <div className="mt-2.5 w-[min(100%,var(--fc-center))] text-center">
+            <Link
+              href={carouselItemHref(captionItem, defaultListingShopSlug)}
+              scroll={false}
+              className="line-clamp-2 text-xs font-medium leading-snug text-zinc-200 transition hover:text-blue-200/95 sm:text-sm"
+            >
+              {captionItem.name}
+            </Link>
+            {captionItem.catalogProductName ? (
+              <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-zinc-500">{captionItem.catalogProductName}</p>
+            ) : null}
+          </div>
         </div>
 
         {n > 1 ? (
@@ -357,7 +383,7 @@ export function FeaturedProductsCarousel({
               <span
                 key={`${item.href ?? ""}:${item.listingShopSlug ?? defaultListingShopSlug ?? ""}:${item.slug}:${i}`}
                 className={
-                  i === index
+                  i === activeDotIndex
                     ? "h-1.5 w-6 rounded-full bg-blue-400/90 transition-[width,background-color] duration-300"
                     : "h-1.5 w-1.5 rounded-full bg-zinc-600 transition-[width,background-color] duration-300"
                 }
