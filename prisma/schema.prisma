@@ -449,6 +449,12 @@ model PromotionPurchase {
   stripePaymentIntentId String?                 @unique
   stripeChargeId        String?
   paidAt                DateTime?
+  /**
+   * Pacific two-week placement window start when booking a future period or recording slot accounting;
+   * otherwise null and the purchase’s period is inferred from `paidAt`. Benefits still follow the shared
+   * Mon–Sun cycle — when null, active timing follows `paidAt` vs `eligibleFrom` rules in app code.
+   */
+  eligibleFrom          DateTime?
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
 

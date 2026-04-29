@@ -251,7 +251,7 @@ export async function submitFirstListingSetup(
     return {
       ok: false,
       error:
-        "Confirm in the dialog that you have rights to your images and that they follow the item guidelines.",
+        "Confirm in the dialog that you have rights to your images and that they follow the shop regulations.",
     };
   }
 

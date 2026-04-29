@@ -21,7 +21,7 @@ export default function ShopRegulationsPage() {
         >
           shop dashboard
         </Link>{" "}
-        (open the Item guidelines tab next to Onboarding). After setup is complete, use this page anytime to review the
+        (open the Shop regulations tab next to Onboarding). After setup is complete, use this page anytime to review the
         same rules.
       </p>
       <p className="mt-10">

@@ -15,6 +15,14 @@ import {
   promotionKindSurfaceDescription,
   promotionPriceCentsForKind,
 } from "@/lib/promotions";
+import {
+  PROMOTION_DEFERRED_NEXT_TIER_PRICE_MULTIPLIER,
+  PROMOTION_ACTIVE_DAYS,
+} from "@/lib/promotion-policy-shared";
+import type {
+  PopularItemPromotionUi,
+  PromotionMonthlySlotUi,
+} from "@/components/dashboard/ListingsPromotedSection";
 
 function formatMoney(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -26,8 +34,12 @@ function formatMoney(cents: number) {
 export function PromotionCardPay(props: {
   stripePublishableKey: string;
   liveListingPicklist: { id: string; label: string }[];
+  hotItemPromotion: PromotionMonthlySlotUi;
+  topShopPromotion: PromotionMonthlySlotUi;
+  popularItemPromotion: PopularItemPromotionUi;
 }) {
-  const { stripePublishableKey, liveListingPicklist } = props;
+  const { stripePublishableKey, liveListingPicklist, hotItemPromotion, topShopPromotion, popularItemPromotion } =
+    props;
   const router = useRouter();
   const mountRef = useRef<HTMLDivElement | null>(null);
   const stripeRef = useRef<Stripe | null>(null);
@@ -43,7 +55,14 @@ export function PromotionCardPay(props: {
   );
   const needsListing = promotionKindRequiresListing(kind);
   const [listingId, setListingId] = useState("");
-  const priceCents = promotionPriceCentsForKind(kind);
+  const priceCents =
+    kind === PromotionKind.HOT_FEATURED_ITEM && hotItemPromotion.offer
+      ? hotItemPromotion.offer.amountCents
+      : kind === PromotionKind.FEATURED_SHOP_HOME && topShopPromotion.offer
+        ? topShopPromotion.offer.amountCents
+        : kind === PromotionKind.MOST_POPULAR_OF_TAG_ITEM && popularItemPromotion.offer
+          ? popularItemPromotion.offer.amountCents
+          : promotionPriceCentsForKind(kind);
 
   useEffect(() => {
     if (!needsListing) setListingId("");
@@ -189,9 +208,38 @@ export function PromotionCardPay(props: {
         You will be charged <strong className="text-zinc-200">{formatMoney(priceCents)}</strong> for{" "}
         <strong className="text-zinc-200">{promotionKindLabel(kind)}</strong>.
       </p>
+      {kind === PromotionKind.HOT_FEATURED_ITEM && hotItemPromotion.offer?.isDeferred ? (
+        <p className="text-[11px] text-amber-200/85">
+          Current Hot item period is full ({hotItemPromotion.slotsUsedUtcThisMonth} / {hotItemPromotion.monthlyCap}). This
+          purchase targets placement starting {hotItemPromotion.offer.placementMonthLabel} (Pacific) at{" "}
+          {hotItemPromotion.offer.isSecondFuturePeriod
+            ? `${PROMOTION_DEFERRED_NEXT_TIER_PRICE_MULTIPLIER}× the standard Hot item rate`
+            : "the standard Hot item rate for that window"}
+          .
+        </p>
+      ) : null}
+      {kind === PromotionKind.FEATURED_SHOP_HOME && topShopPromotion.offer?.isDeferred ? (
+        <p className="text-[11px] text-amber-200/85">
+          Current Top shop period is full ({topShopPromotion.slotsUsedUtcThisMonth} / {topShopPromotion.monthlyCap}). This
+          purchase targets placement starting {topShopPromotion.offer.placementMonthLabel} (Pacific) at{" "}
+          {topShopPromotion.offer.isSecondFuturePeriod
+            ? `${PROMOTION_DEFERRED_NEXT_TIER_PRICE_MULTIPLIER}× the standard Top shop rate`
+            : "the standard Top shop rate for that window"}
+          .
+        </p>
+      ) : null}
       <p className="text-[11px] text-zinc-500">
-        Your card is charged immediately (no redirect). You can buy multiple boosts; newer purchases go toward the
-        front of the promotion stack and push older ones down as more creators buy placement.
+        Your card is charged immediately (no redirect). Listing promotions share the same two-week Pacific window ({" "}
+        {PROMOTION_ACTIVE_DAYS} days); mid-period buys are prorated by remaining days.
+        {kind === PromotionKind.HOT_FEATURED_ITEM ? (
+          <> Hot item is capped at {hotItemPromotion.monthlyCap} purchases per period.</>
+        ) : null}
+        {kind === PromotionKind.FEATURED_SHOP_HOME ? (
+          <> Top shop is capped at {topShopPromotion.monthlyCap} purchases per period.</>
+        ) : null}
+        {kind === PromotionKind.MOST_POPULAR_OF_TAG_ITEM ? (
+          <> Popular item has no platform-wide slot cap.</>
+        ) : null}
       </p>
       <div ref={mountRef} className="rounded border border-zinc-800 bg-zinc-900/40 px-2 py-2" />
       {error ? <p className="text-xs text-red-300/90">{error}</p> : null}

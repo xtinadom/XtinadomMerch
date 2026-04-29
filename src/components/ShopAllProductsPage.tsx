@@ -9,7 +9,6 @@ import {
 import { FeaturedProductsCarousel } from "@/components/FeaturedProductsCarousel";
 import { ShopPlatformBrowseGrid } from "@/components/ShopPlatformBrowseGrid";
 import { getStoreTags, getStoreTagsForShop } from "@/lib/store-tags";
-import { parseBrowseAllPageFeaturedProductIds } from "@/lib/browse-all-page-featured-product-ids";
 import { getPlatformAllPageFeaturedProducts } from "@/lib/platform-all-page-featured";
 import { productsToFeaturedCarouselItems } from "@/lib/shop-featured-carousel";
 import { productCardProductFromListing } from "@/lib/shop-listing-product";
@@ -18,6 +17,10 @@ import {
   marketplaceAggregatedListingWhere,
   storefrontShopListingWhere,
 } from "@/lib/shop-listing-storefront-visibility";
+import {
+  shopListingPopularItemPromotionPurchasesArgs,
+  sortShopListingsForPopularBrowse,
+} from "@/lib/shop-listing-browse-promotion-sort";
 
 const productInclude = {
   primaryTag: true,
@@ -52,23 +55,25 @@ function parseShopAllBrowseSort(
   raw: string | undefined | null,
 ): ShopAllBrowseSortParam {
   if (raw === "popular" || raw === "new") return raw;
-  return "name";
+  if (raw === "name") return "price";
+  if (raw === "price") return "price";
+  return "price";
 }
 
-/** Browse grid only — featured carousel merge pools stay name-ordered for stable picks. */
-function shopListingBrowseOrderBy(
+/**
+ * Prisma `orderBy` for browse — **Popular** is sorted in memory
+ * (`sortShopListingsForPopularBrowse`); do not pass an order for that mode.
+ */
+function shopListingBrowsePrismaOrderBy(
   sort: ShopAllBrowseSortParam,
-): Prisma.ShopListingOrderByWithRelationInput[] {
+): Prisma.ShopListingOrderByWithRelationInput[] | undefined {
   switch (sort) {
     case "popular":
-      return [
-        { product: { storefrontViewCount: "desc" } },
-        { product: { name: "asc" } },
-      ];
+      return undefined;
     case "new":
-      return [{ product: { createdAt: "desc" } }];
-    default:
-      return [{ product: { name: "asc" } }];
+      return [{ createdAt: "desc" }];
+    case "price":
+      return [{ priceCents: "asc" }, { product: { name: "asc" } }];
   }
 }
 
@@ -107,7 +112,11 @@ export async function ShopAllProductsPage({
   browseFlat?: boolean;
   /** From `?tag=` — primary or secondary tag slug; filters Browse grid only. */
   tagSlug?: string | null;
-  /** From `?sort=` — `popular` | `new` | default name / A–Z. */
+  /**
+   * From `?sort=`: `new` (listing `createdAt` desc), `price` (low → high), `popular` (newest paid
+   * “Popular item” promotion, then line revenue, then product views), or default `price`. Legacy
+   * `?sort=name` maps to `price`.
+   */
   browseSort?: string | null;
 } = {}) {
   const shop = await prisma.shop.findFirst({
@@ -116,25 +125,9 @@ export async function ShopAllProductsPage({
   });
   if (!shop) notFound();
 
-  /** Optional column from migration `20260225140000`; absent DBs skip admin picks until `migrate deploy`. */
-  let adminFeaturedProductIds: string[] = [];
-  if (shopSlug === PLATFORM_SHOP_SLUG) {
-    try {
-      const featuredRow = await prisma.shop.findUnique({
-        where: { id: shop.id },
-        select: { browseAllPageFeaturedProductIds: true },
-      });
-      adminFeaturedProductIds = parseBrowseAllPageFeaturedProductIds(
-        featuredRow?.browseAllPageFeaturedProductIds ?? null,
-      );
-    } catch (e) {
-      console.warn("[ShopAllProductsPage] browseAllPageFeaturedProductIds not available", e);
-    }
-  }
-
   const isPlatformCatalog = shopSlug === PLATFORM_SHOP_SLUG;
   const browseSort = parseShopAllBrowseSort(browseSortParam);
-  const browseOrderBy = shopListingBrowseOrderBy(browseSort);
+  const browsePrismaOrderBy = shopListingBrowsePrismaOrderBy(browseSort);
 
   const filterTags =
     browseFlat && !isPlatformCatalog
@@ -158,10 +151,18 @@ export async function ShopAllProductsPage({
     return Object.keys(textWhere).length === 0 ? base : { AND: [base, textWhere] };
   }
 
-  const listingInclude = {
+  const listingIncludeBase = {
     product: { include: productInclude },
     shop: { select: { slug: true, displayName: true } },
   } as const;
+
+  const listingInclude =
+    browseSort === "popular"
+      ? {
+          ...listingIncludeBase,
+          promotionPurchases: shopListingPopularItemPromotionPurchasesArgs,
+        }
+      : listingIncludeBase;
 
   let browseProducts: ReturnType<typeof productCardProductFromListing>[];
   let featuredSourceProducts: ReturnType<typeof productCardProductFromListing>[];
@@ -179,21 +180,25 @@ export async function ShopAllProductsPage({
         activeTag != null ? withProductTagFilter(fullWhere, activeTag) : fullWhere;
 
       if (activeTag != null) {
-        const [browseRows, fullRows] = await Promise.all([
+        const [browseRowsRaw, fullRows] = await Promise.all([
           prisma.shopListing.findMany({
             where: browseWhere,
-            orderBy: browseOrderBy,
+            ...(browsePrismaOrderBy ? { orderBy: browsePrismaOrderBy } : {}),
             include: listingInclude,
           }),
           prisma.shopListing.findMany({
             where: fullWhere,
             orderBy: listingOrderNameAsc,
-            include: listingInclude,
+            include: listingIncludeBase,
           }),
         ]);
+        const browseRows =
+          browseSort === "popular"
+            ? await sortShopListingsForPopularBrowse(browseRowsRaw)
+            : browseRowsRaw;
         browseProducts = browseRows.map((l) => productCardProductFromListing(l));
         const pool = fullRows.map((l) => productCardProductFromListing(l));
-        const primary = await getPlatformAllPageFeaturedProducts(adminFeaturedProductIds);
+        const primary = await getPlatformAllPageFeaturedProducts();
         const seen = new Set(primary.map((p) => p.id));
         const merged = [...primary];
         for (const p of pool) {
@@ -204,14 +209,18 @@ export async function ShopAllProductsPage({
         }
         featuredSourceProducts = merged;
       } else {
-        const listings = await prisma.shopListing.findMany({
+        const listingsRaw = await prisma.shopListing.findMany({
           where: browseWhere,
-          orderBy: browseOrderBy,
+          ...(browsePrismaOrderBy ? { orderBy: browsePrismaOrderBy } : {}),
           include: listingInclude,
         });
+        const listings =
+          browseSort === "popular"
+            ? await sortShopListingsForPopularBrowse(listingsRaw)
+            : listingsRaw;
         const allProducts = listings.map((l) => productCardProductFromListing(l));
         browseProducts = allProducts;
-        const primary = await getPlatformAllPageFeaturedProducts(adminFeaturedProductIds);
+        const primary = await getPlatformAllPageFeaturedProducts();
         const seen = new Set(primary.map((p) => p.id));
         const merged = [...primary];
         for (const p of allProducts) {
@@ -226,11 +235,15 @@ export async function ShopAllProductsPage({
       const base = withSearch(shopWhereBase);
       const where =
         activeTag != null ? withProductTagFilter(base, activeTag) : base;
-      const listings = await prisma.shopListing.findMany({
+      const listingsRaw = await prisma.shopListing.findMany({
         where,
-        orderBy: browseOrderBy,
+        ...(browsePrismaOrderBy ? { orderBy: browsePrismaOrderBy } : {}),
         include: listingInclude,
       });
+      const listings =
+        browseSort === "popular"
+          ? await sortShopListingsForPopularBrowse(listingsRaw)
+          : listingsRaw;
       const shopProducts = listings.map((l) => productCardProductFromListing(l));
       browseProducts = shopProducts;
       featuredSourceProducts = shopProducts;
@@ -238,7 +251,7 @@ export async function ShopAllProductsPage({
       const shopListings = await prisma.shopListing.findMany({
         where: withSearch(shopWhereBase),
         orderBy: listingOrderNameAsc,
-        include: listingInclude,
+        include: listingIncludeBase,
       });
       const shopProducts = shopListings.map((l) => productCardProductFromListing(l));
       featuredSourceProducts = shopProducts;
@@ -246,11 +259,15 @@ export async function ShopAllProductsPage({
       const mBase = withSearch(marketplaceWhereBase);
       const mWhere =
         activeTag != null ? withProductTagFilter(mBase, activeTag) : mBase;
-      const marketplaceListings = await prisma.shopListing.findMany({
+      const marketplaceListingsRaw = await prisma.shopListing.findMany({
         where: mWhere,
-        orderBy: browseOrderBy,
+        ...(browsePrismaOrderBy ? { orderBy: browsePrismaOrderBy } : {}),
         include: listingInclude,
       });
+      const marketplaceListings =
+        browseSort === "popular"
+          ? await sortShopListingsForPopularBrowse(marketplaceListingsRaw)
+          : marketplaceListingsRaw;
       browseProducts = marketplaceListings.map((l) => productCardProductFromListing(l));
     }
   } catch (e) {

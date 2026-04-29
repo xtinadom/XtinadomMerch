@@ -59,7 +59,7 @@ function StepIcon({ done }: { done: boolean }) {
 function incompleteStripePrerequisitesSummary(steps: ShopSetupSteps): string {
   const missing: string[] = [];
   if (!steps.profile) missing.push("shop profile (display name)");
-  if (!steps.guidelines) missing.push("item guidelines");
+  if (!steps.guidelines) missing.push("shop regulations");
   if (!steps.emailVerified) missing.push("email verification");
   if (!steps.listing) missing.push("a listing request");
   if (missing.length === 0) {
@@ -190,7 +190,7 @@ export function ShopSetupTabs(props: {
           <li className="flex gap-3">
             <StepIcon done={steps.guidelines} />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-zinc-200">Read item guidelines</p>
+              <p className="text-sm font-medium text-zinc-200">Read shop regulations</p>
               <p className="mt-0.5 text-xs text-zinc-500">
                 Rights to photos, content rules, fees for rejected or removed listings, and liability.
               </p>
@@ -199,8 +199,8 @@ export function ShopSetupTabs(props: {
                 className="mt-1.5 inline-block text-xs font-medium text-zinc-300 underline decoration-zinc-600 underline-offset-2 hover:text-zinc-100"
               >
                 {steps.guidelines
-                  ? "Review Item guidelines tab →"
-                  : "Open Item guidelines (next to Onboarding) →"}
+                  ? "Review Shop regulations tab →"
+                  : "Open Shop regulations (next to Onboarding) →"}
               </Link>
             </div>
           </li>

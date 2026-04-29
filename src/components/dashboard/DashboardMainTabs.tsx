@@ -51,7 +51,11 @@ import { parseListingPrintifyVariantPrices } from "@/lib/listing-printify-varian
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { ListingsTabExpandSection } from "@/components/dashboard/ListingsTabExpandSection";
 import { ListingsPromotedSection } from "@/components/dashboard/ListingsPromotedSection";
-import type { DashboardPromotionPurchaseRow } from "@/components/dashboard/ListingsPromotedSection";
+import type {
+  DashboardPromotionPurchaseRow,
+  PopularItemPromotionUi,
+  PromotionMonthlySlotUi,
+} from "@/components/dashboard/ListingsPromotedSection";
 
 export type DashboardSetupPanelProps = {
   setupTabsKey: string;
@@ -866,6 +870,9 @@ export function DashboardMainTabs(props: {
     liveListingPicklist: { id: string; label: string }[];
     mockPromotionCheckout: boolean;
     stripePublishableKey: string | null;
+    hotItemPromotion: PromotionMonthlySlotUi;
+    topShopPromotion: PromotionMonthlySlotUi;
+    popularItemPromotion: PopularItemPromotionUi;
   } | null;
   paidOrders: DashboardPaidOrderRow[];
   /** R2 configured for optional listing photo uploads (creator shops). */
@@ -982,7 +989,7 @@ export function DashboardMainTabs(props: {
               setupTabId,
               setupPanelId,
             )}
-            {tabBtn("itemGuidelines", "Item guidelines", itemGuidelinesTabId, itemGuidelinesPanelId)}
+            {tabBtn("itemGuidelines", "Shop regulations", itemGuidelinesTabId, itemGuidelinesPanelId)}
           </div>
         ) : null}
         <div className="flex flex-wrap gap-1 rounded-xl border border-zinc-800 bg-zinc-950/40 p-1">
@@ -1164,6 +1171,9 @@ export function DashboardMainTabs(props: {
             liveListingPicklist={promotions.liveListingPicklist}
             mockPromotionCheckout={promotions.mockPromotionCheckout}
             stripePublishableKey={promotions.stripePublishableKey}
+            hotItemPromotion={promotions.hotItemPromotion}
+            topShopPromotion={promotions.topShopPromotion}
+            popularItemPromotion={promotions.popularItemPromotion}
           />
         ) : null}
 

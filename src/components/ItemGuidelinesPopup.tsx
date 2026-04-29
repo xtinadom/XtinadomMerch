@@ -25,7 +25,7 @@ export function ItemGuidelinesPopup(props: { open: boolean; onClose: () => void 
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Item guidelines"
+      aria-label="Shop regulations"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -33,7 +33,7 @@ export function ItemGuidelinesPopup(props: { open: boolean; onClose: () => void 
       <div className="w-full max-w-2xl rounded-xl border border-zinc-700 bg-zinc-950 shadow-xl">
         <div className="flex items-start justify-between gap-4 border-b border-zinc-800 px-5 py-4">
           <div className="min-w-0">
-            <h3 className="text-base font-semibold text-zinc-100">Item guidelines</h3>
+            <h3 className="text-base font-semibold text-zinc-100">Shop regulations</h3>
             <p className="mt-1 text-xs text-zinc-500">Press Escape or click outside to close.</p>
           </div>
           <button
@@ -49,7 +49,7 @@ export function ItemGuidelinesPopup(props: { open: boolean; onClose: () => void 
           <ItemGuidelinesArticle className="space-y-4 text-sm leading-relaxed text-zinc-300" />
 
           <p className="mt-4 text-xs text-zinc-600">
-            This page is a practical summary, not legal advice. For storefront policies fans see, see also{" "}
+            This page is a practical summary, not legal advice. For storefront policies that fans see, see also{" "}
             <Link
               href="/shop-regulations"
               target="_blank"

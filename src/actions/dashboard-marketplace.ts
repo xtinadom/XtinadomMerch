@@ -445,7 +445,7 @@ export async function dashboardSubmitListingRequest(
     return {
       ok: false,
       error:
-        "Confirm in the dialog that you have rights to your reference images and that they follow the item guidelines.",
+        "Confirm in the dialog that you have rights to your reference images and that they follow the shop regulations.",
     };
   }
 

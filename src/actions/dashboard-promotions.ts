@@ -9,7 +9,11 @@ import { isMockCheckoutEnabled } from "@/lib/checkout-mock";
 import {
   PLATFORM_SHOP_SLUG,
 } from "@/lib/marketplace-constants";
-import { ListingRequestStatus, PromotionPurchaseStatus } from "@/generated/prisma/enums";
+import {
+  ListingRequestStatus,
+  PromotionKind,
+  PromotionPurchaseStatus,
+} from "@/generated/prisma/enums";
 import { shopStripeConnectReadyForListingCharges } from "@/lib/shop-stripe-connect-gate";
 import { ensureListingFeeStripeConnectNotice } from "@/lib/listing-fee-connect-notice";
 import { fulfillPromotionPurchasePaidIfPending } from "@/lib/promotion-fulfillment";
@@ -18,6 +22,57 @@ import {
   promotionKindRequiresListing,
   promotionPriceCentsForKind,
 } from "@/lib/promotions";
+import {
+  resolveHotItemPlacementOffer,
+  resolvePopularPlacementOffer,
+  resolveTopShopPlacementOffer,
+} from "@/lib/promotion-hot-item-policy";
+
+async function resolvePromotionPricing(kind: PromotionKind): Promise<
+  | { ok: true; amountCents: number; eligibleFrom: Date | null }
+  | { ok: false; error: string }
+> {
+  const base = promotionPriceCentsForKind(kind);
+  if (kind === PromotionKind.HOT_FEATURED_ITEM) {
+    const offer = await resolveHotItemPlacementOffer(base);
+    if ("error" in offer) return { ok: false, error: offer.error };
+    return {
+      ok: true,
+      amountCents: offer.amountCents,
+      eligibleFrom: offer.eligibleFrom,
+    };
+  }
+  if (kind === PromotionKind.FEATURED_SHOP_HOME) {
+    const offer = await resolveTopShopPlacementOffer(base);
+    if ("error" in offer) return { ok: false, error: offer.error };
+    return {
+      ok: true,
+      amountCents: offer.amountCents,
+      eligibleFrom: offer.eligibleFrom,
+    };
+  }
+  if (kind === PromotionKind.MOST_POPULAR_OF_TAG_ITEM) {
+    const offer = await resolvePopularPlacementOffer(base);
+    if ("error" in offer) return { ok: false, error: offer.error };
+    return {
+      ok: true,
+      amountCents: offer.amountCents,
+      eligibleFrom: offer.eligibleFrom,
+    };
+  }
+  /** Same two-week Pacific window + proration as Popular when a non-zero price exists (not currently in dashboard UI). */
+  if (kind === PromotionKind.FRONT_PAGE_ITEM) {
+    if (base <= 0) return { ok: true, amountCents: 0, eligibleFrom: null };
+    const offer = await resolvePopularPlacementOffer(base);
+    if ("error" in offer) return { ok: false, error: offer.error };
+    return {
+      ok: true,
+      amountCents: offer.amountCents,
+      eligibleFrom: offer.eligibleFrom,
+    };
+  }
+  return { ok: true, amountCents: base, eligibleFrom: null };
+}
 
 async function requireShopOwner() {
   const session = await getShopOwnerSession();
@@ -84,7 +139,9 @@ export async function startPromotionPurchaseIntent(input: {
     shopListingId = listingIdRaw;
   }
 
-  const amountCents = promotionPriceCentsForKind(kind);
+  const priced = await resolvePromotionPricing(kind);
+  if (!priced.ok) return { ok: false, error: priced.error };
+  const { amountCents, eligibleFrom } = priced;
   if (amountCents <= 0) return { ok: false, error: "Invalid promotion price." };
 
   if (isMockCheckoutEnabled()) {
@@ -112,6 +169,7 @@ export async function startPromotionPurchaseIntent(input: {
       amountCents,
       currency: "usd",
       status: PromotionPurchaseStatus.pending,
+      eligibleFrom,
     },
   });
 
@@ -128,6 +186,7 @@ export async function startPromotionPurchaseIntent(input: {
         promotionKind: kind,
         ...(shopListingId ? { shopListingId } : {}),
         amountCents: String(amountCents),
+        ...(eligibleFrom ? { eligibleFromIso: eligibleFrom.toISOString() } : {}),
       },
     });
 
@@ -249,7 +308,11 @@ export async function dashboardMockPayPromotion(formData: FormData) {
     redirect("/dashboard?promo=err&promoErr=mock_only");
   }
 
-  const amountCents = promotionPriceCentsForKind(kind);
+  const priced = await resolvePromotionPricing(kind);
+  if (!priced.ok) {
+    redirect(`/dashboard?promo=err&promoErr=hot_item_policy`);
+  }
+  const { amountCents, eligibleFrom } = priced;
   if (amountCents <= 0) return;
 
   await prisma.promotionPurchase.create({
@@ -262,6 +325,7 @@ export async function dashboardMockPayPromotion(formData: FormData) {
       currency: "usd",
       status: PromotionPurchaseStatus.paid,
       paidAt: new Date(),
+      eligibleFrom,
     },
   });
 

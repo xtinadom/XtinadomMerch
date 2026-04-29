@@ -3,7 +3,7 @@ import { PLATFORM_SHOP_SLUG } from "@/lib/marketplace-constants";
 
 type TagRow = { slug: string; name: string };
 
-export type ShopAllBrowseSortParam = "name" | "popular" | "new";
+export type ShopAllBrowseSortParam = "price" | "popular" | "new";
 
 function shopAllQueryString(opts: {
   q?: string | null;
@@ -15,7 +15,7 @@ function shopAllQueryString(opts: {
   if (opts.q?.trim()) p.set("q", opts.q.trim());
   if (opts.tag?.trim()) p.set("tag", opts.tag.trim());
   if (opts.flat) p.set("flat", "1");
-  if (opts.sort && opts.sort !== "name") p.set("sort", opts.sort);
+  if (opts.sort && opts.sort !== "price") p.set("sort", opts.sort);
   const s = p.toString();
   return s ? `?${s}` : "";
 }
@@ -102,7 +102,7 @@ export function ShopAllBrowseToolbar({
             <input type="hidden" name="tag" value={selectedTagSlug.trim()} />
           ) : null}
           {browseFlat ? <input type="hidden" name="flat" value="1" /> : null}
-          {selectedSort !== "name" ? (
+          {selectedSort !== "price" ? (
             <input type="hidden" name="sort" value={selectedSort} />
           ) : null}
           <label className="sr-only" htmlFor="shop-all-search-q">
@@ -154,23 +154,23 @@ export function ShopAllBrowseToolbar({
         </Link>
         <Link
           href={sortHref("new")}
-          className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-wide transition sm:text-xs ${
+          className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-wide transition sm:text-xs ${
             selectedSort === "new"
               ? "border-blue-500/70 bg-blue-950/50 text-blue-200"
               : "border-zinc-700 bg-zinc-900/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
           }`}
         >
-          New
+          New ↓
         </Link>
         <Link
-          href={sortHref("name")}
-          className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-wide transition sm:text-xs ${
-            selectedSort === "name"
+          href={sortHref("price")}
+          className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-wide transition sm:text-xs ${
+            selectedSort === "price"
               ? "border-blue-500/70 bg-blue-950/50 text-blue-200"
               : "border-zinc-700 bg-zinc-900/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
           }`}
         >
-          A–Z
+          Price ↑
         </Link>
       </nav>
     </div>

@@ -812,7 +812,7 @@ export function DashboardSubmitListingRequestForm({
                   className="text-blue-400/90 underline underline-offset-2 hover:text-blue-300"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  item guidelines
+                  shop regulations
                 </Link>
                 .
               </span>

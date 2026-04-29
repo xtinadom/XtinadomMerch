@@ -2577,6 +2577,7 @@ export const PromotionPurchaseScalarFieldEnum = {
   stripePaymentIntentId: 'stripePaymentIntentId',
   stripeChargeId: 'stripeChargeId',
   paidAt: 'paidAt',
+  eligibleFrom: 'eligibleFrom',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

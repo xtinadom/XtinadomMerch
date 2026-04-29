@@ -3,11 +3,9 @@ export async function register() {
 
   if (process.env.NODE_ENV === "development") {
     try {
-      // Avoid bundling `pg` into the instrumentation chunk (webpack `--webpack` / Vercel).
-      const { prisma } = await import(
-        /* webpackIgnore: true */
-        "./lib/prisma"
-      );
+      // Use `@/lib/prisma` so Turbopack resolves to `src/lib/prisma` (relative `./lib/prisma` can
+      // break into a bad `.next/dev/server/chunks/...` path and mask real DB errors).
+      const { prisma } = await import("@/lib/prisma");
       await prisma.$connect();
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);

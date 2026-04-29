@@ -750,7 +750,6 @@ export async function AdminDashboardPageContent({
     { productId: string; label: string }[]
   > = {};
   let platformBrowseFeaturedPickerLabelsByProductId: Record<string, string> = {};
-  let platformBrowseFeaturedInitialIds: string[] = [];
   let platformHomeHotCarouselInitialIds: string[] = [];
   let platformBrowseShopsPageFeaturedInitialIds: string[] = [];
   let creatorShops: { id: string; displayName: string; slug: string; listingFeeBonusFreeSlots: number | null }[] = [];
@@ -1026,14 +1025,10 @@ export async function AdminDashboardPageContent({
           const featuredRow = await prisma.shop.findUnique({
             where: { id: platformShop.id },
             select: {
-              browseAllPageFeaturedProductIds: true,
               homeHotCarouselFeaturedProductIds: true,
               browseShopsPageFeaturedShopIds: true,
             },
           });
-          platformBrowseFeaturedInitialIds = parseShopOrderedFeaturedProductIds(
-            featuredRow?.browseAllPageFeaturedProductIds ?? null,
-          );
           platformHomeHotCarouselInitialIds = parseShopOrderedFeaturedProductIds(
             featuredRow?.homeHotCarouselFeaturedProductIds ?? null,
           );
@@ -1620,13 +1615,7 @@ export async function AdminDashboardPageContent({
                 labelsByProductId={platformBrowseFeaturedPickerLabelsByProductId}
                 initialProductIds={platformHomeHotCarouselInitialIds}
               />
-              <AdminPlatformBrowseFeaturedPanel
-                key={JSON.stringify(platformBrowseFeaturedInitialIds)}
-                shops={platformBrowseFeaturedPickerShops}
-                productsByShopId={platformBrowseFeaturedPickerProductsByShopId}
-                labelsByProductId={platformBrowseFeaturedPickerLabelsByProductId}
-                initialProductIds={platformBrowseFeaturedInitialIds}
-              />
+              <AdminPlatformBrowseFeaturedPanel />
               <AdminBrowseShopsPageFeaturedPanel
                 key={`browse-shops:${JSON.stringify(platformBrowseShopsPageFeaturedInitialIds)}`}
                 shops={creatorShops}

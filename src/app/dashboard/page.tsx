@@ -3,7 +3,13 @@ import { redirect } from "next/navigation";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getShopOwnerSession, getShopOwnerSessionReadonly } from "@/lib/session";
-import { FulfillmentType, ListingRequestStatus, OrderStatus } from "@/generated/prisma/enums";
+import {
+  FulfillmentType,
+  ListingRequestStatus,
+  OrderStatus,
+  PromotionKind,
+  PromotionPurchaseStatus,
+} from "@/generated/prisma/enums";
 import {
   LISTING_FEE_CENTS,
   PLATFORM_SHOP_SLUG,
@@ -42,6 +48,22 @@ import {
   buildGroupedListingSectionsForDashboard,
   dashboardListingTabBadgeCounts,
 } from "@/lib/dashboard-legacy-baseline-listing-groups";
+import {
+  countHotItemPaidForPlacementPeriodUtc,
+  countTopShopPaidForPlacementPeriodUtc,
+  resolveHotItemPlacementOffer,
+  resolvePopularPlacementOffer,
+  resolveTopShopPlacementOffer,
+} from "@/lib/promotion-hot-item-policy";
+import {
+  HOT_ITEM_PLATFORM_PERIOD_CAP,
+  TOP_SHOP_PLATFORM_PERIOD_CAP,
+} from "@/lib/promotion-policy-shared";
+import {
+  currentListingPromotionPeriodStartUtc,
+  formatPacificPromotionWindowMmDdRange,
+} from "@/lib/promotion-period-pacific";
+import { promotionPriceCentsForKind } from "@/lib/promotions";
 import {
   canStartStripeConnect,
   computeShopOnboardingSteps,
@@ -519,19 +541,44 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       })
     : [];
 
+  const hotItemBaseCents = promotionPriceCentsForKind(PromotionKind.HOT_FEATURED_ITEM);
+  const topShopBaseCents = promotionPriceCentsForKind(PromotionKind.FEATURED_SHOP_HOME);
+  const popularBaseCents = promotionPriceCentsForKind(PromotionKind.MOST_POPULAR_OF_TAG_ITEM);
+  const hotOfferResolved = !isPlatform ? await resolveHotItemPlacementOffer(hotItemBaseCents) : null;
+  const topShopOfferResolved = !isPlatform ? await resolveTopShopPlacementOffer(topShopBaseCents) : null;
+  const popularOfferResolved = !isPlatform ? await resolvePopularPlacementOffer(popularBaseCents) : null;
+  const periodStartUtc = currentListingPromotionPeriodStartUtc(new Date());
+  const hotSlotsUsedUtc = !isPlatform
+    ? await countHotItemPaidForPlacementPeriodUtc(periodStartUtc)
+    : 0;
+  const topShopSlotsUsedUtc = !isPlatform
+    ? await countTopShopPaidForPlacementPeriodUtc(periodStartUtc)
+    : 0;
+
   const promotionsPayload = !isPlatform
     ? {
-        purchases: promotionPurchasesForDash.map((row) => ({
-          id: row.id,
-          kind: row.kind,
-          status: row.status,
-          amountCents: row.amountCents,
-          createdAtIso: row.createdAt.toISOString(),
-          paidAtIso: row.paidAt?.toISOString() ?? null,
-          listingLabel: row.shopListing
-            ? row.shopListing.requestItemName?.trim() || row.shopListing.product.name
-            : null,
-        })),
+        purchases: promotionPurchasesForDash.map((row) => {
+          const activeWindowPacificRange =
+            row.paidAt && row.status === PromotionPurchaseStatus.paid
+              ? formatPacificPromotionWindowMmDdRange({
+                  eligibleFrom: row.eligibleFrom,
+                  paidAt: row.paidAt,
+                })
+              : null;
+          return {
+            id: row.id,
+            kind: row.kind,
+            status: row.status,
+            amountCents: row.amountCents,
+            createdAtIso: row.createdAt.toISOString(),
+            paidAtIso: row.paidAt?.toISOString() ?? null,
+            eligibleFromIso: row.eligibleFrom?.toISOString() ?? null,
+            activeWindowPacificRange,
+            listingLabel: row.shopListing
+              ? row.shopListing.requestItemName?.trim() || row.shopListing.product.name
+              : null,
+          };
+        }),
         liveListingPicklist: listingRows
           .filter(
             (l) => l.active && l.requestStatus !== ListingRequestStatus.rejected,
@@ -542,6 +589,57 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           })),
         mockPromotionCheckout: mockListingFeeCheckout,
         stripePublishableKey,
+        hotItemPromotion: {
+          monthlyCap: HOT_ITEM_PLATFORM_PERIOD_CAP,
+          slotsUsedUtcThisMonth: hotSlotsUsedUtc,
+          offerError:
+            hotOfferResolved && "error" in hotOfferResolved ? hotOfferResolved.error : null,
+          offer:
+            hotOfferResolved && !("error" in hotOfferResolved)
+              ? {
+                  amountCents: hotOfferResolved.amountCents,
+                  eligibleFromIso: hotOfferResolved.eligibleFrom.toISOString(),
+                  isDeferred: hotOfferResolved.futurePeriodOffset > 0,
+                  isSecondFuturePeriod: hotOfferResolved.isSecondFuturePeriod,
+                  isProrated: hotOfferResolved.isProrated,
+                  placementMonthLabel: hotOfferResolved.placementPeriodLabel,
+                }
+              : null,
+        },
+        topShopPromotion: {
+          monthlyCap: TOP_SHOP_PLATFORM_PERIOD_CAP,
+          slotsUsedUtcThisMonth: topShopSlotsUsedUtc,
+          offerError:
+            topShopOfferResolved && "error" in topShopOfferResolved
+              ? topShopOfferResolved.error
+              : null,
+          offer:
+            topShopOfferResolved && !("error" in topShopOfferResolved)
+              ? {
+                  amountCents: topShopOfferResolved.amountCents,
+                  eligibleFromIso: topShopOfferResolved.eligibleFrom.toISOString(),
+                  isDeferred: topShopOfferResolved.futurePeriodOffset > 0,
+                  isSecondFuturePeriod: topShopOfferResolved.isSecondFuturePeriod,
+                  isProrated: topShopOfferResolved.isProrated,
+                  placementMonthLabel: topShopOfferResolved.placementPeriodLabel,
+                }
+              : null,
+        },
+        popularItemPromotion: {
+          offerError:
+            popularOfferResolved && "error" in popularOfferResolved
+              ? popularOfferResolved.error
+              : null,
+          offer:
+            popularOfferResolved && !("error" in popularOfferResolved)
+              ? {
+                  amountCents: popularOfferResolved.amountCents,
+                  eligibleFromIso: popularOfferResolved.eligibleFrom.toISOString(),
+                  isProrated: popularOfferResolved.isProrated,
+                  placementMonthLabel: popularOfferResolved.placementPeriodLabel,
+                }
+              : null,
+        },
       }
     : null;
 
@@ -624,7 +722,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         <p className="mt-4 rounded-lg border border-red-900/50 bg-red-950/30 px-4 py-2 text-sm text-red-200/90">
           {promoErr === "mock_only"
             ? "Mock promotion pay is only available when mock checkout is enabled on the server."
-            : "Something went wrong recording the promotion. Try again or contact support."}
+            : promoErr === "hot_item_policy"
+              ? "That promotion could not be recorded (Hot item / Top shop periods may be fully booked). Refresh and try again, or contact support."
+              : "Something went wrong recording the promotion. Try again or contact support."}
         </p>
       ) : null}
 
@@ -662,7 +762,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       ) : null}
       {!isPlatform && connect === "err" && connectReason === "onboarding_incomplete" ? (
         <p className="mt-4 rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-2 text-sm text-amber-200/90">
-          Complete onboarding (shop profile, item guidelines, verify email, and a listing request) before connecting
+          Complete onboarding (shop profile, shop regulations, verify email, and a listing request) before connecting
           Stripe.
         </p>
       ) : null}

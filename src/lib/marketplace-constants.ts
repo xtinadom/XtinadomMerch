@@ -6,6 +6,27 @@ export const PLATFORM_SHOP_SLUG = "platform" as const;
  */
 export const FOUNDER_UNLIMITED_FREE_LISTINGS_SHOP_SLUG = "goddess-xtina" as const;
 
+/**
+ * Backfill order for `/shop/all` “Hot items” when promotions + sales/views tiers don’t fill 10 slots.
+ * Override in prod via `PLATFORM_HOT_ITEMS_FALLBACK_SHOP_SLUGS` (comma-separated slugs).
+ */
+export function platformHotItemsFallbackShopSlugs(): readonly string[] {
+  const raw = process.env.PLATFORM_HOT_ITEMS_FALLBACK_SHOP_SLUGS?.trim();
+  if (raw) {
+    return raw.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+  }
+  return ["xtinadom", "xtinadom-merch"];
+}
+
+/**
+ * Shops always shown on the home “Featured shops” strip (25 slots). When a pin is not already in
+ * the top five by ranking, it occupies positions 4 and 5 (1-based). Order within the pair follows
+ * this list (default: `xtinadom` then `xtinadom-merch`).
+ */
+export function platformFeaturedShopPinSlugs(): readonly string[] {
+  return platformHotItemsFallbackShopSlugs();
+}
+
 export function isFounderUnlimitedFreeListingsShop(shopSlug: string): boolean {
   return shopSlug === FOUNDER_UNLIMITED_FREE_LISTINGS_SHOP_SLUG;
 }

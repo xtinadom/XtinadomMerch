@@ -7,18 +7,42 @@ import {
   PROMOTION_KIND_OPTIONS,
   promotionKindRequiresListing,
   promotionKindSurfaceDescription,
+  promotionPriceCentsForKind,
 } from "@/lib/promotions";
+import {
+  PROMOTION_DEFERRED_NEXT_TIER_PRICE_MULTIPLIER,
+  PROMOTION_ACTIVE_DAYS,
+} from "@/lib/promotion-policy-shared";
+import type { PopularItemPromotionUi, PromotionMonthlySlotUi } from "@/components/dashboard/ListingsPromotedSection";
+
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(cents / 100);
+}
 
 export function MockPromotionPayForm(props: {
   liveListingPicklist: { id: string; label: string }[];
+  hotItemPromotion: PromotionMonthlySlotUi;
+  topShopPromotion: PromotionMonthlySlotUi;
+  popularItemPromotion: PopularItemPromotionUi;
 }) {
-  const { liveListingPicklist } = props;
+  const { liveListingPicklist, hotItemPromotion, topShopPromotion, popularItemPromotion } = props;
   const [kind, setKind] = useState<PromotionKind>(() =>
     liveListingPicklist.length === 0
       ? PromotionKind.FEATURED_SHOP_HOME
       : PROMOTION_KIND_OPTIONS[0]!.kind,
   );
   const needsListing = promotionKindRequiresListing(kind);
+  const priceCents =
+    kind === PromotionKind.HOT_FEATURED_ITEM && hotItemPromotion.offer
+      ? hotItemPromotion.offer.amountCents
+      : kind === PromotionKind.FEATURED_SHOP_HOME && topShopPromotion.offer
+        ? topShopPromotion.offer.amountCents
+        : kind === PromotionKind.MOST_POPULAR_OF_TAG_ITEM && popularItemPromotion.offer
+          ? popularItemPromotion.offer.amountCents
+          : promotionPriceCentsForKind(kind);
 
   if (needsListing && liveListingPicklist.length === 0) {
     return (
@@ -34,8 +58,28 @@ export function MockPromotionPayForm(props: {
       className="mt-3 space-y-3 rounded-lg border border-zinc-800 bg-zinc-950/50 p-3"
     >
       <p className="text-[11px] text-amber-600/90">
-        Mock checkout — no real charge. Choose a type and (if required) a live listing, then confirm.
+        Mock checkout — no real charge. Two-week Pacific windows and proration as in the blurb above.
       </p>
+      {kind === PromotionKind.HOT_FEATURED_ITEM && hotItemPromotion.offer?.isDeferred ? (
+        <p className="text-[11px] text-amber-200/90">
+          Hot period full ({hotItemPromotion.slotsUsedUtcThisMonth}/{hotItemPromotion.monthlyCap}). Mock records{" "}
+          {hotItemPromotion.offer.placementMonthLabel} at{" "}
+          {hotItemPromotion.offer.isSecondFuturePeriod
+            ? `${PROMOTION_DEFERRED_NEXT_TIER_PRICE_MULTIPLIER}×`
+            : "standard rate"}{" "}
+          ({formatMoney(priceCents)}).
+        </p>
+      ) : null}
+      {kind === PromotionKind.FEATURED_SHOP_HOME && topShopPromotion.offer?.isDeferred ? (
+        <p className="text-[11px] text-amber-200/90">
+          Top shop period full ({topShopPromotion.slotsUsedUtcThisMonth}/{topShopPromotion.monthlyCap}). Mock records{" "}
+          {topShopPromotion.offer.placementMonthLabel} at{" "}
+          {topShopPromotion.offer.isSecondFuturePeriod
+            ? `${PROMOTION_DEFERRED_NEXT_TIER_PRICE_MULTIPLIER}×`
+            : "standard rate"}{" "}
+          ({formatMoney(priceCents)}).
+        </p>
+      ) : null}
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="block text-[11px] text-zinc-500">
           Promotion type

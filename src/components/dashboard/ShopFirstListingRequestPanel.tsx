@@ -723,7 +723,7 @@ export function ShopFirstListingRequestPanel(props: {
                     setGuidelinesOpen(true);
                   }}
                 >
-                  item guidelines
+                  shop regulations
                 </Link>
                 .
               </span>
