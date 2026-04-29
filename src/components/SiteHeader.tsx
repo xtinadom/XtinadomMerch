@@ -17,30 +17,47 @@ export async function SiteHeader({
   let shopOwnerDisplayName: string | undefined;
 
   try {
-    const shop =
-      !platform &&
-      (await prisma.shop.findFirst({
+    let shop: { id: string } | null = null;
+    if (!platform && shopSlug) {
+      shop = await prisma.shop.findFirst({
         where: { slug: shopSlug, active: true },
         select: { id: true },
-      }));
-    tags = browseMenu
-      ? platform
-        ? await getStoreTags()
-        : shop
-          ? await getStoreTagsForShop(shop.id)
-          : await getStoreTags()
-      : [];
-    const cart = await getCartSessionReadonly();
-    cartQty = await cartBadgeQuantity(cart.items);
-
-    const ownerSession = await getShopOwnerSessionReadonly();
-    if (ownerSession.shopUserId) {
-      const su = await prisma.shopUser.findUnique({
-        where: { id: ownerSession.shopUserId },
-        select: { email: true, shop: { select: { displayName: true } } },
       });
-      shopOwnerEmail = su?.email;
-      shopOwnerDisplayName = su?.shop.displayName?.trim() || undefined;
+    }
+
+    const tagsPromise = browseMenu
+      ? platform
+        ? getStoreTags()
+        : shop
+          ? getStoreTagsForShop(shop.id)
+          : getStoreTags()
+      : Promise.resolve<
+          Awaited<ReturnType<typeof getStoreTags>>
+        >([]);
+
+    const [tagsResolved, cart, ownerSession] = await Promise.all([
+      tagsPromise,
+      getCartSessionReadonly(),
+      getShopOwnerSessionReadonly(),
+    ]);
+    tags = tagsResolved;
+
+    const ownerLookup =
+      ownerSession.shopUserId != null
+        ? prisma.shopUser.findUnique({
+            where: { id: ownerSession.shopUserId },
+            select: { email: true, shop: { select: { displayName: true } } },
+          })
+        : Promise.resolve(null);
+
+    const [qty, su] = await Promise.all([
+      cartBadgeQuantity(cart.items),
+      ownerLookup,
+    ]);
+    cartQty = qty;
+    if (su) {
+      shopOwnerEmail = su.email;
+      shopOwnerDisplayName = su.shop.displayName?.trim() || undefined;
     }
   } catch (e) {
     console.error("[SiteHeader]", e);

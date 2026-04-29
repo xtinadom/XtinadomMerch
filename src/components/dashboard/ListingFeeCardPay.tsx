@@ -28,26 +28,37 @@ export function ListingFeeCardPay(props: {
     if (!mountEl || !stripePublishableKey.trim()) return;
 
     (async () => {
-      const stripe = await loadStripe(stripePublishableKey);
-      if (cancelled || !stripe) {
-        if (!cancelled) setError("Could not load Stripe.");
-        return;
-      }
-      stripeRef.current = stripe;
-      const elements = stripe.elements();
-      const card = elements.create("card", {
-        style: {
-          base: {
-            color: "#e4e4e7",
-            fontSize: "14px",
-            "::placeholder": { color: "#71717a" },
+      try {
+        const stripe = await loadStripe(stripePublishableKey);
+        if (cancelled || !stripe) {
+          if (!cancelled) setError("Could not load Stripe.");
+          return;
+        }
+        stripeRef.current = stripe;
+        const elements = stripe.elements();
+        const card = elements.create("card", {
+          style: {
+            base: {
+              color: "#e4e4e7",
+              fontSize: "14px",
+              "::placeholder": { color: "#71717a" },
+            },
+            invalid: { color: "#fca5a5" },
           },
-          invalid: { color: "#fca5a5" },
-        },
-      });
-      card.mount(mountEl);
-      cardRef.current = card;
-      setReady(true);
+        });
+        card.mount(mountEl);
+        cardRef.current = card;
+        setReady(true);
+      } catch (e) {
+        if (cancelled) return;
+        const msg = e instanceof Error ? e.message : String(e);
+        const lower = msg.toLowerCase();
+        setError(
+          lower.includes("network") || lower.includes("failed to fetch")
+            ? "Could not reach Stripe (check internet, VPN, firewall, or extensions blocking js.stripe.com)."
+            : `Could not load Stripe: ${msg}`,
+        );
+      }
     })();
 
     return () => {

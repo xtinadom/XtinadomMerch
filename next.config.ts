@@ -8,6 +8,17 @@ const securityHeaders: { key: string; value: string }[] = [
 ];
 
 const nextConfig: NextConfig = {
+  /**
+   * First compile of a route segment can exceed the default chunk script timeout on slow disks /
+   * Windows Defender scanning `.next`; stale caches also manifest as ChunkLoadError — use
+   * `npm run dev:fresh` and hard-reload the browser.
+   */
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer && config.output) {
+      config.output.chunkLoadTimeout = 300_000;
+    }
+    return config;
+  },
   serverExternalPackages: [
     "pg",
     "pgpass",

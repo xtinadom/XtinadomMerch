@@ -2,22 +2,14 @@ export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
   if (process.env.NODE_ENV === "development") {
-    try {
-      // Use `@/lib/prisma` so Turbopack resolves to `src/lib/prisma` (relative `./lib/prisma` can
-      // break into a bad `.next/dev/server/chunks/...` path and mask real DB errors).
-      const { prisma } = await import("@/lib/prisma");
-      await prisma.$connect();
-    } catch (e) {
-      const detail = e instanceof Error ? e.message : String(e);
+    // Do not import `@/lib/prisma` here: webpack traces `pg` → `split2` and fails to resolve Node
+    // builtins (`stream`) while compiling instrumentation. Prisma connects on first query anyway.
+    const { runtimeDatabaseUrlFromEnv } = await import("./lib/env-postgres-url");
+    if (!runtimeDatabaseUrlFromEnv()) {
       console.error(
         [
           "",
-          "[xtinadom] Cannot reach PostgreSQL. Prisma may report this as «Invalid … findMany() invocation» (often with ECONNREFUSED).",
-          "  • From repo root: npm run db:up   (or: docker compose up -d)",
-          "  • Or install PostgreSQL locally and set DATABASE_URL in .env",
-          "  • If connection still fails on Windows, use 127.0.0.1 instead of localhost in DATABASE_URL",
-          "  • Then: npx prisma db push && npm run db:seed",
-          `  (${detail})`,
+          "[xtinadom] No DATABASE_URL / POSTGRES_PRISMA_URL — set .env or run: npm run db:up",
           "",
         ].join("\n"),
       );

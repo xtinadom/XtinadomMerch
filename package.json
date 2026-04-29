@@ -6,7 +6,9 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "prisma generate --schema prisma/schema.prisma && next dev",
+    "dev": "prisma generate --schema prisma/schema.prisma && next dev --webpack",
+    "dev:fresh": "node scripts/dev-fresh.cjs && npm run dev",
+    "dev:turbo": "prisma generate --schema prisma/schema.prisma && next dev --turbopack",
     "build": "node scripts/vercel-build.cjs",
     "build:next": "next build",
     "start": "next start",

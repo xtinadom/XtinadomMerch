@@ -1,0 +1,13 @@
+---
+description: Forbids agents from mutating or deleting database data without explicit user approval
+alwaysApply: true
+---
+
+# Database safety (agents)
+
+- **Never** run destructive or data-mutating database operations in any environment (local, staging, production) unless the user **explicitly approved that exact operation in this chat** (same thread).
+- **Do not** run without approval, including: `prisma migrate reset`; `prisma db push` when it could drop data; `db seed` / seed scripts; `DELETE` / `TRUNCATE` / `DROP` / bulk updates; `$executeRaw` / `$executeRawUnsafe` for mutation; `psql` or scripts under `scripts/` that change rows.
+- **OK without extra approval:** authoring migration/schema **files** for review; `prisma generate`; read-only queries and read paths in code.
+- **Unclear?** Stop and ask before running Prisma CLI, migrations, or any script against a real database.
+
+See [AGENTS.md](AGENTS.md) § Database safety (agents) for the full policy.
