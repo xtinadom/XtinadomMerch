@@ -9,23 +9,36 @@
  * Optional: set RUN_PRISMA_SCHEMA_ON_BUILD=1 to run migrate, then db push on failure.
  *
  * On Vercel, restored `.next` build cache can leave the directory in a bad state (e.g.
- * `ENOENT: lstat '.next/lock'`). By default we remove `.next` when `VERCEL=1` before building.
- * Set `SKIP_CLEAN_NEXT_ON_VERCEL=1` to skip (only if debugging).
+ * `ENOENT: lstat '.next/lock'`). By default we reset `.next` when running on Vercel before
+ * `next build`. Set `SKIP_CLEAN_NEXT_ON_VERCEL=1` to skip (only if debugging).
+ *
+ * Detection: `VERCEL=1` / `VERCEL=true`, or `VERCEL_ENV` together with `CI=true` (Vercel sets
+ * both during builds). We avoid relying on `VERCEL_ENV` alone so a stray `.env` copy does not
+ * wipe `.next` on a developer machine.
  */
 const fs = require("node:fs");
 const path = require("node:path");
 const { execSync, spawnSync } = require("node:child_process");
 
-function cleanStaleNextOnVercel() {
-  if (process.env.VERCEL !== "1") return;
-  if (process.env.SKIP_CLEAN_NEXT_ON_VERCEL === "1") {
-    console.log("[build] SKIP_CLEAN_NEXT_ON_VERCEL=1 — leaving .next as-is");
-    return;
-  }
+function shouldCleanNextForVercel() {
+  if (process.env.SKIP_CLEAN_NEXT_ON_VERCEL === "1") return false;
+  const v = process.env.VERCEL;
+  if (v === "1" || v === "true") return true;
+  // Present on Vercel build workers even when `VERCEL` is missing from a subprocess edge case.
+  if (Boolean(process.env.VERCEL_REGION?.trim())) return true;
+  if (Boolean(process.env.VERCEL_ENV?.trim()) && process.env.CI === "true") return true;
+  return false;
+}
+
+/** Remove cached `.next`, then ensure an empty `.next` dir exists so Next can create `lock` cleanly. */
+function resetNextDirOnVercel(label) {
+  if (!shouldCleanNextForVercel()) return;
   const nextDir = path.join(process.cwd(), ".next");
-  if (!fs.existsSync(nextDir)) return;
-  console.log("[build] Removing .next on Vercel (avoid stale lock/cache from restore)");
-  fs.rmSync(nextDir, { recursive: true, force: true });
+  if (fs.existsSync(nextDir)) {
+    console.log(`[build] ${label} — removing .next (stale Vercel cache / lock)`);
+    fs.rmSync(nextDir, { recursive: true, force: true });
+  }
+  fs.mkdirSync(nextDir, { recursive: true });
 }
 
 function run(cmd) {
@@ -63,11 +76,12 @@ function runOptionalSchemaSync() {
   }
 }
 
-cleanStaleNextOnVercel();
+resetNextDirOnVercel("before prisma generate");
 
 run("npx prisma generate --schema prisma/schema.prisma");
 runOptionalSchemaSync();
 
 // Next 16 defaults to Turbopack for `next build`; this repo sets `webpack()` in next.config.ts
 // (chunk load timeout in dev client bundle). Explicit --webpack is required or the build errors.
+resetNextDirOnVercel("before next build");
 run("npx next build --webpack");

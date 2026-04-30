@@ -83,7 +83,7 @@ npx prisma db push
 2. Schema sync **only if** `RUN_PRISMA_SCHEMA_ON_BUILD=1`
 3. `npx next build --webpack`
 
-**Project settings:** leave **Build Command** as `npm run build` (or empty so Vercel uses `package.json`). **Install Command** default is fine. **Node.js Version** should match **`package.json` `engines.node`** (22.x); the repo also includes **`.nvmrc`** (`22`) so Vercel can pick the same major version automatically.
+**Project settings:** **Build Command** should be **`npm run build`** (this repo also sets **`"buildCommand": "npm run build"`** in [`vercel.json`](vercel.json) so the dashboard cannot override it with a raw `next build` that skips `scripts/vercel-build.cjs`). **Install Command** default is fine. **Node.js Version** should match **`package.json` `engines.node`** (22.x); the repo also includes **`.nvmrc`** (`22`) so Vercel can pick the same major version automatically.
 
 ### Build failed (`npm run build` exit 1 on Vercel)
 
