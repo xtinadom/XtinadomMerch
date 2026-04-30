@@ -44,10 +44,7 @@ import {
   resolveCatalogPrefillFromStubProductSlug,
   type DraftListingRequestPrefillPayload,
 } from "@/lib/shop-baseline-draft-prefill";
-import {
-  buildGroupedListingSectionsForDashboard,
-  dashboardListingTabBadgeCounts,
-} from "@/lib/dashboard-legacy-baseline-listing-groups";
+import { buildGroupedListingSectionsForDashboard } from "@/lib/dashboard-legacy-baseline-listing-groups";
 import {
   countHotItemPaidForPlacementPeriodUtc,
   countTopShopPaidForPlacementPeriodUtc,
@@ -75,6 +72,7 @@ import { isMockCheckoutEnabled } from "@/lib/checkout-mock";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 import { rethrowNextNavigationError } from "@/lib/next-navigation-errors";
+import { countNewSupportMessagesFromStaff } from "@/lib/support-thread-new-from-staff";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +90,10 @@ function formatMoney(cents: number) {
 type AdminCatalogRowForDisplay = {
   itemGoodsServicesCostCents: number;
 };
+
+type DashboardShopListingWithProduct = Prisma.ShopListingGetPayload<{
+  include: { product: true };
+}>;
 
 /** Orders tab: shop listing title, then admin catalog product name in parentheses. */
 function dashboardPaidOrderLineDisplayLabel(line: {
@@ -199,6 +201,15 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         : undefined;
 
   try {
+  const MINIMAL_LISTING_SELECT = {
+    id: true,
+    active: true,
+    requestStatus: true,
+    creatorRemovedFromShopAt: true,
+    adminRemovedFromShopAt: true,
+    createdAt: true,
+  } as const;
+
   const user = await prisma.shopUser.findUnique({
     where: { id: owner.shopUserId },
     include: {
@@ -206,7 +217,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         include: {
           listings: {
             orderBy: { updatedAt: "desc" },
-            include: { product: true },
+            select: MINIMAL_LISTING_SELECT,
           },
         },
       },
@@ -215,6 +226,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   if (!user) redirect("/dashboard/login");
 
   let shop = user.shop;
+  const listingsMinimalInclude = {
+    orderBy: { updatedAt: "desc" as const },
+    select: MINIMAL_LISTING_SELECT,
+  };
+
   if (connect === "return" && shop.stripeConnectAccountId && isStripeSecretConfigured()) {
     try {
       const stripe = getStripe();
@@ -228,12 +244,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       });
       shop = await prisma.shop.findUniqueOrThrow({
         where: { id: shop.id },
-        include: {
-          listings: {
-            orderBy: { updatedAt: "desc" },
-            include: { product: true },
-          },
-        },
+        include: { listings: listingsMinimalInclude },
       });
     } catch (e) {
       console.error("[dashboard] Stripe Connect refresh failed", e);
@@ -241,6 +252,67 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   }
 
   await syncFreeListingFeeWaivers(shop.id);
+  shop = await prisma.shop.findUniqueOrThrow({
+    where: { id: shop.id },
+    include: { listings: listingsMinimalInclude },
+  });
+
+  const isPlatform = shop.slug === PLATFORM_SHOP_SLUG;
+
+  const setupSteps = !isPlatform
+    ? computeShopOnboardingSteps({
+        displayName: shop.displayName,
+        itemGuidelinesAcknowledgedAt: shop.itemGuidelinesAcknowledgedAt,
+        emailVerifiedAt: user.emailVerifiedAt,
+        listings: shop.listings.map((l) => ({
+          requestStatus: l.requestStatus,
+          active: l.active,
+        })),
+        connectChargesEnabled: shop.connectChargesEnabled,
+        payoutsEnabled: shop.payoutsEnabled,
+      })
+    : {
+        profile: true,
+        guidelines: true,
+        emailVerified: true,
+        listing: true,
+        stripe: true,
+      };
+
+  const incompleteSetupCount = !isPlatform ? countIncompleteOnboardingSteps(setupSteps) : 0;
+
+  const dashTab:
+    | "setup"
+    | "shopProfile"
+    | "itemGuidelines"
+    | "requestListing"
+    | "bugFeedback"
+    | "listings"
+    | "notifications"
+    | "support"
+    | "orders" = isPlatform
+    ? dashStr === "orders"
+      ? "orders"
+      : "listings"
+    : dashStr === "listings" ||
+        dashStr === "orders" ||
+        dashStr === "setup" ||
+        dashStr === "shopProfile" ||
+        dashStr === "itemGuidelines" ||
+        dashStr === "notifications" ||
+        dashStr === "requestListing" ||
+        dashStr === "bugFeedback" ||
+        dashStr === "support"
+      ? dashStr === "setup" && incompleteSetupCount === 0
+        ? "listings"
+        : dashStr === "itemGuidelines" && incompleteSetupCount === 0
+          ? "listings"
+          : dashStr
+      : incompleteSetupCount > 0
+        ? "setup"
+        : "listings";
+
+  /** Eager-load full listings + all tab payloads so tab clicks stay client-only (no RSC round-trip). */
   shop = await prisma.shop.findUniqueOrThrow({
     where: { id: shop.id },
     include: {
@@ -251,9 +323,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     },
   });
 
-  const isPlatform = shop.slug === PLATFORM_SHOP_SLUG;
-
-  /** Baseline seed must finish before `adminCatalogItem.findMany`; orders are independent — run in parallel. */
+  /** Baseline seed must finish before `adminCatalogItem.findMany`. */
   const [, paidOrders] = await Promise.all([
     !isPlatform ? ensureBaselineAdminCatalogIfEmpty(prisma) : Promise.resolve(),
     prisma.order.findMany({
@@ -284,7 +354,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     }),
   ]);
 
-  const [adminCatalogRows, allOwnerNotices, supportThreadRow] = await Promise.all([
+  const [adminCatalogRows, allOwnerNotices, supportThreadForPanel] = await Promise.all([
     !isPlatform
       ? prisma.adminCatalogItem.findMany({
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -323,6 +393,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         })
       : Promise.resolve(null),
   ]);
+
+  const notificationsUnreadCount = !isPlatform
+    ? allOwnerNotices.filter((n) => n.readAt == null).length
+    : 0;
+
+  const supportNewFromStaffCount =
+    !isPlatform && supportThreadForPanel?.messages?.length
+      ? countNewSupportMessagesFromStaff(supportThreadForPanel.messages)
+      : 0;
+
   const showDemoPurchaseButton = !isPlatform && shopDemoPurchaseFeatureEnabled();
   const shopStripeConnectReadyForCharges = shopStripeConnectReadyForListingCharges(shop);
   const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
@@ -355,13 +435,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   );
 
   const draftListingForRequestPrefill = !isPlatform
-    ? shop.listings.find(
-        (l) =>
-          l.requestStatus === ListingRequestStatus.draft &&
-          !l.active &&
-          l.creatorRemovedFromShopAt == null &&
-          l.adminRemovedFromShopAt == null,
-      )
+    ? await prisma.shopListing.findFirst({
+        where: {
+          shopId: shop.id,
+          requestStatus: ListingRequestStatus.draft,
+          active: false,
+          creatorRemovedFromShopAt: null,
+          adminRemovedFromShopAt: null,
+        },
+        include: { product: true },
+      })
     : null;
 
   let draftListingRequestPrefill: DraftListingRequestPrefillPayload | null = null;
@@ -394,136 +477,84 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     }
   }
 
-  const unreadNoticeCount = allOwnerNotices.filter((n) => n.readAt == null).length;
-
-  const setupSteps = !isPlatform
-    ? computeShopOnboardingSteps({
-        displayName: shop.displayName,
-        itemGuidelinesAcknowledgedAt: shop.itemGuidelinesAcknowledgedAt,
-        emailVerifiedAt: user.emailVerifiedAt,
-        listings: shop.listings.map((l) => ({
-          requestStatus: l.requestStatus,
-          active: l.active,
-        })),
-        connectChargesEnabled: shop.connectChargesEnabled,
-        payoutsEnabled: shop.payoutsEnabled,
-      })
-    : {
-        profile: true,
-        guidelines: true,
-        emailVerified: true,
-        listing: true,
-        stripe: true,
-      };
-
   const stripeConnectUnlocked = !isPlatform && canStartStripeConnect(setupSteps);
-  const incompleteSetupCount = !isPlatform ? countIncompleteOnboardingSteps(setupSteps) : 0;
 
   const setupTabsKey = `setup-${setupSteps.stripe}-${setupSteps.profile}-${setupSteps.guidelines}-${setupSteps.emailVerified}-${setupSteps.listing}-${Boolean(shop.itemGuidelinesAcknowledgedAt)}-${Boolean(user.emailVerifiedAt)}`;
-
-  const dashTab:
-    | "setup"
-    | "shopProfile"
-    | "itemGuidelines"
-    | "requestListing"
-    | "listings"
-    | "notifications"
-    | "support"
-    | "orders" = isPlatform
-    ? dashStr === "orders"
-      ? "orders"
-      : "listings"
-    : dashStr === "listings" ||
-        dashStr === "orders" ||
-        dashStr === "setup" ||
-        dashStr === "shopProfile" ||
-        dashStr === "itemGuidelines" ||
-        dashStr === "notifications" ||
-        dashStr === "requestListing" ||
-        dashStr === "support"
-      ? dashStr === "setup" && incompleteSetupCount === 0
-        ? "listings"
-        : dashStr === "itemGuidelines" && incompleteSetupCount === 0
-          ? "listings"
-          : dashStr
-      : incompleteSetupCount > 0
-        ? "setup"
-        : "listings";
 
   const supportChatPanel = !isPlatform ? (
     <DashboardSupportChatPanel
       messages={
-        supportThreadRow?.messages.map((m) => ({
+        supportThreadForPanel?.messages.map((m) => ({
           id: m.id,
           authorRole: m.authorRole as "creator" | "admin",
           body: m.body,
           createdAt: m.createdAt.toISOString(),
         })) ?? []
       }
-      resolvedAtIso={supportThreadRow?.resolvedAt?.toISOString() ?? null}
+      resolvedAtIso={supportThreadForPanel?.resolvedAt?.toISOString() ?? null}
     />
   ) : null;
 
-  const listingRows = shop.listings.map((listing) => {
-    const rejectionNoticeBody =
-      listing.requestStatus === ListingRequestStatus.rejected && !isPlatform
-        ? resolveListingRejectionNoticeBody(
-            allOwnerNotices,
+  const listingRows = (shop.listings as DashboardShopListingWithProduct[]).map((listing) => {
+        const rejectionNoticeBody =
+          listing.requestStatus === ListingRequestStatus.rejected && !isPlatform
+            ? resolveListingRejectionNoticeBody(
+                allOwnerNotices,
+                listing.id,
+                listing.product.name,
+              )
+            : null;
+        const rejectionReasonText = listingRejectionReasonTextForCard(rejectionNoticeBody);
+        return {
+          id: listing.id,
+          active: listing.active,
+          requestStatus: listing.requestStatus,
+          priceCents: listing.priceCents,
+          requestImages: listing.requestImages,
+          adminListingSecondaryImageUrl: sanitizeShopListingAdminSecondaryImageUrlForDisplay(
+            listing.adminListingSecondaryImageUrl,
+            shop.id,
             listing.id,
-            listing.product.name,
-          )
-        : null;
-    const rejectionReasonText = listingRejectionReasonTextForCard(rejectionNoticeBody);
-    return {
-      id: listing.id,
-      active: listing.active,
-      requestStatus: listing.requestStatus,
-      priceCents: listing.priceCents,
-      requestImages: listing.requestImages,
-      adminListingSecondaryImageUrl: sanitizeShopListingAdminSecondaryImageUrlForDisplay(
-        listing.adminListingSecondaryImageUrl,
-        shop.id,
-        listing.id,
-      ),
-      ownerSupplementImageUrl: sanitizeShopListingOwnerSupplementImageUrlForDisplay(
-        listing.ownerSupplementImageUrl,
-        shop.id,
-        listing.id,
-      ),
-      listingStorefrontCatalogImageUrls: listing.listingStorefrontCatalogImageUrls,
-      baselineCatalogPickEncoded: listing.baselineCatalogPickEncoded,
-      goodsServicesUnitCentsByPrintifyVariantId: listingGoodsServicesUnitCentsByPrintifyVariantId(
-        {
+          ),
+          ownerSupplementImageUrl: sanitizeShopListingOwnerSupplementImageUrlForDisplay(
+            listing.ownerSupplementImageUrl,
+            shop.id,
+            listing.id,
+          ),
+          listingStorefrontCatalogImageUrls: listing.listingStorefrontCatalogImageUrls,
           baselineCatalogPickEncoded: listing.baselineCatalogPickEncoded,
-          product: listing.product,
-        },
-        adminCatalogById,
-      ),
-      listingPrintifyVariantId: listing.listingPrintifyVariantId,
-      listingPrintifyVariantPrices: listing.listingPrintifyVariantPrices,
-      requestItemName: listing.requestItemName,
-      storefrontItemBlurb: listing.storefrontItemBlurb,
-      listingSearchKeywords: listing.listingSearchKeywords,
-      listingFeePaidAt: listing.listingFeePaidAt?.toISOString() ?? null,
-      adminRemovedFromShopAt: listing.adminRemovedFromShopAt?.toISOString() ?? null,
-      creatorRemovedFromShopAt: listing.creatorRemovedFromShopAt?.toISOString() ?? null,
-      listingOrdinal: listingOrdinalById.get(listing.id) ?? 1,
-      updatedAtIso: listing.updatedAt.toISOString(),
-      rejectionReasonText,
-      product: {
-        name: listing.product.name,
-        slug: listing.product.slug,
-        active: listing.product.active,
-        minPriceCents: listing.product.minPriceCents,
-        priceCents: listing.product.priceCents,
-        imageUrl: listing.product.imageUrl,
-        imageGallery: listing.product.imageGallery,
-        fulfillmentType: listing.product.fulfillmentType,
-        printifyVariantId: listing.product.printifyVariantId,
-        printifyVariants: listing.product.printifyVariants,
-      },
-    };
-  });
+          goodsServicesUnitCentsByPrintifyVariantId: listingGoodsServicesUnitCentsByPrintifyVariantId(
+            {
+              baselineCatalogPickEncoded: listing.baselineCatalogPickEncoded,
+              product: listing.product,
+            },
+            adminCatalogById,
+          ),
+          listingPrintifyVariantId: listing.listingPrintifyVariantId,
+          listingPrintifyVariantPrices: listing.listingPrintifyVariantPrices,
+          requestItemName: listing.requestItemName,
+          storefrontItemBlurb: listing.storefrontItemBlurb,
+          listingSearchKeywords: listing.listingSearchKeywords,
+          listingFeePaidAt: listing.listingFeePaidAt?.toISOString() ?? null,
+          adminRemovedFromShopAt: listing.adminRemovedFromShopAt?.toISOString() ?? null,
+          creatorRemovedFromShopAt: listing.creatorRemovedFromShopAt?.toISOString() ?? null,
+          listingOrdinal: listingOrdinalById.get(listing.id) ?? 1,
+          updatedAtIso: listing.updatedAt.toISOString(),
+          rejectionReasonText,
+          product: {
+            name: listing.product.name,
+            slug: listing.product.slug,
+            active: listing.product.active,
+            minPriceCents: listing.product.minPriceCents,
+            priceCents: listing.product.priceCents,
+            imageUrl: listing.product.imageUrl,
+            imageGallery: listing.product.imageGallery,
+            fulfillmentType: listing.product.fulfillmentType,
+            printifyVariantId: listing.product.printifyVariantId,
+            printifyVariants: listing.product.printifyVariants,
+          },
+        };
+      });
 
   const groupedListingSections = buildGroupedListingSectionsForDashboard(
     shop.id,
@@ -531,36 +562,38 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     adminCatalogRows,
   );
 
-  const promotionPurchasesForDash = !isPlatform
-    ? await prisma.promotionPurchase.findMany({
-        where: { shopId: shop.id },
-        orderBy: { createdAt: "desc" },
-        take: 40,
-        include: {
-          shopListing: {
-            select: { requestItemName: true, product: { select: { name: true } } },
-          },
-        },
-      })
-    : [];
-
   const hotItemBaseCents = promotionPriceCentsForKind(PromotionKind.HOT_FEATURED_ITEM);
   const topShopBaseCents = promotionPriceCentsForKind(PromotionKind.FEATURED_SHOP_HOME);
   const popularBaseCents = promotionPriceCentsForKind(PromotionKind.MOST_POPULAR_OF_TAG_ITEM);
-  const [hotOfferResolved, topShopOfferResolved, popularOfferResolved] = !isPlatform
-    ? await Promise.all([
-        resolveHotItemPlacementOffer(hotItemBaseCents),
-        resolveTopShopPlacementOffer(topShopBaseCents),
-        resolvePopularPlacementOffer(popularBaseCents),
-      ])
-    : [null, null, null];
   const periodStartUtc = currentListingPromotionPeriodStartUtc(new Date());
-  const hotSlotsUsedUtc = !isPlatform
-    ? await countHotItemPaidForPlacementPeriodUtc(periodStartUtc)
-    : 0;
-  const topShopSlotsUsedUtc = !isPlatform
-    ? await countTopShopPaidForPlacementPeriodUtc(periodStartUtc)
-    : 0;
+
+  const promoBundle = !isPlatform
+    ? await Promise.all([
+        prisma.promotionPurchase.findMany({
+          where: { shopId: shop.id },
+          orderBy: { createdAt: "desc" },
+          take: 40,
+          include: {
+            shopListing: {
+              select: { requestItemName: true, product: { select: { name: true } } },
+            },
+          },
+        }),
+        Promise.all([
+          resolveHotItemPlacementOffer(hotItemBaseCents),
+          resolveTopShopPlacementOffer(topShopBaseCents),
+          resolvePopularPlacementOffer(popularBaseCents),
+        ]),
+        countHotItemPaidForPlacementPeriodUtc(periodStartUtc),
+        countTopShopPaidForPlacementPeriodUtc(periodStartUtc),
+      ])
+    : null;
+
+  const promotionPurchasesForDash = promoBundle?.[0] ?? [];
+  const [hotOfferResolved, topShopOfferResolved, popularOfferResolved] =
+    promoBundle?.[1] ?? [null, null, null];
+  const hotSlotsUsedUtc = promoBundle?.[2] ?? 0;
+  const topShopSlotsUsedUtc = promoBundle?.[3] ?? 0;
 
   const promotionsPayload = !isPlatform
     ? {
@@ -649,8 +682,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         },
       }
     : null;
-
-  const listingTabCounts = !isPlatform ? dashboardListingTabBadgeCounts(listingRows) : null;
 
   const stripeConnectBalance =
     !isPlatform && shop.accountDeletionEmailConfirmedAt != null
@@ -782,13 +813,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       ) : null}
 
       <DashboardMainTabs
+        key={dashTab}
         initialTab={dashTab}
         shopSlug={shop.slug}
+        supportNewFromStaffCount={supportNewFromStaffCount}
         supportChat={supportChatPanel}
         draftListingRequestPrefill={draftListingRequestPrefill}
         groupedListingSections={groupedListingSections}
         promotions={promotionsPayload}
-        listingTabCounts={listingTabCounts}
         listingFeeBonusFreeSlots={bonusListingSlots}
         showListingSlotPromoRedeem={
           !isPlatform && !isFounderUnlimitedFreeListingsShop(shop.slug)
@@ -859,10 +891,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                   createdAt: n.createdAt.toISOString(),
                   readAt: n.readAt?.toISOString() ?? null,
                 })),
-                unreadCount: unreadNoticeCount,
+                unreadCount: notificationsUnreadCount,
               }
             : null
         }
+        notificationsUnreadCount={!isPlatform ? notificationsUnreadCount : 0}
       />
 
       <p className="mt-10 text-center">

@@ -154,6 +154,10 @@ Browsers show **HTTPS** only when **TLS is terminated correctly** for the hostna
 
 The app also **redirects HTTP → HTTPS** in production and sends **HSTS** on production deployments; that only helps once requests actually reach your Vercel deployment with a valid certificate.
 
+### Dashboard timeout (“Task timed out after 60s” / 300s)
+
+The shop dashboard does heavy Prisma + promotion work. [`src/app/dashboard/layout.tsx`](src/app/dashboard/layout.tsx) sets `maxDuration` to **300** (seconds) so Vercel can run the RSC to completion on **Pro** and up. In **Vercel → Project → Settings → Functions**, ensure the plan allows that duration (Hobby is still limited to a short window). If timeouts persist, check **Logs** for slow queries or Neon latency.
+
 ## Local development
 
 ```bash

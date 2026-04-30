@@ -840,18 +840,17 @@ export function DashboardMainTabs(props: {
   initialTab?: TabId;
   /** Creator shop slug — listing fee tiers (e.g. founder unlimited). */
   shopSlug: string;
-  /**
-   * Listings tab badge: `live` storefront-active rows / `livePlusRequested` (= live + in-progress requests).
-   * Rejected and creator-removed rows are excluded (same buckets as the Listings tab sections).
-   */
-  listingTabCounts?: { live: number; livePlusRequested: number } | null;
   /** Creator onboarding; when set, “Onboarding” is the first tab. */
   setup?: DashboardSetupPanelProps | null;
-  /** Full notice history (creators); drives Notifications tab. */
+  /** Full notice history (creators); loaded when the Notifications tab is opened. */
   notifications?: {
     rows: DashboardNoticeRow[];
     unreadCount: number;
   } | null;
+  /** Unread count from the server when notification rows are not in this payload (other tabs). */
+  notificationsUnreadCount?: number;
+  /** Staff replies after the creator’s last message — Support tab badge only. */
+  supportNewFromStaffCount?: number;
   /** Server-rendered support chat (creator shops only). */
   supportChat?: ReactNode | null;
   paidListingFeeLabel: string;
@@ -894,9 +893,10 @@ export function DashboardMainTabs(props: {
   const {
     initialTab: initialTabProp,
     shopSlug,
-    listingTabCounts = null,
     setup,
     notifications,
+    notificationsUnreadCount = 0,
+    supportNewFromStaffCount = 0,
     supportChat,
     paidListingFeeLabel,
     listingFeeBonusFreeSlots,
@@ -916,14 +916,16 @@ export function DashboardMainTabs(props: {
 
   const hasSetup = setup != null;
   const showOnboardingTab = Boolean(setup && setup.incompleteSetupCount > 0);
-  const hasNotifications = Boolean(notifications);
-  const canSupport = Boolean(supportChat);
+  /** Notifications tab is always available for creator shops; rows load when the tab is opened. */
+  const hasNotifications = !isPlatform ? true : Boolean(notifications);
+  const canSupport = !isPlatform ? true : Boolean(supportChat);
   const tabOpts = { hasSetup, showOnboardingTab, hasNotifications, canSupport };
   const normalizedInitialTab = normalizeDashboardMainTab(initialTabProp, tabOpts);
   const [didUserPickTab, setDidUserPickTab] = useState(false);
   const [tab, setTab] = useState<TabId>(() =>
     normalizeDashboardMainTab(initialTabProp, tabOpts),
   );
+  /** Parent passes `key={dashTab}` so URL/nav updates remount and stay in sync; clicks stay client-only. */
   const effectiveTab = didUserPickTab ? tab : normalizedInitialTab;
 
   const baseId = useId();
@@ -948,6 +950,15 @@ export function DashboardMainTabs(props: {
 
   const { live: groupedLive, request: groupedRequest, removed: groupedRemoved } = groupedListingSections;
 
+  /**
+   * Client-only tab switch (instant). Do not use `history.replaceState` — it updates the URL without
+   * updating the Next.js App Router cache and can leave the dashboard blank / stuck locally.
+   */
+  const navigateToTab = (id: TabId) => {
+    setDidUserPickTab(true);
+    setTab(id);
+  };
+
   const tabBtn = (id: TabId, label: ReactNode, tabId: string, panelId: string) => (
     <button
       type="button"
@@ -956,10 +967,7 @@ export function DashboardMainTabs(props: {
       aria-selected={effectiveTab === id}
       aria-controls={panelId}
       tabIndex={effectiveTab === id ? 0 : -1}
-      onClick={() => {
-        setDidUserPickTab(true);
-        setTab(id);
-      }}
+      onClick={() => navigateToTab(id)}
       className={`rounded-md px-4 py-2 text-sm font-medium transition ${
         effectiveTab === id
           ? "bg-zinc-800 text-zinc-100 ring-1 ring-zinc-600"
@@ -970,7 +978,7 @@ export function DashboardMainTabs(props: {
     </button>
   );
 
-  const unreadN = notifications?.unreadCount ?? 0;
+  const unreadN = notifications?.unreadCount ?? notificationsUnreadCount;
 
   return (
     <section className="mt-8">
@@ -981,22 +989,12 @@ export function DashboardMainTabs(props: {
       >
         {hasSetup && setup && showOnboardingTab ? (
           <div className="flex flex-wrap gap-1 rounded-xl border border-zinc-800 bg-zinc-950/40 p-1">
-            {tabBtn(
-              "setup",
-              <span className="inline-flex items-center gap-2">
-                Onboarding
-                <span className="rounded-full bg-amber-900/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-amber-100">
-                  {setup.incompleteSetupCount}
-                </span>
-              </span>,
-              setupTabId,
-              setupPanelId,
-            )}
+            {tabBtn("setup", "Onboarding", setupTabId, setupPanelId)}
             {tabBtn("itemGuidelines", "Shop regulations", itemGuidelinesTabId, itemGuidelinesPanelId)}
           </div>
         ) : null}
         <div className="flex flex-wrap gap-1 rounded-xl border border-zinc-800 bg-zinc-950/40 p-1">
-          {hasNotifications && notifications
+          {hasNotifications
             ? tabBtn(
                 "notifications",
                 <span className="inline-flex items-center gap-2">
@@ -1017,23 +1015,23 @@ export function DashboardMainTabs(props: {
           {hasSetup && setup
             ? tabBtn("requestListing", "Request listing", requestListingTabId, requestListingPanelId)
             : null}
-          {tabBtn(
-            "listings",
-            listingTabCounts ? (
-              <span className="inline-flex items-center gap-2">
-                Listings
-                <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-200">
-                  {listingTabCounts.live}/{listingTabCounts.livePlusRequested}
-                </span>
-              </span>
-            ) : (
-              "Listings"
-            ),
-            listingsTabId,
-            listingsPanelId,
-          )}
+          {tabBtn("listings", "Listings", listingsTabId, listingsPanelId)}
           {tabBtn("orders", "Orders", ordersTabId, ordersPanelId)}
-          {canSupport ? tabBtn("support", "Support", supportTabId, supportPanelId) : null}
+          {canSupport
+            ? tabBtn(
+                "support",
+                <span className="inline-flex items-center gap-2">
+                  Support
+                  {supportNewFromStaffCount > 0 ? (
+                    <span className="rounded-full bg-violet-900/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-violet-100">
+                      {supportNewFromStaffCount}
+                    </span>
+                  ) : null}
+                </span>,
+                supportTabId,
+                supportPanelId,
+              )
+            : null}
           {hasSetup && setup
             ? tabBtn("bugFeedback", "Bug/Feedback", bugFeedbackTabId, bugFeedbackPanelId)
             : null}
@@ -1246,7 +1244,7 @@ export function DashboardMainTabs(props: {
         ) : null}
       </div>
 
-      {hasNotifications && notifications ? (
+      {hasNotifications ? (
         <div
           id={notificationsPanelId}
           role="tabpanel"
@@ -1254,57 +1252,61 @@ export function DashboardMainTabs(props: {
           hidden={effectiveTab !== "notifications"}
           className="pt-6"
         >
-          <p className="text-xs text-zinc-600">
-            Newest first. Mark as read clears your unread state; messages stay here for your records.
-          </p>
-          <ul className="mt-4 space-y-3">
-            {notifications.rows.map((n) => {
-              const isUnread = n.readAt == null;
-              return (
-                <li
-                  key={n.id}
-                  className={`rounded-lg border px-4 py-3 text-sm ${
-                    isUnread
-                      ? "border-sky-900/50 bg-sky-950/15 text-sky-100/90"
-                      : "border-zinc-800 bg-zinc-950/30 text-zinc-400"
-                  }`}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2 gap-y-1">
-                    <p className="min-w-0 flex-1 leading-snug">
-                      <DashboardNoticeBody body={n.body} />
-                    </p>
-                    {isUnread ? (
-                      <form action={dashboardMarkOwnerNoticeRead} className="shrink-0">
-                        <input type="hidden" name="noticeId" value={n.id} />
-                        <DashboardNoticeMarkReadButton />
-                      </form>
-                    ) : (
-                      <div className="flex shrink-0 flex-col items-end gap-1 text-right">
-                        <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
-                          Read
-                        </span>
-                        {n.readAt ? (
-                          <span className="text-[11px] text-zinc-600">
-                            Read {formatNoticeWhen(n.readAt)}
-                          </span>
-                        ) : null}
+          {notifications ? (
+            <>
+              <p className="text-xs text-zinc-600">
+                Newest first. Mark as read clears your unread state; messages stay here for your records.
+              </p>
+              <ul className="mt-4 space-y-3">
+                {notifications.rows.map((n) => {
+                  const isUnread = n.readAt == null;
+                  return (
+                    <li
+                      key={n.id}
+                      className={`rounded-lg border px-4 py-3 text-sm ${
+                        isUnread
+                          ? "border-sky-900/50 bg-sky-950/15 text-sky-100/90"
+                          : "border-zinc-800 bg-zinc-950/30 text-zinc-400"
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2 gap-y-1">
+                        <p className="min-w-0 flex-1 leading-snug">
+                          <DashboardNoticeBody body={n.body} />
+                        </p>
+                        {isUnread ? (
+                          <form action={dashboardMarkOwnerNoticeRead} className="shrink-0">
+                            <input type="hidden" name="noticeId" value={n.id} />
+                            <DashboardNoticeMarkReadButton />
+                          </form>
+                        ) : (
+                          <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+                            <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
+                              Read
+                            </span>
+                            {n.readAt ? (
+                              <span className="text-[11px] text-zinc-600">
+                                Read {formatNoticeWhen(n.readAt)}
+                              </span>
+                            ) : null}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="mt-2 text-[11px] text-zinc-600">
-                    <time dateTime={n.createdAt}>{formatNoticeWhen(n.createdAt)}</time>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          {notifications.rows.length === 0 ? (
-            <p className="mt-4 text-sm text-zinc-600">No notifications yet.</p>
+                      <div className="mt-2 text-[11px] text-zinc-600">
+                        <time dateTime={n.createdAt}>{formatNoticeWhen(n.createdAt)}</time>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              {notifications.rows.length === 0 ? (
+                <p className="mt-4 text-sm text-zinc-600">No notifications yet.</p>
+              ) : null}
+            </>
           ) : null}
         </div>
       ) : null}
 
-      {canSupport && supportChat ? (
+      {canSupport ? (
         <div
           id={supportPanelId}
           role="tabpanel"
