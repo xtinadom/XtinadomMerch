@@ -34,19 +34,25 @@ export function BugFeedbackPanel({ embedded = false }: { embedded?: boolean }) {
       if (f) fd.set("image", f);
 
       startTransition(async () => {
-        // Action is implemented in the next todo (submit-action-upload).
-        const r = await fetch("/api/bug-feedback", { method: "POST", body: fd });
-        const json = (await r.json().catch(() => ({}))) as { ok?: boolean; error?: string };
-        if (!r.ok || !json.ok) {
-          setMessage({ tone: "err", text: json.error ?? "Could not submit feedback." });
-          return;
+        try {
+          const r = await fetch("/api/bug-feedback", { method: "POST", body: fd });
+          const json = (await r.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+          if (!r.ok || !json.ok) {
+            setMessage({ tone: "err", text: json.error ?? "Could not submit feedback." });
+            return;
+          }
+          setMessage({ tone: "ok", text: "Thanks — your report was sent to the admin queue." });
+          setHappened("");
+          setExpected("");
+          setSteps("");
+          if (fileRef.current) fileRef.current.value = "";
+          router.refresh();
+        } catch {
+          setMessage({
+            tone: "err",
+            text: "Could not reach the server (network error). Confirm `npm run dev` is running and you’re on the same host/port as the dev server, then try again.",
+          });
         }
-        setMessage({ tone: "ok", text: "Thanks — your report was sent to the admin queue." });
-        setHappened("");
-        setExpected("");
-        setSteps("");
-        if (fileRef.current) fileRef.current.value = "";
-        router.refresh();
       });
     },
     [pending, happened, expected, steps, router],

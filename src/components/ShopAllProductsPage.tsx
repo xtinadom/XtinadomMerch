@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
+import { rethrowNextNavigationError } from "@/lib/next-navigation-errors";
 import {
   ShopAllBrowseToolbar,
   type ShopAllBrowseSortParam,
@@ -119,6 +120,7 @@ export async function ShopAllProductsPage({
    */
   browseSort?: string | null;
 } = {}) {
+  try {
   const shop = await prisma.shop.findFirst({
     where: { slug: shopSlug, active: true },
     select: { id: true },
@@ -173,7 +175,6 @@ export async function ShopAllProductsPage({
       ? tagSlug.trim()
       : undefined;
 
-  try {
     if (isPlatformCatalog) {
       const fullWhere = withSearch(marketplaceWhereBase);
       const browseWhere =
@@ -270,10 +271,6 @@ export async function ShopAllProductsPage({
           : marketplaceListingsRaw;
       browseProducts = marketplaceListings.map((l) => productCardProductFromListing(l));
     }
-  } catch (e) {
-    console.error("[ShopAllProductsPage] listings", e);
-    return <ShopDataLoadError cause={e} />;
-  }
   const featuredCarouselItems = productsToFeaturedCarouselItems(featuredSourceProducts);
   const featuredDefaultListingShopSlug =
     shopSlug === PLATFORM_SHOP_SLUG ? undefined : shopSlug;
@@ -342,4 +339,9 @@ export async function ShopAllProductsPage({
       </section>
     </div>
   );
+  } catch (e) {
+    rethrowNextNavigationError(e);
+    console.error("[ShopAllProductsPage]", e);
+    return <ShopDataLoadError cause={e} />;
+  }
 }

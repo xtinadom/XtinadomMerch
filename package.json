@@ -7,6 +7,8 @@
   },
   "scripts": {
     "dev": "prisma generate --schema prisma/schema.prisma && next dev --webpack",
+    "debug:routes": "node scripts/debug-navigation-check.cjs",
+    "debug:promo-log": "git log -n 30 --oneline -- src/lib/promotion-period-pacific.ts src/lib/promotion-policy-shared.ts src/lib/promotion-hot-item-policy.ts src/lib/platform-all-page-featured.ts src/lib/shops-browse-page-featured.ts",
     "dev:fresh": "node scripts/dev-fresh.cjs && npm run dev",
     "dev:turbo": "prisma generate --schema prisma/schema.prisma && next dev --turbopack",
     "build": "node scripts/vercel-build.cjs",

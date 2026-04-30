@@ -6,7 +6,7 @@ This app uses **PostgreSQL** (SQLite is not supported on Vercel serverless). **N
 
 Running `prisma migrate deploy` or `prisma db push` **during** the Vercel build breaks constantly (connection poolers, SSL, cold starts, Prisma engine vs serverless).  
 
-**Default build:** `prisma generate` → `next build` only (Next 16 default bundler). **No DB connection during build.**
+**Default build:** `prisma generate` → `npx next build --webpack` (see `scripts/vercel-build.cjs`). This repo sets a custom `webpack()` hook in `next.config.ts` (dev chunk timeout), so **Next 16’s plain `next build` would error** without `--webpack`. **No DB connection during build.**
 
 You apply the schema **once** (or after schema changes) from your computer using the **same** connection string as production. That is the reliable pattern.
 
@@ -81,7 +81,15 @@ npx prisma db push
 
 1. `npx prisma generate`
 2. Schema sync **only if** `RUN_PRISMA_SCHEMA_ON_BUILD=1`
-3. `npx next build`
+3. `npx next build --webpack`
+
+**Project settings:** leave **Build Command** as `npm run build` (or empty so Vercel uses `package.json`). **Install Command** default is fine. **Node.js Version** should match **`package.json` `engines.node`** (22.x); the repo also includes **`.nvmrc`** (`22`) so Vercel can pick the same major version automatically.
+
+### Build failed (`npm run build` exit 1 on Vercel)
+
+1. Open the deploy log and find the **first** error (not only the final exit code).
+2. Run **`npm run build`** locally on the **same git commit**. If local passes and Vercel fails: check **Node version** (22), env vars present on Vercel, and **memory** (rare OOM on large Next builds).
+3. If the error mentions **Turbopack** vs **webpack**, the deployment is not using the script above — confirm the build command runs **`npm run build`** from the repo root, not a raw `next build` without `--webpack`.
 
 ## 4. Seed data (once)
 

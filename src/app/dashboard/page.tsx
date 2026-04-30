@@ -18,7 +18,7 @@ import {
 } from "@/lib/marketplace-constants";
 import { syncFreeListingFeeWaivers } from "@/lib/listing-fee";
 import { shopDemoPurchaseFeatureEnabled } from "@/lib/shop-demo-purchase-feature";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, isStripeSecretConfigured } from "@/lib/stripe";
 import { dashboardTryCompleteAccountDeletion } from "@/actions/dashboard-account-danger";
 import { logoutShopOwner } from "@/actions/shop-auth";
 import { SiteLegalFooter } from "@/components/SiteLegalFooter";
@@ -73,6 +73,8 @@ import { connectBalanceBlocksDeletion, getStripeConnectBalanceUsdCents } from "@
 import { shopStripeConnectReadyForListingCharges } from "@/lib/shop-stripe-connect-gate";
 import { isMockCheckoutEnabled } from "@/lib/checkout-mock";
 import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
+import { ShopDataLoadError } from "@/components/ShopDataLoadError";
+import { rethrowNextNavigationError } from "@/lib/next-navigation-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -196,6 +198,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         ? delConfirmRaw[0]
         : undefined;
 
+  try {
   const user = await prisma.shopUser.findUnique({
     where: { id: owner.shopUserId },
     include: {
@@ -212,7 +215,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   if (!user) redirect("/dashboard/login");
 
   let shop = user.shop;
-  if (connect === "return" && shop.stripeConnectAccountId) {
+  if (connect === "return" && shop.stripeConnectAccountId && isStripeSecretConfigured()) {
     try {
       const stripe = getStripe();
       const acct = await stripe.accounts.retrieve(shop.stripeConnectAccountId);
@@ -544,9 +547,13 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const hotItemBaseCents = promotionPriceCentsForKind(PromotionKind.HOT_FEATURED_ITEM);
   const topShopBaseCents = promotionPriceCentsForKind(PromotionKind.FEATURED_SHOP_HOME);
   const popularBaseCents = promotionPriceCentsForKind(PromotionKind.MOST_POPULAR_OF_TAG_ITEM);
-  const hotOfferResolved = !isPlatform ? await resolveHotItemPlacementOffer(hotItemBaseCents) : null;
-  const topShopOfferResolved = !isPlatform ? await resolveTopShopPlacementOffer(topShopBaseCents) : null;
-  const popularOfferResolved = !isPlatform ? await resolvePopularPlacementOffer(popularBaseCents) : null;
+  const [hotOfferResolved, topShopOfferResolved, popularOfferResolved] = !isPlatform
+    ? await Promise.all([
+        resolveHotItemPlacementOffer(hotItemBaseCents),
+        resolveTopShopPlacementOffer(topShopBaseCents),
+        resolvePopularPlacementOffer(popularBaseCents),
+      ])
+    : [null, null, null];
   const periodStartUtc = currentListingPromotionPeriodStartUtc(new Date());
   const hotSlotsUsedUtc = !isPlatform
     ? await countHotItemPaidForPlacementPeriodUtc(periodStartUtc)
@@ -867,4 +874,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <SiteLegalFooter />
     </main>
   );
+  } catch (e) {
+    rethrowNextNavigationError(e);
+    return <ShopDataLoadError cause={e} />;
+  }
 }

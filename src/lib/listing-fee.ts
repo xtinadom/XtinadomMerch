@@ -27,13 +27,17 @@ export async function syncFreeListingFeeWaivers(shopId: string): Promise<void> {
     select: { id: true, listingFeePaidAt: true },
   });
   const now = new Date();
+  const toWaive: string[] = [];
   for (let i = 0; i < rows.length; i++) {
     if (i + 1 <= maxFreeOrdinals && !rows[i].listingFeePaidAt) {
-      await prisma.shopListing.update({
-        where: { id: rows[i].id },
-        data: { listingFeePaidAt: now, listingPublicationFeePaidCents: 0 },
-      });
+      toWaive.push(rows[i].id);
     }
+  }
+  if (toWaive.length > 0) {
+    await prisma.shopListing.updateMany({
+      where: { id: { in: toWaive } },
+      data: { listingFeePaidAt: now, listingPublicationFeePaidCents: 0 },
+    });
   }
 }
 

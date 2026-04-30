@@ -106,6 +106,14 @@ export function ListingFeeCardPay(props: {
         return;
       }
       router.refresh();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const lower = msg.toLowerCase();
+      setError(
+        lower.includes("network") || lower.includes("failed to fetch")
+          ? "Payment failed due to a network error. Check your connection, VPN, or extensions blocking Stripe."
+          : msg.trim() || "Payment failed.",
+      );
     } finally {
       setBusy(false);
     }

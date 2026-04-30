@@ -48,6 +48,6 @@ function runOptionalSchemaSync() {
 run("npx prisma generate --schema prisma/schema.prisma");
 runOptionalSchemaSync();
 
-// Next 16 default production build (Turbopack) — avoid `next build --webpack`, which treats
-// `node:*` imports as unhandled schemes when they appear in modules reachable from Client Components.
-run("npx next build");
+// Next 16 defaults to Turbopack for `next build`; this repo sets `webpack()` in next.config.ts
+// (chunk load timeout in dev client bundle). Explicit --webpack is required or the build errors.
+run("npx next build --webpack");

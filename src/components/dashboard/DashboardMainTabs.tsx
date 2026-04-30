@@ -522,9 +522,12 @@ function ListingOptionPanel({
             on the Onboarding tab (charges and payouts enabled) before you can pay this fee or submit charged listings.
           </p>
         ) : !stripePublishableKey?.trim() ? (
-          <p className="mt-3 rounded-lg border border-red-900/45 bg-red-950/25 px-3 py-2 text-xs text-red-200/90">
-            Card payments are not configured (missing{" "}
-            <code className="text-red-100/80">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code>). Contact support.
+          <p className="mt-3 rounded-lg border border-amber-900/45 bg-amber-950/25 px-3 py-2 text-xs text-amber-200/90">
+            Stripe is not configured. For local demo pay (no card), add{" "}
+            <code className="text-amber-100/90">DEMO_MODE=1</code> or{" "}
+            <code className="text-amber-100/90">MOCK_CHECKOUT=1</code> to{" "}
+            <code className="text-amber-100/90">.env.local</code> and restart <code className="text-amber-100/90">npm run dev</code>. Or set{" "}
+            <code className="text-amber-100/90">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code> for real card entry.
           </p>
         ) : (
           <ListingFeeCardPay

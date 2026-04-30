@@ -4,8 +4,13 @@ import { OrderStatus } from "@/generated/prisma/enums";
 /** Prefix for fake Stripe session ids when MOCK_CHECKOUT=1. */
 export const MOCK_SESSION_PREFIX = "mock_" as const;
 
+/**
+ * Use mock / demo payments (no Stripe keys, no card UI). Set either env in `.env.local`:
+ * - `DEMO_MODE=1` — preferred name for local work before Stripe is configured
+ * - `MOCK_CHECKOUT=1` — legacy alias (same behavior)
+ */
 export function isMockCheckoutEnabled(): boolean {
-  return process.env.MOCK_CHECKOUT === "1";
+  return process.env.MOCK_CHECKOUT === "1" || process.env.DEMO_MODE === "1";
 }
 
 export function parseMockOrderId(sessionId: string): string | null {

@@ -1,4 +1,4 @@
-import { getStripe } from "@/lib/stripe";
+import { getStripe, isStripeSecretConfigured } from "@/lib/stripe";
 
 /** Sum Stripe balance amounts for a currency (smallest currency unit, e.g. cents for USD). */
 function sumForCurrency(
@@ -19,6 +19,7 @@ export async function getStripeConnectBalanceUsdCents(
 ): Promise<{ availableCents: number; pendingCents: number } | null> {
   const id = stripeConnectAccountId?.trim();
   if (!id) return { availableCents: 0, pendingCents: 0 };
+  if (!isStripeSecretConfigured()) return null;
 
   try {
     const stripe = getStripe();

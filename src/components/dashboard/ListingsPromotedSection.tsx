@@ -158,7 +158,11 @@ export function ListingsPromotedSection(props: {
           popularItemPromotion={popularItemPromotion}
         />
       ) : (
-        <p className="mt-3 text-xs text-zinc-500">Stripe is not configured for card entry on this environment.</p>
+        <p className="mt-3 text-xs text-amber-200/85">
+          Stripe publishable key is not set. Add <code className="text-zinc-300">DEMO_MODE=1</code> (or{" "}
+          <code className="text-zinc-300">MOCK_CHECKOUT=1</code>) to <code className="text-zinc-300">.env.local</code> for
+          mock promotion checkout, or configure <code className="text-zinc-300">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code>.
+        </p>
       )}
 
       <p className="mt-3 text-[11px] leading-snug text-zinc-600">
