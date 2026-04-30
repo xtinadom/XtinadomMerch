@@ -16,10 +16,12 @@ type Props = {
 };
 
 export function ProductImageGallery({ images, resetKey, preferMainSrc }: Props) {
+  const imagesFingerprint = useMemo(() => images.join("\u001f"), [images]);
   const list = useMemo(
     () => uniqueImageUrlsOrdered(images),
-    // Stable when parent passes a new array each render with same contents
-    [images.join("\u001f")],
+    // Fingerprint tracks image URL list identity; avoids recomputing when parent passes a new `images` array with the same contents.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally depend on fingerprint, not `images` reference
+    [imagesFingerprint],
   );
 
   const [mainIndex, setMainIndex] = useState(0);

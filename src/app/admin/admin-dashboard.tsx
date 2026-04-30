@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma, prismaAdminInboundEmailOrNull } from "@/lib/prisma";
 import { getAdminSessionReadonly } from "@/lib/session";
-import { logoutAdmin, updateProductDetails } from "@/actions/admin";
+import { logoutAdmin } from "@/actions/admin";
 import {
   adminCreateTagForm,
   adminDeleteTagForm,
@@ -10,12 +10,9 @@ import {
 } from "@/actions/admin-tags";
 import { Prisma } from "@/generated/prisma/client";
 import { ListingRequestStatus, OrderStatus } from "@/generated/prisma/enums";
-import { productImageUrls } from "@/lib/product-media";
 import { isR2UploadConfigured } from "@/lib/r2-upload";
 import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
-import { ProductDesignNameFields } from "@/components/admin/ProductDesignNameFields";
-import { ProductTagFields } from "@/components/admin/ProductTagFields";
-import { productHasTag, productTagIds } from "@/lib/product-tags";
+import { productHasTag } from "@/lib/product-tags";
 import { emailLinkOrigin, publicAppBaseUrl } from "@/lib/public-app-url";
 import { buildAdminEmailFormatEntries } from "@/lib/site-email-template-service";
 import {
@@ -24,11 +21,6 @@ import {
 } from "@/lib/admin-dashboard-urls";
 import { PrintifyApiTab } from "./printify-api-tab";
 import { PrintifyInventoryTab } from "./printify-inventory-tab";
-import { SaveListingForm } from "@/components/admin/SaveListingForm";
-import {
-  collectKnownDesignNamesFromProducts,
-  designNamesFromJson,
-} from "@/lib/product-design-names";
 import { AdminPlatformSalesTab } from "@/components/admin/AdminPlatformSalesTab";
 import {
   loadMergedPlatformSalesLines,
@@ -86,10 +78,6 @@ import {
 } from "@/lib/deploy-footprint";
 import { listingRejectionNoticeDetail } from "@/lib/listing-request-reject-reasons";
 export const dynamic = "force-dynamic";
-
-function priceInputValue(cents: number): string {
-  return (cents / 100).toFixed(2);
-}
 
 type AdminProductWithTags = Prisma.ProductGetPayload<{
   include: { primaryTag: true; tags: { include: { tag: true } } };
@@ -1192,10 +1180,6 @@ export async function AdminDashboardPageContent({
   }
 
   const printifyTabBadgeCount = printifyCatalogItemCount ?? productCount;
-
-  const knownDesignNames = collectKnownDesignNamesFromProducts(products);
-
-  const defaultCreateTagIds = adminTags[0] ? [adminTags[0].id] : [];
 
   const supportUnresolvedCount = supportUnresolvedShopIds.size;
 

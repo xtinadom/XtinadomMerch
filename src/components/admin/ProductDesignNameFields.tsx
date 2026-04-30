@@ -143,6 +143,7 @@ export function ProductDesignNameFields({ knownNames, defaultNames }: Props) {
         <input
           ref={inputRef}
           type="text"
+          role="combobox"
           value={input}
           autoComplete="off"
           placeholder="Search or add a design name…"

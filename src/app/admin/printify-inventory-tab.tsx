@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { adminPruneOrphanListingImagesR2, updateProductDetails } from "@/actions/admin";
-import type { Prisma, Product, Tag } from "@/generated/prisma/client";
+import type { Product, Tag } from "@/generated/prisma/client";
 import { FulfillmentType } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { fetchPrintifyCatalog, hasPrintifyApiToken, isPrintifyConfigured } from "@/lib/printify";

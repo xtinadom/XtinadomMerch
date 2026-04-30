@@ -901,11 +901,6 @@ export type ListingCatalogImagesFormState = {
   error: string | null;
 };
 
-const initialListingCatalogImagesFormState: ListingCatalogImagesFormState = {
-  ok: false,
-  error: null,
-};
-
 type ApplyCatalogImagesResult = { ok: true } | { ok: false; error: string };
 
 async function applyListingStorefrontCatalogImages(

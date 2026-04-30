@@ -3,7 +3,11 @@
 import type { ReactNode } from "react";
 import type { Prisma } from "@/generated/prisma/client";
 import Link from "next/link";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { loadDashboardTabDataAction } from "@/actions/dashboard-load-tab";
+import type { DashboardMainTabId } from "@/lib/dashboard-main-tab-id";
+import type { DashboardSupportChatPayload } from "@/lib/dashboard-scoped-data";
+import { DashboardSupportChatPanel } from "@/components/dashboard/DashboardSupportChatPanel";
 import { FulfillmentType, ListingRequestStatus } from "@/generated/prisma/enums";
 import {
   dashboardCreatorRemoveListingFromShop,
@@ -786,16 +790,7 @@ function ListingCard({
   );
 }
 
-type TabId =
-  | "setup"
-  | "shopProfile"
-  | "itemGuidelines"
-  | "requestListing"
-  | "bugFeedback"
-  | "listings"
-  | "notifications"
-  | "support"
-  | "orders";
+type TabId = DashboardMainTabId;
 
 function normalizeDashboardMainTab(
   i: TabId | undefined,
@@ -816,6 +811,7 @@ function normalizeDashboardMainTab(
 
     if (
       t === "listings" ||
+      t === "promotions" ||
       t === "orders" ||
       t === "setup" ||
       t === "shopProfile" ||
@@ -832,6 +828,7 @@ function normalizeDashboardMainTab(
     return defaultCreatorTab;
   }
   if (i === "orders") return "orders";
+  if (i === "promotions") return "listings";
   if (i === "support" && canSupport) return "support";
   return "listings";
 }
@@ -851,8 +848,17 @@ export function DashboardMainTabs(props: {
   notificationsUnreadCount?: number;
   /** Staff replies after the creator’s last message — Support tab badge only. */
   supportNewFromStaffCount?: number;
-  /** Server-rendered support chat (creator shops only). */
-  supportChat?: ReactNode | null;
+  /** Support thread payload (creator shops); loaded with Support tab or via lazy fetch. */
+  supportChat?: DashboardSupportChatPayload | null;
+  /** Which tab payloads were included in the initial RSC response (`?dash=`). */
+  initialTabDataLoaded: {
+    listings: boolean;
+    promotions: boolean;
+    orders: boolean;
+    notifications: boolean;
+    support: boolean;
+    requestListingCatalog: boolean;
+  };
   paidListingFeeLabel: string;
   /** Extra free publication slots from redeemed promo codes (non-founder creator shops). */
   listingFeeBonusFreeSlots: number;
@@ -893,32 +899,79 @@ export function DashboardMainTabs(props: {
   const {
     initialTab: initialTabProp,
     shopSlug,
-    setup,
-    notifications,
+    setup: initialSetup,
+    notifications: initialNotifications,
     notificationsUnreadCount = 0,
     supportNewFromStaffCount = 0,
-    supportChat,
+    supportChat: initialSupportChat,
     paidListingFeeLabel,
     listingFeeBonusFreeSlots,
     showListingSlotPromoRedeem,
     isPlatform,
-    listings,
-    groupedListingSections,
-    promotions = null,
-    paidOrders,
+    listings: initialListings,
+    groupedListingSections: initialGroupedListingSections,
+    promotions: initialPromotions = null,
+    paidOrders: initialPaidOrders,
     r2Configured,
-    draftListingRequestPrefill = null,
+    draftListingRequestPrefill: initialDraftPrefill = null,
     mockListingFeeCheckout,
     shopStripeConnectReadyForCharges,
     stripePublishableKey,
     showDemoPurchaseButton = false,
+    initialTabDataLoaded,
   } = props;
+
+  const [loadedFlags, setLoadedFlags] = useState(initialTabDataLoaded);
+  const [listings, setListings] = useState(initialListings);
+  const [groupedListingSections, setGroupedListingSections] = useState(initialGroupedListingSections);
+  const [promotions, setPromotions] = useState(initialPromotions);
+  const [paidOrders, setPaidOrders] = useState(initialPaidOrders);
+  const [notifications, setNotifications] = useState(initialNotifications);
+  const [supportChat, setSupportChat] = useState(initialSupportChat);
+  const [setup, setSetup] = useState(initialSetup);
+  const [draftListingRequestPrefill, setDraftListingRequestPrefill] = useState(initialDraftPrefill);
+
+  /** RSC can send new props without remounting (e.g. `router.refresh`); re-seed client tab cache. */
+  useEffect(() => {
+    setLoadedFlags(initialTabDataLoaded);
+    setListings(initialListings);
+    setGroupedListingSections(initialGroupedListingSections);
+    setPromotions(initialPromotions);
+    setPaidOrders(initialPaidOrders);
+    setNotifications(initialNotifications);
+    setSupportChat(initialSupportChat);
+    setSetup(initialSetup);
+    setDraftListingRequestPrefill(initialDraftPrefill);
+  }, [
+    initialTabDataLoaded,
+    initialListings,
+    initialGroupedListingSections,
+    initialPromotions,
+    initialPaidOrders,
+    initialNotifications,
+    initialSupportChat,
+    initialSetup,
+    initialDraftPrefill,
+  ]);
+
+  const loadedFlagsRef = useRef(loadedFlags);
+  useEffect(() => {
+    loadedFlagsRef.current = loadedFlags;
+  }, [loadedFlags]);
+
+  function patchLoadedFlags(patch: Partial<typeof loadedFlags>) {
+    setLoadedFlags((lf) => {
+      const next = { ...lf, ...patch };
+      loadedFlagsRef.current = next;
+      return next;
+    });
+  }
 
   const hasSetup = setup != null;
   const showOnboardingTab = Boolean(setup && setup.incompleteSetupCount > 0);
   /** Notifications tab is always available for creator shops; rows load when the tab is opened. */
   const hasNotifications = !isPlatform ? true : Boolean(notifications);
-  const canSupport = !isPlatform ? true : Boolean(supportChat);
+  const canSupport = !isPlatform;
   const tabOpts = { hasSetup, showOnboardingTab, hasNotifications, canSupport };
   const normalizedInitialTab = normalizeDashboardMainTab(initialTabProp, tabOpts);
   const [didUserPickTab, setDidUserPickTab] = useState(false);
@@ -940,23 +993,93 @@ export function DashboardMainTabs(props: {
   const bugFeedbackTabId = `${baseId}-tab-bug-feedback`;
   const bugFeedbackPanelId = `${baseId}-panel-bug-feedback`;
   const listingsTabId = `${baseId}-tab-listings`;
+  const promotionsTabId = `${baseId}-tab-promotions`;
   const notificationsTabId = `${baseId}-tab-notifications`;
   const notificationsPanelId = `${baseId}-panel-notifications`;
   const ordersTabId = `${baseId}-tab-orders`;
   const supportTabId = `${baseId}-tab-support`;
   const listingsPanelId = `${baseId}-panel-listings`;
+  const promotionsPanelId = `${baseId}-panel-promotions`;
   const ordersPanelId = `${baseId}-panel-orders`;
   const supportPanelId = `${baseId}-panel-support`;
 
   const { live: groupedLive, request: groupedRequest, removed: groupedRemoved } = groupedListingSections;
 
+  function tabNeedsLazyFetch(id: TabId, lf: typeof loadedFlags): boolean {
+    switch (id) {
+      case "listings":
+        return !lf.listings;
+      case "promotions":
+        return !lf.promotions;
+      case "orders":
+        return !lf.orders;
+      case "notifications":
+        return !lf.notifications;
+      case "support":
+        return !lf.support;
+      case "requestListing":
+        return !lf.requestListingCatalog;
+      default:
+        return false;
+    }
+  }
+
   /**
-   * Client-only tab switch (instant). Do not use `history.replaceState` — it updates the URL without
-   * updating the Next.js App Router cache and can leave the dashboard blank / stuck locally.
+   * Client tab switch; loads tab payload on demand when it was not part of the initial RSC scope.
    */
-  const navigateToTab = (id: TabId) => {
+  const navigateToTab = async (id: TabId) => {
     setDidUserPickTab(true);
     setTab(id);
+    if (!tabNeedsLazyFetch(id, loadedFlagsRef.current)) return;
+    try {
+      const r = await loadDashboardTabDataAction(id);
+      if (!r.ok) return;
+      const d = r.data;
+      switch (id) {
+        case "listings":
+          setListings(d.listingRows);
+          setGroupedListingSections(d.groupedListingSections);
+          patchLoadedFlags({ listings: true });
+          break;
+        case "promotions":
+          if (d.promotionsPayload) setPromotions(d.promotionsPayload);
+          patchLoadedFlags({ promotions: true });
+          break;
+        case "orders":
+          setPaidOrders(d.paidOrders);
+          patchLoadedFlags({ orders: true });
+          break;
+        case "notifications":
+          if (d.notifications) setNotifications(d.notifications);
+          patchLoadedFlags({ notifications: true });
+          break;
+        case "support":
+          setSupportChat(d.supportChat);
+          patchLoadedFlags({ support: true });
+          break;
+        case "requestListing":
+          if (d.requestListingCatalog) {
+            setSetup((s) =>
+              s
+                ? {
+                    ...s,
+                    catalogGroups: d.requestListingCatalog!.catalogGroups,
+                    listingPickerDiagnostics: {
+                      adminCatalogItemCount: d.requestListingCatalog!.adminCatalogItemCount,
+                    },
+                  }
+                : s,
+            );
+            setDraftListingRequestPrefill(d.requestListingCatalog.draftListingRequestPrefill);
+          }
+          patchLoadedFlags({ requestListingCatalog: true });
+          break;
+        default:
+          break;
+      }
+    } catch {
+      /* network / server — tab stays selected; user can retry */
+    }
   };
 
   const tabBtn = (id: TabId, label: ReactNode, tabId: string, panelId: string) => (
@@ -1016,6 +1139,7 @@ export function DashboardMainTabs(props: {
             ? tabBtn("requestListing", "Request listing", requestListingTabId, requestListingPanelId)
             : null}
           {tabBtn("listings", "Listings", listingsTabId, listingsPanelId)}
+          {!isPlatform ? tabBtn("promotions", "Promotions", promotionsTabId, promotionsPanelId) : null}
           {tabBtn("orders", "Orders", ordersTabId, ordersPanelId)}
           {canSupport
             ? tabBtn(
@@ -1097,16 +1221,26 @@ export function DashboardMainTabs(props: {
           hidden={effectiveTab !== "requestListing"}
           className="pt-6"
         >
-          <ShopFirstListingRequestPanel
-            catalogGroups={setup.catalogGroups}
-            r2Configured={setup.r2Configured}
-            listingPickerDiagnostics={setup.listingPickerDiagnostics}
-            draftListingRequestPrefill={draftListingRequestPrefill}
-            publicationFeeLabel={setup.firstListingPublicationFeeLabel}
-            stripeConnectReadyForPaidListings={setup.stripeConnectReadyForPaidListings}
-            showListingSlotPromoRedeem={showListingSlotPromoRedeem}
-            embedded
-          />
+          {!loadedFlags.requestListingCatalog ? (
+            <div className="flex items-center gap-2 py-8 text-sm text-zinc-500">
+              <span
+                className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-zinc-600 border-t-blue-500/90"
+                aria-hidden
+              />
+              Loading catalog…
+            </div>
+          ) : (
+            <ShopFirstListingRequestPanel
+              catalogGroups={setup.catalogGroups}
+              r2Configured={setup.r2Configured}
+              listingPickerDiagnostics={setup.listingPickerDiagnostics}
+              draftListingRequestPrefill={draftListingRequestPrefill}
+              publicationFeeLabel={setup.firstListingPublicationFeeLabel}
+              stripeConnectReadyForPaidListings={setup.stripeConnectReadyForPaidListings}
+              showListingSlotPromoRedeem={showListingSlotPromoRedeem}
+              embedded
+            />
+          )}
         </div>
       ) : null}
 
@@ -1129,6 +1263,16 @@ export function DashboardMainTabs(props: {
         hidden={effectiveTab !== "listings"}
         className="pt-4"
       >
+        {!loadedFlags.listings ? (
+          <div className="flex items-center gap-2 py-10 text-sm text-zinc-500">
+            <span
+              className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-zinc-600 border-t-blue-500/90"
+              aria-hidden
+            />
+            Loading listings…
+          </div>
+        ) : (
+          <>
         {groupedRequest.length > 0 ? (
           <ListingsTabExpandSection
             className="mt-6"
@@ -1164,18 +1308,6 @@ export function DashboardMainTabs(props: {
               ))}
             </ul>
           </ListingsTabExpandSection>
-        ) : null}
-
-        {!isPlatform && promotions ? (
-          <ListingsPromotedSection
-            purchases={promotions.purchases}
-            liveListingPicklist={promotions.liveListingPicklist}
-            mockPromotionCheckout={promotions.mockPromotionCheckout}
-            stripePublishableKey={promotions.stripePublishableKey}
-            hotItemPromotion={promotions.hotItemPromotion}
-            topShopPromotion={promotions.topShopPromotion}
-            popularItemPromotion={promotions.popularItemPromotion}
-          />
         ) : null}
 
         {groupedLive.length > 0 ? (
@@ -1242,7 +1374,39 @@ export function DashboardMainTabs(props: {
             catalog item, set your price, and upload artwork for admin review.
           </p>
         ) : null}
+          </>
+        )}
       </div>
+
+      {!isPlatform ? (
+        <div
+          id={promotionsPanelId}
+          role="tabpanel"
+          aria-labelledby={promotionsTabId}
+          hidden={effectiveTab !== "promotions"}
+          className="pt-6"
+        >
+          {!loadedFlags.promotions ? (
+            <div className="flex items-center gap-2 py-10 text-sm text-zinc-500">
+              <span
+                className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-zinc-600 border-t-blue-500/90"
+                aria-hidden
+              />
+              Loading promotions…
+            </div>
+          ) : promotions ? (
+            <ListingsPromotedSection
+              purchases={promotions.purchases}
+              liveListingPicklist={promotions.liveListingPicklist}
+              mockPromotionCheckout={promotions.mockPromotionCheckout}
+              stripePublishableKey={promotions.stripePublishableKey}
+              hotItemPromotion={promotions.hotItemPromotion}
+              topShopPromotion={promotions.topShopPromotion}
+              popularItemPromotion={promotions.popularItemPromotion}
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       {hasNotifications ? (
         <div
@@ -1252,7 +1416,15 @@ export function DashboardMainTabs(props: {
           hidden={effectiveTab !== "notifications"}
           className="pt-6"
         >
-          {notifications ? (
+          {!loadedFlags.notifications ? (
+            <div className="flex items-center gap-2 py-8 text-sm text-zinc-500">
+              <span
+                className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-zinc-600 border-t-blue-500/90"
+                aria-hidden
+              />
+              Loading notifications…
+            </div>
+          ) : notifications ? (
             <>
               <p className="text-xs text-zinc-600">
                 Newest first. Mark as read clears your unread state; messages stay here for your records.
@@ -1314,7 +1486,20 @@ export function DashboardMainTabs(props: {
           hidden={effectiveTab !== "support"}
           className="pt-6"
         >
-          {supportChat}
+          {!loadedFlags.support ? (
+            <div className="flex items-center gap-2 py-8 text-sm text-zinc-500">
+              <span
+                className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-zinc-600 border-t-blue-500/90"
+                aria-hidden
+              />
+              Loading support…
+            </div>
+          ) : (
+            <DashboardSupportChatPanel
+              messages={supportChat?.messages ?? []}
+              resolvedAtIso={supportChat?.resolvedAtIso ?? null}
+            />
+          )}
         </div>
       ) : null}
 
@@ -1329,6 +1514,16 @@ export function DashboardMainTabs(props: {
           Newest first (up to 20). Each line is merchandise only. Shop Profit is the sum of each line’s sale minus
           goods/services cost and platform fee. Shipping and tips are not included here.
         </p>
+        {!loadedFlags.orders ? (
+          <div className="flex items-center gap-2 py-8 text-sm text-zinc-500">
+            <span
+              className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-zinc-600 border-t-blue-500/90"
+              aria-hidden
+            />
+            Loading orders…
+          </div>
+        ) : (
+          <>
         {showDemoPurchaseButton ? <DemoShopPurchaseButton /> : null}
         <ul className="mt-4 space-y-3">
           {paidOrders.map((o) => (
@@ -1372,6 +1567,8 @@ export function DashboardMainTabs(props: {
         {paidOrders.length === 0 ? (
           <p className="mt-4 text-sm text-zinc-600">No paid orders for this shop yet.</p>
         ) : null}
+          </>
+        )}
       </div>
     </section>
   );

@@ -98,7 +98,6 @@ export function promotionPeriodEndInclusiveUtc(periodIndex: number): Date {
 }
 
 export function getPromotionPeriodIndexContaining(instant: Date): number {
-  const anchor = promotionPeriodZeroStartUtc().getTime();
   const t = instant.getTime();
   let lo = 0;
   let hi = 10_000;

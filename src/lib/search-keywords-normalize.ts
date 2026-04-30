@@ -35,7 +35,7 @@ export function mergeKeywordPieces(
   cleaned: string[],
 ): { next: string[]; skippedDuplicate: boolean } {
   const seen = new Set(prev.map(keywordDedupeFold));
-  let next = [...prev];
+  const next = [...prev];
   let skippedDuplicate = false;
   for (const t of cleaned) {
     const key = keywordDedupeFold(t);

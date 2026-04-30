@@ -1,15 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getShopOwnerSession, getShopOwnerSessionReadonly } from "@/lib/session";
-import {
-  FulfillmentType,
-  ListingRequestStatus,
-  OrderStatus,
-  PromotionKind,
-  PromotionPurchaseStatus,
-} from "@/generated/prisma/enums";
+import { ListingRequestStatus } from "@/generated/prisma/enums";
 import {
   LISTING_FEE_CENTS,
   PLATFORM_SHOP_SLUG,
@@ -23,44 +16,15 @@ import { dashboardTryCompleteAccountDeletion } from "@/actions/dashboard-account
 import { logoutShopOwner } from "@/actions/shop-auth";
 import { SiteLegalFooter } from "@/components/SiteLegalFooter";
 import { DashboardMainTabs } from "@/components/dashboard/DashboardMainTabs";
-import { DashboardSupportChatPanel } from "@/components/dashboard/DashboardSupportChatPanel";
+import { isR2UploadConfigured } from "@/lib/r2-upload";
 import {
-  isR2UploadConfigured,
-  sanitizeShopListingAdminSecondaryImageUrlForDisplay,
-  sanitizeShopListingOwnerSupplementImageUrlForDisplay,
-} from "@/lib/r2-upload";
-import { ensureBaselineAdminCatalogIfEmpty } from "@/lib/seed-baseline-admin-catalog";
-import { baselineGoodsServicesUnitCents } from "@/lib/baseline-goods-services-unit-cents";
+  formatMoneyServer as formatMoney,
+} from "@/lib/dashboard-payload-helpers";
 import {
-  buildShopBaselineCatalogGroups,
-  parseBaselinePick,
-} from "@/lib/shop-baseline-catalog";
-import {
-  listingRejectionReasonTextForCard,
-  resolveListingRejectionNoticeBody,
-} from "@/lib/shop-listing-rejection-notice";
-import {
-  resolveCatalogPrefillFromBaselinePickEncoded,
-  resolveCatalogPrefillFromStubProductSlug,
-  type DraftListingRequestPrefillPayload,
-} from "@/lib/shop-baseline-draft-prefill";
-import { buildGroupedListingSectionsForDashboard } from "@/lib/dashboard-legacy-baseline-listing-groups";
-import {
-  countHotItemPaidForPlacementPeriodUtc,
-  countTopShopPaidForPlacementPeriodUtc,
-  resolveHotItemPlacementOffer,
-  resolvePopularPlacementOffer,
-  resolveTopShopPlacementOffer,
-} from "@/lib/promotion-hot-item-policy";
-import {
-  HOT_ITEM_PLATFORM_PERIOD_CAP,
-  TOP_SHOP_PLATFORM_PERIOD_CAP,
-} from "@/lib/promotion-policy-shared";
-import {
-  currentListingPromotionPeriodStartUtc,
-  formatPacificPromotionWindowMmDdRange,
-} from "@/lib/promotion-period-pacific";
-import { promotionPriceCentsForKind } from "@/lib/promotions";
+  loadBadgeCounts,
+  loadDashboardScopedChunks,
+  scopesForInitialTab,
+} from "@/lib/dashboard-scoped-data";
 import {
   canStartStripeConnect,
   computeShopOnboardingSteps,
@@ -69,103 +33,14 @@ import {
 import { connectBalanceBlocksDeletion, getStripeConnectBalanceUsdCents } from "@/lib/stripe-connect-balance";
 import { shopStripeConnectReadyForListingCharges } from "@/lib/shop-stripe-connect-gate";
 import { isMockCheckoutEnabled } from "@/lib/checkout-mock";
-import { getPrintifyVariantsForProduct } from "@/lib/printify-variants";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 import { rethrowNextNavigationError } from "@/lib/next-navigation-errors";
-import { countNewSupportMessagesFromStaff } from "@/lib/support-thread-new-from-staff";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
-function formatMoney(cents: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
-}
-
-type AdminCatalogRowForDisplay = {
-  itemGoodsServicesCostCents: number;
-};
-
-type DashboardShopListingWithProduct = Prisma.ShopListingGetPayload<{
-  include: { product: true };
-}>;
-
-/** Orders tab: shop listing title, then admin catalog product name in parentheses. */
-function dashboardPaidOrderLineDisplayLabel(line: {
-  productName: string;
-  product: { name: string } | null;
-  shopListing: { requestItemName: string | null } | null;
-}): string {
-  const adminLabel = (line.product?.name ?? line.productName).trim() || line.productName;
-  const shopLabel = line.shopListing?.requestItemName?.trim() ?? "";
-  if (!shopLabel || shopLabel === adminLabel) {
-    return adminLabel;
-  }
-  return `${shopLabel} (${adminLabel})`;
-}
-
-/** Uses current admin baseline catalog + listing pick + Printify variant mapping (same as checkout). */
-function paidOrderLineGoodsServicesDisplayCents(
-  line: {
-    unitPriceCents: number;
-    quantity: number;
-    goodsServicesCostCents: number;
-    printifyVariantId: string | null;
-    shopListing: { baselineCatalogPickEncoded: string | null } | null;
-    product: { printifyVariants: unknown } | null;
-  },
-  adminCatalogById: Map<string, AdminCatalogRowForDisplay>,
-): number {
-  const pick = parseBaselinePick(line.shopListing?.baselineCatalogPickEncoded ?? "");
-  if (!pick) return line.goodsServicesCostCents;
-  const row = adminCatalogById.get(pick.itemId);
-  if (!row) return line.goodsServicesCostCents;
-  const unit = baselineGoodsServicesUnitCents({
-    baselineCatalogPickEncoded: line.shopListing?.baselineCatalogPickEncoded,
-    selectedVariantId: line.printifyVariantId,
-    catalogRow: row,
-    productPrintifyVariantsJson: line.product?.printifyVariants,
-  });
-  const merch = line.unitPriceCents * line.quantity;
-  return Math.min(merch, Math.max(0, unit) * line.quantity);
-}
-
-/** Per Printify variant id — unit COGS for profit estimates (same rules as checkout). */
-function listingGoodsServicesUnitCentsByPrintifyVariantId(
-  listing: {
-    baselineCatalogPickEncoded: string | null;
-    product: {
-      fulfillmentType: FulfillmentType;
-      printifyVariants: Prisma.JsonValue | null;
-      printifyVariantId: string | null;
-      priceCents: number;
-    };
-  },
-  adminCatalogById: Map<string, AdminCatalogRowForDisplay>,
-): Record<string, number> {
-  const pick = parseBaselinePick(listing.baselineCatalogPickEncoded ?? "");
-  const row = pick ? adminCatalogById.get(pick.itemId) : undefined;
-  const variants = getPrintifyVariantsForProduct(listing.product);
-  const out: Record<string, number> = {};
-  for (const v of variants) {
-    const unit =
-      row != null
-        ? baselineGoodsServicesUnitCents({
-            baselineCatalogPickEncoded: listing.baselineCatalogPickEncoded,
-            selectedVariantId: v.id,
-            catalogRow: row,
-            productPrintifyVariantsJson: listing.product.printifyVariants,
-          })
-        : 0;
-    out[v.id] = unit;
-  }
-  return out;
-}
 
 export default async function DashboardPage({ searchParams }: PageProps) {
   const owner = await getShopOwnerSessionReadonly();
@@ -288,6 +163,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     | "requestListing"
     | "bugFeedback"
     | "listings"
+    | "promotions"
     | "notifications"
     | "support"
     | "orders" = isPlatform
@@ -299,6 +175,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         dashStr === "setup" ||
         dashStr === "shopProfile" ||
         dashStr === "itemGuidelines" ||
+        dashStr === "promotions" ||
         dashStr === "notifications" ||
         dashStr === "requestListing" ||
         dashStr === "bugFeedback" ||
@@ -312,376 +189,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         ? "setup"
         : "listings";
 
-  /** Eager-load full listings + all tab payloads so tab clicks stay client-only (no RSC round-trip). */
-  shop = await prisma.shop.findUniqueOrThrow({
-    where: { id: shop.id },
-    include: {
-      listings: {
-        orderBy: { updatedAt: "desc" },
-        include: { product: true },
-      },
-    },
-  });
-
-  /** Baseline seed must finish before `adminCatalogItem.findMany`. */
-  const [, paidOrders] = await Promise.all([
-    !isPlatform ? ensureBaselineAdminCatalogIfEmpty(prisma) : Promise.resolve(),
-    prisma.order.findMany({
-      where: { shopId: shop.id, status: OrderStatus.paid },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      select: {
-        id: true,
-        createdAt: true,
-        lines: {
-          select: {
-            productName: true,
-            quantity: true,
-            unitPriceCents: true,
-            goodsServicesCostCents: true,
-            platformCutCents: true,
-            shopCutCents: true,
-            printifyVariantId: true,
-            shopListing: {
-              select: { baselineCatalogPickEncoded: true, requestItemName: true },
-            },
-            product: {
-              select: { name: true, printifyVariants: true },
-            },
-          },
-        },
-      },
-    }),
-  ]);
-
-  const [adminCatalogRows, allOwnerNotices, supportThreadForPanel] = await Promise.all([
-    !isPlatform
-      ? prisma.adminCatalogItem.findMany({
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-          select: {
-            id: true,
-            name: true,
-            itemExampleListingUrl: true,
-            itemMinPriceCents: true,
-            itemGoodsServicesCostCents: true,
-            itemImageRequirementLabel: true,
-            itemPrintAreaWidthPx: true,
-            itemPrintAreaHeightPx: true,
-            itemMinArtworkDpi: true,
-          },
-        })
-      : Promise.resolve([]),
-    !isPlatform
-      ? prisma.shopOwnerNotice.findMany({
-          where: { shopId: shop.id },
-          orderBy: { createdAt: "desc" },
-          take: 200,
-          select: {
-            id: true,
-            body: true,
-            kind: true,
-            createdAt: true,
-            readAt: true,
-            relatedListingId: true,
-          },
-        })
-      : Promise.resolve([]),
-    !isPlatform
-      ? prisma.supportThread.findUnique({
-          where: { shopId: shop.id },
-          include: { messages: { orderBy: { createdAt: "asc" } } },
-        })
-      : Promise.resolve(null),
-  ]);
-
-  const notificationsUnreadCount = !isPlatform
-    ? allOwnerNotices.filter((n) => n.readAt == null).length
-    : 0;
-
-  const supportNewFromStaffCount =
-    !isPlatform && supportThreadForPanel?.messages?.length
-      ? countNewSupportMessagesFromStaff(supportThreadForPanel.messages)
-      : 0;
-
-  const showDemoPurchaseButton = !isPlatform && shopDemoPurchaseFeatureEnabled();
-  const shopStripeConnectReadyForCharges = shopStripeConnectReadyForListingCharges(shop);
-  const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
-  const mockListingFeeCheckout = !isPlatform && isMockCheckoutEnabled();
-  const bonusListingSlots = shop.listingFeeBonusFreeSlots ?? 0;
-  const paidListingFeeLabel = formatMoney(LISTING_FEE_CENTS);
-  const submittedRequestCount = shop.listings.filter(
-    (l) => l.requestStatus !== ListingRequestStatus.draft,
-  ).length;
-  const firstListingPublicationFeeCents = listingFeeCentsForOrdinal(
-    submittedRequestCount + 1,
-    shop.slug,
-    bonusListingSlots,
-  );
-  const firstListingPublicationFeeLabel =
-    firstListingPublicationFeeCents > 0 ? formatMoney(firstListingPublicationFeeCents) : null;
-
-  const listingOrdinalById = (() => {
-    const ordered = [...shop.listings].sort(
-      (a, b) =>
-        a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id),
-    );
-    return new Map(ordered.map((l, i) => [l.id, i + 1]));
-  })();
-
-  const catalogGroups = !isPlatform ? buildShopBaselineCatalogGroups(adminCatalogRows) : [];
-
-  const adminCatalogById = new Map<string, AdminCatalogRowForDisplay>(
-    adminCatalogRows.map((r) => [r.id, { itemGoodsServicesCostCents: r.itemGoodsServicesCostCents }]),
-  );
-
-  const draftListingForRequestPrefill = !isPlatform
-    ? await prisma.shopListing.findFirst({
-        where: {
-          shopId: shop.id,
-          requestStatus: ListingRequestStatus.draft,
-          active: false,
-          creatorRemovedFromShopAt: null,
-          adminRemovedFromShopAt: null,
-        },
-        include: { product: true },
-      })
-    : null;
-
-  let draftListingRequestPrefill: DraftListingRequestPrefillPayload | null = null;
-  if (draftListingForRequestPrefill && adminCatalogRows.length > 0) {
-    const encoded = draftListingForRequestPrefill.baselineCatalogPickEncoded?.trim();
-    const fromEncoded = encoded
-      ? resolveCatalogPrefillFromBaselinePickEncoded(
-          encoded,
-          draftListingForRequestPrefill.priceCents,
-          draftListingForRequestPrefill.requestItemName,
-          adminCatalogRows,
-        )
-      : null;
-    const resolved =
-      fromEncoded ??
-      resolveCatalogPrefillFromStubProductSlug(
-        shop.id,
-        draftListingForRequestPrefill.product.slug,
-        draftListingForRequestPrefill.priceCents,
-        draftListingForRequestPrefill.requestItemName,
-        adminCatalogRows,
-      );
-    if (resolved) {
-      draftListingRequestPrefill = {
-        listingId: draftListingForRequestPrefill.id,
-        ...resolved,
-        storefrontItemBlurb: draftListingForRequestPrefill.storefrontItemBlurb,
-        listingSearchKeywords: draftListingForRequestPrefill.listingSearchKeywords,
-      };
-    }
-  }
-
-  const stripeConnectUnlocked = !isPlatform && canStartStripeConnect(setupSteps);
-
-  const setupTabsKey = `setup-${setupSteps.stripe}-${setupSteps.profile}-${setupSteps.guidelines}-${setupSteps.emailVerified}-${setupSteps.listing}-${Boolean(shop.itemGuidelinesAcknowledgedAt)}-${Boolean(user.emailVerifiedAt)}`;
-
-  const supportChatPanel = !isPlatform ? (
-    <DashboardSupportChatPanel
-      messages={
-        supportThreadForPanel?.messages.map((m) => ({
-          id: m.id,
-          authorRole: m.authorRole as "creator" | "admin",
-          body: m.body,
-          createdAt: m.createdAt.toISOString(),
-        })) ?? []
-      }
-      resolvedAtIso={supportThreadForPanel?.resolvedAt?.toISOString() ?? null}
-    />
-  ) : null;
-
-  const listingRows = (shop.listings as DashboardShopListingWithProduct[]).map((listing) => {
-        const rejectionNoticeBody =
-          listing.requestStatus === ListingRequestStatus.rejected && !isPlatform
-            ? resolveListingRejectionNoticeBody(
-                allOwnerNotices,
-                listing.id,
-                listing.product.name,
-              )
-            : null;
-        const rejectionReasonText = listingRejectionReasonTextForCard(rejectionNoticeBody);
-        return {
-          id: listing.id,
-          active: listing.active,
-          requestStatus: listing.requestStatus,
-          priceCents: listing.priceCents,
-          requestImages: listing.requestImages,
-          adminListingSecondaryImageUrl: sanitizeShopListingAdminSecondaryImageUrlForDisplay(
-            listing.adminListingSecondaryImageUrl,
-            shop.id,
-            listing.id,
-          ),
-          ownerSupplementImageUrl: sanitizeShopListingOwnerSupplementImageUrlForDisplay(
-            listing.ownerSupplementImageUrl,
-            shop.id,
-            listing.id,
-          ),
-          listingStorefrontCatalogImageUrls: listing.listingStorefrontCatalogImageUrls,
-          baselineCatalogPickEncoded: listing.baselineCatalogPickEncoded,
-          goodsServicesUnitCentsByPrintifyVariantId: listingGoodsServicesUnitCentsByPrintifyVariantId(
-            {
-              baselineCatalogPickEncoded: listing.baselineCatalogPickEncoded,
-              product: listing.product,
-            },
-            adminCatalogById,
-          ),
-          listingPrintifyVariantId: listing.listingPrintifyVariantId,
-          listingPrintifyVariantPrices: listing.listingPrintifyVariantPrices,
-          requestItemName: listing.requestItemName,
-          storefrontItemBlurb: listing.storefrontItemBlurb,
-          listingSearchKeywords: listing.listingSearchKeywords,
-          listingFeePaidAt: listing.listingFeePaidAt?.toISOString() ?? null,
-          adminRemovedFromShopAt: listing.adminRemovedFromShopAt?.toISOString() ?? null,
-          creatorRemovedFromShopAt: listing.creatorRemovedFromShopAt?.toISOString() ?? null,
-          listingOrdinal: listingOrdinalById.get(listing.id) ?? 1,
-          updatedAtIso: listing.updatedAt.toISOString(),
-          rejectionReasonText,
-          product: {
-            name: listing.product.name,
-            slug: listing.product.slug,
-            active: listing.product.active,
-            minPriceCents: listing.product.minPriceCents,
-            priceCents: listing.product.priceCents,
-            imageUrl: listing.product.imageUrl,
-            imageGallery: listing.product.imageGallery,
-            fulfillmentType: listing.product.fulfillmentType,
-            printifyVariantId: listing.product.printifyVariantId,
-            printifyVariants: listing.product.printifyVariants,
-          },
-        };
-      });
-
-  const groupedListingSections = buildGroupedListingSectionsForDashboard(
-    shop.id,
-    listingRows,
-    adminCatalogRows,
-  );
-
-  const hotItemBaseCents = promotionPriceCentsForKind(PromotionKind.HOT_FEATURED_ITEM);
-  const topShopBaseCents = promotionPriceCentsForKind(PromotionKind.FEATURED_SHOP_HOME);
-  const popularBaseCents = promotionPriceCentsForKind(PromotionKind.MOST_POPULAR_OF_TAG_ITEM);
-  const periodStartUtc = currentListingPromotionPeriodStartUtc(new Date());
-
-  const promoBundle = !isPlatform
-    ? await Promise.all([
-        prisma.promotionPurchase.findMany({
-          where: { shopId: shop.id },
-          orderBy: { createdAt: "desc" },
-          take: 40,
-          include: {
-            shopListing: {
-              select: { requestItemName: true, product: { select: { name: true } } },
-            },
-          },
-        }),
-        Promise.all([
-          resolveHotItemPlacementOffer(hotItemBaseCents),
-          resolveTopShopPlacementOffer(topShopBaseCents),
-          resolvePopularPlacementOffer(popularBaseCents),
-        ]),
-        countHotItemPaidForPlacementPeriodUtc(periodStartUtc),
-        countTopShopPaidForPlacementPeriodUtc(periodStartUtc),
-      ])
-    : null;
-
-  const promotionPurchasesForDash = promoBundle?.[0] ?? [];
-  const [hotOfferResolved, topShopOfferResolved, popularOfferResolved] =
-    promoBundle?.[1] ?? [null, null, null];
-  const hotSlotsUsedUtc = promoBundle?.[2] ?? 0;
-  const topShopSlotsUsedUtc = promoBundle?.[3] ?? 0;
-
-  const promotionsPayload = !isPlatform
-    ? {
-        purchases: promotionPurchasesForDash.map((row) => {
-          const activeWindowPacificRange =
-            row.paidAt && row.status === PromotionPurchaseStatus.paid
-              ? formatPacificPromotionWindowMmDdRange({
-                  eligibleFrom: row.eligibleFrom,
-                  paidAt: row.paidAt,
-                })
-              : null;
-          return {
-            id: row.id,
-            kind: row.kind,
-            status: row.status,
-            amountCents: row.amountCents,
-            createdAtIso: row.createdAt.toISOString(),
-            paidAtIso: row.paidAt?.toISOString() ?? null,
-            eligibleFromIso: row.eligibleFrom?.toISOString() ?? null,
-            activeWindowPacificRange,
-            listingLabel: row.shopListing
-              ? row.shopListing.requestItemName?.trim() || row.shopListing.product.name
-              : null,
-          };
-        }),
-        liveListingPicklist: listingRows
-          .filter(
-            (l) => l.active && l.requestStatus !== ListingRequestStatus.rejected,
-          )
-          .map((l) => ({
-            id: l.id,
-            label: (l.requestItemName && l.requestItemName.trim()) || l.product.name,
-          })),
-        mockPromotionCheckout: mockListingFeeCheckout,
-        stripePublishableKey,
-        hotItemPromotion: {
-          monthlyCap: HOT_ITEM_PLATFORM_PERIOD_CAP,
-          slotsUsedUtcThisMonth: hotSlotsUsedUtc,
-          offerError:
-            hotOfferResolved && "error" in hotOfferResolved ? hotOfferResolved.error : null,
-          offer:
-            hotOfferResolved && !("error" in hotOfferResolved)
-              ? {
-                  amountCents: hotOfferResolved.amountCents,
-                  eligibleFromIso: hotOfferResolved.eligibleFrom.toISOString(),
-                  isDeferred: hotOfferResolved.futurePeriodOffset > 0,
-                  isSecondFuturePeriod: hotOfferResolved.isSecondFuturePeriod,
-                  isProrated: hotOfferResolved.isProrated,
-                  placementMonthLabel: hotOfferResolved.placementPeriodLabel,
-                }
-              : null,
-        },
-        topShopPromotion: {
-          monthlyCap: TOP_SHOP_PLATFORM_PERIOD_CAP,
-          slotsUsedUtcThisMonth: topShopSlotsUsedUtc,
-          offerError:
-            topShopOfferResolved && "error" in topShopOfferResolved
-              ? topShopOfferResolved.error
-              : null,
-          offer:
-            topShopOfferResolved && !("error" in topShopOfferResolved)
-              ? {
-                  amountCents: topShopOfferResolved.amountCents,
-                  eligibleFromIso: topShopOfferResolved.eligibleFrom.toISOString(),
-                  isDeferred: topShopOfferResolved.futurePeriodOffset > 0,
-                  isSecondFuturePeriod: topShopOfferResolved.isSecondFuturePeriod,
-                  isProrated: topShopOfferResolved.isProrated,
-                  placementMonthLabel: topShopOfferResolved.placementPeriodLabel,
-                }
-              : null,
-        },
-        popularItemPromotion: {
-          offerError:
-            popularOfferResolved && "error" in popularOfferResolved
-              ? popularOfferResolved.error
-              : null,
-          offer:
-            popularOfferResolved && !("error" in popularOfferResolved)
-              ? {
-                  amountCents: popularOfferResolved.amountCents,
-                  eligibleFromIso: popularOfferResolved.eligibleFrom.toISOString(),
-                  isProrated: popularOfferResolved.isProrated,
-                  placementMonthLabel: popularOfferResolved.placementPeriodLabel,
-                }
-              : null,
-        },
-      }
-    : null;
+  const scopes = scopesForInitialTab(dashTab, isPlatform);
 
   const stripeConnectBalance =
     !isPlatform && shop.accountDeletionEmailConfirmedAt != null
@@ -701,6 +209,46 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       redirect("/?accountDeleted=1");
     }
   }
+
+  const [badgeCounts, chunks] = await Promise.all([
+    loadBadgeCounts(shop.id, isPlatform),
+    loadDashboardScopedChunks(shop.id, isPlatform, scopes),
+  ]);
+
+  const listingRows = chunks.listingRows;
+  const groupedListingSections = chunks.groupedListingSections;
+  const promotionsPayload = chunks.promotionsPayload;
+  const paidOrders = chunks.paidOrders;
+  const notificationsPayload = chunks.notifications;
+  const supportChatPayload = chunks.supportChat;
+  const rc = chunks.requestListingCatalog;
+
+  const notificationsUnreadCount = badgeCounts.notificationsUnread;
+  const supportNewFromStaffCount = badgeCounts.supportNewFromStaff;
+
+  const showDemoPurchaseButton = !isPlatform && shopDemoPurchaseFeatureEnabled();
+  const shopStripeConnectReadyForCharges = shopStripeConnectReadyForListingCharges(shop);
+  const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
+  const mockListingFeeCheckout = !isPlatform && isMockCheckoutEnabled();
+  const bonusListingSlots = shop.listingFeeBonusFreeSlots ?? 0;
+  const paidListingFeeLabel = formatMoney(LISTING_FEE_CENTS);
+  const submittedRequestCount = shop.listings.filter(
+    (l) => l.requestStatus !== ListingRequestStatus.draft,
+  ).length;
+  const firstListingPublicationFeeCents = listingFeeCentsForOrdinal(
+    submittedRequestCount + 1,
+    shop.slug,
+    bonusListingSlots,
+  );
+  const firstListingPublicationFeeLabel =
+    firstListingPublicationFeeCents > 0 ? formatMoney(firstListingPublicationFeeCents) : null;
+
+  const catalogGroups = !isPlatform ? (rc?.catalogGroups ?? []) : [];
+  const draftListingRequestPrefill = !isPlatform ? (rc?.draftListingRequestPrefill ?? null) : null;
+
+  const stripeConnectUnlocked = !isPlatform && canStartStripeConnect(setupSteps);
+
+  const setupTabsKey = `setup-${setupSteps.stripe}-${setupSteps.profile}-${setupSteps.guidelines}-${setupSteps.emailVerified}-${setupSteps.listing}-${Boolean(shop.itemGuidelinesAcknowledgedAt)}-${Boolean(user.emailVerifiedAt)}`;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-[868px] flex-col px-4 py-12">
@@ -808,7 +356,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       {isPlatform ? (
         <p className="mt-8 rounded-lg border border-zinc-800 bg-zinc-900/30 px-4 py-3 text-sm text-zinc-500">
           You are signed in as the platform catalog shop owner. Marketplace Connect and per-listing
-          fees do not apply to this account.
+          fees do not apply to this account. Paid listing promotions are only available on creator shop
+          dashboards (your own storefront slug), not on this catalog account.
         </p>
       ) : null}
 
@@ -817,7 +366,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         initialTab={dashTab}
         shopSlug={shop.slug}
         supportNewFromStaffCount={supportNewFromStaffCount}
-        supportChat={supportChatPanel}
+        supportChat={supportChatPayload}
         draftListingRequestPrefill={draftListingRequestPrefill}
         groupedListingSections={groupedListingSections}
         promotions={promotionsPayload}
@@ -851,7 +400,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 incompleteSetupCount,
                 r2Configured: isR2UploadConfigured(),
                 listingPickerDiagnostics: {
-                  adminCatalogItemCount: adminCatalogRows.length,
+                  adminCatalogItemCount: rc?.adminCatalogItemCount ?? 0,
                 },
                 firstListingPublicationFeeLabel,
                 stripeConnectReadyForPaidListings: shopStripeConnectReadyForCharges,
@@ -866,36 +415,17 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         stripePublishableKey={stripePublishableKey}
         showDemoPurchaseButton={showDemoPurchaseButton}
         listings={listingRows}
-        paidOrders={paidOrders.map((o) => ({
-          id: o.id,
-          createdAt: o.createdAt.toISOString(),
-          lines: o.lines.map((l) => ({
-            lineDisplayLabel: dashboardPaidOrderLineDisplayLabel(l),
-            quantity: l.quantity,
-            unitPriceCents: l.unitPriceCents,
-            goodsServicesCostCents: paidOrderLineGoodsServicesDisplayCents(
-              l,
-              adminCatalogById,
-            ),
-            platformCutCents: l.platformCutCents,
-            shopCutCents: l.shopCutCents,
-          })),
-        }))}
-        notifications={
-          !isPlatform
-            ? {
-                rows: allOwnerNotices.map((n) => ({
-                  id: n.id,
-                  body: n.body,
-                  kind: n.kind,
-                  createdAt: n.createdAt.toISOString(),
-                  readAt: n.readAt?.toISOString() ?? null,
-                })),
-                unreadCount: notificationsUnreadCount,
-              }
-            : null
-        }
+        paidOrders={paidOrders}
+        notifications={!isPlatform ? notificationsPayload : null}
         notificationsUnreadCount={!isPlatform ? notificationsUnreadCount : 0}
+        initialTabDataLoaded={{
+          listings: scopes.includes("listingsBody"),
+          promotions: scopes.includes("promotionsBody"),
+          orders: scopes.includes("ordersBody"),
+          notifications: scopes.includes("notificationsBody"),
+          support: scopes.includes("supportBody"),
+          requestListingCatalog: scopes.includes("requestListingCatalog"),
+        }}
       />
 
       <p className="mt-10 text-center">

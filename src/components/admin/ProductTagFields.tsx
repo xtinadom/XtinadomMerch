@@ -189,6 +189,7 @@ export function ProductTagFields({ tags: allTags, defaultTagIds }: Props) {
         <input
           ref={inputRef}
           type="text"
+          role="combobox"
           value={input}
           disabled={pending}
           autoComplete="off"

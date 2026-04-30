@@ -9,10 +9,7 @@ import {
   promotionKindSurfaceDescription,
   promotionPriceCentsForKind,
 } from "@/lib/promotions";
-import {
-  PROMOTION_DEFERRED_NEXT_TIER_PRICE_MULTIPLIER,
-  PROMOTION_ACTIVE_DAYS,
-} from "@/lib/promotion-policy-shared";
+import { PROMOTION_DEFERRED_NEXT_TIER_PRICE_MULTIPLIER } from "@/lib/promotion-policy-shared";
 import type { PopularItemPromotionUi, PromotionMonthlySlotUi } from "@/components/dashboard/ListingsPromotedSection";
 
 function formatMoney(cents: number) {

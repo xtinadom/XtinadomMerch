@@ -5,7 +5,6 @@ import {
   useState,
   useLayoutEffect,
   useCallback,
-  type FormEvent,
   type ReactNode,
 } from "react";
 import { useFormStatus } from "react-dom";
@@ -94,12 +93,9 @@ export function SaveListingForm({ action, children, savedHighlight }: Props) {
     };
   }, [savedHighlight]);
 
-  const onFormChange = useCallback(
-    (_e: FormEvent<HTMLFormElement>) => {
-      recalc();
-    },
-    [recalc],
-  );
+  const onFormChange = useCallback(() => {
+    recalc();
+  }, [recalc]);
 
   const justSaved = Boolean(savedHighlight && !dirty);
 

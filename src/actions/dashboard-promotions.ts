@@ -305,12 +305,12 @@ export async function dashboardMockPayPromotion(formData: FormData) {
   }
 
   if (!isMockCheckoutEnabled()) {
-    redirect("/dashboard?promo=err&promoErr=mock_only");
+    redirect("/dashboard?dash=promotions&promo=err&promoErr=mock_only");
   }
 
   const priced = await resolvePromotionPricing(kind);
   if (!priced.ok) {
-    redirect(`/dashboard?promo=err&promoErr=hot_item_policy`);
+    redirect(`/dashboard?dash=promotions&promo=err&promoErr=hot_item_policy`);
   }
   const { amountCents, eligibleFrom } = priced;
   if (amountCents <= 0) return;
@@ -330,5 +330,5 @@ export async function dashboardMockPayPromotion(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  redirect("/dashboard?promo=ok");
+  redirect("/dashboard?dash=promotions&promo=ok");
 }

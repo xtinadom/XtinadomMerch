@@ -315,7 +315,7 @@ export function AdminEmailFormatTab(props: { entries: AdminEmailFormatEntry[] })
     if (!entry) return;
     setSubject(entry.subject);
     setBody(entry.body);
-  }, [entry.key, entry.subject, entry.body]);
+  }, [entry]);
 
   const [saveState, saveAction, savePending] = useActionState<
     AdminSaveSiteEmailTemplateResult | undefined,

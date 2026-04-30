@@ -11,10 +11,7 @@ import {
   promotionKindSurfaceDescription,
 } from "@/lib/promotions";
 import { PromotionKind } from "@/generated/prisma/enums";
-import {
-  PROMOTION_DEFERRED_NEXT_TIER_PRICE_MULTIPLIER,
-  PROMOTION_ACTIVE_DAYS,
-} from "@/lib/promotion-policy-shared";
+import { PROMOTION_DEFERRED_NEXT_TIER_PRICE_MULTIPLIER } from "@/lib/promotion-policy-shared";
 
 export type PromotionMonthlySlotUi = {
   /** Per two-week Pacific placement period (field name kept for payload stability). */

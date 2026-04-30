@@ -478,6 +478,7 @@ export function DashboardListingPriceForm({
       initialVariantDollarsById(listingPriceCents, listingPrintifyVariantPrices, product) ?? {};
     setVariantDollars(next);
     variantBaseline.current = { ...next };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- JSON keys + product slice avoid churn vs full `product` identity from parent
   }, [
     listingId,
     listingPriceCents,

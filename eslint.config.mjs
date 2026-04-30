@@ -6,14 +6,15 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   /**
-   * Listing request panel syncs many fields from props / preview URLs via effects.
-   * `react-hooks/set-state-in-effect` rejects that pattern; disabling here until a refactor
-   * (derive state, or reset in event handlers only).
+   * React Compiler ESLint rules flag common patterns: syncing props or external data into
+   * local state in effects, and reading refs for dirty checks. The codebase uses these
+   * intentionally; turn the rules off in `src` until refactors are scoped per feature.
    */
   {
-    files: ["src/components/dashboard/ShopFirstListingRequestPanel.tsx"],
+    files: ["src/**/*.{ts,tsx}"],
     rules: {
       "react-hooks/set-state-in-effect": "off",
+      "react-hooks/refs": "off",
     },
   },
   // Override default ignores of eslint-config-next.

@@ -346,9 +346,9 @@ async function processOnePrintifyCatalogProduct(
   syncMode: "full" | "new" | "resync" | "single",
   noTagId: string,
 ): Promise<SyncOnePrintifyRowResult> {
-  let updated = 0;
-  let created = 0;
-  let skipped = 0;
+  const updated = 0;
+  const created = 0;
+  const skipped = 0;
   let removed = 0;
 
   /** Resync / single: keep storefront title, description. Gallery always merges a fresh Printify hero with manual uploads. */

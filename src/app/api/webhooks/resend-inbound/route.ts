@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Webhook } from "svix";
-import { prisma, prismaAdminInboundEmailOrNull } from "@/lib/prisma";
+import { prismaAdminInboundEmailOrNull } from "@/lib/prisma";
 import { adminInboxEmailAddress } from "@/lib/admin-inbox-config";
 import { resendFetchReceivedEmail } from "@/lib/resend-fetch-received-email";
 import { revalidatePath } from "next/cache";

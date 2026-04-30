@@ -11,8 +11,9 @@ function CheckoutSubmitButton({ tipLabel }: { tipLabel: string }) {
       type="submit"
       disabled={pending}
       className="w-full rounded-lg border border-zinc-600 bg-zinc-100 px-4 py-2.5 text-sm font-medium text-zinc-900 transition enabled:hover:bg-white disabled:cursor-wait disabled:opacity-70"
+      aria-label={pending ? "Opening Stripe checkout" : `Pay with card, amount ${tipLabel}`}
     >
-      {pending ? "Opening Stripe…" : "Pay with card"}
+      {pending ? "Opening Stripe…" : `Pay with card · ${tipLabel}`}
     </button>
   );
 }

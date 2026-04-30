@@ -130,7 +130,7 @@ export async function syncListingProductWithPrintifyCatalog(
   let description: string | null | undefined = template.description;
   let printifyVariants: Prisma.InputJsonValue | typeof Prisma.JsonNull =
     template.printifyVariants ?? Prisma.JsonNull;
-  let imageGallery = listingStubImageGalleryJson(template.imageGallery);
+  const imageGallery = listingStubImageGalleryJson(template.imageGallery);
 
   if (!hero) {
     const detail = await fetchPrintifyDetailForListing(pid);

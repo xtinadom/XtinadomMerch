@@ -6,6 +6,9 @@ import { SiteLegalFooter } from "@/components/SiteLegalFooter";
 
 export const dynamic = "force-dynamic";
 
+/** Tenant shop shell loads listings browse data + header — avoid Vercel default ~10s cutoff. */
+export const maxDuration = 300;
+
 function SiteHeaderFallback() {
   return (
     <header className="relative z-[1000] border-b border-zinc-800/40 bg-zinc-950/40 backdrop-blur-md">

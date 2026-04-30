@@ -5,6 +5,8 @@ import { SiteLegalFooter } from "@/components/SiteLegalFooter";
 
 export const dynamic = "force-dynamic";
 
+export const maxDuration = 300;
+
 export default function AdminRootLayout({
   children,
 }: {

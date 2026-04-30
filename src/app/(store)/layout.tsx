@@ -5,6 +5,9 @@ import { SiteLegalFooter } from "@/components/SiteLegalFooter";
 
 export const dynamic = "force-dynamic";
 
+/** @see comment on `(site-nav)/layout.tsx` — storefront routes need enough wall clock for Prisma + header. */
+export const maxDuration = 300;
+
 export default function StoreLayout({
   children,
   modal,
