@@ -9,6 +9,14 @@ const securityHeaders: { key: string; value: string }[] = [
 
 const nextConfig: NextConfig = {
   /**
+   * Next 16 defaults `experimental.lockDistDir` to true: it acquires a native lock under
+   * `.next/lock` before `cleanDistDir`. On Vercel that can fail with
+   * `ENOENT: lstat '.next/lock'` (single isolated build per machine — locking is unnecessary).
+   */
+  experimental: {
+    lockDistDir: false,
+  },
+  /**
    * First compile of a route segment can exceed the default chunk script timeout on slow disks /
    * Windows Defender scanning `.next`; stale caches also manifest as ChunkLoadError — use
    * `npm run dev:fresh` and hard-reload the browser.

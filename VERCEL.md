@@ -90,7 +90,7 @@ npx prisma db push
 1. Open the deploy log and find the **first** error (not only the final exit code).
 2. Run **`npm run build`** locally on the **same git commit**. If local passes and Vercel fails: check **Node version** (22), env vars present on Vercel, and **memory** (rare OOM on large Next builds).
 3. If the error mentions **Turbopack** vs **webpack**, the deployment is not using the script above — confirm the build command runs **`npm run build`** from the repo root, not a raw `next build` without `--webpack`.
-4. **`ENOENT` / `lstat` … `.next/lock`:** Usually a **stale or partial `.next` restore** from Vercel’s build cache. **Redeploy** with **clear build cache** (or set **`VERCEL_FORCE_NO_BUILD_CACHE=1`** once). This repo’s **`scripts/vercel-build.cjs`** also deletes `.next` when **`VERCEL=1`** before `next build` so each deploy starts clean unless you set **`SKIP_CLEAN_NEXT_ON_VERCEL=1`**.
+4. **`ENOENT` / `lstat` … `.next/lock`:** Next.js 16 defaults **`experimental.lockDistDir`** to **`true`**, which creates a native lock file under **`.next/lock`** before cleaning the output dir. On Vercel’s filesystem that step can throw **`ENOENT`**. This repo sets **`experimental.lockDistDir: false`** in [`next.config.ts`](next.config.ts) (one build per container — locking is unnecessary). If you still see cache-related `.next` issues, **redeploy with clear build cache** or set **`VERCEL_FORCE_NO_BUILD_CACHE=1`** once; [`scripts/vercel-build.cjs`](scripts/vercel-build.cjs) may also reset `.next` on Vercel before building.
 
 ## 4. Seed data (once)
 
