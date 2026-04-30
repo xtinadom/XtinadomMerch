@@ -3,8 +3,8 @@
 import type { ReactNode } from "react";
 import type { Prisma } from "@/generated/prisma/client";
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
-import { loadDashboardTabDataAction } from "@/actions/dashboard-load-tab";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useId, useState } from "react";
 import type { DashboardMainTabId } from "@/lib/dashboard-main-tab-id";
 import type { DashboardSupportChatPayload } from "@/lib/dashboard-scoped-data";
 import { DashboardSupportChatPanel } from "@/components/dashboard/DashboardSupportChatPanel";
@@ -954,19 +954,6 @@ export function DashboardMainTabs(props: {
     initialDraftPrefill,
   ]);
 
-  const loadedFlagsRef = useRef(loadedFlags);
-  useEffect(() => {
-    loadedFlagsRef.current = loadedFlags;
-  }, [loadedFlags]);
-
-  function patchLoadedFlags(patch: Partial<typeof loadedFlags>) {
-    setLoadedFlags((lf) => {
-      const next = { ...lf, ...patch };
-      loadedFlagsRef.current = next;
-      return next;
-    });
-  }
-
   const hasSetup = setup != null;
   const showOnboardingTab = Boolean(setup && setup.incompleteSetupCount > 0);
   /** Notifications tab is always available for creator shops; rows load when the tab is opened. */
@@ -978,8 +965,10 @@ export function DashboardMainTabs(props: {
   const [tab, setTab] = useState<TabId>(() =>
     normalizeDashboardMainTab(initialTabProp, tabOpts),
   );
-  /** Parent passes `key={dashTab}` so URL/nav updates remount and stay in sync; clicks stay client-only. */
+  /** Optimistic tab highlight before RSC finishes; server `key={dashTab}` remounts when `?dash=` navigation completes. */
   const effectiveTab = didUserPickTab ? tab : normalizedInitialTab;
+
+  const router = useRouter();
 
   const baseId = useId();
   const setupTabId = `${baseId}-tab-setup`;
@@ -1005,82 +994,21 @@ export function DashboardMainTabs(props: {
 
   const { live: groupedLive, request: groupedRequest, removed: groupedRemoved } = groupedListingSections;
 
-  function tabNeedsLazyFetch(id: TabId, lf: typeof loadedFlags): boolean {
-    switch (id) {
-      case "listings":
-        return !lf.listings;
-      case "promotions":
-        return !lf.promotions;
-      case "orders":
-        return !lf.orders;
-      case "notifications":
-        return !lf.notifications;
-      case "support":
-        return !lf.support;
-      case "requestListing":
-        return !lf.requestListingCatalog;
-      default:
-        return false;
-    }
-  }
-
   /**
-   * Client tab switch; loads tab payload on demand when it was not part of the initial RSC scope.
+   * Updates `?dash=` (preserving other query params) so the dashboard RSC loads the same scoped payload
+   * as a direct visit — avoids server-action serialization edge cases that left lazy tabs stuck on “Loading…”.
    */
-  const navigateToTab = async (id: TabId) => {
-    setDidUserPickTab(true);
-    setTab(id);
-    if (!tabNeedsLazyFetch(id, loadedFlagsRef.current)) return;
-    try {
-      const r = await loadDashboardTabDataAction(id);
-      if (!r.ok) return;
-      const d = r.data;
-      switch (id) {
-        case "listings":
-          setListings(d.listingRows);
-          setGroupedListingSections(d.groupedListingSections);
-          patchLoadedFlags({ listings: true });
-          break;
-        case "promotions":
-          if (d.promotionsPayload) setPromotions(d.promotionsPayload);
-          patchLoadedFlags({ promotions: true });
-          break;
-        case "orders":
-          setPaidOrders(d.paidOrders);
-          patchLoadedFlags({ orders: true });
-          break;
-        case "notifications":
-          if (d.notifications) setNotifications(d.notifications);
-          patchLoadedFlags({ notifications: true });
-          break;
-        case "support":
-          setSupportChat(d.supportChat);
-          patchLoadedFlags({ support: true });
-          break;
-        case "requestListing":
-          if (d.requestListingCatalog) {
-            setSetup((s) =>
-              s
-                ? {
-                    ...s,
-                    catalogGroups: d.requestListingCatalog!.catalogGroups,
-                    listingPickerDiagnostics: {
-                      adminCatalogItemCount: d.requestListingCatalog!.adminCatalogItemCount,
-                    },
-                  }
-                : s,
-            );
-            setDraftListingRequestPrefill(d.requestListingCatalog.draftListingRequestPrefill);
-          }
-          patchLoadedFlags({ requestListingCatalog: true });
-          break;
-        default:
-          break;
-      }
-    } catch {
-      /* network / server — tab stays selected; user can retry */
-    }
-  };
+  const navigateToTab = useCallback(
+    (id: TabId) => {
+      setDidUserPickTab(true);
+      setTab(id);
+      if (typeof window === "undefined") return;
+      const next = new URLSearchParams(window.location.search);
+      next.set("dash", id);
+      void router.replace(`/dashboard?${next.toString()}`, { scroll: false });
+    },
+    [router],
+  );
 
   const tabBtn = (id: TabId, label: ReactNode, tabId: string, panelId: string) => (
     <button

@@ -638,8 +638,3 @@ export async function loadDashboardScopedChunks(
     requestListingCatalog,
   };
 }
-
-/** Client lazy-fetch uses the same scope mapping as the initial tab. */
-export function scopeForTab(tab: DashboardMainTabId, isPlatform: boolean): DashboardScope[] {
-  return scopesForInitialTab(tab, isPlatform);
-}
