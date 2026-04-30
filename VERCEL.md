@@ -90,6 +90,7 @@ npx prisma db push
 1. Open the deploy log and find the **first** error (not only the final exit code).
 2. Run **`npm run build`** locally on the **same git commit**. If local passes and Vercel fails: check **Node version** (22), env vars present on Vercel, and **memory** (rare OOM on large Next builds).
 3. If the error mentions **Turbopack** vs **webpack**, the deployment is not using the script above — confirm the build command runs **`npm run build`** from the repo root, not a raw `next build` without `--webpack`.
+4. **`ENOENT` / `lstat` … `.next/lock`:** Usually a **stale or partial `.next` restore** from Vercel’s build cache. **Redeploy** with **clear build cache** (or set **`VERCEL_FORCE_NO_BUILD_CACHE=1`** once). This repo’s **`scripts/vercel-build.cjs`** also deletes `.next` when **`VERCEL=1`** before `next build` so each deploy starts clean unless you set **`SKIP_CLEAN_NEXT_ON_VERCEL=1`**.
 
 ## 4. Seed data (once)
 
