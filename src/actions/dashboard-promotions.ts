@@ -17,6 +17,7 @@ import {
 import { shopStripeConnectReadyForListingCharges } from "@/lib/shop-stripe-connect-gate";
 import { ensureListingFeeStripeConnectNotice } from "@/lib/listing-fee-connect-notice";
 import { fulfillPromotionPurchasePaidIfPending } from "@/lib/promotion-fulfillment";
+import { DASH_QUERY_LISTING_BOOSTS } from "@/lib/dashboard-dash-query";
 import {
   parsePromotionKind,
   promotionKindRequiresListing,
@@ -305,12 +306,12 @@ export async function dashboardMockPayPromotion(formData: FormData) {
   }
 
   if (!isMockCheckoutEnabled()) {
-    redirect("/dashboard?dash=promotions&promo=err&promoErr=mock_only");
+    redirect(`/dashboard?dash=${DASH_QUERY_LISTING_BOOSTS}&promo=err&promoErr=mock_only`);
   }
 
   const priced = await resolvePromotionPricing(kind);
   if (!priced.ok) {
-    redirect(`/dashboard?dash=promotions&promo=err&promoErr=hot_item_policy`);
+    redirect(`/dashboard?dash=${DASH_QUERY_LISTING_BOOSTS}&promo=err&promoErr=hot_item_policy`);
   }
   const { amountCents, eligibleFrom } = priced;
   if (amountCents <= 0) return;
@@ -330,5 +331,5 @@ export async function dashboardMockPayPromotion(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  redirect("/dashboard?dash=promotions&promo=ok");
+  redirect(`/dashboard?dash=${DASH_QUERY_LISTING_BOOSTS}&promo=ok`);
 }

@@ -3,9 +3,9 @@
 import type { ReactNode } from "react";
 import type { Prisma } from "@/generated/prisma/client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { DashboardMainTabId } from "@/lib/dashboard-main-tab-id";
+import { dashQueryParamForTabId } from "@/lib/dashboard-dash-query";
 import type { DashboardSupportChatPayload } from "@/lib/dashboard-scoped-data";
 import { DashboardSupportChatPanel } from "@/components/dashboard/DashboardSupportChatPanel";
 import { FulfillmentType, ListingRequestStatus } from "@/generated/prisma/enums";
@@ -835,6 +835,8 @@ function normalizeDashboardMainTab(
 
 export function DashboardMainTabs(props: {
   initialTab?: TabId;
+  /** Current URL query without `dash` (server-built); merged into tab links so fee/promo etc. persist. */
+  dashboardQueryPreserve: string;
   /** Creator shop slug — listing fee tiers (e.g. founder unlimited). */
   shopSlug: string;
   /** Creator onboarding; when set, “Onboarding” is the first tab. */
@@ -898,6 +900,7 @@ export function DashboardMainTabs(props: {
 }) {
   const {
     initialTab: initialTabProp,
+    dashboardQueryPreserve,
     shopSlug,
     setup: initialSetup,
     notifications: initialNotifications,
@@ -960,15 +963,16 @@ export function DashboardMainTabs(props: {
   const hasNotifications = !isPlatform ? true : Boolean(notifications);
   const canSupport = !isPlatform;
   const tabOpts = { hasSetup, showOnboardingTab, hasNotifications, canSupport };
-  const normalizedInitialTab = normalizeDashboardMainTab(initialTabProp, tabOpts);
-  const [didUserPickTab, setDidUserPickTab] = useState(false);
-  const [tab, setTab] = useState<TabId>(() =>
-    normalizeDashboardMainTab(initialTabProp, tabOpts),
-  );
-  /** Optimistic tab highlight before RSC finishes; server `key={dashTab}` remounts when `?dash=` navigation completes. */
-  const effectiveTab = didUserPickTab ? tab : normalizedInitialTab;
+  /** Tab reflects `?dash=` from the server. Tab controls use `<a href>` (full navigation) so a failed client RSC transition cannot strand the router or leave spinner state with a stale URL. */
+  const activeTab = normalizeDashboardMainTab(initialTabProp, tabOpts);
 
-  const router = useRouter();
+  const tabHref = (id: TabId) => {
+    const qv = dashQueryParamForTabId(id);
+    const p = new URLSearchParams(dashboardQueryPreserve);
+    p.set("dash", qv);
+    const q = p.toString();
+    return q ? `/dashboard?${q}` : `/dashboard?dash=${qv}`;
+  };
 
   const baseId = useId();
   const setupTabId = `${baseId}-tab-setup`;
@@ -994,39 +998,22 @@ export function DashboardMainTabs(props: {
 
   const { live: groupedLive, request: groupedRequest, removed: groupedRemoved } = groupedListingSections;
 
-  /**
-   * Updates `?dash=` (preserving other query params) so the dashboard RSC loads the same scoped payload
-   * as a direct visit — avoids server-action serialization edge cases that left lazy tabs stuck on “Loading…”.
-   */
-  const navigateToTab = useCallback(
-    (id: TabId) => {
-      setDidUserPickTab(true);
-      setTab(id);
-      if (typeof window === "undefined") return;
-      const next = new URLSearchParams(window.location.search);
-      next.set("dash", id);
-      void router.replace(`/dashboard?${next.toString()}`, { scroll: false });
-    },
-    [router],
-  );
-
   const tabBtn = (id: TabId, label: ReactNode, tabId: string, panelId: string) => (
-    <button
-      type="button"
+    <a
+      href={tabHref(id)}
       role="tab"
       id={tabId}
-      aria-selected={effectiveTab === id}
+      aria-selected={activeTab === id}
       aria-controls={panelId}
-      tabIndex={effectiveTab === id ? 0 : -1}
-      onClick={() => navigateToTab(id)}
-      className={`rounded-md px-4 py-2 text-sm font-medium transition ${
-        effectiveTab === id
+      tabIndex={activeTab === id ? 0 : -1}
+      className={`inline-block rounded-md px-4 py-2 text-sm font-medium transition ${
+        activeTab === id
           ? "bg-zinc-800 text-zinc-100 ring-1 ring-zinc-600"
           : "text-zinc-500 hover:bg-zinc-900/80 hover:text-zinc-300"
       }`}
     >
       {label}
-    </button>
+    </a>
   );
 
   const unreadN = notifications?.unreadCount ?? notificationsUnreadCount;
@@ -1095,7 +1082,7 @@ export function DashboardMainTabs(props: {
           id={setupPanelId}
           role="tabpanel"
           aria-labelledby={setupTabId}
-          hidden={effectiveTab !== "setup"}
+          hidden={activeTab !== "setup"}
           className="pt-6"
         >
           <ShopSetupTabs
@@ -1113,7 +1100,7 @@ export function DashboardMainTabs(props: {
           id={shopProfilePanelId}
           role="tabpanel"
           aria-labelledby={shopProfileTabId}
-          hidden={effectiveTab !== "shopProfile"}
+          hidden={activeTab !== "shopProfile"}
           className="pt-6"
         >
           <ShopProfileSetupPanel
@@ -1130,7 +1117,7 @@ export function DashboardMainTabs(props: {
           id={itemGuidelinesPanelId}
           role="tabpanel"
           aria-labelledby={itemGuidelinesTabId}
-          hidden={effectiveTab !== "itemGuidelines"}
+          hidden={activeTab !== "itemGuidelines"}
           className="pt-6"
         >
           <ShopItemGuidelinesPanel
@@ -1146,7 +1133,7 @@ export function DashboardMainTabs(props: {
           id={requestListingPanelId}
           role="tabpanel"
           aria-labelledby={requestListingTabId}
-          hidden={effectiveTab !== "requestListing"}
+          hidden={activeTab !== "requestListing"}
           className="pt-6"
         >
           {!loadedFlags.requestListingCatalog ? (
@@ -1177,7 +1164,7 @@ export function DashboardMainTabs(props: {
           id={bugFeedbackPanelId}
           role="tabpanel"
           aria-labelledby={bugFeedbackTabId}
-          hidden={effectiveTab !== "bugFeedback"}
+          hidden={activeTab !== "bugFeedback"}
           className="pt-6"
         >
           <BugFeedbackPanel embedded />
@@ -1188,7 +1175,7 @@ export function DashboardMainTabs(props: {
         id={listingsPanelId}
         role="tabpanel"
         aria-labelledby={listingsTabId}
-        hidden={effectiveTab !== "listings"}
+        hidden={activeTab !== "listings"}
         className="pt-4"
       >
         {!loadedFlags.listings ? (
@@ -1311,7 +1298,7 @@ export function DashboardMainTabs(props: {
           id={promotionsPanelId}
           role="tabpanel"
           aria-labelledby={promotionsTabId}
-          hidden={effectiveTab !== "promotions"}
+          hidden={activeTab !== "promotions"}
           className="pt-6"
         >
           {!loadedFlags.promotions ? (
@@ -1332,7 +1319,11 @@ export function DashboardMainTabs(props: {
               topShopPromotion={promotions.topShopPromotion}
               popularItemPromotion={promotions.popularItemPromotion}
             />
-          ) : null}
+          ) : (
+            <p className="rounded-lg border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-200/90">
+              Couldn&apos;t load promotions. Try refreshing the page.
+            </p>
+          )}
         </div>
       ) : null}
 
@@ -1341,7 +1332,7 @@ export function DashboardMainTabs(props: {
           id={notificationsPanelId}
           role="tabpanel"
           aria-labelledby={notificationsTabId}
-          hidden={effectiveTab !== "notifications"}
+          hidden={activeTab !== "notifications"}
           className="pt-6"
         >
           {!loadedFlags.notifications ? (
@@ -1411,7 +1402,7 @@ export function DashboardMainTabs(props: {
           id={supportPanelId}
           role="tabpanel"
           aria-labelledby={supportTabId}
-          hidden={effectiveTab !== "support"}
+          hidden={activeTab !== "support"}
           className="pt-6"
         >
           {!loadedFlags.support ? (
@@ -1435,7 +1426,7 @@ export function DashboardMainTabs(props: {
         id={ordersPanelId}
         role="tabpanel"
         aria-labelledby={ordersTabId}
-        hidden={effectiveTab !== "orders"}
+        hidden={activeTab !== "orders"}
         className="pt-6"
       >
         <p className="text-xs text-zinc-600">

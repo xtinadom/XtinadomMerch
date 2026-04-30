@@ -35,12 +35,29 @@ import { shopStripeConnectReadyForListingCharges } from "@/lib/shop-stripe-conne
 import { isMockCheckoutEnabled } from "@/lib/checkout-mock";
 import { ShopDataLoadError } from "@/components/ShopDataLoadError";
 import { rethrowNextNavigationError } from "@/lib/next-navigation-errors";
+import { dashboardTabParamToId } from "@/lib/dashboard-dash-query";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+/** Serialize current dashboard query for tab `Link` hrefs; `dash` is set per tab on the client. */
+function dashboardSearchParamsPreserveDash(
+  sp: Record<string, string | string[] | undefined>,
+): string {
+  const p = new URLSearchParams();
+  for (const [key, raw] of Object.entries(sp)) {
+    if (key === "dash") continue;
+    if (raw === undefined) continue;
+    const values = Array.isArray(raw) ? raw : [raw];
+    for (const v of values) {
+      if (typeof v === "string" && v.length > 0) p.append(key, v);
+    }
+  }
+  return p.toString();
+}
 
 export default async function DashboardPage({ searchParams }: PageProps) {
   const owner = await getShopOwnerSessionReadonly();
@@ -65,8 +82,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         ? sp.promoErr[0]
         : undefined;
   const dashRaw = sp.dash;
-  const dashStr =
-    typeof dashRaw === "string" ? dashRaw : Array.isArray(dashRaw) ? dashRaw[0] : undefined;
+  const dashStr = dashboardTabParamToId(
+    typeof dashRaw === "string" ? dashRaw : Array.isArray(dashRaw) ? dashRaw[0] : undefined,
+  );
   const delConfirmRaw = sp.delConfirm;
   const delConfirm =
     typeof delConfirmRaw === "string"
@@ -364,6 +382,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <DashboardMainTabs
         key={dashTab}
         initialTab={dashTab}
+        dashboardQueryPreserve={dashboardSearchParamsPreserveDash(sp)}
         shopSlug={shop.slug}
         supportNewFromStaffCount={supportNewFromStaffCount}
         supportChat={supportChatPayload}
