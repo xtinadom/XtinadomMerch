@@ -117,17 +117,62 @@ export async function resolveCappedPlacementPeriodOffer(
   soldOutMessage: string,
   nowInput = new Date(),
 ): Promise<PlacementPeriodOffer> {
-  if (basePriceCents <= 0) return { error: "Invalid promotion price." };
-  if (periodCap <= 0) return { error: "Invalid cap." };
+  const r = await resolveCappedPlacementPeriodOfferWithCounts(
+    basePriceCents,
+    periodCap,
+    kind,
+    soldOutMessage,
+    nowInput,
+  );
+  return r.offer;
+}
+
+export type CappedPlacementPeriodOfferWithCounts = {
+  offer: PlacementPeriodOffer;
+  /** Paid slots for offsets [0,1,2] from the current placement period. */
+  filledCounts: [number, number, number];
+  /** Pacific period starts for offsets [0,1,2] from the current placement period. */
+  periodStarts: [Date, Date, Date];
+};
+
+export async function resolveCappedPlacementPeriodOfferWithCounts(
+  basePriceCents: number,
+  periodCap: number,
+  kind: PromotionKind,
+  soldOutMessage: string,
+  nowInput = new Date(),
+): Promise<CappedPlacementPeriodOfferWithCounts> {
+  if (basePriceCents <= 0) {
+    const idx = getPromotionPeriodIndexContaining(nowInput);
+    const periodStarts = [0, 1, 2].map((o) => promotionPeriodStartUtc(idx + o)) as [Date, Date, Date];
+    return { offer: { error: "Invalid promotion price." }, filledCounts: [0, 0, 0], periodStarts };
+  }
+  if (periodCap <= 0) {
+    const idx = getPromotionPeriodIndexContaining(nowInput);
+    const periodStarts = [0, 1, 2].map((o) => promotionPeriodStartUtc(idx + o)) as [Date, Date, Date];
+    return { offer: { error: "Invalid cap." }, filledCounts: [0, 0, 0], periodStarts };
+  }
 
   const currentIdx = getPromotionPeriodIndexContaining(nowInput);
 
-  for (let offset = 0; offset <= 2; offset++) {
-    const idx = currentIdx + offset;
-    const periodStart = promotionPeriodStartUtc(idx);
-    const filled = await countPromotionKindPaidForPlacementPeriod(kind, periodStart);
+  const offsets: Array<0 | 1 | 2> = [0, 1, 2];
+  const periodStarts = offsets.map((offset) => promotionPeriodStartUtc(currentIdx + offset)) as [
+    Date,
+    Date,
+    Date,
+  ];
+  const filledCounts = (await Promise.all(
+    periodStarts.map((periodStart) => countPromotionKindPaidForPlacementPeriod(kind, periodStart)),
+  )) as [number, number, number];
 
-    if (filled >= periodCap) continue;
+  for (const offset of offsets) {
+    const idx = currentIdx + offset;
+    const periodStart = periodStarts[offset];
+    const filled = filledCounts[offset];
+
+    if (filled >= periodCap) {
+      continue;
+    }
 
     const periodEndExclusive = promotionPeriodEndExclusiveUtc(idx);
     const periodEndInclusive = new Date(periodEndExclusive.getTime() - 1);
@@ -150,27 +195,39 @@ export async function resolveCappedPlacementPeriodOffer(
     }
 
     if (!Number.isSafeInteger(amountCents)) {
-      return { error: "Promotion price overflow." };
+      return { offer: { error: "Promotion price overflow." }, filledCounts, periodStarts };
     }
 
     return {
-      amountCents,
-      eligibleFrom: periodStart,
-      placementPeriodLabel: formatPromotionPlacementPeriodLabel(periodStart),
-      isProrated,
-      isSecondFuturePeriod,
-      futurePeriodOffset: offset as 0 | 1 | 2,
+      offer: {
+        amountCents,
+        eligibleFrom: periodStart,
+        placementPeriodLabel: formatPromotionPlacementPeriodLabel(periodStart),
+        isProrated,
+        isSecondFuturePeriod,
+        futurePeriodOffset: offset as 0 | 1 | 2,
+      },
+      filledCounts,
+      periodStarts,
     };
   }
 
-  return { error: soldOutMessage };
+  return { offer: { error: soldOutMessage }, filledCounts, periodStarts };
 }
 
 export async function resolveHotItemPlacementOffer(
   basePriceCents: number,
   nowInput = new Date(),
 ): Promise<PlacementPeriodOffer> {
-  return resolveCappedPlacementPeriodOffer(
+  const r = await resolveHotItemPlacementOfferWithCounts(basePriceCents, nowInput);
+  return r.offer;
+}
+
+export async function resolveHotItemPlacementOfferWithCounts(
+  basePriceCents: number,
+  nowInput = new Date(),
+): Promise<CappedPlacementPeriodOfferWithCounts> {
+  return resolveCappedPlacementPeriodOfferWithCounts(
     basePriceCents,
     HOT_ITEM_PLATFORM_PERIOD_CAP,
     PromotionKind.HOT_FEATURED_ITEM,
@@ -183,7 +240,15 @@ export async function resolveTopShopPlacementOffer(
   basePriceCents: number,
   nowInput = new Date(),
 ): Promise<PlacementPeriodOffer> {
-  return resolveCappedPlacementPeriodOffer(
+  const r = await resolveTopShopPlacementOfferWithCounts(basePriceCents, nowInput);
+  return r.offer;
+}
+
+export async function resolveTopShopPlacementOfferWithCounts(
+  basePriceCents: number,
+  nowInput = new Date(),
+): Promise<CappedPlacementPeriodOfferWithCounts> {
+  return resolveCappedPlacementPeriodOfferWithCounts(
     basePriceCents,
     TOP_SHOP_PLATFORM_PERIOD_CAP,
     PromotionKind.FEATURED_SHOP_HOME,

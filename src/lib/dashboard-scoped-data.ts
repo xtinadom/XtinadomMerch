@@ -13,11 +13,9 @@ import {
   type DraftListingRequestPrefillPayload,
 } from "@/lib/shop-baseline-draft-prefill";
 import {
-  countHotItemPaidForPlacementPeriodUtc,
-  countTopShopPaidForPlacementPeriodUtc,
-  resolveHotItemPlacementOffer,
+  resolveHotItemPlacementOfferWithCounts,
   resolvePopularPlacementOffer,
-  resolveTopShopPlacementOffer,
+  resolveTopShopPlacementOfferWithCounts,
 } from "@/lib/promotion-hot-item-policy";
 import { HOT_ITEM_PLATFORM_PERIOD_CAP, TOP_SHOP_PLATFORM_PERIOD_CAP } from "@/lib/promotion-policy-shared";
 import { currentListingPromotionPeriodStartUtc, formatPacificPromotionWindowMmDdRange } from "@/lib/promotion-period-pacific";
@@ -92,14 +90,26 @@ async function loadPromotionsPayloadForShop(
   shopId: string,
   liveListingPicklist: { id: string; label: string }[],
 ): Promise<DashboardPromotionsPayload> {
+  const isDev = process.env.NODE_ENV === "development";
+  const time = async <T,>(label: string, fn: () => Promise<T>): Promise<T> => {
+    const start = Date.now();
+    try {
+      return await fn();
+    } finally {
+      if (isDev) {
+        const ms = Date.now() - start;
+        console.log(`[promotionsTiming] ${label}: ${ms}ms`);
+      }
+    }
+  };
+
   const mockListingFeeCheckout = isMockCheckoutEnabled();
   const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
   const hotItemBaseCents = promotionPriceCentsForKind(PromotionKind.HOT_FEATURED_ITEM);
   const topShopBaseCents = promotionPriceCentsForKind(PromotionKind.FEATURED_SHOP_HOME);
   const popularBaseCents = promotionPriceCentsForKind(PromotionKind.MOST_POPULAR_OF_TAG_ITEM);
-  const periodStartUtc = currentListingPromotionPeriodStartUtc(new Date());
 
-  const promoBundle = await Promise.all([
+  const promotionPurchasesForDash = await time("promotionPurchase.findMany", () =>
     prisma.promotionPurchase.findMany({
       where: { shopId },
       orderBy: { createdAt: "desc" },
@@ -110,19 +120,29 @@ async function loadPromotionsPayloadForShop(
         },
       },
     }),
-    Promise.all([
-      resolveHotItemPlacementOffer(hotItemBaseCents),
-      resolveTopShopPlacementOffer(topShopBaseCents),
-      resolvePopularPlacementOffer(popularBaseCents),
-    ]),
-    countHotItemPaidForPlacementPeriodUtc(periodStartUtc),
-    countTopShopPaidForPlacementPeriodUtc(periodStartUtc),
-  ]);
+  );
 
-  const promotionPurchasesForDash = promoBundle[0];
-  const [hotOfferResolved, topShopOfferResolved, popularOfferResolved] = promoBundle[1];
-  const hotSlotsUsedUtc = promoBundle[2];
-  const topShopSlotsUsedUtc = promoBundle[3];
+  const [hotOfferWithCounts, topShopOfferWithCounts, popularOfferResolved] = await time(
+    "resolveOffers",
+    () =>
+      Promise.all([
+        resolveHotItemPlacementOfferWithCounts(hotItemBaseCents),
+        resolveTopShopPlacementOfferWithCounts(topShopBaseCents),
+        resolvePopularPlacementOffer(popularBaseCents),
+      ]),
+  );
+
+  const periodStartUtc = currentListingPromotionPeriodStartUtc(new Date());
+  const hotPeriodIndex = hotOfferWithCounts.periodStarts.findIndex((d) => d.getTime() === periodStartUtc.getTime());
+  const topPeriodIndex = topShopOfferWithCounts.periodStarts.findIndex((d) => d.getTime() === periodStartUtc.getTime());
+
+  const hotSlotsUsedUtc =
+    hotPeriodIndex >= 0 ? hotOfferWithCounts.filledCounts[hotPeriodIndex as 0 | 1 | 2] : 0;
+  const topShopSlotsUsedUtc =
+    topPeriodIndex >= 0 ? topShopOfferWithCounts.filledCounts[topPeriodIndex as 0 | 1 | 2] : 0;
+
+  const hotOfferResolved = hotOfferWithCounts.offer;
+  const topShopOfferResolved = topShopOfferWithCounts.offer;
 
   return {
     purchases: promotionPurchasesForDash.map((row) => {

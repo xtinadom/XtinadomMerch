@@ -459,6 +459,8 @@ model PromotionPurchase {
   updatedAt             DateTime                @updatedAt
 
   @@index([shopId, createdAt(sort: Desc)])
+  @@index([kind, status, eligibleFrom])
+  @@index([kind, status, paidAt])
 }
 
 enum OrderStatus {
