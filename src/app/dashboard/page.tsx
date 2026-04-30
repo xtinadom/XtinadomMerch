@@ -251,34 +251,78 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     },
   });
 
-  const paidOrders = await prisma.order.findMany({
-    where: { shopId: shop.id, status: OrderStatus.paid },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-    select: {
-      id: true,
-      createdAt: true,
-      lines: {
-        select: {
-          productName: true,
-          quantity: true,
-          unitPriceCents: true,
-          goodsServicesCostCents: true,
-          platformCutCents: true,
-          shopCutCents: true,
-          printifyVariantId: true,
-          shopListing: {
-            select: { baselineCatalogPickEncoded: true, requestItemName: true },
-          },
-          product: {
-            select: { name: true, printifyVariants: true },
+  const isPlatform = shop.slug === PLATFORM_SHOP_SLUG;
+
+  /** Baseline seed must finish before `adminCatalogItem.findMany`; orders are independent — run in parallel. */
+  const [, paidOrders] = await Promise.all([
+    !isPlatform ? ensureBaselineAdminCatalogIfEmpty(prisma) : Promise.resolve(),
+    prisma.order.findMany({
+      where: { shopId: shop.id, status: OrderStatus.paid },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: {
+        id: true,
+        createdAt: true,
+        lines: {
+          select: {
+            productName: true,
+            quantity: true,
+            unitPriceCents: true,
+            goodsServicesCostCents: true,
+            platformCutCents: true,
+            shopCutCents: true,
+            printifyVariantId: true,
+            shopListing: {
+              select: { baselineCatalogPickEncoded: true, requestItemName: true },
+            },
+            product: {
+              select: { name: true, printifyVariants: true },
+            },
           },
         },
       },
-    },
-  });
+    }),
+  ]);
 
-  const isPlatform = shop.slug === PLATFORM_SHOP_SLUG;
+  const [adminCatalogRows, allOwnerNotices, supportThreadRow] = await Promise.all([
+    !isPlatform
+      ? prisma.adminCatalogItem.findMany({
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          select: {
+            id: true,
+            name: true,
+            itemExampleListingUrl: true,
+            itemMinPriceCents: true,
+            itemGoodsServicesCostCents: true,
+            itemImageRequirementLabel: true,
+            itemPrintAreaWidthPx: true,
+            itemPrintAreaHeightPx: true,
+            itemMinArtworkDpi: true,
+          },
+        })
+      : Promise.resolve([]),
+    !isPlatform
+      ? prisma.shopOwnerNotice.findMany({
+          where: { shopId: shop.id },
+          orderBy: { createdAt: "desc" },
+          take: 200,
+          select: {
+            id: true,
+            body: true,
+            kind: true,
+            createdAt: true,
+            readAt: true,
+            relatedListingId: true,
+          },
+        })
+      : Promise.resolve([]),
+    !isPlatform
+      ? prisma.supportThread.findUnique({
+          where: { shopId: shop.id },
+          include: { messages: { orderBy: { createdAt: "asc" } } },
+        })
+      : Promise.resolve(null),
+  ]);
   const showDemoPurchaseButton = !isPlatform && shopDemoPurchaseFeatureEnabled();
   const shopStripeConnectReadyForCharges = shopStripeConnectReadyForListingCharges(shop);
   const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
@@ -303,27 +347,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     );
     return new Map(ordered.map((l, i) => [l.id, i + 1]));
   })();
-
-  if (!isPlatform) {
-    await ensureBaselineAdminCatalogIfEmpty(prisma);
-  }
-
-  const adminCatalogRows = !isPlatform
-    ? await prisma.adminCatalogItem.findMany({
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-        select: {
-          id: true,
-          name: true,
-          itemExampleListingUrl: true,
-          itemMinPriceCents: true,
-          itemGoodsServicesCostCents: true,
-          itemImageRequirementLabel: true,
-          itemPrintAreaWidthPx: true,
-          itemPrintAreaHeightPx: true,
-          itemMinArtworkDpi: true,
-        },
-      })
-    : [];
 
   const catalogGroups = !isPlatform ? buildShopBaselineCatalogGroups(adminCatalogRows) : [];
 
@@ -370,22 +393,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       };
     }
   }
-
-  const allOwnerNotices = !isPlatform
-    ? await prisma.shopOwnerNotice.findMany({
-        where: { shopId: shop.id },
-        orderBy: { createdAt: "desc" },
-        take: 200,
-        select: {
-          id: true,
-          body: true,
-          kind: true,
-          createdAt: true,
-          readAt: true,
-          relatedListingId: true,
-        },
-      })
-    : [];
 
   const unreadNoticeCount = allOwnerNotices.filter((n) => n.readAt == null).length;
 
@@ -442,13 +449,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       : incompleteSetupCount > 0
         ? "setup"
         : "listings";
-
-  const supportThreadRow = !isPlatform
-    ? await prisma.supportThread.findUnique({
-        where: { shopId: shop.id },
-        include: { messages: { orderBy: { createdAt: "asc" } } },
-      })
-    : null;
 
   const supportChatPanel = !isPlatform ? (
     <DashboardSupportChatPanel
